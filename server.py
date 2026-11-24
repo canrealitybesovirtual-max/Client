@@ -83,6 +83,12 @@ def check_subcontractor_compliance(
                                      will_have_employees_on_site)
 
 
+@mcp.custom_route("/health", methods=["GET"])
+async def health(_request):
+    from starlette.responses import JSONResponse
+    return JSONResponse({"ok": True, "server": "TradeComply CA"})
+
+
 @mcp.resource("tradecomply://disclaimer")
 def disclaimer() -> str:
     """Disclaimer and which data sets have been verified."""

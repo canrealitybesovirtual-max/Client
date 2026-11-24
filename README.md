@@ -18,6 +18,7 @@ An MCP server that gives AI agents five California construction compliance tools
 pip install -r requirements.txt
 python server.py                          # stdio (Claude Desktop / Claude Code)
 MCP_TRANSPORT=http python server.py       # http://localhost:8000/mcp
+uvicorn app.main:app --port 8000          # same, for hosts that run uvicorn (Render)
 python -m pytest -q tests                 # 15 tests
 ```
 
