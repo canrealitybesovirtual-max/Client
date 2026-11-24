@@ -17,7 +17,7 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from tradecomply import logic
-from tradecomply.rules import CA_LIEN, CSLB, DISCLAIMER, FEDERAL_PENALTY_MAX_USD, PERMIT_FEE_SCHEDULE
+from tradecomply.rules import CA_LIEN, CAL_OSHA_PENALTY_MAX_USD, CSLB, DISCLAIMER, FEDERAL_PENALTY_MAX_USD, PERMIT_FEE_SCHEDULE
 
 mcp = FastMCP(
     name="TradeComply CA",
@@ -64,11 +64,12 @@ def calculate_lien_deadline(
     last_furnishing_date: Annotated[str, Field(description="ISO date you last furnished labor or materials")],
     first_furnishing_date: Annotated[Optional[str], Field(description="ISO date you FIRST furnished (for the 20-day preliminary notice)")] = None,
     completion_date: Annotated[Optional[str], Field(description="ISO date the whole project was completed, if known")] = None,
-    notice_of_completion_date: Annotated[Optional[str], Field(description="ISO date a notice of completion was recorded, if any")] = None,
+    notice_of_completion_date: Annotated[Optional[str], Field(description="ISO date a notice of completion or notice of cessation was recorded, if any")] = None,
+    construction_start_date: Annotated[Optional[str], Field(description="ISO date construction started (design professionals only)")] = None,
 ) -> logic.LienDeadlineResult:
     """California mechanics lien deadlines: preliminary notice, lien recording, and foreclosure, with days left."""
     return logic.lien_deadlines(claimant_role, last_furnishing_date, first_furnishing_date, completion_date,
-                                notice_of_completion_date)
+                                notice_of_completion_date, construction_start_date=construction_start_date)
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -93,8 +94,9 @@ async def health(_request):
 def disclaimer() -> str:
     """Disclaimer and which data sets have been verified."""
     rows = [("CA lien rules", CA_LIEN), ("CSLB constants", CSLB), ("Permit fee schedules", PERMIT_FEE_SCHEDULE),
-            ("Federal OSHA penalties", FEDERAL_PENALTY_MAX_USD)]
+            ("Federal OSHA penalties", FEDERAL_PENALTY_MAX_USD), ("Cal/OSHA penalties", CAL_OSHA_PENALTY_MAX_USD)]
     status = "\n".join(f"- {name}: {'verified ' + str(d.get('checked_on')) if d.get('verified') else 'UNVERIFIED'}"
+                       f"{' (last checked ' + d['checked_on'] + ')' if d.get('checked_on') and not d.get('verified') else ''}"
                        for name, d in rows)
     return f"{DISCLAIMER}\n\nData status:\n{status}\n- Cal/OSHA safety table: UNVERIFIED summaries; read the linked section."
 

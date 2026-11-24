@@ -126,3 +126,27 @@ def test_mcp_call_returns_structured_result():
              liability_insurance_expiry="2099-01-01")
     assert r.structured_content["overall_risk"] == "low"
     assert r.structured_content["disclaimer"].startswith("Not legal advice")
+
+
+# ---- fixes from the source check
+def test_noc_before_completion_ignored():
+    r = logic.lien_deadlines("subcontractor", "2026-05-01", completion_date="2026-05-10",
+                             notice_of_completion_date="2026-05-05", today=T)
+    assert r.lien_recording_deadline == "2026-08-08" and any("before completion" in n for n in r.notes)
+
+
+def test_design_professional_uses_construction_start():
+    r = logic.lien_deadlines("design_professional", "2026-05-01", first_furnishing_date="2026-01-01",
+                             construction_start_date="2026-03-01", today=T)
+    assert r.preliminary_notice_deadline == "2026-03-21"
+
+
+def test_roofer_must_carry_workers_comp_even_solo():
+    r = logic.check_subcontractor("777000", "C-39", "2099-01-01", will_have_employees_on_site=False)
+    assert not r.workers_comp_ok and r.overall_risk == "high"
+    assert any("C-39" in p for p in r.problems)
+
+
+def test_silica_cites_construction_section():
+    r = logic.lookup_safety_standard("silica")
+    assert "1532.3" in r.cal_osha_section and r.cal_osha_penalty_max_usd["serious"] == 25000.0

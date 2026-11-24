@@ -1,6 +1,7 @@
 """License record sources. CSLB offers no official lookup API, so the server reads from a source you control:
   - built-in fixtures (demo, offline)
-  - a CSV file you load from CSLB's public data downloads (set LICENSE_CSV=/path/file.csv)
+  - a CSV file built from CSLB's free Public Data Portal (license master + workers' comp lists),
+    https://www.cslb.ca.gov/onlineservices/dataportal/  (set LICENSE_CSV=/path/file.csv)
 Never scrape the CheckLicense web page: its terms and CAPTCHAs make that fragile and possibly disallowed."""
 import csv
 import os
@@ -17,6 +18,11 @@ FIXTURES: dict[str, dict] = {
         "classifications": ["B General Building"], "expiration_date": "2024-01-15",
         "workers_comp": "none", "contractor_bond_on_file": False,
         "disciplinary_actions": ["2023 citation: contracting outside classification"],
+    },
+    "777000": {
+        "license_number": "777000", "business_name": "Solo Roofing", "status": "active",
+        "classifications": ["C-39 Roofing"], "expiration_date": "2027-03-31",
+        "workers_comp": "exempt", "contractor_bond_on_file": True, "disciplinary_actions": [],
     },
     "555000": {
         "license_number": "555000", "business_name": "Solo Electric", "status": "active",

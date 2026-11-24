@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel, Field
 
 from . import licenses
-from .rules import (CA_LIEN, CAL_OSHA_PENALTY_NOTE, CSLB, DISCLAIMER, FEDERAL_PENALTY_MAX_USD,
+from .rules import (CA_LIEN, CAL_OSHA_PENALTY_MAX_USD, CAL_OSHA_PENALTY_NOTE, CSLB, DISCLAIMER, FEDERAL_PENALTY_MAX_USD,
                     PERMIT_FEE_SCHEDULE, SAFETY_JURISDICTION_NOTE, SAFETY_TABLE)
 
 CA_TZ = ZoneInfo("America/Los_Angeles")
@@ -65,8 +65,8 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
     if source == "demo fixtures":
         notes.append("Demo data, not a live CSLB record. Load CSLB data (LICENSE_CSV) before real use.")
     if not rec:
-        notes.append("No record found. Check the number on the CSLB site; unlicensed work over $1,000 "
-                     "(labor + materials) generally requires a license in California.")
+        notes.append("No record found. Check the number on the CSLB site. In California a license is required for "
+                     "work of $1,000 or more (labor + materials), any work needing a permit, or any work with employees.")
         return LicenseResult(license_number=license_number, found=False, data_source=source, notes=notes)
     exp_days = None
     if rec.get("expiration_date"):
@@ -78,7 +78,18 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
             notes.append(f"License expires in {exp_days} days.")
     if rec.get("workers_comp") == "exempt":
         notes.append("Workers' comp exemption means the contractor may not have employees on the job.")
+        if _wc_mandatory_class(rec.get("classifications", [])):
+            notes.append(f"Class {_wc_mandatory_class(rec['classifications'])} must carry workers' comp even without "
+                         "employees, so this exemption is a problem.")
     return LicenseResult(**rec, found=True, expires_in_days=exp_days, data_source=source, notes=notes)
+
+
+def _wc_mandatory_class(classes: list[str]) -> Optional[str]:
+    for c in classes:
+        code = c.upper().split()[0] if c.strip() else ""
+        if code in CSLB["wc_required_regardless"]:
+            return code
+    return None
 
 
 # ---------------------------------------------------------------- permit fees
@@ -127,6 +138,7 @@ class SafetyResult(Base):
     link: str = "https://www.dir.ca.gov/samples/search/query.htm"
     jurisdiction_note: str = SAFETY_JURISDICTION_NOTE
     federal_penalty_max_usd: dict[str, float] = Field(default_factory=dict)
+    cal_osha_penalty_max_usd: dict[str, float] = Field(default_factory=dict)
     cal_osha_penalty_note: str = CAL_OSHA_PENALTY_NOTE
     available_topics: list[str] = Field(default_factory=list)
 
@@ -147,7 +159,9 @@ def lookup_safety_standard(hazard: str) -> SafetyResult:
     e = SAFETY_TABLE[best]
     return SafetyResult(matched=True, topic=best, cal_osha_section=e["cal_osha"], federal_reference=e["federal"],
                         summary=e["summary"], key_requirements=e["key_requirements"], ppe=e["ppe"], link=e["link"],
-                        federal_penalty_max_usd={k: FEDERAL_PENALTY_MAX_USD[k] for k in ("serious", "willful_or_repeat")})
+                        federal_penalty_max_usd={k: FEDERAL_PENALTY_MAX_USD[k] for k in ("serious", "willful_or_repeat")},
+                        cal_osha_penalty_max_usd={k: CAL_OSHA_PENALTY_MAX_USD[k]
+                                                  for k in ("general_or_regulatory", "serious", "willful_or_repeat")})
 
 
 # ---------------------------------------------------------------- lien deadlines
@@ -171,9 +185,9 @@ class LienDeadlineResult(Base):
 
 def lien_deadlines(claimant_role: Role, last_furnishing_date: str, first_furnishing_date: Optional[str] = None,
                    completion_date: Optional[str] = None, notice_of_completion_date: Optional[str] = None,
-                   today: Optional[date] = None) -> LienDeadlineResult:
+                   today: Optional[date] = None, construction_start_date: Optional[str] = None) -> LienDeadlineResult:
     r, today = CA_LIEN, today or today_ca()
-    if claimant_role not in r["prelim_notice_roles"] | r["no_prelim_roles"]:
+    if claimant_role not in r["prelim_notice_roles"] | r["no_prelim_roles"] | r["lender_only_prelim_roles"]:
         raise ValueError(f"Unknown claimant_role {claimant_role!r}")
     last = _date(last_furnishing_date, "last_furnishing_date")
     first = _date(first_furnishing_date, "first_furnishing_date") if first_furnishing_date else None
@@ -191,35 +205,48 @@ def lien_deadlines(claimant_role: Role, last_furnishing_date: str, first_furnish
     prelim = None
     if prelim_required:
         cites.insert(0, r["sources"]["preliminary_notice"])
-        if first:
-            prelim = first + timedelta(days=r["prelim_notice_days_after_first_furnishing"])
+        start = first
+        if claimant_role == "design_professional":
+            notes.append("For design professionals the 20 days run from when construction of the project started.")
+            start = _date(construction_start_date, "construction_start_date") if construction_start_date else None
+            if not start:
+                notes.append("Give construction_start_date to compute the design professional's notice deadline.")
+        if start:
+            prelim = start + timedelta(days=r["prelim_notice_days_after_first_furnishing"])
             if prelim < today:
                 notes.append("The 20-day preliminary notice window has passed. A late notice generally still covers "
                              "work furnished within the 20 days before it is served and after; serve it now.")
-        else:
+        elif claimant_role != "design_professional":
             notes.append("Give first_furnishing_date to compute the preliminary notice deadline (20 days after you "
                          "FIRST furnished labor, services, equipment or materials).")
-    elif claimant_role == "direct_contractor":
-        notes.append("Direct contractors generally don't serve a preliminary notice to the owner, but may owe one to "
-                     "a construction lender. Check §8200.")
+    elif claimant_role in r["lender_only_prelim_roles"]:
+        notes.append("Direct contractors don't serve a preliminary notice on the owner, but must serve one on the "
+                     "construction lender if there is one (§8200).")
 
     # Lien recording deadline: earliest applicable.
     base = completion or last
     if not completion:
         notes.append("Completion date of the whole project not given; used your last furnishing date, which can only "
-                     "make the deadline earlier (safer). Completion can also be triggered by occupancy or 60 days of "
-                     "cessation of labor.")
+                     "make the deadline earlier (safer). Under §8180, completion also happens on occupancy or use with "
+                     "labor stopped, 60 days of continuous cessation, or 30 days of cessation plus a recorded notice "
+                     "of cessation.")
     candidates = [(base + timedelta(days=r["lien_days_after_completion"]),
                    f"90 days after {'completion' if completion else 'last furnishing (completion unknown)'}")]
     if noc:
         cites.append(r["sources"]["notice_of_completion"])
-        noc_ok = completion is None or noc <= completion + timedelta(days=r["noc_valid_within_days_of_completion"])
+        early = completion is not None and noc < completion
+        noc_ok = completion is None or (not early and noc <= completion + timedelta(days=r["noc_valid_within_days_of_completion"]))
         if noc_ok:
+            notes.append("The shorter notice-of-completion deadline only applies to you if the owner sent you a copy "
+                         "within 10 days of recording (§8190). It is used here to be safe.")
             days = r["lien_days_after_noc"][kind]
             candidates.append((noc + timedelta(days=days), f"{days} days after the notice of completion was recorded"))
             if completion is None:
                 notes.append("A notice of completion is only effective if recorded within 15 days after completion. "
                              "Shorter NOC deadline used to be safe.")
+        elif early:
+            notes.append("The notice of completion was recorded before completion, so it is likely ineffective; the "
+                         "90-day rule was used. Confirm with counsel.")
         else:
             notes.append("The notice of completion was recorded more than 15 days after completion, so it is likely "
                          "ineffective; the 90-day rule was used. Confirm with counsel.")
@@ -228,8 +255,8 @@ def lien_deadlines(claimant_role: Role, last_furnishing_date: str, first_furnish
         notes.append("Your last furnishing is after the computed deadline. Check the dates.")
     foreclosure = lien_date + timedelta(days=r["foreclosure_days_after_recording"])
     if lien_date.weekday() >= 5:
-        notes.append("The lien deadline falls on a weekend. Record on the prior business day; don't count on an "
-                     "extension.")
+        notes.append("The lien deadline falls on a weekend. CCP §12a may extend it to the next business day, but "
+                     "record on the prior business day to be safe. Court holidays are not checked.")
 
     upcoming = [(d, n) for d, n in [(prelim, "preliminary notice"), (lien_date, "lien recording")] if d and d >= today]
     nxt_date, nxt_name = min(upcoming) if upcoming else (lien_date, "lien recording")
@@ -281,10 +308,16 @@ def check_subcontractor(license_number: str, required_classification: Optional[s
             problems.append("Liability insurance expired")
     else:
         problems.append("No liability insurance certificate provided")
-    wc_ok = lic.workers_comp == "on_file" or (lic.workers_comp == "exempt" and not will_have_employees_on_site)
+    mandatory = _wc_mandatory_class(lic.classifications)
+    wc_ok = lic.workers_comp == "on_file" or (lic.workers_comp == "exempt" and not will_have_employees_on_site
+                                              and not mandatory)
     if not wc_ok:
-        problems.append("Workers' comp exemption on file, but they will have employees on site"
-                        if lic.workers_comp == "exempt" else "No workers' comp certificate on file")
+        if lic.workers_comp == "exempt" and mandatory:
+            problems.append(f"Class {mandatory} must carry workers' comp even without employees")
+        elif lic.workers_comp == "exempt":
+            problems.append("Workers' comp exemption on file, but they will have employees on site")
+        else:
+            problems.append("No workers' comp certificate on file")
     bond_ok = lic.contractor_bond_on_file
     if not bond_ok:
         problems.append(f"Contractor bond (${CSLB['contractor_bond_usd']:,.0f}) not on file")

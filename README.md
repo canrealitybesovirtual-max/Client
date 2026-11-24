@@ -19,7 +19,7 @@ pip install -r requirements.txt
 python server.py                          # stdio (Claude Desktop / Claude Code)
 MCP_TRANSPORT=http python server.py       # http://localhost:8000/mcp
 uvicorn app.main:app --port 8000          # same, for hosts that run uvicorn (Render)
-python -m pytest -q tests                 # 15 tests
+python -m pytest -q tests                 # 19 tests
 ```
 
 Add to Claude Code: `claude mcp add tradecomply -- python /path/to/server.py`
