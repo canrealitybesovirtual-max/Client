@@ -236,7 +236,20 @@ def test_truncated_file_flagged_incomplete(tmp_path):
     from tradecomply import cslb
     rows = [_row(str(5000000 + i)) for i in range(1200)]
     db = tmp_path / "t.sqlite"
-    with pytest.raises(RuntimeError):       # a truncated file this small is refused outright
-        cslb.build(io.StringIO(CSLB_HEADER + "\n" + "\n".join(rows) + "\n5999999,1"), str(db))
+    cslb.build(io.StringIO(CSLB_HEADER + "\n" + "\n".join(rows) + "\n5999999,1"), str(db))
+    assert not cslb.is_complete(str(db))                       # cut-off file is kept but marked partial
+    with pytest.raises(RuntimeError):                          # a smaller cut-off download never replaces it
+        cslb.build(io.StringIO(CSLB_HEADER + "\n" + "\n".join(rows[:1100]) + "\n5999999,1"), str(db),
+                   truncated=True, only_if_more=True)
     cslb.build(io.StringIO(CSLB_HEADER + "\n" + "\n".join(rows) + "\n"), str(db))
     assert cslb.is_complete(str(db))
+
+
+def test_seed_snapshot_loads(tmp_path, monkeypatch):
+    from tradecomply import cslb
+    db = tmp_path / "s.sqlite"
+    n = cslb.build_from_seed(str(db))
+    assert n > 200000 and cslb.meta(str(db))["snapshot_date"] == "2026-11-24" and not cslb.is_complete(str(db))
+    monkeypatch.setenv("LICENSE_DB", str(db))
+    r = logic.verify_license("1067972")
+    assert r.found and r.business_name == "BRAVO GROUP CONSTRUCTION CO" and "snapshot 2026-11-24" in r.data_source

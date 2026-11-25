@@ -94,6 +94,9 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
             notes.append(f"Class {_wc_mandatory_class(rec['classifications'])} must carry workers' comp even without "
                          "employees, so this exemption is a problem.")
     official = source.startswith("CSLB master file")
+    if official:
+        notes.append("From CSLB's published data snapshot shown in data_source. Status can change daily; confirm "
+                     "on the CSLB site before award or payment.")
     return LicenseResult(**rec, found=True, expires_in_days=exp_days, data_source=source, notes=notes,
                          verified=official)  # official CSLB data (daily snapshot); fixtures/CSV stay unverified
 

@@ -70,7 +70,8 @@ def find(license_number: str) -> tuple[dict | None, str]:
     num = _norm(license_number)
     rec = cslb.lookup(num)
     if rec:
-        return rec, f"CSLB master file (as of {rec.get('cslb_last_update')})"
+        snap = cslb.meta().get("snapshot_date")
+        return rec, f"CSLB master file (snapshot {snap})"
     if cslb.meta():
         # Real data is loaded but this number isn't in it: don't fall back to demo records.
         return None, "CSLB master file" if cslb.is_complete() else "CSLB master file (partial copy)"

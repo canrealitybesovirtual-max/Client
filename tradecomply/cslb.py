@@ -99,7 +99,8 @@ def to_record(row: dict, today: date | None = None) -> dict | None:
     }
 
 
-def build(csv_text_stream, db: str | None = None, truncated: bool = False) -> int:
+def build(csv_text_stream, db: str | None = None, truncated: bool = False, snapshot_date: str | None = None,
+          only_if_more: bool = False) -> int:
     """Stream rows into a new SQLite file, then swap it in atomically. Skips a truncated last line."""
     db_path_ = db_path(db)
     os.makedirs(os.path.dirname(db_path_) or ".", exist_ok=True)
@@ -128,11 +129,13 @@ def build(csv_text_stream, db: str | None = None, truncated: bool = False) -> in
     # CSLB's server ends the master-file download after ~150 s, so the file is often cut short. Record it, so a
     # missing license is reported as "not in our copy" instead of "not licensed".
     con.execute("insert into meta values ('complete', ?)", ("0" if truncated else "1",))
+    con.execute("insert into meta values ('snapshot_date', ?)", (snapshot_date or date.today().isoformat(),))
     con.commit()
     con.close()
-    if n < 1000 or (truncated and n < 100000):
+    have = int(meta(db).get("rows", 0))
+    if n < 1000 or (only_if_more and n <= have and truncated):
         os.remove(tmp)
-        raise RuntimeError(f"Only {n} licenses parsed; refusing to replace the database")
+        raise RuntimeError(f"Only {n} licenses parsed (have {have}); keeping the existing database")
     os.replace(tmp, db_path_)
     return n
 
@@ -149,7 +152,22 @@ def download(db: str | None = None) -> int:
                 truncated = True     # server closed the stream early; keep what arrived
                 log.warning("CSLB download cut short after %s bytes: %s", f.tell(), type(e).__name__)
         f.seek(0)
-        return build(io.TextIOWrapper(f, encoding="latin-1", newline=""), db, truncated=truncated)
+        return build(io.TextIOWrapper(f, encoding="latin-1", newline=""), db, truncated=truncated, only_if_more=True)
+
+
+SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "seed")
+
+
+def build_from_seed(db: str | None = None) -> int:
+    """Bundled snapshot (seed/cslb_master_YYYY-MM-DD.csv.gz) so a fresh host has data before any download works."""
+    import glob
+    import gzip
+    files = sorted(glob.glob(os.path.join(SEED_DIR, "cslb_master_*.csv.gz")))
+    if not files:
+        return 0
+    snap = os.path.basename(files[-1])[len("cslb_master_"):-len(".csv.gz")]
+    with gzip.open(files[-1], "rt", encoding="utf-8", newline="") as f:
+        return build(f, db, truncated=True, snapshot_date=snap)
 
 
 def is_complete(db: str | None = None) -> bool:
@@ -184,6 +202,11 @@ def start_auto_refresh(db: str | None = None, max_age_hours: float = 20):
     path = db_path(db)
 
     def loop():
+        if not os.path.exists(path):
+            try:
+                log.info("CSLB seed snapshot loaded: %s licenses", build_from_seed(path))
+            except Exception:
+                log.exception("CSLB seed load failed")
         while True:
             try:
                 age = time.time() - os.path.getmtime(path) if os.path.exists(path) else None
