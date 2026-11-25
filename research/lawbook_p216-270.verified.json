@@ -1,0 +1,2904 @@
+{
+  "domain": "Contractors State License Law (B&P Code Division 3, Chapter 9), Articles 1-4: administration provisions that touch contractors, application of chapter (definitions of contractor, advertising rules, unlicensed-contracting crimes and citations, required contract notices, license numbers, joint ventures, vehicle signage, license proof in lawsuits, permits), exemptions (B&P 7040-7054.5, incl. owner-builder 7044 and minor work 7048) and classifications (7055-7057)",
+  "source_doc": "2026 CSLB California Contractors License Law & Reference Book (official), Section VI, PDF pages 215-271 (Chapter 9 table of contents, then B&P Code sections 7000 through 7057); file chunk lawbook_p216-270.txt",
+  "rules": [
+    {
+      "id": "local-business-tax-proof-before-permit",
+      "title": "City/county may require business tax proof before permit",
+      "plain_english": "A city or county can make you prove you are current on its local business tax before it issues a building permit, and can deny the permit if you are not. The local business tax itself cannot exceed the license tax/fee allowed by Gov Code 37101 or B&P 16000.",
+      "category": "required_document",
+      "parameters": {
+        "who_may_require": "city, county, or city and county",
+        "trigger": "before issuance of any city/county permit",
+        "consequence": "permit may be denied to licensed contractor not in compliance",
+        "business_tax_cap_reference": [
+          "Gov Code 37101",
+          "B&P 16000"
+        ]
+      },
+      "applies_to": "Licensed contractors applying for local building permits",
+      "citation": "B&P 7000.2",
+      "source_location": "2026 CSLB Law Book, PDF page 225",
+      "verbatim_quote": "Nothing in this code shall be interpreted to prohibit cities, counties, and cities and counties from denying the issuance of a permit to a licensed contractor who is not in compliance with local business tax requirements.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Permissive for local governments; check each jurisdiction's permit checklist for a business tax certificate."
+    },
+    {
+      "id": "no-double-penalty-labor-commissioner",
+      "title": "No CSLB civil penalty if Labor Commissioner already penalized same offense",
+      "plain_english": "If the Labor Commissioner already assessed a civil penalty against you under Labor Code 1020 or 1022 for an offense, CSLB's registrar cannot also assess a civil penalty for that same offense.",
+      "category": "penalty",
+      "parameters": {
+        "bar_applies_when": "Labor Commissioner assessed civil penalty under Labor Code 1020 or 1022",
+        "same_offense_required": true,
+        "barred_action": "registrar civil penalty"
+      },
+      "applies_to": "Licensed contractors penalized by the Labor Commissioner",
+      "citation": "B&P 7011.3",
+      "source_location": "2026 CSLB Law Book, PDF page 230",
+      "verbatim_quote": "The registrar shall not assess a civil penalty against a licensed contractor who has been assessed a specified civil penalty by the Labor Commissioner under Section 1020 or 1022 of the Labor Code for the same offense.",
+      "effective": "June 30, 1982 (as added)",
+      "read_from_primary_text": true,
+      "notes": "Labor Code 1020/1022 are not reproduced in this chunk. Bars only the civil penalty; other CSLB discipline is not addressed here.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 230 (B&P 7011.3)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "cslb-enforcement-jobsite-access",
+      "title": "CSLB enforcement: unlicensed activity, workers' comp, jobsite access",
+      "plain_english": "CSLB has a separate enforcement division that goes after unlicensed activity and contractors without valid workers' compensation coverage. Its special investigators can write you a notice to appear in court, and when working with the Joint Enforcement Strike Force they have free access to all places of labor (job sites).",
+      "category": "process_step",
+      "parameters": {
+        "enforces": [
+          "all forms of unlicensed activity",
+          "obligation to secure valid and current workers' compensation insurance (Labor Code 3700.5)"
+        ],
+        "special_investigator_powers": [
+          "issue written notice to appear in court (Penal Code 853.5 et seq.)"
+        ],
+        "special_investigator_arrest_power": false,
+        "jobsite_access": "free access to all places of labor when participating in Joint Enforcement Strike Force on the Underground Economy (UI Code 329)"
+      },
+      "applies_to": "All contractors and job sites in California",
+      "citation": "B&P 7011.4",
+      "source_location": "2026 CSLB Law Book, PDF page 230",
+      "verbatim_quote": "When participating in the activities of the Joint Enforcement Strike Force on the Underground Economy pursuant to Section 329 of the Unemployment Insurance Code, the enforcement division shall have free access to all places of labor.",
+      "effective": "January 1, 2022 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Separately, B&P 7011.5 gives designated Special Investigations Unit investigators peace-officer authority while investigating CSLB laws (PDF pages 230-231)."
+    },
+    {
+      "id": "false-complaint-citation",
+      "title": "Filing a knowingly false complaint against a licensee",
+      "plain_english": "If you are subject to CSLB licensure and you file or cause a complaint against another licensee that you know is false, CSLB can cite you and may refer you to the district attorney or city attorney.",
+      "category": "prohibition",
+      "parameters": {
+        "who": "any person subject to licensure under the chapter",
+        "conduct": "reporting or causing complaint of professional misconduct against a licensee, knowing it to be false",
+        "sanctions": [
+          "citation by registrar",
+          "notification to district attorney or city attorney"
+        ]
+      },
+      "applies_to": "Contractors and other persons subject to CSLB licensure",
+      "citation": "B&P 7011.8",
+      "source_location": "2026 CSLB Law Book, PDF page 231",
+      "verbatim_quote": "Any person subject to licensure under this chapter who reports to, or causes a complaint to be filed with, the Contractors State License Board that a person licensed by that entity has engaged in professional misconduct, knowing the report or complaint to be false, may be issued a citation by the registrar.",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Penalty amount not stated in this section."
+    },
+    {
+      "id": "def-personnel-person-qualifier",
+      "title": "Definitions: personnel of record, person, qualifier",
+      "plain_english": "Personnel of record are everyone CSLB's records list as associated with a license. A 'person' includes individuals and every kind of business entity, including federally recognized tribes. A qualifier (qualifying person/individual) is the person who qualifies the license under B&P 7068.",
+      "category": "definition",
+      "parameters": {
+        "personnel_of_record": "every person listed in the registrar's records as then associated with a licensee",
+        "person_includes": [
+          "individual",
+          "firm",
+          "partnership",
+          "corporation",
+          "limited liability company",
+          "federally recognized tribe",
+          "association",
+          "other organization",
+          "any combination"
+        ],
+        "qualifier_synonyms": [
+          "qualifying person",
+          "qualifying individual",
+          "qualifier"
+        ],
+        "qualifier_basis": "B&P 7068"
+      },
+      "applies_to": "All licensees and applicants",
+      "citation": "B&P 7025",
+      "source_location": "2026 CSLB Law Book, PDF pages 236-237",
+      "verbatim_quote": "“Members of the personnel of record” as used in this chapter means every person listed in the records of the registrar as then associated with a licensee.",
+      "effective": "January 1, 2025 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Personnel of record matter for B&P 7028.5 (cannot contract individually without own license)."
+    },
+    {
+      "id": "tribal-licensure",
+      "title": "Federally recognized tribes can be licensed",
+      "plain_english": "CSLB must license a federally recognized California tribe (or a tribe-controlled entity) that applies under B&P 7065 and otherwise complies. Licensure does not give CSLB authority to regulate activity within a participating tribe's own jurisdiction.",
+      "category": "license_classification",
+      "parameters": {
+        "eligible": "federally recognized tribe located in California on the Federal Register list (25 U.S.C. 5131), including an entity controlled by and established for one or more tribes",
+        "application_section": "B&P 7065",
+        "board_must_license_if_compliant": true,
+        "board_authority_within_tribal_jurisdiction": false
+      },
+      "applies_to": "Tribes and tribal entities doing contracting work; owners hiring tribal contractors",
+      "citation": "B&P 7025.1",
+      "source_location": "2026 CSLB Law Book, PDF page 237",
+      "verbatim_quote": "The board shall license a federally recognized tribe that applies for licensure under Section 7065 and is otherwise compliant with the provisions of this chapter for the purpose of engaging in a business regulated by this chapter.",
+      "effective": "January 1, 2025",
+      "read_from_primary_text": true,
+      "notes": "Related exemption: B&P 7040 exempts tribes acting within tribal jurisdiction in official capacity."
+    },
+    {
+      "id": "def-contractor",
+      "title": "Who is a 'contractor' (license trigger)",
+      "plain_english": "Anyone who builds, alters, repairs, adds to, improves, moves, wrecks or demolishes any building, road, excavation or other structure or improvement, or any part of it, needs a license. This includes offering to do the work, claiming you can, bidding on it, or doing it through others. Subcontractors, specialty contractors, scaffolding, related site cleanup, roadway traffic control and underground storage tank monitoring equipment work are covered.",
+      "category": "definition",
+      "parameters": {
+        "license_triggers": [
+          "undertakes",
+          "offers to undertake",
+          "purports to have capacity to undertake",
+          "submits a bid",
+          "does work personally or by or through others"
+        ],
+        "activities": [
+          "construct",
+          "alter",
+          "repair",
+          "add to",
+          "subtract from",
+          "improve",
+          "move",
+          "wreck",
+          "demolish"
+        ],
+        "subjects": [
+          "building",
+          "highway",
+          "road",
+          "parking facility",
+          "railroad",
+          "excavation",
+          "other structure, project, development or improvement",
+          "any part thereof"
+        ],
+        "also_covered": [
+          "erection of scaffolding or other structures or works in connection therewith",
+          "cleaning of grounds or structures in connection therewith",
+          "preparation and removal of roadway construction zones, lane closures, flagging, or traffic diversions",
+          "installation, repair, maintenance, or calibration of underground storage tank monitoring equipment"
+        ],
+        "includes": [
+          "subcontractor",
+          "specialty contractor"
+        ],
+        "synonym": "builder",
+        "roadway_includes": "public or city streets, highways, or any public conveyance"
+      },
+      "applies_to": "Anyone performing or offering construction work in California",
+      "citation": "B&P 7026",
+      "source_location": "2026 CSLB Law Book, PDF pages 237-238",
+      "verbatim_quote": "a contractor is any person who undertakes to or offers to undertake to, or purports to have the capacity to undertake to, or submits a bid to, or does himself or herself or by or through others, construct, alter, repair, add to, subtract from, improve, move, wreck or demolish any building, highway, road, parking facility, railroad, excavation or other structure, project, development or improvement",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Covered whether or not the work involves adding materials or merchandise. Exemptions are in B&P 7040-7054.5."
+    },
+    {
+      "id": "hvac-service-requires-license",
+      "title": "Servicing fixed HVAC/refrigeration requires license",
+      "plain_english": "Maintaining or servicing air-conditioning, heating or refrigeration equipment that is a fixed part of a structure is contracting work that requires a license, unless you are an exempt employee under B&P 7053.",
+      "category": "license_classification",
+      "parameters": {
+        "equipment": [
+          "air-conditioning",
+          "heating",
+          "refrigeration"
+        ],
+        "condition": "equipment is a fixed part of the structure to which it is attached",
+        "activities": [
+          "maintain",
+          "service"
+        ],
+        "exception": "employee exempt under B&P 7053"
+      },
+      "applies_to": "HVAC/refrigeration service companies",
+      "citation": "B&P 7026.1(a)(1)",
+      "source_location": "2026 CSLB Law Book, PDF page 238",
+      "verbatim_quote": "Any person not exempt under Section 7053 who maintains or services air-conditioning, heating, or refrigeration equipment that is a fixed part of the structure to which it is attached.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Specific classification (e.g., C-20) is not named in this section."
+    },
+    {
+      "id": "owner-builder-consultant-requires-license",
+      "title": "Construction consultants to owner-builders need a license",
+      "plain_english": "A consultant who helps an owner-builder on a home improvement project by providing or overseeing bids, or by scheduling and overseeing contractors and subs, is a contractor and must be licensed.",
+      "category": "license_classification",
+      "parameters": {
+        "consultant_criteria_any_of": [
+          "provides or oversees a bid for a construction project",
+          "arranges for and sets up work schedules for contractors and subcontractors and maintains oversight of a construction project"
+        ],
+        "context": "work under a home improvement contract (B&P 7151.2)",
+        "not_a_consultant": [
+          "public agency",
+          "owner of the privately owned real property to be improved"
+        ]
+      },
+      "applies_to": "Construction managers/consultants working for owner-builders on home improvement projects",
+      "citation": "B&P 7026.1(a)(2)",
+      "source_location": "2026 CSLB Law Book, PDF page 238",
+      "verbatim_quote": "Any person, consultant to an owner-builder, firm, association, organization, partnership, business trust, corporation, or company, who or which undertakes, offers to undertake, purports to have the capacity to undertake, or submits a bid to construct any building or home improvement project, or part thereof.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "A tool can flag 'owner's rep' or 'construction consultant' roles on residential projects as requiring a CSLB license."
+    },
+    {
+      "id": "temp-labor-agency-is-contractor",
+      "title": "Temporary labor agencies supplying construction workers",
+      "plain_english": "A temp labor agency that is the employer of workers it supplies for licensed construction work counts as a contractor, unless a properly licensed contractor supervises the work under B&P 7068.1 and is directly responsible for the final results. The qualifier does not have to be present during supervision.",
+      "category": "definition",
+      "parameters": {
+        "is_contractor_when": "temp labor service agency, as employer, provides employees for work covered by the chapter",
+        "exception": "a properly licensed contractor exercises supervision per B&P 7068.1 and is directly responsible for the final results",
+        "qualifier_presence_required": false
+      },
+      "applies_to": "Staffing agencies and contractors using temporary labor",
+      "citation": "B&P 7026.1(a)(3)",
+      "source_location": "2026 CSLB Law Book, PDF page 238",
+      "verbatim_quote": "A temporary labor service agency that, as the employer, provides employees for the performance of work covered by this chapter. The provisions of this paragraph shall not apply if there is a properly licensed contractor who exercises supervision in accordance with Section 7068.1 and who is directly responsible for the final results of the work.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "See companion rule provide-license-number-to-temp-agency."
+    },
+    {
+      "id": "provide-license-number-to-temp-agency",
+      "title": "Give your license number to the temp labor agency",
+      "plain_english": "When you request workers from a temporary labor service agency, you must give the agency your contractor's license number.",
+      "category": "process_step",
+      "parameters": {
+        "trigger": "contractor requests services of a temporary labor service agency",
+        "required_item": "contractor's license number",
+        "recipient": "the temporary labor service agency"
+      },
+      "applies_to": "Licensed contractors using temporary labor service agencies",
+      "citation": "B&P 7026.1(a)(3)",
+      "source_location": "2026 CSLB Law Book, PDF page 238",
+      "verbatim_quote": "A contractor requesting the services of a temporary labor service agency shall provide his or her license number to that temporary labor service agency.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Can be generated automatically on staffing requests/purchase orders."
+    },
+    {
+      "id": "tree-work-requires-license",
+      "title": "Tree removal, pruning, stump removal, cabling need license",
+      "plain_english": "Tree removal, tree pruning, stump removal and tree or limb cabling/guying are contracting work. Exceptions: a nurseryperson's incidental pruning or guying of planted trees, and a gardener's incidental pruning of trees under 15 feet tall after planting.",
+      "category": "threshold",
+      "parameters": {
+        "covered_activities": [
+          "tree removal",
+          "tree pruning",
+          "stump removal",
+          "tree or limb cabling or guying"
+        ],
+        "gardener_exception_max_tree_height_ft_exclusive": 15,
+        "gardener_exception_condition": "incidental pruning in normal course of routine work; tree must measure less than 15 feet in height after planting",
+        "nurseryperson_exception": "incidental pruning of trees, or guying of planted trees and their limbs, in normal course of routine work"
+      },
+      "applies_to": "Tree service companies, gardeners, nurseries",
+      "citation": "B&P 7026.1(a)(4)",
+      "source_location": "2026 CSLB Law Book, PDF pages 238-239",
+      "verbatim_quote": "Any person not otherwise exempt by this chapter, who performs tree removal, tree pruning, stump removal, or engages in tree or limb cabling or guying. ... The term contractor does not include a gardener who in the normal course of routine work performs incidental pruning of trees measuring less than 15 feet in height after planting.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "The minor-work exemption (B&P 7048, under $1,000) may still apply separately if all of its conditions are met.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 238-239 (B&P 7026.1(a)(4))",
+        "correction": "",
+        "note": "Gardener exception is strictly \"less than 15 feet in height after planting\"; last amended Stats 2013 ch 319, effective Jan 1, 2014."
+      }
+    },
+    {
+      "id": "well-drilling-requires-license",
+      "title": "Water, cathodic protection and monitoring wells need license",
+      "plain_english": "Drilling, digging, boring, constructing, deepening, repairing, reperforating or abandoning a water well, cathodic protection well or monitoring well is contracting work requiring a license. The agricultural exemption in B&P 7049 does not cover water wells.",
+      "category": "license_classification",
+      "parameters": {
+        "well_types": [
+          "water well",
+          "cathodic protection well",
+          "monitoring well"
+        ],
+        "activities": [
+          "drilling",
+          "digging",
+          "boring",
+          "constructing",
+          "deepening",
+          "repairing",
+          "reperforating",
+          "abandoning"
+        ],
+        "agricultural_exemption_applies_to_water_wells": false
+      },
+      "applies_to": "Well drillers; general contractors and owners with well work in scope",
+      "citation": "B&P 7026.1(a)(5); B&P 7049",
+      "source_location": "2026 CSLB Law Book, PDF pages 239 and 268",
+      "verbatim_quote": "Any person engaged in the business of drilling, digging, boring, or otherwise constructing, deepening, repairing, reperforating, or abandoning any water well, cathodic protection well, or monitoring well.",
+      "effective": "January 1, 2014 (last amended, 7026.1)",
+      "read_from_primary_text": true,
+      "notes": "B&P 7057(c) bars a B general building contractor from contracting for C-57 well drilling unless it holds the classification or subcontracts it."
+    },
+    {
+      "id": "cid-manager-not-contractor",
+      "title": "HOA/common interest development managers excluded",
+      "plain_english": "A common interest development (HOA) manager performing management services does not need a contractor's license and is not a 'contractor' or 'consultant' under the law.",
+      "category": "definition",
+      "parameters": {
+        "excluded_role": "common interest development manager (B&P 11501)",
+        "scope_of_exclusion": "management services as defined in B&P 11500(d)"
+      },
+      "applies_to": "HOA/CID managers and the associations they manage",
+      "citation": "B&P 7026.1(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 239",
+      "verbatim_quote": "The term “contractor” or “consultant” does not include a common interest development manager, as defined in Section 11501, and a common interest development manager is not required to have a contractor’s license when performing management services, as defined in subdivision (d) of Section 11500.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Exclusion is limited to management services; actual construction work still requires licensed contractors."
+    },
+    {
+      "id": "mobilehome-work-is-contracting",
+      "title": "Mobilehome installation/repair on site is contracting",
+      "plain_english": "Installing, altering, repairing or preparing to move a mobilehome or mobilehome accessory building on a site for use as a dwelling requires a license. The manufacturer is excluded for off-site construction and warranty-only work; onsite work beyond warranty requires a license.",
+      "category": "definition",
+      "parameters": {
+        "covered": [
+          "construction",
+          "installation",
+          "alteration",
+          "repair",
+          "preparation for moving"
+        ],
+        "subjects": [
+          "mobilehome (HSC 18008)",
+          "mobilehome accessory building or structure (HSC 18008.5)"
+        ],
+        "purpose": "occupancy as a dwelling",
+        "manufacturer_excluded_when": [
+          "constructed at a place other than the installation site",
+          "solely performing warranty work"
+        ],
+        "manufacturer_included_when": [
+          "onsite construction, alteration, or repair per specialized plans, specifications, or models",
+          "any work other than warranty compliance"
+        ]
+      },
+      "applies_to": "Mobilehome installers, manufacturers, dealers",
+      "citation": "B&P 7026.2(a), (b), (d)",
+      "source_location": "2026 CSLB Law Book, PDF pages 239-240",
+      "verbatim_quote": "For the purposes of this chapter, “contractor” includes any person engaged in the business of the construction, installation, alteration, repair, or preparation for moving of a mobilehome or mobilehome accessory buildings and structures upon a site for the purpose of occupancy as a dwelling.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Mobilehomes are not 'personal property' (B&P 7046) or 'finished products' (B&P 7045) for exemption purposes."
+    },
+    {
+      "id": "mobilehome-dealer-installer-certification",
+      "title": "Mobilehome dealer: written installer certification to buyer",
+      "plain_english": "A licensed manufactured home/mobilehome dealer does not need a contractor's license if a licensed contractor does the installation and the dealer certifies this in writing to the buyer before installation, giving the installer's name, business address and license number.",
+      "category": "required_document",
+      "parameters": {
+        "who": "seller holding retail manufactured home or mobilehome dealer's license (HSC 18045 et seq.)",
+        "condition": "installation performed by a licensed contractor",
+        "document": "written certification to buyer",
+        "timing": "prior to performance of the installation",
+        "required_contents": [
+          "installer contractor name",
+          "installer business address",
+          "installer contractor's license number"
+        ]
+      },
+      "applies_to": "Manufactured home and mobilehome dealers and their buyers",
+      "citation": "B&P 7026.2(c)",
+      "source_location": "2026 CSLB Law Book, PDF pages 239-240",
+      "verbatim_quote": "The certification shall include the name, business address, and contractor’s license number of the licensed contractor by whom the installation will be performed.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Without the timely written certification the dealer does not get the exclusion."
+    },
+    {
+      "id": "carpet-installation-dealer-certification",
+      "title": "Carpet installation: license or written dealer certification",
+      "plain_english": "Installing carpet attached to the structure by conventional methods requires a license. A retail furniture dealer selling installed carpet is exempt only if a licensed contractor installs it and the dealer certifies this in writing to the buyer before installation, with the installer's name, business address and license number.",
+      "category": "required_document",
+      "parameters": {
+        "covered": "installs or contracts for installation of carpet attached to the structure by any conventional method",
+        "dealer_exemption_holder": "retail furniture dealer licensed under B&P 19000 et seq.",
+        "condition": "installation performed by a licensed contractor",
+        "document": "written certification to buyer",
+        "timing": "prior to performance of the installation",
+        "required_contents": [
+          "installer contractor name",
+          "installer business address",
+          "installer contractor's license number"
+        ]
+      },
+      "applies_to": "Flooring installers and carpet retailers",
+      "citation": "B&P 7026.3",
+      "source_location": "2026 CSLB Law Book, PDF page 240",
+      "verbatim_quote": "a seller of installed carpet who holds a retail furniture dealer’s license under Chapter 3 (commencing with Section 19000) of Division 8 shall not be required to have a contractor’s license if the installation of the carpet is performed by a licensed contractor and the seller so certifies in writing to the buyer prior to the performance of the installation",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Installed carpets are not 'finished products' under the B&P 7045 exemption."
+    },
+    {
+      "id": "c47-manufactured-housing-scope",
+      "title": "C-47 General Manufactured Housing scope",
+      "plain_english": "The C-47 General Manufactured Housing classification covers manufactured homes, mobilehomes and multifamily manufactured homes.",
+      "category": "license_classification",
+      "parameters": {
+        "classification": "C-47",
+        "regulation": "16 CCR 832.47",
+        "scope_includes": [
+          "manufactured homes (HSC 18007)",
+          "mobilehomes (HSC 18008)",
+          "multifamily manufactured homes (HSC 18008.7)"
+        ]
+      },
+      "applies_to": "C-47 licensees; owners hiring for manufactured housing",
+      "citation": "B&P 7026.11",
+      "source_location": "2026 CSLB Law Book, PDF pages 240-241",
+      "verbatim_quote": "the permissible scope of work for the General Manufactured Housing Contractor (C-47) license classification set forth in Section 832.47 of Division 8 of Title 16 of the California Code of Regulations shall include manufactured homes, as defined in Section 18007 of the Health and Safety Code, mobilehomes",
+      "effective": "January 1, 2008",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "fire-protection-system-installer",
+      "title": "Who may install fire protection systems",
+      "plain_english": "Fire protection systems (other than electrical alarm systems) may be installed only by a contractor holding the fire protection classification, or by an owner-builder of an owner-occupied single-family home if no more than two homes on the same parcel are built within one year and the local building department approves the plans and inspects and approves the installation.",
+      "category": "license_classification",
+      "parameters": {
+        "system": "fire protection system",
+        "excludes": "electrical alarm system",
+        "allowed_installers": [
+          "contractor holding fire protection contractor classification (per board regulations)",
+          "owner-builder of owner-occupied single-family dwelling meeting conditions"
+        ],
+        "owner_builder_conditions": {
+          "max_single_family_dwellings_on_same_parcel": 2,
+          "period_years": 1,
+          "plans_submitted_and_approved_by_local_authority": true,
+          "local_authority_inspects_and_approves_installation": true
+        }
+      },
+      "applies_to": "Fire sprinkler/fire protection installers; general contractors; owner-builders",
+      "citation": "B&P 7026.12",
+      "source_location": "2026 CSLB Law Book, PDF page 241",
+      "verbatim_quote": "Except as provided in Section 7026.13, the installation of a fire protection system, excluding an electrical alarm system, shall be performed only by either of the following: (a) A contractor holding a fire protection contractor classification, as defined in the regulations of the board.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "The classification code (commonly C-16) is not named in this text; it is defined in board regulations. B&P 7026.13, referenced here, was repealed in 2017. See also B&P 7057(c).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 241 (B&P 7026.12)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "advertising-subjects-to-chapter",
+      "title": "Advertising as a contractor brings you under the law",
+      "plain_english": "If you advertise, put out signs or cards, or list yourself in a directory under a construction category so the public would think you are a contractor, the Contractors License Law applies to you even if your work would otherwise be exempt.",
+      "category": "prohibition",
+      "parameters": {
+        "triggers": [
+          "advertising indicating to the public that the person is a contractor",
+          "sign, card or other device",
+          "name or business name in a classified advertisement or directory under a construction or work-of-improvement classification"
+        ],
+        "overrides_exemptions": true
+      },
+      "applies_to": "Anyone marketing construction services",
+      "citation": "B&P 7027",
+      "source_location": "2026 CSLB Law Book, PDF page 241",
+      "verbatim_quote": "Any person who advertises or puts out any sign or card or other device that would indicate to the public that he or she is a contractor ... is subject to the provisions of this chapter regardless of whether his or her operations as a builder are otherwise exempted.",
+      "effective": "January 1, 2012 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Compare B&P 7027.2 (narrow permission for unlicensed advertising under $1,000 with a not-licensed statement)."
+    },
+    {
+      "id": "advertise-only-licensed-classification",
+      "title": "Advertise only in classifications you hold",
+      "plain_english": "It is a misdemeanor to advertise construction work unless you hold a valid license in the classification advertised. A licensed A (general engineering) or B (general building) contractor may advertise as a 'general contractor'. 'Advertise' includes cards, signs, building markings, print, broadcast, electronic/online and directory listings.",
+      "category": "prohibition",
+      "parameters": {
+        "requirement": "valid license in the classification so advertised",
+        "exception": "licensed building or engineering contractor may advertise as a general contractor",
+        "advertise_includes": [
+          "card, sign, or device issued to any person",
+          "sign or marking on or in any building or structure",
+          "newspaper or magazine",
+          "airwave or any electronic transmission",
+          "directory listing under construction/work of improvement"
+        ],
+        "applies_with_or_without_limiting_qualifications": true,
+        "offense_level": "misdemeanor",
+        "registrar_may_cite_unlicensed_under": [
+          "B&P 7028.7",
+          "B&P 7099.10"
+        ]
+      },
+      "applies_to": "All contractors and unlicensed persons advertising construction work",
+      "citation": "B&P 7027.1(a), (b), (d)",
+      "source_location": "2026 CSLB Law Book, PDF pages 241-242",
+      "verbatim_quote": "It is a misdemeanor for any person to advertise for construction or work of improvement covered by this chapter unless that person holds a valid license under this chapter in the classification so advertised, except that a licensed building or engineering contractor may advertise as a general contractor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A tool can check ad copy/website service lists against the license's classifications."
+    },
+    {
+      "id": "unlicensed-advertising-fine",
+      "title": "Fine for advertising without proper license: $700-$1,000",
+      "plain_english": "Advertising construction work without a license in the advertised classification carries a fine of $700 to $1,000, on top of any other punishment.",
+      "category": "penalty",
+      "parameters": {
+        "fine_min_usd": 700,
+        "fine_max_usd": 1000,
+        "cumulative_with_other_punishment": true
+      },
+      "applies_to": "Persons violating B&P 7027.1",
+      "citation": "B&P 7027.1(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 242",
+      "verbatim_quote": "A violation of this section is punishable by a fine of not less than seven hundred dollars ($700) and not more than one thousand dollars ($1,000), which fine shall be in addition to any other punishment imposed for a violation of this section.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 242 (B&P 7027.1(c))",
+        "correction": "",
+        "note": "$700-$1,000 is the criminal fine. 16 CCR 884(a) (PDF page 540) sets a separate administrative citation range of $100-$1,000 for 7027.1."
+      }
+    },
+    {
+      "id": "unlicensed-advertising-under-1000",
+      "title": "Unlicensed person may advertise only jobs under $1,000 with disclosure",
+      "plain_english": "Someone without a contractor's license may advertise construction work only if the total price for labor, materials and everything else on the project is less than $1,000 and the ad states that the person is not licensed.",
+      "category": "threshold",
+      "parameters": {
+        "max_aggregate_contract_price_usd_exclusive": 1000,
+        "price_includes": [
+          "labor",
+          "material",
+          "all other items"
+        ],
+        "measured_per": "project or undertaking",
+        "required_ad_statement": "person is not licensed under the Contractors State License Law"
+      },
+      "applies_to": "Unlicensed handypersons and similar",
+      "citation": "B&P 7027.2",
+      "source_location": "2026 CSLB Law Book, PDF page 242",
+      "verbatim_quote": "a person who is not licensed pursuant to this chapter may advertise for construction work or a work of improvement covered by this chapter only if the aggregate contract price for labor, material, and all other items on a project or undertaking is less than one thousand dollars ($1,000) and the person states in the advertisement that the person is not licensed under this chapter.",
+      "effective": "January 1, 2025 (amended by Stats 2024 ch 240, AB 2622)",
+      "read_from_primary_text": true,
+      "notes": "Interacts with B&P 7048(c)(1): the minor-work exemption does not apply to a person who advertises in a way indicating they are a contractor or qualified to be one. The work must also meet all B&P 7048 conditions (no building permit required, not split, no employees).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 242 (B&P 7027.2; amended Stats 2024 ch 240, eff. Jan 1, 2025)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "fraudulent-license-number-use",
+      "title": "Using a license number that is not yours, to defraud",
+      "plain_english": "Willfully using a contractor license number that is not your own currently valid license, with intent to defraud, is punishable by a fine up to $10,000, state prison or up to one year in county jail, or both.",
+      "category": "penalty",
+      "parameters": {
+        "conduct": "willfully and intentionally uses, with intent to defraud, a license number not corresponding to a currently valid license held by that person",
+        "fine_max_usd": 10000,
+        "imprisonment_options": [
+          "state prison",
+          "county jail not more than 1 year"
+        ],
+        "may_combine_fine_and_imprisonment": true,
+        "applies_to_licensed_and_unlicensed": true,
+        "cumulative_with_other_laws": true
+      },
+      "applies_to": "Anyone, licensed or unlicensed",
+      "citation": "B&P 7027.3",
+      "source_location": "2026 CSLB Law Book, PDF page 242",
+      "verbatim_quote": "Any person, licensed or unlicensed, who willfully and intentionally uses, with intent to defraud, a contractor’s license number that does not correspond to the number on a currently valid contractor’s license held by that person, is punishable by a fine not exceeding ten thousand dollars ($10,000)",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Registrar may also cite an unlicensed violator under B&P 7028.7. A tool can verify that the license number on every document matches the company's own active license.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 242-243 (B&P 7027.3)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "advertising-insured-must-state-type",
+      "title": "Ads saying 'insured' must name the insurance type",
+      "plain_english": "If you advertise that you are 'insured', the ad must say what kind of insurance you carry, such as commercial general liability or workers' compensation (abbreviations are allowed). Otherwise it is cause for discipline. This covers business vehicles, signs, print, online and directory ads.",
+      "category": "required_notice",
+      "parameters": {
+        "trigger_words": [
+          "insured",
+          "has insurance"
+        ],
+        "required_content": "type of insurance carried",
+        "examples": [
+          "commercial general liability insurance",
+          "workers' compensation insurance"
+        ],
+        "abbreviation_allowed": true,
+        "advertise_includes": [
+          "card, sign, or device",
+          "sign or marking on building, structure or business vehicle",
+          "newspaper or magazine",
+          "airwave or electronic transmission",
+          "directory listing"
+        ],
+        "consequence": "cause for discipline"
+      },
+      "applies_to": "Licensed contractors advertising",
+      "citation": "B&P 7027.4(a), (c)",
+      "source_location": "2026 CSLB Law Book, PDF page 243",
+      "verbatim_quote": "It is a cause for discipline for any contractor to advertise that he or she is “insured” or has insurance without identifying in the advertisement the type of insurance, including, for example, “commercial general liability insurance” or “workers’ compensation insurance” that is carried by the contractor. The contractor may abbreviate the title of the type of insurance.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Ad-copy linter: flag 'insured' without a named coverage type.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 243 (B&P 7027.4(a), (c))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "advertising-bonded-restriction",
+      "title": "Do not advertise 'bonded' based on license or disciplinary bond",
+      "plain_english": "You may not advertise that you are 'bonded' if the bond you mean is just your required contractor's license bond or a disciplinary bond. Doing so is cause for discipline.",
+      "category": "prohibition",
+      "parameters": {
+        "prohibited_claim": "bonded",
+        "when_reference_is_to": [
+          "contractor's license bond (B&P 7071.6)",
+          "disciplinary bond (B&P 7071.8)"
+        ],
+        "consequence": "cause for discipline"
+      },
+      "applies_to": "Licensed contractors advertising",
+      "citation": "B&P 7027.4(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 243",
+      "verbatim_quote": "It is cause for discipline for a contractor to advertise that he or she is “bonded” if the reference is to a contractor’s license bond required pursuant to Section 7071.6 or to a disciplinary bond required pursuant to Section 7071.8.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "'Bonded' may be used only if it refers to some other bond (e.g., performance/payment bonding capacity); this inference is not stated in the text."
+    },
+    {
+      "id": "landscape-c27-design-authority",
+      "title": "C-27 landscape contractor may design its own systems",
+      "plain_english": "A landscape contractor working within its classification may design the systems or facilities that it will itself build and supervise.",
+      "category": "license_classification",
+      "parameters": {
+        "classification": "C-27 Landscape Contractor",
+        "design_allowed_for": "systems or facilities for work to be performed and supervised by that contractor",
+        "engineering_license_still_required_where_applicable": true
+      },
+      "applies_to": "C-27 landscape contractors",
+      "citation": "B&P 7027.5(a), (e)",
+      "source_location": "2026 CSLB Law Book, PDF pages 243-244",
+      "verbatim_quote": "A landscape contractor working within the classification for which the license is issued may design systems or facilities for work to be performed and supervised by that contractor.",
+      "effective": "January 1, 2013 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Does not authorize work requiring a license under the Professional Engineers Act (B&P 7027.5(e))."
+    },
+    {
+      "id": "landscape-c27-prime-pool-spa",
+      "title": "C-27 may prime a pool/spa only inside its landscape project via one C-53",
+      "plain_english": "A C-27 landscape contractor may take a prime contract that includes a swimming pool, spa or hot tub only if it is part of the landscape project the C-27 is supervising, and the pool construction is subcontracted to a single licensed C-53 pool contractor (or the C-27 also holds C-53). The pool contractor may sub out individual components to properly licensed contractors.",
+      "category": "license_classification",
+      "parameters": {
+        "classification": "C-27",
+        "allowed_prime_items": [
+          "swimming pool",
+          "spa",
+          "hot tub"
+        ],
+        "conditions": [
+          "improvements included within the landscape project the landscape contractor is supervising",
+          "pool/spa/hot tub construction subcontracted to a single licensed C-53 contractor, or performed by the landscape contractor if it also holds C-53"
+        ],
+        "max_c53_subcontractors": 1,
+        "c53_may_subcontract_components": true,
+        "violation": "cause for disciplinary action"
+      },
+      "applies_to": "C-27 landscape contractors; owners contracting for landscape projects with pools",
+      "citation": "B&P 7027.5(b)(1), (d)",
+      "source_location": "2026 CSLB Law Book, PDF pages 243-244",
+      "verbatim_quote": "A swimming pool, spa, or hot tub, provided that the improvements are included within the landscape project that the landscape contractor is supervising and the construction of any swimming pool, spa, or hot tub is subcontracted to a single licensed contractor holding a Swimming Pool (C-53) classification",
+      "effective": "January 1, 2013 (last amended)",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "landscape-c27-prime-cooking-fireplace-rainwater",
+      "title": "C-27 prime contracts: outdoor cooking center, fireplace, rainwater capture",
+      "plain_english": "A C-27 landscape contractor may take a prime contract for an outdoor cooking center or an outdoor fireplace (not attached to the house) if it is part of a residential landscape project the C-27 supervises, and for a rainwater capture system used only for landscape irrigation or a decorative water feature.",
+      "category": "license_classification",
+      "parameters": {
+        "classification": "C-27",
+        "outdoor_cooking_center": {
+          "condition": "included within a residential landscape project the contractor is supervising",
+          "definition": "unenclosed area within a landscape used for cooking or preparation of food or beverages"
+        },
+        "outdoor_fireplace": {
+          "conditions": [
+            "included within a residential landscape project the contractor is supervising",
+            "not attached to a dwelling"
+          ]
+        },
+        "rainwater_capture_system": {
+          "definition_reference": "Water Code 10573",
+          "allowed_uses": [
+            "exclusively landscape irrigation",
+            "water supply for fountain, pond, or similar decorative water feature in a landscaping project"
+          ]
+        }
+      },
+      "applies_to": "C-27 landscape contractors; residential owners",
+      "citation": "B&P 7027.5(b)(2)-(4)",
+      "source_location": "2026 CSLB Law Book, PDF page 244",
+      "verbatim_quote": "An outdoor fireplace, provided that it is included within a residential landscape project that the contractor is supervising and is not attached to a dwelling.",
+      "effective": "January 1, 2013 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "See landscape-c27-out-of-scope-work for trade work outside C-27 scope on these items."
+    },
+    {
+      "id": "landscape-c27-out-of-scope-work",
+      "title": "C-27: out-of-scope work on cooking centers/fireplaces/rainwater needs proper license",
+      "plain_english": "On outdoor cooking center, outdoor fireplace or rainwater capture projects, any work outside the C-27 scope (e.g., gas, electrical) must be done by the C-27 only if it also holds the right specialty license or a B license; otherwise it must be done by a properly licensed specialty contractor or a B contractor working under the B rules. A C-27 may design and install all exterior rainwater capture components not attached to a structure.",
+      "category": "license_classification",
+      "parameters": {
+        "applies_to_projects": [
+          "outdoor cooking center",
+          "outdoor fireplace",
+          "rainwater capture system"
+        ],
+        "c27_may_self_perform_out_of_scope_if": [
+          "holds appropriate specialty classification",
+          "licensed as General Building (B) contractor"
+        ],
+        "otherwise_must_be_performed_by": [
+          "specialty contractor with appropriate classification",
+          "General Building contractor per B&P 7057(b)"
+        ],
+        "rainwater_exception": "C-27 may design and install all exterior components not part of or attached to a structure",
+        "violation": "cause for disciplinary action"
+      },
+      "applies_to": "C-27 landscape contractors",
+      "citation": "B&P 7027.5(c), (d)",
+      "source_location": "2026 CSLB Law Book, PDF page 244",
+      "verbatim_quote": "If the landscape contractor neither holds an appropriate specialty license classification to perform the work nor is licensed as a General Building contractor, the work shall be performed by a Specialty contractor holding the appropriate license classification or by a General Building contractor performing work in accordance with the requirements of subdivision (b) of Section 7057.",
+      "effective": "January 1, 2013 (last amended)",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "unlicensed-contracting-misdemeanor",
+      "title": "Contracting without a license (or under certain suspensions) is a crime",
+      "plain_english": "Unless exempt, it is a misdemeanor to engage in business or act as a contractor without a license, or while your license is suspended for failing to pay a CSLB civil penalty/comply with an order of correction (B&P 7090.1) or for unresolved outstanding final liabilities (B&P 7145.5).",
+      "category": "prohibition",
+      "parameters": {
+        "offense_level": "misdemeanor",
+        "conditions_any_of": [
+          "not licensed",
+          "license suspended under B&P 7090.1 (failure to pay civil penalty or comply with order of correction)",
+          "license suspended under B&P 7145.5 (failure to resolve outstanding final liabilities)"
+        ],
+        "unless": "exempted from the chapter"
+      },
+      "applies_to": "Anyone acting as a contractor in California",
+      "citation": "B&P 7028(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 245",
+      "verbatim_quote": "Unless exempted from this chapter, it is a misdemeanor for a person to engage in the business of, or act in the capacity of, a contractor within this state under either of the following conditions: (1) The person is not licensed in accordance with this chapter.",
+      "effective": "January 1, 2015 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "A tool should verify license status (active, not suspended) at bid, contract signing and throughout performance."
+    },
+    {
+      "id": "unlicensed-contracting-first-offense-penalty",
+      "title": "Unlicensed contracting: first conviction penalty",
+      "plain_english": "A first conviction for contracting without a license can bring a fine of up to $5,000, up to six months in county jail, or both.",
+      "category": "penalty",
+      "parameters": {
+        "conviction_number": 1,
+        "fine_max_usd": 5000,
+        "jail_max_months": 6,
+        "may_combine": true
+      },
+      "applies_to": "Persons convicted under B&P 7028",
+      "citation": "B&P 7028(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 245",
+      "verbatim_quote": "A first conviction for the offense described in this section is punishable by a fine not exceeding five thousand dollars ($5,000) or by imprisonment in a county jail not exceeding six months, or by both that fine and imprisonment.",
+      "effective": "January 1, 2015 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 245 (B&P 7028(b))",
+        "correction": "",
+        "note": "16 CCR 884(a) (PDF page 540) lists a separate administrative citation range of $200-$8,000 for 7028."
+      }
+    },
+    {
+      "id": "unlicensed-contracting-second-offense-penalty",
+      "title": "Unlicensed contracting: second conviction fine formula",
+      "plain_english": "On a second conviction the court must fine the greater of 20% of the contract price, 20% of all payments made to the unlicensed person, or $5,000, and jail for at least 90 days unless the court states reasons for a lesser sentence in an unusual case.",
+      "category": "penalty",
+      "parameters": {
+        "conviction_number": 2,
+        "fine_formula": "max(0.20 * contract_price, 0.20 * aggregate_payments_to_or_at_direction_of_unlicensed_person, 5000)",
+        "fine_percent": 20,
+        "fine_floor_usd": 5000,
+        "min_jail_days": 90,
+        "lesser_sentence_allowed": "unusual case in interests of justice; court must state reasons on the record"
+      },
+      "applies_to": "Persons with a prior B&P 7028 conviction",
+      "citation": "B&P 7028(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 245",
+      "verbatim_quote": "the court shall impose a fine of 20 percent of the contract price, or 20 percent of the aggregate payments made to, or at the direction of, the unlicensed person, or five thousand dollars ($5,000), whichever is greater, and, unless the sentence prescribed in subdivision (d) is imposed, the person shall be confined in a county jail for not less than 90 days",
+      "effective": "January 1, 2015 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "For hourly arrangements, see unlicensed-hourly-contract-price-definition.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 245 (B&P 7028(c))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "unlicensed-contracting-third-offense-penalty",
+      "title": "Unlicensed contracting: third or later conviction",
+      "plain_english": "A third or later conviction carries a fine from $5,000 up to the greater of $10,000 or 20% of the contract price/payments, plus 90 days to one year in county jail. The same enhanced penalty applies to anyone who was named on a revoked license and held responsible for the revocation.",
+      "category": "penalty",
+      "parameters": {
+        "conviction_number_min": 3,
+        "fine_min_usd": 5000,
+        "fine_max_formula": "max(10000, 0.20 * contract_price, 0.20 * aggregate_payments)",
+        "jail_min_days": 90,
+        "jail_max_years": 1,
+        "also_applies_to": "person named on a previously revoked license who was held responsible for the act or omission causing revocation (7028(e))",
+        "cumulative": true
+      },
+      "applies_to": "Repeat unlicensed contractors; persons tied to revoked licenses",
+      "citation": "B&P 7028(d), (e)",
+      "source_location": "2026 CSLB Law Book, PDF page 245",
+      "verbatim_quote": "A third or subsequent conviction for the offense described in this section is punishable by a fine of not less than five thousand dollars ($5,000) nor more than the greater amount of ten thousand dollars ($10,000) or 20 percent of the contract price, or 20 percent of the aggregate payments made to, or at the direction of, the unlicensed person",
+      "effective": "January 1, 2015 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Statute text: 'imprisonment in a county jail for not more than one year or less than 90 days'.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 245 (B&P 7028(d), (e))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "unlicensed-hourly-contract-price-definition",
+      "title": "'Contract price' for hourly unlicensed work",
+      "plain_english": "When an unlicensed person agreed to supply materials and labor by the hour, the 'contract price' used for penalties equals the cost of materials and labor already furnished plus the cost to complete the work.",
+      "category": "definition",
+      "parameters": {
+        "trigger": "unlicensed person agreed to furnish materials and labor on an hourly basis",
+        "contract_price_formula": "cost_of_materials_and_labor_furnished + cost_of_completing_the_work"
+      },
+      "applies_to": "Penalty calculations under B&P 7028",
+      "citation": "B&P 7028(f)",
+      "source_location": "2026 CSLB Law Book, PDF pages 245-246",
+      "verbatim_quote": "If the unlicensed person engaging in the business of or acting in the capacity of a contractor has agreed to furnish materials and labor on an hourly basis, “the contract price” for the purposes of this section means the aggregate sum of the cost of materials and labor furnished and the cost of completing the work to be performed.",
+      "effective": "January 1, 2015 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "B&P 7028.15(b) uses the same hourly definition for public-bid violations."
+    },
+    {
+      "id": "unlicensed-contracting-prosecution-deadline",
+      "title": "4-year window to prosecute unlicensed contracting",
+      "plain_english": "Criminal charges for unlicensed contracting must be filed within four years from the latest of: the contract proposal, the contract, completion, or abandonment of the work.",
+      "category": "deadline",
+      "parameters": {
+        "years": 4,
+        "start_date": "latest of contract proposal date, contract date, completion date, abandonment date",
+        "applies_to_offense": "B&P 7028 by an unlicensed person"
+      },
+      "applies_to": "Owners/prosecutors evaluating unlicensed work",
+      "citation": "B&P 7028(g)",
+      "source_location": "2026 CSLB Law Book, PDF page 246",
+      "verbatim_quote": "an indictment for any violation of this section by an unlicensed person shall be found, or information or a complaint shall be filed, within four years from the date of the contract proposal, contract, completion, or abandonment of the work, whichever occurs last.",
+      "effective": "January 1, 2015 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "deadline = max(proposal, contract, completion, abandonment) + 4 years.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 246 (B&P 7028(g))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "unlicensed-contractor-victim-restitution",
+      "title": "Owner who used unlicensed contractor is a crime victim",
+      "plain_english": "If an unlicensed contractor is convicted, anyone who used their services is a crime victim eligible for restitution of economic losses, even if they knew the contractor was unlicensed.",
+      "category": "money_amount",
+      "parameters": {
+        "trigger": "conviction under B&P 7028",
+        "eligible": "person who utilized the services of the unlicensed person",
+        "remedy": "restitution for economic losses (Penal Code 1202.4(f))",
+        "knowledge_of_unlicensed_status_irrelevant": true
+      },
+      "applies_to": "Project owners and others who hired an unlicensed contractor",
+      "citation": "B&P 7028(h)",
+      "source_location": "2026 CSLB Law Book, PDF page 246",
+      "verbatim_quote": "For any conviction under this section, a person who utilized the services of the unlicensed person is a victim of crime and is eligible, pursuant to subdivision (f) of Section 1202.4 of the Penal Code, for restitution for economic losses, regardless of whether he or she had knowledge that the person was unlicensed.",
+      "effective": "January 1, 2015 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Subdivision (i) says these changes are declaratory of existing law.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 246 (B&P 7028(h))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "asbestos-haz-ust-certification-required",
+      "title": "Asbestos, hazardous-substance removal and UST work require certification",
+      "plain_english": "Any contractor, licensed or not, commits a misdemeanor by doing asbestos-related work without CSLB asbestos certification (B&P 7058.5), doing hazardous substance removal or remedial action without certification (B&P 7058.7), or bidding on, installing or removing an underground storage tank without certification (B&P 7058.7), unless exempt.",
+      "category": "license_classification",
+      "parameters": {
+        "work_requiring_certification": [
+          {
+            "work": "asbestos-related work (Labor Code 6501.8)",
+            "certification": "B&P 7058.5"
+          },
+          {
+            "work": "removal or remedial action (B&P 7058.7(d))",
+            "certification": "B&P 7058.7"
+          },
+          {
+            "work": "bid for, install, or remove underground storage tank",
+            "certification": "B&P 7058.7"
+          }
+        ],
+        "applies_to_licensed_and_unlicensed": true,
+        "offense_level": "misdemeanor"
+      },
+      "applies_to": "Contractors doing abatement, hazardous remediation or UST work; GCs bidding such work",
+      "citation": "B&P 7028.1",
+      "source_location": "2026 CSLB Law Book, PDF page 246",
+      "verbatim_quote": "It is a misdemeanor for any contractor, whether licensed or unlicensed, to perform or engage in asbestos-related work, as defined in Section 6501.8 of the Labor Code, without certification pursuant to Section 7058.5 of this code, or to perform or engage in a removal or remedial action, as defined in subdivision (d) of Section 7058.7",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Certification requirements themselves (B&P 7058.5-7058.7) are outside this chunk. Note that merely bidding on UST work without certification is covered."
+    },
+    {
+      "id": "asbestos-haz-ust-certification-penalty",
+      "title": "Penalties for uncertified asbestos/HAZ/UST work",
+      "plain_english": "First offense: fine of $1,000 to $3,000 and possible license suspension or revocation. Subsequent offense: fine of $3,000 to $5,000 or up to one year in county jail or both, plus mandatory action to suspend or revoke the license.",
+      "category": "penalty",
+      "parameters": {
+        "first_offense": {
+          "fine_min_usd": 1000,
+          "fine_max_usd": 3000,
+          "license_action": "possible revocation or suspension"
+        },
+        "subsequent_offense": {
+          "fine_min_usd": 3000,
+          "fine_max_usd": 5000,
+          "jail_max_years": 1,
+          "may_combine_fine_and_jail": true,
+          "license_action": "mandatory action to suspend or revoke"
+        }
+      },
+      "applies_to": "Contractors violating B&P 7028.1",
+      "citation": "B&P 7028.1(a), (b)",
+      "source_location": "2026 CSLB Law Book, PDF page 246",
+      "verbatim_quote": "Conviction of a first offense is punishable by a fine of not less than one thousand dollars ($1,000) or more than three thousand dollars ($3,000), and by possible revocation or suspension of any contractor’s license.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Subsequent offense text: 'a fine of not less than three thousand dollars ($3,000) or more than five thousand dollars ($5,000), or imprisonment in the county jail not exceeding one year, or both ... and a mandatory action to suspend or revoke any contractor's license.'",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 246 (B&P 7028.1(a), (b))",
+        "correction": "",
+        "note": "These are criminal fines. 16 CCR 884(a) (PDF page 540) lists a separate administrative citation range of $1,000-$8,000 for 7028.1."
+      }
+    },
+    {
+      "id": "registrar-injunction",
+      "title": "CSLB may seek court injunction against violators",
+      "plain_english": "CSLB can go to superior court (through the Attorney General or district attorney) for a TRO or injunction against a licensee whose violations may substantially injure someone, or against any unlicensed person violating the law, whether or not anyone is injured.",
+      "category": "penalty",
+      "parameters": {
+        "against_licensee_when": "violation whereby another person may be substantially injured",
+        "against_unlicensed_when": "any violation, whether or not there is substantial injury",
+        "relief": [
+          "temporary restraining order",
+          "preliminary injunction",
+          "permanent injunction"
+        ],
+        "venue": "superior court of county where act occurred, or where person has a place of business or resides",
+        "brought_through": [
+          "Attorney General",
+          "district attorney"
+        ]
+      },
+      "applies_to": "Licensees and unlicensed persons",
+      "citation": "B&P 7028.3",
+      "source_location": "2026 CSLB Law Book, PDF page 247",
+      "verbatim_quote": "the registrar may, either through the Attorney General or through the district attorney of the county in which the act, practice, or transaction is alleged to have been committed, apply to the superior court of that county or any other county in which such person maintains a place of business or resides, for an injunction",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 247 (B&P 7028.3)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "private-injunction-against-unlicensed",
+      "title": "Licensed contractors and consumers can enjoin unlicensed competitors",
+      "plain_english": "A licensed contractor, a contractors' association, an affected consumer, a district attorney or the Attorney General can get a court injunction stopping a continuing violation by someone with no contractor's license in any classification, without having to prove irreparable injury.",
+      "category": "process_step",
+      "parameters": {
+        "who_may_sue": [
+          "licensed contractor",
+          "association of contractors",
+          "consumer affected by the violation",
+          "district attorney",
+          "Attorney General"
+        ],
+        "defendant": "person who does not hold a state contractor's license in any classification",
+        "required_showing": "continuing violation of the chapter",
+        "irreparable_injury_proof_required": false
+      },
+      "applies_to": "Licensed contractors facing unlicensed competition; consumers",
+      "citation": "B&P 7028.4",
+      "source_location": "2026 CSLB Law Book, PDF pages 247-248",
+      "verbatim_quote": "The plaintiff in any such action shall not be required to prove irreparable injury.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "personnel-of-record-need-own-license",
+      "title": "Officers/qualifiers of a licensed company can't contract individually",
+      "plain_english": "Being a partner, officer, director, manager, RME/RMO/RMM or other listed personnel of a licensed company does not let you contract on your own. You need your own license in good standing to do work individually.",
+      "category": "prohibition",
+      "parameters": {
+        "covered_roles": [
+          "partner",
+          "officer",
+          "director",
+          "manager",
+          "responsible managing employee",
+          "responsible managing member",
+          "responsible managing manager",
+          "responsible managing officer",
+          "any individual listed in personnel of record"
+        ],
+        "applies_to_current_and_former": true,
+        "prohibited": "individually engage in business or act as contractor without own license in good standing"
+      },
+      "applies_to": "Personnel of record of licensed entities",
+      "citation": "B&P 7028.5",
+      "source_location": "2026 CSLB Law Book, PDF page 248",
+      "verbatim_quote": "an individual who is listed in the personnel of record of, a licensed partnership, corporation, limited liability company, firm, association or other organization to individually engage in the business or individually act in the capacity of a contractor within this state without having a license in good standing to so engage or act.",
+      "effective": "January 1, 2011 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Statute begins 'It is unlawful for a person who is or has been a partner, officer, director, manager, responsible managing employee...'."
+    },
+    {
+      "id": "unlicensed-citation-civil-penalty",
+      "title": "CSLB citation for unlicensed activity: $1,500-$15,000 (from July 1, 2026)",
+      "plain_english": "When CSLB has probable cause that someone is contracting (or selling home improvements) without a license or registration in good standing, it must issue a written citation with an order of abatement and a civil penalty of $1,500 to $15,000. These penalties are in addition to any civil or criminal remedies.",
+      "category": "penalty",
+      "parameters": {
+        "civil_penalty_min_usd": 1500,
+        "civil_penalty_max_usd": 15000,
+        "citation_contents": [
+          "written description of basis with particularity",
+          "order of abatement",
+          "civil penalty assessment"
+        ],
+        "covers": [
+          "acting as contractor without license in good standing",
+          "acting as home improvement salesperson without registration"
+        ],
+        "penalty_factors": [
+          "gravity of violation",
+          "history of previous violations"
+        ],
+        "inflation_adjustment": {
+          "frequency_years": 5,
+          "index": "CPI per Revenue and Taxation Code 2212",
+          "applies_to": "minimum civil penalties",
+          "rounding_usd": 100
+        },
+        "separate_from_other_remedies": true
+      },
+      "applies_to": "Unlicensed contractors and unregistered salespersons",
+      "citation": "B&P 7028.6; B&P 7028.7 (operative July 1, 2026)",
+      "source_location": "2026 CSLB Law Book, PDF pages 248-250",
+      "verbatim_quote": "each citation shall contain an order of abatement and an assessment of a civil penalty in an amount not less than fifteen hundred dollars ($1,500) nor more than fifteen thousand dollars ($15,000).",
+      "effective": "Effective January 1, 2026; operative July 1, 2026 (added by Stats 2025 ch 233 § 2, SB 779)",
+      "read_from_primary_text": true,
+      "notes": "Replaces prior version (see unlicensed-citation-civil-penalty-pre-july-2026). Inflation adjustments to the minimum are discretionary ('may adjust'). 16 CCR 884(a) (PDF page 540) still lists $200-$15,000 for 7028.7; the statutory $1,500 minimum operative July 1, 2026 controls. 16 CCR 884(c) (PDF page 542): where a citation lists several violations on the same project, the total assessment for 7028.7 may not exceed $15,000.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 248-250 (B&P 7028.6; B&P 7028.7 operative July 1, 2026); 16 CCR 884 (PDF pages 540, 542)",
+        "correction": "Amounts ($1,500-$15,000), CPI adjustment (every 5 years, minimums only, $100 rounding) and quote confirmed. \"effective\" said \"July 1, 2026\"; the book says effective January 1, 2026, operative July 1, 2026. Fixed. Added a note that 16 CCR 884(a) still shows the old $200 minimum and that 884(c) caps the per-citation total at $15,000."
+      }
+    },
+    {
+      "id": "unlicensed-citation-civil-penalty-pre-july-2026",
+      "title": "Prior citation range $200-$15,000 (through June 30, 2026)",
+      "plain_english": "Under the version of B&P 7028.7 in effect until July 1, 2026, the civil penalty in a citation for unlicensed activity ranged from $200 to $15,000.",
+      "category": "penalty",
+      "parameters": {
+        "civil_penalty_min_usd": 200,
+        "civil_penalty_max_usd": 15000,
+        "valid_until": "2026-07-01 (repealed as of that date)"
+      },
+      "applies_to": "Citations issued under the version in effect before July 1, 2026",
+      "citation": "B&P 7028.7(c) (repealed July 1, 2026)",
+      "source_location": "2026 CSLB Law Book, PDF page 249",
+      "verbatim_quote": "each citation shall contain an order of abatement and an assessment of a civil penalty in an amount not less than two hundred dollars ($200) nor more than fifteen thousand dollars ($15,000).",
+      "effective": "Effective until July 1, 2026",
+      "read_from_primary_text": true,
+      "notes": "Historical only; which version applies to conduct before July 1, 2026 but cited after is not addressed in the text.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 248-249 (B&P 7028.7(c), version effective until July 1, 2026)",
+        "correction": "",
+        "note": "Matches 16 CCR 884(a) (PDF page 540) range for 7028.7 ($200-$15,000). Repealed July 1, 2026 by its own subdivision (f); historical only as of 2026-11-25."
+      }
+    },
+    {
+      "id": "public-entity-unlicensed-award-72hr-notice",
+      "title": "CSLB 72-hour notice to public entity awarding to unlicensed contractor",
+      "plain_english": "Within 72 hours of learning that a public entity intends to award, or has awarded, a contract to an unlicensed contractor, CSLB must warn the entity in writing that a citation may issue. If the entity awards anyway, CSLB may cite the responsible public officer or employee.",
+      "category": "deadline",
+      "parameters": {
+        "hours": 72,
+        "trigger": "registrar receives notice that a public entity intends to award or has awarded a contract to an unlicensed contractor",
+        "action": "written notice to public entity",
+        "follow_on": "registrar may cite responsible officer or employee under B&P 7028.15"
+      },
+      "applies_to": "Public agencies awarding construction contracts; bidders",
+      "citation": "B&P 7028.7(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 249",
+      "verbatim_quote": "Within 72 hours of receiving notice that a public entity is intending to award, or has awarded, a contract to an unlicensed contractor, the registrar shall give written notice to the public entity that a citation may be issued if a contract is awarded to an unlicensed contractor.",
+      "effective": "Same text in version effective until July 1, 2026 and version operative July 1, 2026",
+      "read_from_primary_text": true,
+      "notes": "Competing bidders can report an unlicensed apparent low bidder to CSLB to trigger this notice.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 248-249 (B&P 7028.7(b), both versions)",
+        "correction": "",
+        "note": "Same 72-hour text appears in the repealed version (PDF pages 248-249) and the version operative July 1, 2026 (PDF page 249)."
+      }
+    },
+    {
+      "id": "unlicensed-citation-service",
+      "title": "Citation may be served by certified mail",
+      "plain_english": "A citation for unlicensed activity can be served by certified mail to the person's last known business or residence address.",
+      "category": "process_step",
+      "parameters": {
+        "method": "certified mail",
+        "address": "last known business address or residence address"
+      },
+      "applies_to": "Persons cited under B&P 7028.7",
+      "citation": "B&P 7028.8",
+      "source_location": "2026 CSLB Law Book, PDF page 250",
+      "verbatim_quote": "Service of a citation issued under Section 7028.7 may be made by certified mail at the last known business address or residence address of the person cited.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Service date starts the 15-working-day appeal clock (B&P 7028.10-7028.11)."
+    },
+    {
+      "id": "unlicensed-citation-limitations",
+      "title": "Deadline for CSLB to issue unlicensed-activity citation",
+      "plain_english": "CSLB must issue an unlicensed-activity citation within four years after the act or omission, or within 18 months after the complaint was filed, whichever is later.",
+      "category": "deadline",
+      "parameters": {
+        "years_after_act_or_omission": 4,
+        "months_after_complaint_filed": 18,
+        "rule": "whichever is later"
+      },
+      "applies_to": "Unlicensed persons; owners filing complaints",
+      "citation": "B&P 7028.9",
+      "source_location": "2026 CSLB Law Book, PDF page 250",
+      "verbatim_quote": "A citation under Section 7028.7 shall be issued by the registrar within four years after the act or omission that is the basis for the citation or within 18 months after the date of the filing of the complaint with the registrar, whichever is later.",
+      "effective": "January 1, 2011 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "deadline = max(act_date + 4 years, complaint_filed_date + 18 months).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 250 (B&P 7028.9)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "unlicensed-citation-appeal-deadline",
+      "title": "Contest an unlicensed-activity citation within 15 days of service (B&P 7099.8; 7028.10 says 15 working days)",
+      "plain_english": "B&P 7028.10 and 7028.11 give 15 working days after service to appeal an unlicensed-activity citation (the violations, the abatement order, or the penalty amount), extendable by CSLB for good cause; if you miss it, the citation becomes a final order no court or agency can review. But B&P 7099.8(a), which applies \"notwithstanding any other law\" to 7028.7 citations, requires a written request for an administrative hearing within 15 days after service, and it does not say working days. In the same 15 days you may instead (or also) ask in writing for an informal citation conference. Treat 15 calendar days from service as the deadline.",
+      "category": "deadline",
+      "parameters": {
+        "days": 15,
+        "day_type": "calendar days (safe reading; B&P 7099.8(a) says \"within 15 days\" and overrides \"notwithstanding any other law\")",
+        "b_p_7028_10_7028_11_text_working_days": 15,
+        "starts": "service of the citation",
+        "appealable_items": [
+          "violations alleged",
+          "scope of order of abatement",
+          "amount of civil penalty"
+        ],
+        "consequence_if_missed": "citation deemed final order not subject to review by any court or agency",
+        "extension": "registrar may extend for good cause",
+        "overriding_rule_b_p_7099_8": {
+          "text_controls": "B&P 7099.8(a) applies \"notwithstanding any other law\" to citations under 7028.7",
+          "hearing_request_days_after_service": 15,
+          "day_type_stated": "days (the word \"working\" is not used)",
+          "hearing_request_form": "written request for administrative hearing (B&P 7028.12)",
+          "informal_citation_conference_option": {
+            "request_within_days_after_service": 15,
+            "request_to": "chief of the enforcement division or designee, in writing",
+            "conference_held_within_days_of_request": 60,
+            "affirmed_or_modified_citation_mailed_within_days_of_conference": 10,
+            "contest_affirmed_or_modified_citation_within_days_after_service": 30,
+            "holding_conference_withdraws_hearing_request": true
+          }
+        },
+        "safe_deadline": "15 calendar days after service of the citation"
+      },
+      "applies_to": "Persons cited under B&P 7028.7",
+      "citation": "B&P 7028.10; B&P 7028.11; B&P 7099.8(a), (b)",
+      "source_location": "2026 CSLB Law Book, PDF pages 250-251 (7028.10, 7028.11) and 342-343 (7099.8)",
+      "verbatim_quote": "If within 15 working days after service of the citation, the person cited fails to notify the registrar that he or she intends to appeal the citation, the citation shall be deemed a final order of the registrar and not subject to review by any court or agency. The 15-day period may be extended by the registrar for good cause.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Do not compute this deadline in working days. 7099.8 (added 2019) is later and says \"notwithstanding any other law\"; 15 calendar days is the safe date. After an informal conference, an affirmed or modified citation is mailed within 10 days and may be contested by written hearing request within 30 days after its service (7099.8(b)(3)-(4)).",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 250-251 (B&P 7028.10, 7028.11) and PDF pages 342-343 (B&P 7099.8)",
+        "correction": "The 7028.10/7028.11 quote (\"15 working days\") is accurate, but the rule left out B&P 7099.8(a) (PDF page 342): \"Notwithstanding any other law, if a person cited pursuant to Section 7028.7 ... wishes to contest the citation, that person shall, within 15 days after service of the citation, file in writing a request for an administrative hearing\". It does not say working days. Added 7099.8 parameters (including the informal-conference option) and set the safe deadline to 15 calendar days after service. Replaced the note that told tools to count working days. Renamed the working_days parameter so that days = 15 with day_type = calendar; the 7028.10 working-day figure is kept as b_p_7028_10_7028_11_text_working_days for reference. Retitled the rule."
+      }
+    },
+    {
+      "id": "unlicensed-citation-hearing",
+      "title": "Hearing on a contested citation",
+      "plain_english": "If you timely contest the citation, CSLB must give you a hearing under the Administrative Procedure Act and then issue a decision affirming, modifying or vacating the citation.",
+      "category": "process_step",
+      "parameters": {
+        "trigger": "timely notice of intent to contest",
+        "procedure": "Gov Code 11500 et seq. (APA)",
+        "possible_outcomes": [
+          "affirm",
+          "modify",
+          "vacate",
+          "other appropriate relief"
+        ]
+      },
+      "applies_to": "Persons cited under B&P 7028.7",
+      "citation": "B&P 7028.12",
+      "source_location": "2026 CSLB Law Book, PDF page 251",
+      "verbatim_quote": "If the person cited under Section 7028.7 timely notifies the registrar that he or she intends to contest the citation, the registrar shall afford an opportunity for a hearing.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "unlicensed-citation-collection",
+      "title": "Collection of citation penalties: court judgment, collectors, 4/10-year windows",
+      "plain_english": "After review is exhausted, CSLB can get a superior court judgment for the penalty and an order to obey the abatement order. It can hand collection to a collection agency (you pay the collection costs) or sell the penalty rights. CSLB has 4 years from the final order to collect, or 10 years from a court judgment.",
+      "category": "deadline",
+      "parameters": {
+        "collection_window_from_final_order_years": 4,
+        "enforcement_window_from_judgment_years": 10,
+        "collection_costs_borne_by": "person cited",
+        "registrar_may": [
+          "apply to superior court for judgment and compliance order",
+          "delegate collection to licensed collector",
+          "assign rights to civil penalty for adequate consideration"
+        ],
+        "abatement_order_assignable": false
+      },
+      "applies_to": "Persons with final unlicensed-activity citations",
+      "citation": "B&P 7028.13",
+      "source_location": "2026 CSLB Law Book, PDF pages 251-252",
+      "verbatim_quote": "the registrar or his or her designee or assignee shall have four years from the date of the final order to collect civil penalties except that the registrar or his or her designee or assignee shall have 10 years from the date of the judgment to enforce civil penalties on citations that have been converted to judgments",
+      "effective": "January 1, 2006 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Overrides Code of Civil Procedure 340(a)-(b).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 251-252 (B&P 7028.13)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "citation-penalty-waiver-on-licensure",
+      "title": "Part of penalty may be waived if you get licensed",
+      "plain_english": "CSLB may waive part of an unlicensed-activity civil penalty if the cited person completes all requirements and is issued a contractor's license. Any outstanding injury to the public must be settled before the license is issued.",
+      "category": "money_amount",
+      "parameters": {
+        "waiver": "part of the civil penalty (discretionary)",
+        "conditions": [
+          "cited person satisfactorily completes all licensing requirements and is issued a license",
+          "outstanding injury to the public satisfactorily settled before license issuance"
+        ]
+      },
+      "applies_to": "Cited unlicensed persons who apply for a license",
+      "citation": "B&P 7028.14",
+      "source_location": "2026 CSLB Law Book, PDF page 252",
+      "verbatim_quote": "the registrar may waive part of the civil penalty if the person against whom the civil penalty is assessed satisfactorily completes all the requirements for, and is issued, a contractor’s license. Any outstanding injury to the public shall be satisfactorily settled prior to issuance of the license.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Waiver amount not specified.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 252 (B&P 7028.14)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "public-bid-license-required",
+      "title": "License required to bid public works",
+      "plain_english": "It is a misdemeanor to submit a bid to a public agency for contracting work without a license, unless you are specifically exempt or the bid is on a state project under Public Contract Code 10164 or a local project under Public Contract Code 20103.5.",
+      "category": "license_classification",
+      "parameters": {
+        "offense_level": "misdemeanor",
+        "license_required_at": "time of bid submission",
+        "exceptions": [
+          "person particularly exempted from the chapter",
+          "state project governed by Public Contract Code 10164",
+          "local agency project governed by Public Contract Code 20103.5"
+        ]
+      },
+      "applies_to": "Bidders on public agency projects",
+      "citation": "B&P 7028.15(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 252",
+      "verbatim_quote": "It is a misdemeanor for any person to submit a bid to a public agency in order to engage in the business or act in the capacity of a contractor within this state without having a license therefor, except in any of the following cases:",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "PCC 10164 and 20103.5 (in the book's Appendix, not this chunk) cover projects with federal funds where licensure may be required at award rather than at bid."
+    },
+    {
+      "id": "public-bid-unlicensed-repeat-penalty",
+      "title": "Repeat unlicensed public bid: 20% or $4,500 fine",
+      "plain_english": "If previously convicted of bidding public work without a license, the court must impose a fine of the greater of 20% of the contract price or $4,500, or 10 days to 6 months in county jail, or both.",
+      "category": "penalty",
+      "parameters": {
+        "prior_conviction_required": true,
+        "fine_formula": "max(0.20 * contract_price, 4500)",
+        "jail_min_days": 10,
+        "jail_max_months": 6,
+        "may_combine": true,
+        "hourly_contract_price": "cost of materials and labor furnished + cost of completing the work"
+      },
+      "applies_to": "Repeat violators of B&P 7028.15",
+      "citation": "B&P 7028.15(b)",
+      "source_location": "2026 CSLB Law Book, PDF pages 252-253",
+      "verbatim_quote": "the court shall impose a fine of 20 percent of the price of the contract under which the unlicensed person performed contracting work, or four thousand five hundred dollars ($4,500), whichever is greater, or imprisonment in the county jail for not less than 10 days nor more than six months, or both.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Penalty for a first conviction is not specified in this section (general misdemeanor penalties would apply).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 252-253 (B&P 7028.15(b))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "public-bid-unlicensed-nonresponsive-void",
+      "title": "Unlicensed public bid is nonresponsive; contract void",
+      "plain_english": "A public agency must reject an unlicensed contractor's bid as nonresponsive. A local agency must verify the contractor was properly licensed when it bid before awarding a contract or issuing a purchase order. Any contract or purchase order issued to an unlicensed contractor is void, and a public officer who knowingly awards one can be cited.",
+      "category": "process_step",
+      "parameters": {
+        "bid_status_if_unlicensed": "nonresponsive; must be rejected",
+        "local_agency_verification": "verify contractor was properly licensed when bid was submitted, before award or purchase order",
+        "contract_status_if_unlicensed": "void",
+        "public_officer_sanction": "citation if knowingly awards to unlicensed contractor (penalties per B&P 7028.7-7028.13)",
+        "exceptions": "those listed in B&P 7028.15(a)-(d)"
+      },
+      "applies_to": "Public agencies, bidders, competing bidders",
+      "citation": "B&P 7028.15(e)",
+      "source_location": "2026 CSLB Law Book, PDF page 253",
+      "verbatim_quote": "a bid submitted to a public agency by a contractor who is not licensed in accordance with this chapter shall be considered nonresponsive and shall be rejected by the public agency. Unless one of the foregoing exceptions applies, a local public agency shall, before awarding a contract or issuing a purchase order, verify that the contractor was properly licensed when the contractor submitted the bid",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Also: 'Any contract awarded to, or any purchase order issued to, a contractor who is not licensed pursuant to this chapter is void.'"
+    },
+    {
+      "id": "public-agency-license-check-safe-harbor",
+      "title": "Public officer safe harbor if CSLB doesn't answer in 3 business days",
+      "plain_english": "A public officer or employee cannot be cited for awarding to an unlicensed contractor if the agency asked CSLB to verify the license status and CSLB did not respond within three business days. A phone response from CSLB counts.",
+      "category": "deadline",
+      "parameters": {
+        "business_days": 3,
+        "trigger": "public employee, officer, or agency inquiry to CSLB to verify license status",
+        "effect": "no citation if board fails to respond within 3 business days",
+        "telephone_response_sufficient": true
+      },
+      "applies_to": "Public agency staff awarding contracts",
+      "citation": "B&P 7028.15(g)",
+      "source_location": "2026 CSLB Law Book, PDF page 253",
+      "verbatim_quote": "A public employee or officer shall not be subject to a citation pursuant to this section if the public employee, officer, or employing agency made an inquiry to the board for the purposes of verifying the license status of any person or contractor and the board failed to respond to the inquiry within three business days.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A tool can log date/time of license verification inquiries.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 253 (B&P 7028.15(g))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "joint-venture-public-bid-licensure",
+      "title": "Joint venture bids: each member individually licensed at bid",
+      "plain_english": "A joint venture license is not required at the time of a public bid, but every party submitting the joint venture bid must be individually licensed when the bid is made. Licensed architects, land surveyors and engineers may form joint ventures with licensed contractors within their practices.",
+      "category": "license_classification",
+      "parameters": {
+        "jv_license_required_at_bid": false,
+        "each_member_individually_licensed_at_bid": true,
+        "design_professional_jv_allowed": [
+          "licensed architect",
+          "land surveyor",
+          "registered professional engineer"
+        ]
+      },
+      "applies_to": "Contractors bidding public work as joint ventures",
+      "citation": "B&P 7028.15(c), (d)",
+      "source_location": "2026 CSLB Law Book, PDF page 253",
+      "verbatim_quote": "This section shall not apply to a joint venture license, as required by Section 7029.1. However, at the time of making a bid as a joint venture, each person submitting the bid shall be subject to this section with respect to his or her individual licensure.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A JV license is still required before being awarded the contract jointly (B&P 7029.1)."
+    },
+    {
+      "id": "disaster-unlicensed-contracting-penalty",
+      "title": "Unlicensed disaster repair: felony-level penalties",
+      "plain_english": "Contracting without a license to repair damage from a natural disaster declared a state of emergency by the Governor (or an emergency/major disaster declared by the President) is punishable by a fine up to $10,000 and/or 16 months, 2 or 3 years under Penal Code 1170(h), or a fine up to $1,000 and/or up to one year in county jail. Anyone who hired the unlicensed contractor is a crime victim.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": "unlicensed offer or performance of repairs/improvements to residential or nonresidential structure or property, or grounds, for damage caused by a declared natural disaster",
+        "declarations": [
+          "Governor state of emergency (Gov Code 8625)",
+          "Presidential emergency or major disaster declaration"
+        ],
+        "felony_option": {
+          "fine_max_usd": 10000,
+          "imprisonment_penal_code_1170h": [
+            "16 months",
+            "2 years",
+            "3 years"
+          ]
+        },
+        "misdemeanor_option": {
+          "fine_max_usd": 1000,
+          "county_jail_max_years": 1
+        },
+        "victim_status_regardless_of_knowledge": true
+      },
+      "applies_to": "Unlicensed persons doing disaster repair; owners of disaster-damaged property",
+      "citation": "B&P 7028.16",
+      "source_location": "2026 CSLB Law Book, PDF page 254",
+      "verbatim_quote": "shall be punished by a fine up to ten thousand dollars ($10,000), or by imprisonment pursuant to subdivision (h) of Section 1170 of the Penal Code for 16 months, or for two or three years, or by both that fine and imprisonment, or by a fine up to one thousand dollars ($1,000), or by imprisonment in a county jail not exceeding one year, or by both that fine and imprisonment.",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Book cross-references Penal Code 670, 667.16 and 551 (Appendix).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 254 (B&P 7028.16)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "failure-to-comply-final-citation",
+      "title": "Ignoring a final citation is a misdemeanor (unlicensed)",
+      "plain_english": "An unlicensed individual who fails to comply with a citation after it becomes final commits a misdemeanor.",
+      "category": "penalty",
+      "parameters": {
+        "who": "unlicensed individual",
+        "trigger": "failure to comply with citation after it is final",
+        "offense_level": "misdemeanor",
+        "fine_distribution": {
+          "district_attorney_action": "county treasurer for DA use",
+          "city_attorney_action": "city treasurer for city attorney use"
+        }
+      },
+      "applies_to": "Cited unlicensed persons",
+      "citation": "B&P 7028.17",
+      "source_location": "2026 CSLB Law Book, PDF page 254",
+      "verbatim_quote": "The failure of an unlicensed individual to comply with a citation after it is final is a misdemeanor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 254 (B&P 7028.17)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "joint-venture-license",
+      "title": "Joint venture license requirements",
+      "plain_english": "A joint venture license is issued to a combination of individuals/entities that each hold a current, active license in good standing. It can be issued in any classification held by at least one member, and it is automatically suspended whenever any member lacks a current, active license in good standing.",
+      "category": "license_classification",
+      "parameters": {
+        "member_requirement": "each member holds current, active license in good standing",
+        "available_classifications": "any classification in which at least one member is licensed",
+        "automatic_suspension_trigger": "any member does not hold current, active license in good standing"
+      },
+      "applies_to": "Contractors forming joint ventures",
+      "citation": "B&P 7029",
+      "source_location": "2026 CSLB Law Book, PDF page 255",
+      "verbatim_quote": "A joint venture license is a license issued to any combination of individuals, corporations, limited liability companies, partnerships, or other joint ventures, each of which holds a current, active license in good standing. A joint venture license may be issued in any classification in which at least one of the entities is licensed.",
+      "effective": "January 1, 2011 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Tool check: monitor each JV member's license status; any lapse suspends the JV license."
+    },
+    {
+      "id": "joint-venture-license-required-for-joint-award",
+      "title": "Need a JV license to be awarded a contract jointly",
+      "plain_english": "Two or more separately licensed contractors may bid jointly, but they must obtain a joint venture license before being awarded a contract jointly or otherwise acting together as a contractor. Not getting the JV license does not excuse bid-default penalties. Violation is cause for discipline.",
+      "category": "required_document",
+      "parameters": {
+        "jv_license_required_before": [
+          "joint contract award",
+          "otherwise acting jointly as a contractor"
+        ],
+        "joint_bid_allowed_before_jv_license": true,
+        "bid_default_penalties_still_apply": true,
+        "violation": "cause for disciplinary action"
+      },
+      "applies_to": "Contractors teaming on projects",
+      "citation": "B&P 7029.1",
+      "source_location": "2026 CSLB Law Book, PDF page 255",
+      "verbatim_quote": "it is unlawful for any two or more licensees, each of whom has been issued a license to act separately in the capacity of a contractor within this state, to be awarded a contract jointly or otherwise act as a contractor without first having secured a joint venture license in accordance with the provisions of this chapter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Under B&P 7031(a), individually licensed contractors who fail to get a JV license are not barred from suing for payment."
+    },
+    {
+      "id": "vehicle-signage-c36-c45-c57",
+      "title": "Plumbing, sign and well-drilling vehicles: name, address, license # (1.5 in)",
+      "plain_english": "C-36 plumbing, C-45 sign and C-57 well-drilling contractors must show their name, permanent business address and license number on each side of every commercially registered business vehicle, in letters and numbers at least 1.5 inches high. Water-well drill rigs must be marked too.",
+      "category": "required_notice",
+      "parameters": {
+        "classifications": [
+          "C-36",
+          "C-45",
+          "C-57"
+        ],
+        "vehicles": "each motor vehicle used in the business for which a commercial vehicle registration fee has been paid (Vehicle Code 9400 et seq.)",
+        "also_applies_to": "any drill rig used for drilling water wells",
+        "placement": "each side of each vehicle",
+        "required_contents": [
+          "name",
+          "permanent business address",
+          "contractor's license number"
+        ],
+        "min_letter_height_inches": 1.5,
+        "violation": "cause for disciplinary action"
+      },
+      "applies_to": "C-36, C-45, C-57 licensees",
+      "citation": "B&P 7029.5",
+      "source_location": "2026 CSLB Law Book, PDF pages 255-256",
+      "verbatim_quote": "his or her name, permanent business address, and contractor’s license number, all in letters and numerals not less than 1½ inches high.",
+      "effective": "January 1, 2012 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 255-256 (B&P 7029.5)",
+        "correction": "",
+        "note": "16 CCR 884(a) (PDF page 540) sets an administrative citation range of $100-$500 for 7029.5."
+      }
+    },
+    {
+      "id": "vehicle-signage-other-contractors",
+      "title": "All other contractors: business name and license # on vehicles",
+      "plain_english": "Every other licensed contractor must display its business name and license number in or on each commercially registered vehicle used in its construction business, clearly visible, in at least 72-point type or 3/4 inch high and wide.",
+      "category": "required_notice",
+      "parameters": {
+        "applies_to_all_except": [
+          "C-36",
+          "C-45",
+          "C-57"
+        ],
+        "vehicles": "each motor vehicle used in construction business for which a commercial vehicle registration fee has been paid",
+        "placement": "in or on the vehicle, clearly visible location",
+        "required_contents": [
+          "business name",
+          "contractor's license number"
+        ],
+        "min_font_point": 72,
+        "min_height_and_width_inches": 0.75,
+        "size_rule": "either alternative satisfies: print type of at least 72-point font OR (at least) three-quarters of an inch in height and width"
+      },
+      "applies_to": "All licensed contractors with commercially registered vehicles",
+      "citation": "B&P 7029.6",
+      "source_location": "2026 CSLB Law Book, PDF page 256",
+      "verbatim_quote": "his or her business name and contractors’ license number in a clearly visible location in print type of at least 72-point font or three-quarters of an inch in height and width.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The statute itself states no penalty, but 16 CCR 884(a) (PDF page 540) sets an administrative citation range of $100-$500 for 7029.6. The two size figures are alternatives (\"or\"), not two cumulative minimums.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 256 (B&P 7029.6); 16 CCR 884(a) (PDF page 540)",
+        "correction": "Quote confirmed. The parameters gave min_font_point 72 and min_height_and_width_inches 0.75 as if both had to be met; the statute says \"at least 72-point font or three-quarters of an inch in height and width\", so either one is enough. Added size_rule. The note said no penalty applies; 16 CCR 884(a) does set a $100-$500 citation range for 7029.6, so the note was updated."
+      }
+    },
+    {
+      "id": "contract-cslb-notice-non-hic",
+      "title": "CSLB notice in prime contracts (non-home-improvement), 10-point",
+      "plain_english": "Every written contract where you are the prime contractor (other than home improvement and service-and-repair contracts) must include the CSLB licensing/complaint-deadline statement in at least 10-point type. Failure is cause for discipline.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "applies_when": "licensee is prime contractor on a written contract",
+        "excludes": [
+          "home improvement contracts (B&P 7151.2)",
+          "service and repair contracts (B&P 7159.10)"
+        ],
+        "min_font_point": 10,
+        "required_text": "Contractors are required by law to be licensed and regulated by the Contractors State License Board which has jurisdiction to investigate complaints against contractors if a complaint regarding a patent act or omission is filed within four years of the date of the alleged violation. A complaint regarding a latent act or omission pertaining to structural defects must be filed within 10 years of the date of the alleged violation. Any questions concerning a contractor may be referred to the Registrar, Contractors State License Board, P.O. Box 26000, Sacramento, CA 95826.",
+        "complaint_deadline_patent_years": 4,
+        "complaint_deadline_latent_structural_years": 10,
+        "violation": "cause for disciplinary action (7030(c))"
+      },
+      "applies_to": "Licensed prime contractors on commercial, public and new-construction contracts",
+      "citation": "B&P 7030(a), (c)",
+      "source_location": "2026 CSLB Law Book, PDF page 256",
+      "verbatim_quote": "every person licensed pursuant to this chapter shall include the following statement in at least 10-point type on all written contracts with respect to which the person is a prime contractor: “Contractors are required by law to be licensed and regulated by the Contractors State License Board",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Full mandatory text is in parameters.required_text exactly as printed; generate verbatim.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 256 (B&P 7030(a), (c)); 7030(c) on PDF page 257",
+        "correction": "",
+        "note": "parameters.required_text compared word for word against the printed statement (line-end hyphens removed): exact match. 16 CCR 884(a) (PDF page 540) sets an administrative citation range of $500-$1,500 for 7030."
+      }
+    },
+    {
+      "id": "contract-cslb-notice-hic-service-repair",
+      "title": "CSLB information notice in home improvement and service/repair contracts, 12-point",
+      "plain_english": "Every home improvement contract and service-and-repair contract must include the 'Information about the Contractors State License Board (CSLB)' statement in at least 12-point type. Failure is cause for discipline.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "applies_to_contracts": [
+          "home improvement contracts (B&P 7151.2)",
+          "service and repair contracts (B&P 7159.10)"
+        ],
+        "min_font_point": 12,
+        "required_text": "Information about the Contractors State License Board (CSLB): CSLB is the state consumer protection agency that licenses and regulates construction contractors.\nContact CSLB for information about the licensed contractor you are considering, including information about disclosable complaints, disciplinary actions and civil judgments that are reported to CSLB.\nUse only licensed contractors. If you file a complaint against a licensed contractor within the legal deadline (usually four years), CSLB has authority to investigate the complaint. If you use an unlicensed contractor, CSLB may not be able to help you resolve your complaint. Your only remedy may be in civil court, and you may be liable for damages arising out of any injuries to the unlicensed contractor or the unlicensed contractor’s employees.\nFor more information:\nVisit CSLB’s internet website at www.cslb.ca.gov\nCall CSLB at 800-321-CSLB (2752)\nWrite CSLB at P.O. Box 26000, Sacramento, CA 95826.",
+        "violation": "cause for disciplinary action (7030(c))"
+      },
+      "applies_to": "Licensed contractors writing home improvement or service and repair contracts",
+      "citation": "B&P 7030(b), (c)",
+      "source_location": "2026 CSLB Law Book, PDF pages 256-257",
+      "verbatim_quote": "Every person licensed pursuant to this chapter shall include the following statement in at least 12-point type in all home improvement contracts written pursuant to Section 7151.2 and service and repair contracts written pursuant to Section 7159.10:",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Full mandatory text is in parameters.required_text exactly as printed (line breaks as in the book). Other HIC content requirements are in B&P 7159 (outside this chunk).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 256-257 (B&P 7030(b), (c))",
+        "correction": "",
+        "note": "parameters.required_text compared word for word against the printed statement (line-end hyphens removed): exact match, including \"800-321-CSLB (2752)\" and the P.O. Box. 16 CCR 884(a) (PDF page 540) sets an administrative citation range of $500-$1,500 for 7030."
+      }
+    },
+    {
+      "id": "prior-discipline-disclosure",
+      "title": "Disclose prior suspensions/revocations before residential contracts",
+      "plain_english": "If your license has been suspended or revoked two or more times within eight years, before contracting for work on residential property with four or fewer units you must disclose every disciplinary suspension or revocation in the last eight years (even if stayed), in a pre-contract document such as a bid or estimate, in 10-point bold capital letters or 8-point bold red print.",
+      "category": "required_notice",
+      "parameters": {
+        "trigger_suspensions_or_revocations_min": 2,
+        "lookback_years": 8,
+        "property_type": "residential property with four or fewer units",
+        "timing": "document provided prior to entering into the contract",
+        "acceptable_documents": [
+          "bid",
+          "estimate",
+          "other pre-contract document"
+        ],
+        "content": "any disciplinary license suspension or revocation during the last eight years resulting from any violation of the chapter, whether or not stayed",
+        "format_options": [
+          {
+            "style": "capital letters, roman boldface",
+            "font_point": 10,
+            "size_wording": "\"10-point\" (the statute does not say \"at least\" for this option; contrast the red-print option, \"at least 8-point\")"
+          },
+          {
+            "style": "contrasting red print, roman boldface",
+            "min_font_point": 8
+          }
+        ]
+      },
+      "applies_to": "Contractors with 2+ suspensions/revocations in 8 years working on 1-4 unit residential",
+      "citation": "B&P 7030.1(a), (b)",
+      "source_location": "2026 CSLB Law Book, PDF page 257",
+      "verbatim_quote": "A contractor, who has his or her license suspended or revoked two or more times within an eight-year period, shall disclose either in capital letters in 10-point roman boldface type or in contrasting red print in at least 8-point roman boldface type, in a document provided prior to entering into a contract to perform work on residential property with four or fewer units",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Tool check: count license suspensions/revocations in a rolling 8-year window; auto-insert disclosure into bids/estimates when >= 2.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 257 (B&P 7030.1(a), (b)); 16 CCR 884(a) (PDF page 540)",
+        "correction": "Triggers (2+ suspensions/revocations in 8 years), residential property with 4 or fewer units, pre-contract document and quote confirmed. The capital-letter option was coded as min_font_point 10, but the statute says \"in capital letters in 10-point roman boldface type\" and does not say \"at least\"; only the red-print option says \"at least 8-point\". Changed it to font_point 10 and recorded the wording; generate at 10-point.",
+        "note": "16 CCR 884(a) (PDF page 540) lists a citation range of $1,000-$8,000 for 7030.1."
+      }
+    },
+    {
+      "id": "prior-discipline-disclosure-penalties",
+      "title": "Penalties for failing the prior-discipline disclosure",
+      "plain_english": "Failing to make the required prior-discipline disclosure costs $1,000 for the first violation, $2,500 for the second, $5,000 plus a one-year license suspension for the third, and license revocation for the fourth.",
+      "category": "penalty",
+      "parameters": {
+        "violation_1_usd": 1000,
+        "violation_2_usd": 2500,
+        "violation_3_usd": 5000,
+        "violation_3_suspension_years": 1,
+        "violation_4": "license revocation"
+      },
+      "applies_to": "Contractors violating B&P 7030.1",
+      "citation": "B&P 7030.1(c)",
+      "source_location": "2026 CSLB Law Book, PDF pages 257-258",
+      "verbatim_quote": "(1) A penalty of one thousand dollars ($1,000) shall be assessed for the first violation. (2) A penalty of two thousand five hundred dollars ($2,500) shall be assessed for the second violation. (3) A penalty of five thousand dollars ($5,000) shall be assessed for a third violation in addition to a one-year suspension of license by operation of law.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Fourth violation: 'shall result in the revocation of license in accordance with this chapter.'",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 257-258 (B&P 7030.1(c))",
+        "correction": "",
+        "note": "16 CCR 884(a) (PDF page 540) lists a $1,000-$8,000 citation range for 7030.1, which does not line up with the fixed statutory amounts ($1,000 / $2,500 / $5,000 + 1-year suspension / revocation). The statute fixes these amounts; flag the mismatch rather than computing a range."
+      }
+    },
+    {
+      "id": "license-number-on-contracts-bids-ads",
+      "title": "License number on all contracts, subcontracts, bid calls and ads",
+      "plain_english": "You must put your contractor's license number on all construction contracts, all subcontracts and calls for bids, and all forms of advertising.",
+      "category": "required_document",
+      "parameters": {
+        "required_item": "contractor's license number",
+        "documents": [
+          "all construction contracts",
+          "subcontracts",
+          "calls for bid",
+          "all forms of advertising (as prescribed by the registrar)"
+        ]
+      },
+      "applies_to": "All licensed contractors",
+      "citation": "B&P 7030.5",
+      "source_location": "2026 CSLB Law Book, PDF page 258",
+      "verbatim_quote": "Every person licensed pursuant to this chapter shall include his license number in: (a) all construction contracts; (b) subcontracts and calls for bid; and (c) all forms of advertising, as prescribed by the registrar of contractors, used by such a person.",
+      "effective": "Operative July 1, 1973",
+      "read_from_primary_text": true,
+      "notes": "Template check: license number field required on every contract, subcontract, bid invitation, website and ad."
+    },
+    {
+      "id": "unlicensed-no-recovery",
+      "title": "No lawsuit for payment unless licensed at all times",
+      "plain_english": "A contractor cannot sue or recover payment for work that needs a license unless it alleges (and if challenged, proves) it was properly licensed the entire time it performed the work, no matter how good its claim otherwise is. Exception: individually licensed contractors who only failed to get a joint venture license.",
+      "category": "prohibition",
+      "parameters": {
+        "requirement": "duly licensed contractor at all times during performance of the act or contract",
+        "applies_regardless_of_merits": true,
+        "exception": "contractors each individually licensed but who failed to comply with B&P 7029 (joint venture license)",
+        "subject_to": "substantial compliance rule in 7031(e)"
+      },
+      "applies_to": "Contractors and subcontractors seeking payment through courts or arbitration",
+      "citation": "B&P 7031(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 258",
+      "verbatim_quote": "no person engaged in the business or acting in the capacity of a contractor, may bring or maintain any action, or recover in law or equity in any action, in any court of this state for the collection of compensation for the performance of any act or contract where a license is required by this chapter without alleging that they were a duly licensed contractor at all times",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "A license lapse (expiration, suspension, classification gap) at any point during performance can forfeit the right to be paid. Track license status daily over each project's performance period."
+    },
+    {
+      "id": "owner-disgorgement-of-payments",
+      "title": "Owner can recover everything paid to an unlicensed contractor",
+      "plain_english": "Anyone who used an unlicensed contractor can sue to get back all compensation paid to that contractor for the work.",
+      "category": "money_amount",
+      "parameters": {
+        "plaintiff": "person who utilized the services of an unlicensed contractor",
+        "recoverable_amount": "all compensation paid to the unlicensed contractor for performance of any act or contract",
+        "subject_to": "substantial compliance rule in 7031(e)"
+      },
+      "applies_to": "Project owners, GCs who paid unlicensed subs",
+      "citation": "B&P 7031(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 258",
+      "verbatim_quote": "a person who utilizes the services of an unlicensed contractor may bring an action in any court of competent jurisdiction in this state to recover all compensation paid to the unlicensed contractor for performance of any act or contract.",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Applies to GCs as well: a GC that paid an unlicensed sub can be sued for disgorgement, and a GC can seek disgorgement from an unlicensed sub. Calculation = sum of all payments made.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 258 (B&P 7031(b))",
+        "correction": "",
+        "note": "The notes field's statement about GCs and unlicensed subs is case-law interpretation; it is not stated in the 7031(b) text."
+      }
+    },
+    {
+      "id": "unlicensed-security-interest-unenforceable",
+      "title": "Unlicensed contractor's security interest is unenforceable",
+      "plain_english": "Any security interest taken to secure payment for licensed work is unenforceable if the contractor was not properly licensed the whole time it did the work.",
+      "category": "prohibition",
+      "parameters": {
+        "affected": "security interest securing payment for work requiring a license",
+        "condition": "performer not duly licensed at all times during performance",
+        "result": "unenforceable"
+      },
+      "applies_to": "Contractors relying on security interests for payment",
+      "citation": "B&P 7031(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 258",
+      "verbatim_quote": "A security interest taken to secure any payment for the performance of any act or contract for which a license is required by this chapter is unenforceable if the person performing the act or contract was not a duly licensed contractor at all times during the performance of the act or contract.",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "The text says 'security interest'; whether this reaches mechanics liens is not stated here (mechanics lien rules are in the Civil Code)."
+    },
+    {
+      "id": "proof-of-licensure-verified-certificate",
+      "title": "Prove licensure with a CSLB verified certificate",
+      "plain_english": "If your licensure is challenged in a payment suit, you must prove it with a verified certificate of licensure from CSLB showing you held the proper classification the entire time. The burden of proof is on the contractor; the challenger does not have to produce a certificate.",
+      "category": "required_document",
+      "parameters": {
+        "trigger": "licensure or proper licensure is controverted",
+        "document": "verified certificate of licensure from CSLB",
+        "certificate_must_show": "duly licensed in the proper classification at all times during performance of any act or contract covered by the action",
+        "burden_of_proof": "licensee",
+        "challenger_must_produce_certificate": false
+      },
+      "applies_to": "Contractors suing for payment",
+      "citation": "B&P 7031(d)",
+      "source_location": "2026 CSLB Law Book, PDF pages 258-259",
+      "verbatim_quote": "proof of licensure pursuant to this section shall be made by production of a verified certificate of licensure from the Contractors State License Board which establishes that the individual or entity bringing the action was duly licensed in the proper classification of contractors at all times during the performance of any act or contract covered by the action.",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Proper classification matters: being licensed but in the wrong classification may fail this test."
+    },
+    {
+      "id": "substantial-compliance-doctrine",
+      "title": "Substantial compliance: narrow 3-part exception",
+      "plain_english": "A court may excuse a licensing lapse only if, after an evidentiary hearing, the contractor shows it (1) was licensed in California before performing the work, (2) acted reasonably and in good faith to keep proper licensure, and (3) acted promptly and in good faith to fix the problem once it learned of it. A contractor that was never licensed in California cannot use this exception.",
+      "category": "process_step",
+      "parameters": {
+        "never_licensed_eligible": false,
+        "requires_evidentiary_hearing": true,
+        "all_required": [
+          "duly licensed in California prior to performance of the act or contract",
+          "acted reasonably and in good faith to maintain proper licensure",
+          "acted promptly and in good faith to remedy the failure upon learning of it"
+        ],
+        "applies_to_contracts_entered_on_or_after": "1992-01-01"
+      },
+      "applies_to": "Contractors whose license lapsed during a project",
+      "citation": "B&P 7031(e), (f)",
+      "source_location": "2026 CSLB Law Book, PDF page 259",
+      "verbatim_quote": "The judicial doctrine of substantial compliance shall not apply under this section where the person who engaged in the business or acted in the capacity of a contractor has never been a duly licensed contractor in this state.",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "1994 amendments do not apply to actions/arbitrations commenced before January 1, 1995 (7031(f))."
+    },
+    {
+      "id": "permit-applicant-license-statement",
+      "title": "Signed license statement (or exemption basis) with every building permit",
+      "plain_english": "Cities and counties must require each building permit applicant to file a signed statement giving their contractor license number and stating it is in full force, or, if exempt, the basis for the exemption. Violating this carries a civil penalty of up to $500.",
+      "category": "required_document",
+      "parameters": {
+        "trigger": "application for permit for construction, alteration, improvement, demolition or repair of a building or structure",
+        "document": "statement prepared and signed by applicant",
+        "contents_if_licensed": [
+          "statement applicant is licensed",
+          "license number",
+          "statement license is in full force and effect"
+        ],
+        "contents_if_exempt": "basis for the alleged exemption",
+        "civil_penalty_max_usd": 500
+      },
+      "applies_to": "Permit applicants (contractors and owner-builders)",
+      "citation": "B&P 7031.5",
+      "source_location": "2026 CSLB Law Book, PDF pages 259-260",
+      "verbatim_quote": "each applicant for such a permit file as a condition precedent to the issuance of a permit a statement which he has prepared and signed stating that the applicant is licensed under the provisions of this chapter, giving the number of the license and stating that it is in full force and effect, or, if the applicant is exempt from the provisions of this chapter, the basis for the alleged exemption.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Owner-builders typically cite B&P 7044 as the exemption basis. A false statement is the applicant's violation.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 259-260 (B&P 7031.5)",
+        "correction": "",
+        "note": "$500 maximum civil penalty confirmed; consistent with 16 CCR 884(a) (PDF page 540) range of $100-$500 for 7031.5."
+      }
+    },
+    {
+      "id": "local-permit-inspection-authority",
+      "title": "Local permits/inspections allowed; no local contractor qualification rules",
+      "plain_english": "Cities and counties may regulate installation quality through permits, inspections and plan approval before construction, and may send complaints about code violations to CSLB, which get priority. But cities and counties may not set their own qualifications to be in the contracting business.",
+      "category": "process_step",
+      "parameters": {
+        "local_powers": [
+          "permit system",
+          "inspections",
+          "require submission and approval of plans and specifications before construction",
+          "enforce local health and safety laws",
+          "direct complaints to CSLB registrar about code violations (priority processing)"
+        ],
+        "local_prohibition": "enact regulations relating to qualifications to engage in the business of contracting"
+      },
+      "applies_to": "Contractors and owners dealing with local building departments",
+      "citation": "B&P 7032",
+      "source_location": "2026 CSLB Law Book, PDF page 260",
+      "verbatim_quote": "Nothing contained in this section shall be construed as authorizing a city or county to enact regulations relating to the qualifications necessary to engage in the business of contracting.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Local code-violation findings can become CSLB complaints."
+    },
+    {
+      "id": "city-business-license-cslb-statement",
+      "title": "City business license: signed CSLB license statement or exemption proof",
+      "plain_english": "A city that requires a business license for contracting businesses must require each licensee or applicant (new or renewal) to file a signed statement that it holds a CSLB license in full force, or proof of the facts supporting an exemption.",
+      "category": "required_document",
+      "parameters": {
+        "trigger": "city or city and county requires a business license as a condition of engaging in a business regulated by the CSLL",
+        "applies_at": [
+          "issuance",
+          "renewal"
+        ],
+        "document": "signed statement that applicant is licensed under the CSLL and license is in full force and effect",
+        "alternative": "proof of facts entitling applicant to exemption"
+      },
+      "applies_to": "Contractors obtaining or renewing city business licenses",
+      "citation": "B&P 7033",
+      "source_location": "2026 CSLB Law Book, PDF page 260",
+      "verbatim_quote": "a signed statement that such licensee or applicant is licensed under the provisions of this chapter and stating that the license is in full force and effect, or, if such licensee or applicant is exempt from the provisions of this chapter, he shall furnish proof of the facts which entitle him to such exemption.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "no-void-indemnity-in-subcontracts",
+      "title": "No void indemnity clauses (Civ. Code 2782) in subcontracts",
+      "plain_english": "A contractor may not put into a subcontract with a licensed subcontractor, or be a party to, any clause that is void or unenforceable under Civil Code 2782 (the anti-indemnity statute).",
+      "category": "prohibition",
+      "parameters": {
+        "who": "contractor required to be licensed",
+        "counterparty": "subcontractor licensed under the CSLL",
+        "prohibited_clause": "any provision, clause, covenant, or agreement void or unenforceable under Civil Code 2782"
+      },
+      "applies_to": "General contractors and upper-tier subcontractors drafting subcontracts",
+      "citation": "B&P 7034(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 261",
+      "verbatim_quote": "No contractor that is required to be licensed under this chapter shall insert in any contract, or be a party, with a subcontractor that is licensed under this chapter to any contract which contains, a provision, clause, covenant, or agreement which is void or unenforceable under Section 2782 of the Civil Code.",
+      "effective": "January 1, 2011 (last amended; operative July 1, 2012)",
+      "read_from_primary_text": true,
+      "notes": "Civil Code 2782/2782.6 are in the book's Appendix (not this chunk). Subcontract template linter should flag broad-form indemnity for active negligence/sole negligence, etc."
+    },
+    {
+      "id": "no-illegal-lien-waivers",
+      "title": "Don't demand lien waivers that violate Civ. Code 8122",
+      "plain_english": "A contractor may not require a subcontractor, employee or supplier to waive lien rights in violation of Civil Code 8122 (which generally requires the statutory waiver and release forms).",
+      "category": "prohibition",
+      "parameters": {
+        "who": "contractor required to be licensed",
+        "protected_parties": [
+          "subcontractor",
+          "employee",
+          "supplier"
+        ],
+        "prohibited": "requiring a waiver of lien rights in violation of Civil Code 8122"
+      },
+      "applies_to": "General contractors and upper-tier subcontractors",
+      "citation": "B&P 7034(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 261",
+      "verbatim_quote": "No contractor that is required to be licensed under this chapter shall require a waiver of lien rights from any subcontractor, employee, or supplier in violation of Section 8122 of the Civil Code.",
+      "effective": "January 1, 2011 (last amended; operative July 1, 2012)",
+      "read_from_primary_text": true,
+      "notes": "Civil Code 8122 content is not reproduced in this chunk; the parenthetical about statutory forms is general background, not read here."
+    },
+    {
+      "id": "specialty-same-class-subcontracting-limit",
+      "title": "Specialty contractor: max one sub in its own classification per project",
+      "plain_english": "A specialty (C) contractor may not subcontract work on a single project to more than one subcontractor holding the same classification as itself, unless the subcontractor uses its own W-2 employees for that work on the project, or the specialty contractor is signatory to a collective bargaining agreement covering that work that addresses subcontracting.",
+      "category": "prohibition",
+      "parameters": {
+        "who": "specialty contractor (B&P 7058)",
+        "max_same_classification_subcontractors_per_project": 1,
+        "exceptions_any_of": [
+          "subcontractor classifies the individuals performing that classification's work on the project as employees (not independent contractors) under the Labor Code",
+          "specialty contractor is signatory to a bona fide CBA covering the work type and addressing subcontracting"
+        ],
+        "violation": "cause for disciplinary action"
+      },
+      "applies_to": "C-class specialty contractors subcontracting their own trade",
+      "citation": "B&P 7035",
+      "source_location": "2026 CSLB Law Book, PDF page 261",
+      "verbatim_quote": "A specialty contractor shall not enter into a contract for the performance of work on the same single project or undertaking with more than one subcontractor in the same license classification as the specialty contractor offering the contract, unless either of the following requirements are satisfied:",
+      "effective": "January 1, 2024 (AB 1204)",
+      "read_from_primary_text": true,
+      "notes": "Tool check per project: count subs whose classification equals the hiring specialty contractor's; if > 1, require employee-status or CBA attestation for each."
+    },
+    {
+      "id": "ag-wage-theft-license-action",
+      "title": "Attorney General can pursue license discipline for unpaid wages",
+      "plain_english": "The Attorney General may sue to suspend, revoke or deny a contractor's license if the contractor failed to pay workers full wages owed, has an unpaid wage judgment, or violated a wage-payment injunction or court order. The AG must notify CSLB at least 30 days before filing; CSLB may intervene within 60 days. A good-faith mistake about which wage rate applies (including prevailing wage) is not a violation.",
+      "category": "penalty",
+      "parameters": {
+        "grounds_any_of": [
+          "failed to pay workers full wages owed under state law",
+          "has not fulfilled a wage judgment",
+          "violating an injunction or court order regarding payment of wages"
+        ],
+        "possible_relief": [
+          "suspend license",
+          "revoke license",
+          "deny application",
+          "deny continued maintenance of license"
+        ],
+        "ag_notice_to_registrar_days_before_filing": 30,
+        "board_intervention_window_days": 60,
+        "disciplinary_action_within_meaning_of": [
+          "B&P 7071.8 (disciplinary bond)"
+        ],
+        "legal_action_within_meaning_of": [
+          "B&P 7124.6 (public disclosure)"
+        ],
+        "good_faith_wage_rate_mistake_is_violation": false
+      },
+      "applies_to": "Licensed contractors and applicants with wage-payment issues",
+      "citation": "B&P 7036",
+      "source_location": "2026 CSLB Law Book, PDF pages 262-263",
+      "verbatim_quote": "The civil action shall be brought on the grounds that a person has failed to pay its workers the full amount of wages that the workers are entitled to under state law, has not fulfilled a wage judgment, or is in violation of an injunction or court order regarding the payment of wages to its workers.",
+      "effective": "January 1, 2026 (AB 1002)",
+      "read_from_primary_text": true,
+      "notes": "Failure of AG to give the 30-day notice is not a defense. Denied licenses are subject to B&P 486(a) waiting period. Tool: track outstanding wage judgments/orders as a license-risk flag.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 262-263 (B&P 7036; added Stats 2025 ch 567, AB 1002, eff. Jan 1, 2026)",
+        "correction": "The 30-day AG notice, the 60-day intervention window, the good-faith wage-rate exception and the quote are confirmed. The parameter counts_as_discipline_for listed both 7071.8 and 7124.6, but 7036(d)(2) says an order is \"disciplinary action within the meaning of Section 7071.8 and legal action within the meaning of Section 7124.6\". Split it into disciplinary_action_within_meaning_of and legal_action_within_meaning_of."
+      }
+    },
+    {
+      "id": "exemption-government-entities",
+      "title": "Government/tribal exemption, but no hiring unlicensed contractors",
+      "plain_english": "Authorized representatives of the U.S., California, federally recognized tribes acting within tribal jurisdiction, and California cities, counties and districts acting in their official capacity are exempt. But the exemption does not let them contract with an unlicensed contractor for work requiring a license.",
+      "category": "definition",
+      "parameters": {
+        "exempt_entities": [
+          "United States government",
+          "State of California",
+          "federally recognized tribe or participating tribe acting within tribal jurisdiction",
+          "incorporated town, city, county",
+          "irrigation district",
+          "reclamation district",
+          "other municipal or political corporation or subdivision of the state"
+        ],
+        "condition": "acting within scope of official capacity",
+        "may_hire_unlicensed_contractor": false
+      },
+      "applies_to": "Public agencies, tribes and their contractors",
+      "citation": "B&P 7040",
+      "source_location": "2026 CSLB Law Book, PDF page 263",
+      "verbatim_quote": "Nothing in this section authorizes the entity or its authorized representative thereof either to enter into or authorize a contract with an unlicensed contractor for work that is required by this chapter to be performed by a licensed contractor.",
+      "effective": "January 1, 2025 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "See Public Contract Code 6100 (Appendix)."
+    },
+    {
+      "id": "exemption-court-officers",
+      "title": "Court officers exempt",
+      "plain_english": "Court officers (e.g., receivers) acting within the scope of their office are exempt from the contractor license law.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "officers of a court",
+        "condition": "acting within the scope of their office"
+      },
+      "applies_to": "Court-appointed officers",
+      "citation": "B&P 7041",
+      "source_location": "2026 CSLB Law Book, PDF page 263",
+      "verbatim_quote": "This chapter does not apply to officers of a court when they are acting within the scope of their office.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Example 'receivers' is illustrative and not in the text."
+    },
+    {
+      "id": "exemption-public-utilities-own-work",
+      "title": "Public utilities: own-business work exempt",
+      "plain_english": "Regulated public utilities doing construction, maintenance and development work incidental to their own business are exempt.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "public utilities operating under state regulation",
+        "scope": "construction, maintenance and development work incidental to their own business"
+      },
+      "applies_to": "Public utilities",
+      "citation": "B&P 7042",
+      "source_location": "2026 CSLB Law Book, PDF page 263",
+      "verbatim_quote": "This chapter does not apply to public utilities operating under the regulation of the State Railroad Commission on construction, maintenance and development work incidental to their own business.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Text refers to the historical State Railroad Commission; B&P 7042.5 restates this for the Public Utilities Commission."
+    },
+    {
+      "id": "utility-corporation-licensed-work-limits",
+      "title": "Gas/heat/electric utilities: limits on licensed work",
+      "plain_english": "PUC-regulated gas, heat and electrical corporations and their subsidiaries may not do work requiring a contractor's license except: on their own properties; through licensed contractors or PUC-authorized low-income programs; for generation/transmission/distribution (including work past the meter if needed for safety or to avoid outage); work otherwise exempt; or PUC-ordered programs.",
+      "category": "prohibition",
+      "parameters": {
+        "who": "gas, heat, or electrical corporations and subsidiaries regulated by the PUC",
+        "allowed_conditions_any_of": [
+          "work on the corporation's properties (owned, leased, easement, or facilities owned/operated for utility purposes)",
+          "work performed through contract with licensed contractor(s)",
+          "work for low-income citizens under PUC-authorized program",
+          "work furthering generation, transmission, or distribution of electricity, gas, or steam; work inside a structure beyond the customer's meter only if necessary to protect public safety or avoid service interruption",
+          "work otherwise exempt",
+          "work to comply with PUC-ordered or authorized programs consistent with Stats 1983 ch 984"
+        ]
+      },
+      "applies_to": "Energy utilities; contractors competing in energy efficiency work",
+      "citation": "B&P 7042.1",
+      "source_location": "2026 CSLB Law Book, PDF page 264",
+      "verbatim_quote": "gas heat, or electrical corporations and their subsidiaries that are regulated as public utilities by the Public Utilities Commission shall not conduct work for which a contractor’s license is required, except under any one or more of the following conditions:",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Book's table of contents mislabels this section 'Adoption fees; Deferral, waiver, or reduction'."
+    },
+    {
+      "id": "exemption-puc-utilities-cable-tv",
+      "title": "PUC utilities and cable TV exempt, except street trenching",
+      "plain_english": "PUC-regulated utilities doing work incidental to their own business, and regulated cable TV companies, are exempt, except that a cable TV company's underground trenching in public streets (other than to connect subscribers) requires a licensed contractor.",
+      "category": "definition",
+      "parameters": {
+        "exempt": [
+          "public utilities regulated by PUC, work incidental to own business",
+          "cable television corporation activities regulated under PUC 768.5"
+        ],
+        "not_exempt": "underground trenching by cable TV corporation within public streets, other than solely for connecting its distribution system to, or within, subscriber/potential subscriber properties",
+        "cable_tv_corporation_definition": "corporation or person that transmits television programs by cable to subscribers for a fee"
+      },
+      "applies_to": "Utilities, cable TV companies, trenching contractors",
+      "citation": "B&P 7042.5",
+      "source_location": "2026 CSLB Law Book, PDF page 265",
+      "verbatim_quote": "except underground trenching by a cable television corporation within the public streets, other than that necessary solely for the connection of its distribution system to, or within the properties of, subscribers or potential subscribers.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "exemption-oil-gas-owner-lessee",
+      "title": "Oil and gas well work by owner or lessee exempt",
+      "plain_english": "Construction, repair or operation incidental to discovering or producing oil or gas, or drilling, testing or abandoning oil/gas wells, is exempt when done by the owner or lessee.",
+      "category": "definition",
+      "parameters": {
+        "scope": [
+          "construction, repair or operation incidental to discovering or producing petroleum or gas",
+          "drilling, testing, abandoning or other operation of petroleum or gas well"
+        ],
+        "performed_by": [
+          "owner",
+          "lessee"
+        ]
+      },
+      "applies_to": "Oil and gas owners/lessees",
+      "citation": "B&P 7043",
+      "source_location": "2026 CSLB Law Book, PDF page 265",
+      "verbatim_quote": "This chapter does not apply to any construction, repair or operation incidental to the discovering or producing of petroleum or gas, or the drilling, testing, abandoning or other operation of any petroleum or gas well, when performed by an owner or lessee.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Contractors hired by the owner/lessee are not covered by this exemption on its face."
+    },
+    {
+      "id": "owner-builder-self-performed",
+      "title": "Owner-builder exemption: self-performed, not for sale",
+      "plain_english": "An owner who builds or improves a structure on their own property is exempt if none of the improvements are intended or offered for sale, and the owner personally does all the work or uses only their own employees paid wages as their sole compensation.",
+      "category": "threshold",
+      "parameters": {
+        "conditions_all": [
+          "none of the improvements intended or offered for sale",
+          "owner personally performs all work, or any other work is by owner's employees with wages as sole compensation"
+        ],
+        "independent_contractors_allowed": false
+      },
+      "applies_to": "Property owners building or improving their own property",
+      "citation": "B&P 7044(a)(1)",
+      "source_location": "2026 CSLB Law Book, PDF page 265",
+      "verbatim_quote": "(A) None of the improvements are intended or offered for sale. (B) The property owner personally performs all of the work or any work not performed by the owner is performed by the owner’s employees with wages as their sole compensation.",
+      "effective": "January 1, 2017 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Owner using employees takes on employer obligations (payroll, workers' comp) not addressed in this section. See sale presumptions in 7044(b).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 265 (B&P 7044(a)(1))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "owner-builder-licensed-trades",
+      "title": "Owner-builder exemption: owner contracts directly with licensed trades",
+      "plain_english": "An owner building or improving on their own property is exempt if they contract directly with properly licensed contractors for each trade. For single-family homes, no more than four may be intended or offered for sale in a calendar year, unless the owner hires a general contractor for the construction.",
+      "category": "threshold",
+      "parameters": {
+        "conditions_all": [
+          "owner directly contracts with licensees duly licensed for the respective trades"
+        ],
+        "sfr_max_for_sale_per_calendar_year": 4,
+        "sfr_limit_waived_if": "owner contracts with a general contractor for the construction",
+        "applies_to_structure_type_for_limit": "single-family residential structures"
+      },
+      "applies_to": "Owner-builders and small developers",
+      "citation": "B&P 7044(a)(2)",
+      "source_location": "2026 CSLB Law Book, PDF page 265",
+      "verbatim_quote": "(B) For projects involving single-family residential structures, no more than four of these structures are intended or offered for sale in a calendar year. This subparagraph shall not apply if the owner contracts with a general contractor for the construction.",
+      "effective": "January 1, 2017 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Tool check: count SFR structures intended/offered for sale per calendar year; >4 without a GC means owner needs a license.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 265 (B&P 7044(a)(2))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "homeowner-principal-residence-exemption",
+      "title": "Homeowner improving own principal residence (12-month residency)",
+      "plain_english": "A homeowner improving their principal residence is exempt if the work is done before sale, they actually lived there for the 12 months before the work was completed, and they have not used this exemption on more than two structures more than once in any three-year period.",
+      "category": "threshold",
+      "parameters": {
+        "conditions_all": [
+          "work performed prior to sale",
+          "homeowner actually resided in residence for 12 months prior to completion of the work",
+          "has not used this exemption on more than two structures more than once during any three-year period"
+        ],
+        "residency_months_before_completion": 12,
+        "max_structures": 2,
+        "lookback_years": 3,
+        "covers": "principal place of residence or appurtenances"
+      },
+      "applies_to": "Homeowners improving their primary residence",
+      "citation": "B&P 7044(a)(3)",
+      "source_location": "2026 CSLB Law Book, PDF page 266",
+      "verbatim_quote": "(A) The work is performed prior to sale. (B) The homeowner has actually resided in the residence for the 12 months prior to completion of the work. (C) The homeowner has not availed himself or herself of the exemption in this paragraph on more than two structures more than once during any three-year period.",
+      "effective": "January 1, 2017 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "The 'more than two structures more than once during any three-year period' wording is ambiguous; confirm interpretation before hard-coding.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 266 (B&P 7044(a)(3))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "exemption-nonprofit-mutual-self-help",
+      "title": "Nonprofit assisting mutual self-help owner-builders exempt",
+      "plain_english": "A nonprofit corporation helping an owner-builder who participates in a mutual self-help housing program is exempt.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "nonprofit corporation providing assistance to an owner-builder (HSC 50692(a))",
+        "program": "mutual self-help housing program (HSC 50078)"
+      },
+      "applies_to": "Affordable housing nonprofits",
+      "citation": "B&P 7044(a)(4)",
+      "source_location": "2026 CSLB Law Book, PDF page 266",
+      "verbatim_quote": "A nonprofit corporation providing assistance to an owner-builder, as defined in subdivision (a) of Section 50692 of the Health and Safety Code, who is participating in a mutual self-help housing program, as defined in Section 50078 of the Health and Safety Code.",
+      "effective": "January 1, 2017 (last amended)",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "owner-builder-sale-presumptions",
+      "title": "Owner-builder sale within 1 year presumed built for sale",
+      "plain_english": "If an owner-builder sells or offers to sell a structure within one year after completion, the law presumes it was built for sale (the owner can try to rebut this). Selling or offering five or more structures within one year after completion is conclusive proof they were built for sale.",
+      "category": "threshold",
+      "parameters": {
+        "window_after_completion_years": 1,
+        "rebuttable_presumption_threshold_structures": 1,
+        "conclusive_presumption_threshold_structures": 5,
+        "presumption": "structure undertaken for purposes of sale (defeats 7044 exemptions that require no sale intent)"
+      },
+      "applies_to": "Owner-builders selling completed structures",
+      "citation": "B&P 7044(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 266",
+      "verbatim_quote": "proof of the sale or offering for sale of a structure by or for the owner-builder within one year after completion of the structure constitutes a rebuttable presumption affecting the burden of proof that the structure was undertaken for purposes of sale.",
+      "effective": "January 1, 2017 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Conclusive presumption text: 'Proof of the sale or offering for sale of five or more structures by the owner-builder within one year after completion constitutes a conclusive presumption that the structures were undertaken for purposes of sale.'",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 266 (B&P 7044(b))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "owner-builder-injunction-fees",
+      "title": "Injunctions against unlicensed, non-exempt owner-builders",
+      "plain_english": "Licensed contractors, contractor associations, labor organizations, affected consumers, district attorneys or the Attorney General can sue for an injunction against an owner-builder who is neither licensed nor exempt, without proving irreparable injury. The prevailing party (plaintiff or defendant) gets attorney's fees and costs.",
+      "category": "penalty",
+      "parameters": {
+        "who_may_sue": [
+          "licensed contractor",
+          "association of contractors",
+          "labor organization",
+          "consumer affected by the violation",
+          "district attorney",
+          "Attorney General"
+        ],
+        "defendant": "owner-builder who is neither licensed nor exempt",
+        "irreparable_injury_proof_required": false,
+        "attorney_fees": "prevailing party (plaintiff or defendant) recovers attorney's fees and all costs"
+      },
+      "applies_to": "Owner-builders; competing contractors",
+      "citation": "B&P 7044.01",
+      "source_location": "2026 CSLB Law Book, PDF page 266",
+      "verbatim_quote": "any licensed contractor or association of contractors, labor organization, consumer affected by the violation, district attorney, or the Attorney General shall be entitled to seek injunctive relief prohibiting any violation of this chapter by an owner-builder who is neither licensed nor exempted from licensure under this chapter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Two-way fee shifting creates risk for plaintiffs who lose.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 266 (B&P 7044.01)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "exemption-real-estate-licensee",
+      "title": "Real estate licensees exempt only within real estate scope",
+      "plain_english": "Real estate licensees acting within their real estate license are exempt, but neither a real estate licensee nor a property manager may act as a contractor without a CSLB license.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "real estate licensee acting within course and scope of license (B&P 10000 et seq.)",
+        "not_authorized_without_cslb_license": [
+          "real estate licensee acting as contractor",
+          "property manager acting as contractor"
+        ]
+      },
+      "applies_to": "Real estate agents/brokers and property managers",
+      "citation": "B&P 7044.1",
+      "source_location": "2026 CSLB Law Book, PDF page 267",
+      "verbatim_quote": "However, nothing in this section shall authorize a real estate licensee or a property manager to act in the capacity of a contractor unless licensed by the board.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Property managers arranging and overseeing repairs should check B&P 7026.1(a)(2) consultant rules too."
+    },
+    {
+      "id": "exemption-surety-completion",
+      "title": "Surety completing a bonded contract is exempt",
+      "plain_english": "An admitted surety insurer that hires a contractor to complete a contract it bonded (performance or completion bond) is exempt, as long as all actual construction is done by licensed contractors.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "admitted surety insurer",
+        "condition_1": "surety engages a contractor to complete a contract on which it issued a performance or completion bond",
+        "condition_2": "all actual construction work performed by duly licensed contractors"
+      },
+      "applies_to": "Sureties and completion contractors; owners after contractor default",
+      "citation": "B&P 7044.2",
+      "source_location": "2026 CSLB Law Book, PDF page 267",
+      "verbatim_quote": "This chapter does not apply to an admitted surety insurer whenever that surety insurer engages a contractor to undertake the completion of a contract on which a performance or completion bond was issued by the surety insurer, provided all actual construction work is performed by duly licensed contractors.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "exemption-finished-products-suppliers",
+      "title": "Finished products not fixed to structure; non-installing suppliers exempt",
+      "plain_english": "Selling or installing finished products that do not become a fixed part of the structure is exempt, as are suppliers/manufacturers that do not install or contract to install. But installed carpets, mobilehomes and mobilehome accessory structures are not 'finished products', and installing home improvement goods is covered by the license law.",
+      "category": "definition",
+      "parameters": {
+        "exempt": [
+          "sale or installation of finished products, materials, or merchandise that do not become a fixed part of the structure",
+          "material supplier or manufacturer who does not install or contract for installation"
+        ],
+        "not_finished_products": [
+          "installed carpets",
+          "mobilehomes",
+          "mobilehome accessory structures"
+        ],
+        "covered_anyway": "installation of home improvement goods (B&P 7151)"
+      },
+      "applies_to": "Suppliers, manufacturers, retailers offering installation",
+      "citation": "B&P 7045",
+      "source_location": "2026 CSLB Law Book, PDF page 267",
+      "verbatim_quote": "This chapter does not apply to the sale or installation of any finished products, materials, or articles of merchandise that do not become a fixed part of the structure, nor shall it apply to a material supplier or manufacturer furnishing finished products, materials, or articles of merchandise who does not install or contract for the installation of those items.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Second paragraph: 'This chapter shall apply to the installation of home improvement goods, as defined in Section 7151.'"
+    },
+    {
+      "id": "exemption-personal-property",
+      "title": "Personal property work exempt (not mobilehomes)",
+      "plain_english": "Work on personal property is exempt, but mobilehomes and mobilehome accessory structures are not treated as personal property for this exemption.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "construction, alteration, improvement, or repair of personal property",
+        "excluded_from_personal_property": [
+          "mobilehomes",
+          "mobilehome accessory structures (B&P 7026.2)"
+        ]
+      },
+      "applies_to": "Persons working on movable property",
+      "citation": "B&P 7046",
+      "source_location": "2026 CSLB Law Book, PDF page 267",
+      "verbatim_quote": "This chapter does not apply to any construction, alteration, improvement, or repair of personal property. The term “personal property” shall not include mobilehomes or mobilehome accessory structures as defined in Section 7026.2.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "minor-work-exemption-1000",
+      "title": "Minor work exemption: under $1,000 total and no building permit",
+      "plain_english": "No license is needed for casual, minor work on one project if the total price of all contracts for labor, materials and everything else is under $1,000 and the work does not require a building permit.",
+      "category": "threshold",
+      "parameters": {
+        "max_aggregate_contract_price_usd_exclusive": 1000,
+        "price_includes": [
+          "labor",
+          "materials",
+          "all other items"
+        ],
+        "aggregation": "all contracts on one undertaking or project",
+        "building_permit_required_disqualifies": true,
+        "nature": "casual, minor, or inconsequential",
+        "test": "aggregate_price < 1000 AND NOT permit_required AND NOT part_of_larger_operation AND NOT split_to_evade AND NOT advertises_as_contractor AND NOT employs_others"
+      },
+      "applies_to": "Handypersons and owners hiring for small jobs",
+      "citation": "B&P 7048(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 268",
+      "verbatim_quote": "This chapter does not apply to a work or operation on one undertaking or project by one or more contracts if the aggregate contract price for labor, materials, and all other items is less than one thousand dollars ($1,000), that work or operation being considered of casual, minor, or inconsequential nature, and the work or operation does not require a building permit.",
+      "effective": "January 1, 2025 (Stats 2024 ch 240, AB 2622); further amended effective January 1, 2026 (Stats 2025 ch 67, AB 1170)",
+      "read_from_primary_text": true,
+      "notes": "Strictly less than $1,000; $1,000.00 exactly requires a license. Previous threshold ($500) is not stated in this text.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 268 (B&P 7048(a))",
+        "correction": "",
+        "note": "Amendment history on PDF page 268 and the 2025 legislation table (PDF page 16) confirm amendments by Stats 2024 ch 240 (eff. Jan 1, 2025) and Stats 2025 ch 67 (eff. Jan 1, 2026)."
+      }
+    },
+    {
+      "id": "minor-work-no-splitting",
+      "title": "Minor work exemption: no splitting or parts of larger jobs",
+      "plain_english": "The under-$1,000 exemption does not apply if the work is part of a larger operation (by the same or a different contractor), or if the job is broken into contracts under $1,000 to evade the law or otherwise.",
+      "category": "prohibition",
+      "parameters": {
+        "disqualifiers": [
+          "work is only part of a larger or major operation, whether by same or different contractor",
+          "operation divided into contracts under $1,000 for purpose of evasion or otherwise"
+        ],
+        "split_threshold_usd": 1000
+      },
+      "applies_to": "Unlicensed persons relying on the minor-work exemption; owners hiring them",
+      "citation": "B&P 7048(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 268",
+      "verbatim_quote": "This section does not apply in a case wherein the work of construction is only a part of a larger or major operation, whether undertaken by the same or a different contractor, or in which a division of the operation is made in contracts of amounts less than one thousand dollars ($1,000) for the purpose of evasion of this chapter or otherwise.",
+      "effective": "January 1, 2025 (amended); January 1, 2026 (amended)",
+      "read_from_primary_text": true,
+      "notes": "Tool check: sum all contracts/invoices with the same person on the same project; flag multiple sub-$1,000 contracts.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 268 (B&P 7048(b))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "minor-work-not-for-advertisers-or-employers",
+      "title": "Minor work exemption lost if you advertise as contractor or employ others",
+      "plain_english": "The under-$1,000 exemption does not apply to anyone who advertises or uses signs/cards suggesting they are a contractor or qualified to be one, or who employs anyone else to do or help with the work.",
+      "category": "prohibition",
+      "parameters": {
+        "disqualifiers": [
+          "advertises or puts out sign, card or device indicating the person is a contractor or qualified to engage in contracting",
+          "employs another person to perform or assist in performing the work"
+        ]
+      },
+      "applies_to": "Unlicensed handypersons",
+      "citation": "B&P 7048(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 268",
+      "verbatim_quote": "This section does not apply to a person who does either of the following: (1) Advertises or puts out a sign or card or other device that might indicate to the public that the person is a contractor or that the person is qualified to engage in the business of a contractor. (2) Employs another person to perform, or assist in performing, the work or operation.",
+      "effective": "January 1, 2025 (amended); January 1, 2026 (amended)",
+      "read_from_primary_text": true,
+      "notes": "Compare B&P 7027.2 (unlicensed ads for <$1,000 work allowed only with a 'not licensed' statement)."
+    },
+    {
+      "id": "exemption-agricultural-ditch-fire",
+      "title": "Agricultural, district ditch and rural fire-prevention work exempt",
+      "plain_english": "Work incidental to building/repairing irrigation and drainage ditches of irrigation or reclamation districts, farming, dairying, agriculture, viticulture, horticulture, livestock or poultry raising, and rural land clearing for fire prevention is exempt, except when done by a licensee. Water well work is not exempt.",
+      "category": "definition",
+      "parameters": {
+        "exempt_activities": [
+          "construction/repair of irrigation and drainage ditches of regularly constituted irrigation or reclamation districts",
+          "farming",
+          "dairying",
+          "agriculture",
+          "viticulture",
+          "horticulture",
+          "stock or poultry raising",
+          "clearing or other work on land in rural districts for fire prevention"
+        ],
+        "exemption_lost_if": "performed by a licensee under the chapter",
+        "not_exempt": "water well drilling, digging, boring, constructing, deepening, repairing, reperforating, or abandoning"
+      },
+      "applies_to": "Farmers, ranchers, rural landowners, districts",
+      "citation": "B&P 7049",
+      "source_location": "2026 CSLB Law Book, PDF page 268",
+      "verbatim_quote": "This chapter does not apply to any construction or operation incidental to the construction and repair of irrigation and drainage ditches of regularly constituted irrigation districts, reclamation districts, or to farming, dairying, agriculture, viticulture, horticulture, or stock or poultry raising",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Text: '... or clearing or other work upon the land in rural districts for fire prevention purposes, except when performed by a licensee under this chapter.'"
+    },
+    {
+      "id": "exemption-mural-artist",
+      "title": "Mural artists exempt (not painted wall signs)",
+      "plain_english": "An artist who draws, paints, applies, executes, restores or conserves a mural under an agreement with someone who can legally authorize it does not need a contractor's license. A 'mural' is a unique hand-made work of fine art directly on walls, ceilings or fixtures; painted wall signs are not murals.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "artist who draws, paints, applies, executes, restores, or conserves a mural",
+        "condition": "agreement with a person who could legally authorize the work",
+        "mural_definition": "unique work of fine art protected by copyright, trademark, label, or patent, drawn or painted by hand directly onto interior or exterior walls, ceilings, fixtures, or other appurtenances",
+        "excluded": "painted wall signs"
+      },
+      "applies_to": "Mural artists; owners commissioning murals",
+      "citation": "B&P 7050",
+      "source_location": "2026 CSLB Law Book, PDF pages 268-269",
+      "verbatim_quote": "This chapter does not apply to an artist who draws, paints, applies, executes, restores, or conserves a mural pursuant to an agreement with a person who could legally authorize the work.",
+      "effective": "January 1, 2026 (SB 456)",
+      "read_from_primary_text": true,
+      "notes": "Painted wall signs remain covered (e.g., sign/painting classifications)."
+    },
+    {
+      "id": "exemption-design-professionals-pest-geologists",
+      "title": "Architects, engineers, pest control operators, geologists exempt within practice",
+      "plain_english": "Licensed architects and registered civil/professional engineers acting solely in their professional capacity, licensed structural pest control operators within their license, and licensees under the Geologist and Geophysicist Act within its scope are exempt.",
+      "category": "definition",
+      "parameters": {
+        "exempt": [
+          {
+            "who": "licensed architect",
+            "condition": "acting solely in professional capacity"
+          },
+          {
+            "who": "registered civil or professional engineer",
+            "condition": "acting solely in professional capacity"
+          },
+          {
+            "who": "licensed structural pest control operator",
+            "condition": "within scope of license"
+          },
+          {
+            "who": "Geologist and Geophysicist Act licensee",
+            "condition": "within scope of that Act"
+          }
+        ]
+      },
+      "applies_to": "Design professionals and pest control operators",
+      "citation": "B&P 7051",
+      "source_location": "2026 CSLB Law Book, PDF page 269",
+      "verbatim_quote": "This chapter does not apply to a licensed architect or a registered civil or professional engineer acting solely in his or her professional capacity or to a licensed structural pest control operator acting within the scope of his or her license or a licensee operating within the scope of the Geologist and Geophysicist Act.",
+      "effective": "March 30, 1994 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Design-build or construction management beyond professional services may require a CSLB license."
+    },
+    {
+      "id": "exemption-material-suppliers",
+      "title": "Material suppliers who don't install are exempt",
+      "plain_english": "A person who only furnishes materials or supplies, without fabricating them into or consuming them in the contractor's work, is exempt.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "person who only furnishes materials or supplies",
+        "condition": "does not fabricate them into, or consume them in the performance of, the work"
+      },
+      "applies_to": "Material suppliers",
+      "citation": "B&P 7052",
+      "source_location": "2026 CSLB Law Book, PDF page 269",
+      "verbatim_quote": "This chapter does not apply to any person who only furnishes materials or supplies without fabricating them into, or consuming them in the performance of, the work of the contractor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "exemption-employees",
+      "title": "Wage employees exempt (3-part test)",
+      "plain_english": "A worker is exempt as an employee only if they are paid wages as their sole compensation, do not customarily run an independent business, and have no right to control how the work is done to determine its final results. This exemption does not apply to home improvement salespersons (Article 10).",
+      "category": "definition",
+      "parameters": {
+        "conditions_all": [
+          "receives wages as sole compensation",
+          "does not customarily engage in an independently established business",
+          "does not have right to control or discretion as to manner of performance so as to determine final results"
+        ],
+        "not_applicable_to": "Article 10 (B&P 7150 et seq.) home improvement business, e.g., salespersons"
+      },
+      "applies_to": "Contractors classifying workers; owners using workers directly",
+      "citation": "B&P 7053",
+      "source_location": "2026 CSLB Law Book, PDF page 269",
+      "verbatim_quote": "Except as provided in Article 10 (commencing with Section 7150), this chapter does not apply to any person who engages in the activities herein regulated as an employee who receives wages as his or her sole compensation, does not customarily engage in an independently established business, and does not have the right to control or discretion as to the manner of performance",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Workers paid by the job/1099 who control the means of work are likely 'contractors' needing a license. Labor Code worker-classification tests are separate."
+    },
+    {
+      "id": "exemption-alarm-company-operators",
+      "title": "Licensed alarm company operators exempt for alarm work",
+      "plain_english": "A person holding an alarm company operator's license (B&P 7590 et seq.) is exempt for installing, maintaining, monitoring, selling, altering or servicing alarm systems.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "holder of alarm company operator's license (B&P Chapter 11.6)",
+        "scope": [
+          "installation",
+          "maintenance",
+          "monitoring",
+          "selling",
+          "alteration",
+          "servicing"
+        ],
+        "of": "alarm systems as defined in B&P 7590.1"
+      },
+      "applies_to": "Alarm companies",
+      "citation": "B&P 7054",
+      "source_location": "2026 CSLB Law Book, PDF pages 269-270",
+      "verbatim_quote": "This chapter does not apply to any person who performs work in the installation, maintenance, monitoring, selling, alteration, or servicing of alarm systems, as defined in Section 7590.1, and who holds an alarm company operator’s license issued pursuant to Chapter 11.6 (commencing with Section 7590).",
+      "effective": "January 1, 2019 (last amended)",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "exemption-satellite-antenna-installers",
+      "title": "Registered satellite antenna installers exempt (residential)",
+      "plain_english": "A person registered under B&P Chapter 20 whose only activity is installing satellite antenna systems on residential structures or property is exempt from the licensing provisions.",
+      "category": "definition",
+      "parameters": {
+        "exempt": "person registered under B&P Chapter 20 (commencing with 9800)",
+        "condition": "activities consist only of installing satellite antenna systems",
+        "property_type": "residential structures or property"
+      },
+      "applies_to": "Satellite antenna installers",
+      "citation": "B&P 7054.5",
+      "source_location": "2026 CSLB Law Book, PDF page 270",
+      "verbatim_quote": "The licensing provisions of this chapter do not apply to any person registered under Chapter 20 (commencing with Section 9800) if that person’s activities consist only of installing satellite antenna systems on residential structures or property.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "contracting-branches",
+      "title": "Three branches of contracting (A, B/B-2, C)",
+      "plain_english": "For licensing classification, contracting is divided into general engineering contracting (A), general building contracting (B), residential remodeling contracting, and specialty contracting (C).",
+      "category": "license_classification",
+      "parameters": {
+        "branches": [
+          "general engineering contracting",
+          "general building contracting",
+          "residential remodeling contracting",
+          "specialty contracting"
+        ]
+      },
+      "applies_to": "All contractors and owners choosing a contractor",
+      "citation": "B&P 7055",
+      "source_location": "2026 CSLB Law Book, PDF page 270",
+      "verbatim_quote": "For the purpose of classification, the contracting business includes any or all of the following branches: (a) General engineering contracting. (b) (1) General building contracting. (2) Residential remodeling contracting. (c) Specialty contracting.",
+      "effective": "January 1, 2021 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Letter codes A, B, B-2 and C are not printed in this section; residential remodeling is defined in B&P 7057.5 (outside this chunk)."
+    },
+    {
+      "id": "general-engineering-contractor-def",
+      "title": "General engineering (A) contractor scope",
+      "plain_english": "A general engineering contractor's main business is fixed works requiring specialized engineering knowledge, such as irrigation, water supply, flood control, harbors, dams, railroads, highways, streets, tunnels, airports, sewers, bridges, pipelines, parks, refineries and plants, power plants, mines, earthmoving, excavating, grading, trenching, paving and related concrete work.",
+      "category": "license_classification",
+      "parameters": {
+        "principal_business": "fixed works requiring specialized engineering knowledge and skill",
+        "listed_works": [
+          "irrigation",
+          "drainage",
+          "water power",
+          "water supply",
+          "flood control",
+          "inland waterways",
+          "harbors, docks and wharves",
+          "shipyards and ports",
+          "dams and hydroelectric projects",
+          "levees, river control and reclamation works",
+          "railroads",
+          "highways, streets and roads",
+          "tunnels",
+          "airports and airways",
+          "sewers and sewage disposal plants and systems",
+          "waste reduction plants",
+          "bridges, overpasses, underpasses and similar works",
+          "pipelines for petroleum and other liquid or gaseous substances",
+          "parks, playgrounds and other recreational works",
+          "refineries, chemical plants and similar industrial plants",
+          "powerhouses, powerplants and other utility plants and installations",
+          "mines and metallurgical plants",
+          "land leveling and earthmoving projects",
+          "excavating, grading, trenching, paving and surfacing work",
+          "cement and concrete works in connection with the above"
+        ]
+      },
+      "applies_to": "A-licensed contractors; owners of infrastructure projects",
+      "citation": "B&P 7056",
+      "source_location": "2026 CSLB Law Book, PDF pages 270-271",
+      "verbatim_quote": "A general engineering contractor is a contractor whose principal contracting business is in connection with fixed works requiring specialized engineering knowledge and skill, including the following divisions or subjects:",
+      "effective": "January 1, 2012 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Letter code 'A' not printed in this section."
+    },
+    {
+      "id": "general-building-contractor-def",
+      "title": "General building (B) contractor: two unrelated trades",
+      "plain_english": "A general building contractor's main business is structures for sheltering people, animals or property that require at least two unrelated building trades or crafts, or supervising all or part of such work. Someone who only supplies materials is not a general building contractor.",
+      "category": "license_classification",
+      "parameters": {
+        "structure_purpose": "support, shelter, and enclosure of persons, animals, chattels, or movable property",
+        "min_unrelated_trades": 2,
+        "includes": "doing or superintending the whole or any part thereof",
+        "excludes": "material suppliers under B&P 7045 who do not fabricate or consume materials in the work"
+      },
+      "applies_to": "B-licensed contractors and owners hiring GCs",
+      "citation": "B&P 7057(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 271",
+      "verbatim_quote": "a general building contractor is a contractor whose principal contracting business is in connection with any structure built, being built, or to be built, for the support, shelter, and enclosure of persons, animals, chattels, or movable property of any kind, requiring in its construction the use of at least two unrelated building trades or crafts",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Section 7057 appears on PDF page 271, just past the nominal end of this chunk."
+    },
+    {
+      "id": "general-building-two-trade-rule",
+      "title": "B contractor prime/sub limits: two unrelated trades besides framing/carpentry",
+      "plain_english": "A B contractor may take any framing or carpentry job. For other trades, a B may take a prime contract only if the job requires at least two unrelated trades other than framing/carpentry, or the B holds the specialty license, or subcontracts that work to a properly licensed contractor. A B may take a subcontract for other trades only if it requires two unrelated trades other than framing/carpentry, or the B holds the specialty license. Framing/carpentry never counts toward the two trades.",
+      "category": "license_classification",
+      "parameters": {
+        "framing_or_carpentry_only": "prime or subcontract allowed",
+        "prime_contract_other_trades_allowed_if_any": [
+          "requires >= 2 unrelated building trades or crafts other than framing or carpentry",
+          "B holds the appropriate specialty classification",
+          "B subcontracts with an appropriately licensed contractor to perform the work"
+        ],
+        "subcontract_other_trades_allowed_if_any": [
+          "requires >= 2 unrelated trades or crafts other than framing or carpentry",
+          "B holds the appropriate specialty classification"
+        ],
+        "min_unrelated_trades_excluding_framing_carpentry": 2,
+        "framing_carpentry_counts_toward_two": false
+      },
+      "applies_to": "B general building contractors; owners and GCs awarding work to B contractors",
+      "citation": "B&P 7057(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 271",
+      "verbatim_quote": "a general building contractor shall not take a prime contract for any project involving trades other than framing or carpentry unless the prime contract requires at least two unrelated building trades or crafts other than framing or carpentry, or unless the general building contractor holds the appropriate license classification or subcontracts with an appropriately licensed contractor",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Tool check: count distinct unrelated trades in scope excluding framing/carpentry; if < 2, B needs matching C classification (prime: or a licensed sub; subcontract: own classification only)."
+    },
+    {
+      "id": "general-building-fire-protection-well-drilling",
+      "title": "B contractor: fire protection and well drilling need license or sub",
+      "plain_english": "A B general building contractor may not contract for a project that includes a fire protection system or C-57 well drilling unless it holds that classification or subcontracts the work to a properly licensed contractor.",
+      "category": "license_classification",
+      "parameters": {
+        "restricted_scopes": [
+          "fire protection system (B&P 7026.12/7026.13)",
+          "C-57 Well Drilling (Water Code 13750.5)"
+        ],
+        "allowed_if_any": [
+          "B holds the appropriate classification",
+          "B subcontracts with the appropriately licensed contractor"
+        ]
+      },
+      "applies_to": "B general building contractors",
+      "citation": "B&P 7057(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 271",
+      "verbatim_quote": "A general building contractor shall not contract for any project that includes a fire protection system as provided for in Section 7026.12 or 7026.13, or the “C-57” Well Drilling classification as provided for in Section 13750.5 of the Water Code, unless the general building contractor holds the appropriate license classification, or subcontracts with the appropriately licensed contractor.",
+      "effective": "January 1, 2014 (last amended)",
+      "read_from_primary_text": true,
+      "notes": "Applies even when the project otherwise meets the two-unrelated-trades test."
+    }
+  ],
+  "refuted": [],
+  "verification_summary": {
+    "checked_on": "2026-11-25",
+    "method": "Every deadline, money_amount, threshold, penalty, required_notice and required_contract_clause rule (38) was read against the full section text in sources/lawbook.txt (PDF page = form-feed page index). Every verbatim_quote and both required_text strings were also matched by machine against the normalized page text (line-end hyphens removed): all match. Cross-references elsewhere in the book were searched for overriding or conflicting provisions, including B&P 7099.8 (citation contest deadline) and 16 CCR 884 (citation penalty ranges). Three numeric rules in other categories (fire-protection-system-installer, permit-applicant-license-statement, minor-work-no-splitting) were also checked.",
+    "counts": {
+      "confirmed": 36,
+      "corrected": 5
+    },
+    "rules_total": 110,
+    "rules_checked": 41,
+    "rules_not_checked": [
+      "local-business-tax-proof-before-permit",
+      "cslb-enforcement-jobsite-access",
+      "false-complaint-citation",
+      "def-personnel-person-qualifier",
+      "tribal-licensure",
+      "def-contractor",
+      "hvac-service-requires-license",
+      "owner-builder-consultant-requires-license",
+      "temp-labor-agency-is-contractor",
+      "provide-license-number-to-temp-agency",
+      "well-drilling-requires-license",
+      "cid-manager-not-contractor",
+      "mobilehome-work-is-contracting",
+      "mobilehome-dealer-installer-certification",
+      "carpet-installation-dealer-certification",
+      "c47-manufactured-housing-scope",
+      "advertising-subjects-to-chapter",
+      "advertise-only-licensed-classification",
+      "advertising-bonded-restriction",
+      "landscape-c27-design-authority",
+      "landscape-c27-prime-pool-spa",
+      "landscape-c27-prime-cooking-fireplace-rainwater",
+      "landscape-c27-out-of-scope-work",
+      "unlicensed-contracting-misdemeanor",
+      "unlicensed-hourly-contract-price-definition",
+      "asbestos-haz-ust-certification-required",
+      "private-injunction-against-unlicensed",
+      "personnel-of-record-need-own-license",
+      "unlicensed-citation-service",
+      "unlicensed-citation-hearing",
+      "public-bid-license-required",
+      "public-bid-unlicensed-nonresponsive-void",
+      "joint-venture-public-bid-licensure",
+      "joint-venture-license",
+      "joint-venture-license-required-for-joint-award",
+      "license-number-on-contracts-bids-ads",
+      "unlicensed-no-recovery",
+      "unlicensed-security-interest-unenforceable",
+      "proof-of-licensure-verified-certificate",
+      "substantial-compliance-doctrine",
+      "local-permit-inspection-authority",
+      "city-business-license-cslb-statement",
+      "no-void-indemnity-in-subcontracts",
+      "no-illegal-lien-waivers",
+      "specialty-same-class-subcontracting-limit",
+      "exemption-government-entities",
+      "exemption-court-officers",
+      "exemption-public-utilities-own-work",
+      "utility-corporation-licensed-work-limits",
+      "exemption-puc-utilities-cable-tv",
+      "exemption-oil-gas-owner-lessee",
+      "exemption-nonprofit-mutual-self-help",
+      "exemption-real-estate-licensee",
+      "exemption-surety-completion",
+      "exemption-finished-products-suppliers",
+      "exemption-personal-property",
+      "minor-work-not-for-advertisers-or-employers",
+      "exemption-agricultural-ditch-fire",
+      "exemption-mural-artist",
+      "exemption-design-professionals-pest-geologists",
+      "exemption-material-suppliers",
+      "exemption-employees",
+      "exemption-alarm-company-operators",
+      "exemption-satellite-antenna-installers",
+      "contracting-branches",
+      "general-engineering-contractor-def",
+      "general-building-contractor-def",
+      "general-building-two-trade-rule",
+      "general-building-fire-protection-well-drilling"
+    ]
+  }
+}

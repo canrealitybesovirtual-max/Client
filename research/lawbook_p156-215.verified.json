@@ -1,0 +1,1706 @@
+{
+  "domain": "California Department of Consumer Affairs general licensing laws that bind CSLB applicants and licensees: license denial, suspension and revocation (B&P Division 1.5), criminal-history limits on denial, denial hearings and reapplication, interim suspension orders, tax-delinquency and immigration-retaliation suspensions, default DCA fees, inactive and retired license status, limits on local government, and county dispute resolution programs",
+  "source_doc": "2026 CSLB California Contractors License Law & Reference Book (official), Section V 'The Department of Consumer Affairs' (B&P Code sections 155 through 499, including the Consumer Affairs Act, Chapter 7 'Licensee', Chapter 8 'Dispute Resolution Programs' and Division 1.5 'Denial, Suspension and Revocation of Licenses') plus the opening table of contents of Section VI 'Contractors' State License Law' (B&P 7000-7044.2 titles only), PDF pages 155-216; file chunk lawbook_p156-215.txt",
+  "rules": [
+    {
+      "id": "denial-grounds-division-1-5",
+      "title": "Four grounds on which a license can be denied",
+      "plain_english": "A CSLB license application can be denied for (1) knowingly lying about or hiding a material fact on the application, (2) a criminal conviction, (3) a dishonest, fraudulent or deceitful act meant to benefit yourself or someone else or to hurt someone, or (4) any act that would get an existing licensee suspended or revoked. Grounds (1) and (2) also govern suspension and revocation of existing licenses.",
+      "category": "prohibition",
+      "parameters": {
+        "denial_grounds": [
+          "knowingly false statement or omission of material fact in application",
+          "conviction of a crime",
+          "act involving dishonesty, fraud or deceit with intent to substantially benefit self or another, or substantially injure another",
+          "act that would be grounds for suspension or revocation if done by a licensee"
+        ],
+        "grounds_also_governing_suspension_revocation": [
+          "false statement or omission in application",
+          "conviction of a crime"
+        ],
+        "overrides_other_code_provisions": true
+      },
+      "applies_to": "All CSLB license applicants and licensees",
+      "citation": "B&P 475(a)-(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 189",
+      "verbatim_quote": "the provisions of this division shall govern the denial of licenses on the grounds of: (1) Knowingly making a false statement of material fact, or knowingly omitting to state a material fact, in an application for a license. (2) Conviction of a crime. (3) Commission of any act involving dishonesty, fraud or deceit with the intent to substantially benefit himself or another",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Ground (4) in 475(a)(4): commission of any act which, if done by a licentiate, would be grounds for suspension or revocation. Conviction-based denials are limited by the B&P 480 look-back and rehabilitation rules."
+    },
+    {
+      "id": "no-denial-for-good-moral-character",
+      "title": "No denial for 'bad moral character'; no character references required",
+      "plain_english": "CSLB cannot deny, suspend or revoke a license because of a supposed lack of good moral character, reputation, personality or habits. Applicants also cannot be required to submit character references (attestations from other people about their good moral character).",
+      "category": "prohibition",
+      "parameters": {
+        "prohibited_grounds": [
+          "lack of good moral character",
+          "character",
+          "reputation",
+          "personality",
+          "habits"
+        ],
+        "applies_to_actions": [
+          "denial",
+          "suspension",
+          "revocation"
+        ],
+        "character_attestations_required": false
+      },
+      "applies_to": "All CSLB license applicants and licensees",
+      "citation": "B&P 475(c); B&P 484",
+      "source_location": "2026 CSLB Law Book, PDF pages 189 and 197",
+      "verbatim_quote": "A license shall not be denied, suspended, or revoked on the grounds of a lack of good moral character or any similar ground relating to an applicant’s character, reputation, personality, or habits. ... No person applying for licensure under this code shall be required to submit to any licensing board any attestation by other persons to his good moral character.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A license-application tool should not ask for character letters as a CSLB requirement. Work-experience certifications are a separate matter governed by CSLB rules."
+    },
+    {
+      "id": "license-application-material-definitions",
+      "title": "What 'license', 'application' and 'material' mean in denial cases",
+      "plain_english": "For denial and discipline, 'license' includes any certificate or registration. The 'application' includes every supporting document filed with it, at the time or later, by the applicant or anyone else. A statement or omission is 'material' if it is substantially related to the qualifications, functions or duties of the trade.",
+      "category": "definition",
+      "parameters": {
+        "license_includes": [
+          "certificate",
+          "registration",
+          "other means to engage in a regulated business or profession"
+        ],
+        "application_includes": [
+          "original documents filed",
+          "supporting documents filed at the same time or later",
+          "documents filed by the applicant or by any other person in support"
+        ],
+        "material_test": "statement or omission substantially related to the qualifications, functions, or duties of the business or profession",
+        "board_includes": [
+          "bureau",
+          "commission",
+          "committee",
+          "department",
+          "division",
+          "examining committee",
+          "program",
+          "agency"
+        ]
+      },
+      "applies_to": "CSLB applicants, licensees, and anyone submitting documents in support of an application (for example, people certifying an applicant's experience)",
+      "citation": "B&P 477; B&P 478",
+      "source_location": "2026 CSLB Law Book, PDF page 190",
+      "verbatim_quote": "(b) “License” includes certificate, registration or other means to engage in a business or profession regulated by this code. ... (b) As used in this division, “material” includes a statement or omission substantially related to the qualifications, functions, or duties of the business or profession.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Because 'application' includes documents filed later and by other persons, a false experience certificate or a false later submission can support denial (B&P 475, 480(e)) and discipline of the certifying licensee (B&P 499)."
+    },
+    {
+      "id": "conviction-7-year-lookback",
+      "title": "Conviction-based denial limited to 7-year look-back",
+      "plain_english": "CSLB can deny a license for a crime only if the crime is substantially related to contracting and either the conviction was within 7 years before the application date, or the applicant is still incarcerated for it or was released within the 7 years before applying. Older substantially related convictions generally cannot be used, with the exceptions in B&P 480(a)(1)(A)-(B).",
+      "category": "threshold",
+      "parameters": {
+        "lookback_years": 7,
+        "lookback_measured_from": "date of application",
+        "lookback_triggers": [
+          "conviction date within 7 years before application",
+          "presently incarcerated for the crime",
+          "released from incarceration within 7 years before application"
+        ],
+        "crime_must_be": "substantially related to the qualifications, functions, or duties of the profession",
+        "incarceration_required": false,
+        "exceptions": [
+          "serious felony (Penal Code 1192.7)",
+          "crime requiring registration under Penal Code 290(d)(2) or (3)",
+          "felony financial crime directly and adversely related to fiduciary duties for Chapter 9 contractor applicants"
+        ]
+      },
+      "applies_to": "CSLB license applicants with criminal convictions",
+      "citation": "B&P 480(a)(1)",
+      "source_location": "2026 CSLB Law Book, PDF pages 190-191",
+      "verbatim_quote": "a board may deny a license regulated by this code on the grounds that the applicant has been convicted of a crime ... only if either of the following conditions are met: (1) The applicant has been convicted of a crime within the preceding seven years from the date of application that is substantially related to the qualifications, functions, or duties of the business or profession",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "The 7 years count backward from the application date (not the decision date). Even inside the window, denial is barred if B&P 480(b) (rehabilitation certificate, pardon, showing of rehabilitation) or 480(c) (dismissed conviction) applies.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 190-191 (B&P 480(a)(1)), 193 (480(j))",
+        "correction": "",
+        "note": "Seven-year window measured from the date of application, \"regardless of whether the applicant was incarcerated\", and the incarceration and release triggers all match. Operative July 1, 2020 is confirmed by 480(j) and the history note."
+      }
+    },
+    {
+      "id": "lookback-exceptions-serious-felony-financial-crime",
+      "title": "No 7-year limit for serious felonies, sex-registration crimes, or fiduciary financial felonies (contractors named)",
+      "plain_english": "The 7-year look-back does not protect applicants convicted of a serious felony under Penal Code 1192.7, a crime requiring sex-offender registration under Penal Code 290(d)(2) or (3), or a felony financial crime directly and adversely related to fiduciary duties. The financial-crime exception expressly covers contractor license applicants (B&P Chapter 9, sections 7000+).",
+      "category": "threshold",
+      "parameters": {
+        "lookback_years_waived": 7,
+        "exception_serious_felony": "Penal Code 1192.7",
+        "exception_registration_crime": "Penal Code 290(d)(2) or (3)",
+        "exception_financial_crime": {
+          "classification": "currently classified as a felony",
+          "relation": "directly and adversely related to the fiduciary qualifications, functions, or duties",
+          "defined_by": "regulations adopted by the board",
+          "license_types_covered": [
+            "B&P Chapter 6 (6500+)",
+            "B&P Chapter 9 (7000+) contractors",
+            "B&P Chapter 11.3 (7512+)",
+            "funeral director or cemetery manager under Chapter 12 (7600+)",
+            "B&P Division 4 (10000+)"
+          ]
+        }
+      },
+      "applies_to": "CSLB license applicants with older serious, registrable, or fiduciary financial felony convictions",
+      "citation": "B&P 480(a)(1)(A)-(B)",
+      "source_location": "2026 CSLB Law Book, PDF page 191",
+      "verbatim_quote": "However, the preceding seven-year limitation shall not apply in either of the following situations: (A) The applicant was convicted of a serious felony, as defined in Section 1192.7 of the Penal Code ... (B) The applicant was convicted of a financial crime currently classified as a felony that is directly and adversely related to the fiduciary qualifications, functions, or duties",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "The specific financial crimes CSLB treats as fiduciary are set by CSLB regulation (16 CCR), not in this chunk. B&P 480(b) and (c) protections (rehabilitation certificate, pardon, dismissal) still apply.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 191 (B&P 480(a)(1)(A)-(B))",
+        "correction": "",
+        "note": "Chapter 9 (7000+) is listed at 480(a)(1)(B)(ii). Which financial crimes count as fiduciary is left to board regulation and was not checked here."
+      }
+    },
+    {
+      "id": "prior-discipline-7-year-lookback",
+      "title": "Prior discipline by another board: 7-year look-back",
+      "plain_english": "CSLB can deny a license because another licensing board (in California or elsewhere) formally disciplined the applicant only if the discipline was within 7 years before the application, was for misconduct that would also be cause for CSLB discipline, and is substantially related to contracting. Discipline based on a conviction that was later dismissed under Penal Code 1203.4 and similar sections cannot be used.",
+      "category": "threshold",
+      "parameters": {
+        "lookback_years": 7,
+        "lookback_measured_from": "date of application",
+        "discipline_source": "licensing board in or outside California",
+        "must_be_cause_for_discipline_by": "CSLB",
+        "must_be_substantially_related": true,
+        "excluded_if_based_on_dismissed_conviction_under": [
+          "Penal Code 1203.4",
+          "1203.4a",
+          "1203.41",
+          "1203.42",
+          "1203.425",
+          "comparable dismissal or expungement"
+        ]
+      },
+      "applies_to": "CSLB applicants previously disciplined by any licensing board, including out-of-state contractor boards",
+      "citation": "B&P 480(a)(2)",
+      "source_location": "2026 CSLB Law Book, PDF page 191",
+      "verbatim_quote": "The applicant has been subjected to formal discipline by a licensing board in or outside California within the preceding seven years from the date of application based on professional misconduct that would have been cause for discipline before the board for which the present application is made and that is substantially related to the qualifications, functions, or duties",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "Unlike the conviction look-back, no serious-felony or financial-crime exception is stated for prior discipline.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 191 (B&P 480(a)(2))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "rehabilitation-certificate-pardon-bars-denial",
+      "title": "Certificate of rehabilitation, pardon, or shown rehabilitation bars denial",
+      "plain_english": "An applicant cannot be denied a license for a conviction, or for the acts behind it, if the applicant has a certificate of rehabilitation, has a pardon or clemency from a state or federal executive, or has made a showing of rehabilitation under B&P 482.",
+      "category": "prohibition",
+      "parameters": {
+        "bars_denial_if_any": [
+          "certificate of rehabilitation (Penal Code 4852.01+)",
+          "clemency or pardon by state or federal executive",
+          "showing of rehabilitation under B&P 482"
+        ],
+        "covers": [
+          "the conviction",
+          "acts underlying the conviction"
+        ]
+      },
+      "applies_to": "CSLB license applicants with criminal convictions",
+      "citation": "B&P 480(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 191",
+      "verbatim_quote": "a person shall not be denied a license on the basis that the person has been convicted of a crime, or on the basis of acts underlying a conviction for a crime, if that person has obtained a certificate of rehabilitation ... has been granted clemency or a pardon by a state or federal executive, or has made a showing of rehabilitation pursuant to Section 482.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "This overrides the serious-felony and financial-crime exceptions to the 7-year look-back."
+    },
+    {
+      "id": "dismissed-conviction-no-denial",
+      "title": "Dismissed or expunged convictions cannot be used; bring proof",
+      "plain_english": "A conviction that was dismissed under Penal Code 1203.4, 1203.4a, 1203.41, 1203.42 or 1203.425 (or a comparable expungement) cannot be the basis for denying a license. If the dismissal does not show on the DOJ background report, the applicant must provide proof of the dismissal.",
+      "category": "required_document",
+      "parameters": {
+        "dismissal_sections_barring_denial": [
+          "Penal Code 1203.4",
+          "1203.4a",
+          "1203.41",
+          "1203.42",
+          "1203.425",
+          "comparable dismissal or expungement"
+        ],
+        "proof_required_when": "dismissal (under 1203.4, 1203.4a, 1203.41, or 1203.42) is not reflected on the Department of Justice report",
+        "document": "proof of dismissal (court order)"
+      },
+      "applies_to": "CSLB license applicants with dismissed or expunged convictions",
+      "citation": "B&P 480(c)",
+      "source_location": "2026 CSLB Law Book, PDF pages 191-192",
+      "verbatim_quote": "a person shall not be denied a license on the basis of any conviction, or on the basis of the acts underlying the conviction, that has been dismissed pursuant to Section 1203.4, 1203.4a, 1203.41, 1203.42, or 1203.425 of the Penal Code ... shall provide proof of the dismissal if it is not reflected on the report furnished by the Department of Justice.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "1203.425 (automatic record relief) is in the bar-on-denial list but not in the proof-required list."
+    },
+    {
+      "id": "arrest-without-conviction-no-denial",
+      "title": "Arrests without conviction, infractions, citations, juvenile cases cannot be used",
+      "plain_english": "CSLB cannot deny a license based on an arrest that did not end in a conviction, including arrests that ended in an infraction, a citation, or a juvenile adjudication.",
+      "category": "prohibition",
+      "parameters": {
+        "non_usable_dispositions": [
+          "arrest with disposition other than conviction",
+          "infraction",
+          "citation",
+          "juvenile adjudication"
+        ]
+      },
+      "applies_to": "CSLB license applicants",
+      "citation": "B&P 480(d)",
+      "source_location": "2026 CSLB Law Book, PDF page 192",
+      "verbatim_quote": "a board shall not deny a license on the basis of an arrest that resulted in a disposition other than a conviction, including an arrest that resulted in an infraction, citation, or a juvenile adjudication.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "See also B&P 461 (no arrest-record question on initial license applications)."
+    },
+    {
+      "id": "no-arrest-record-question-on-application",
+      "title": "Initial license applications may not ask about arrests that did not lead to conviction",
+      "plain_english": "No state or local public agency may ask a license, certificate or registration applicant on an initial application to reveal an arrest that did not result in a conviction or no-contest plea. Asking is a misdemeanor. This covers local business licenses too.",
+      "category": "prohibition",
+      "parameters": {
+        "prohibited_question": "record of arrest that did not result in a conviction or plea of nolo contendere",
+        "form_type": "initial application form",
+        "agencies_covered": [
+          "state public agencies",
+          "local public agencies"
+        ],
+        "violation_level": "misdemeanor",
+        "licenses_covered": "any license, certificate or registration under state or local law, including the B&P, Corporations, Education and Insurance Codes"
+      },
+      "applies_to": "Contractor license, local business license and permit applicants; public agencies drafting application forms",
+      "citation": "B&P 461",
+      "source_location": "2026 CSLB Law Book, PDF page 176",
+      "verbatim_quote": "No public agency, state or local, shall, on an initial application form for any license, certificate or registration, ask for or require the applicant to reveal a record of arrest that did not result in a conviction or a plea of nolo contendere. A violation of this section is a misdemeanor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Applies to the agency's form, not to private employers. A form-review tool can flag such a question on city or county contractor registration forms."
+    },
+    {
+      "id": "false-statement-on-application",
+      "title": "Knowingly false statement on application can justify denial; harmless nondisclosure cannot",
+      "plain_english": "CSLB may deny a license if the applicant knowingly made a false statement of a fact the application requires. It may not deny solely because the applicant failed to disclose something that would not have been a reason to deny the license if it had been disclosed.",
+      "category": "prohibition",
+      "parameters": {
+        "denial_permitted_for": "knowingly false statement of fact required to be revealed in the application",
+        "denial_not_permitted_for": "failure to disclose a fact that would not have been cause for denial had it been disclosed",
+        "knowledge_required": true
+      },
+      "applies_to": "CSLB license applicants",
+      "citation": "B&P 480(e)",
+      "source_location": "2026 CSLB Law Book, PDF page 192",
+      "verbatim_quote": "A board may deny a license regulated by this code on the ground that the applicant knowingly made a false statement of fact that is required to be revealed in the application for the license. A board shall not deny a license based solely on an applicant’s failure to disclose a fact that would not have been cause for denial of the license had it been disclosed.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "A license obtained by fraud or knowing misrepresentation can later be revoked (B&P 498)."
+    },
+    {
+      "id": "no-criminal-history-disclosure-required",
+      "title": "CSLB cannot require applicants to disclose criminal history",
+      "plain_english": "Except for a short list of boards that does not include CSLB, a licensing board cannot require an applicant to disclose criminal history information or documents. CSLB may ask for mitigating information to judge substantial relationship or rehabilitation, but it must tell the applicant that disclosure is voluntary and that declining cannot count against them.",
+      "category": "prohibition",
+      "parameters": {
+        "boards_allowed_to_require_disclosure": [
+          "B&P Chapter 3 (5500+)",
+          "Chapter 3.5 (5615+)",
+          "Chapter 10 (7301+)",
+          "Chapter 20 (9800+)",
+          "Chapter 20.3 (9880+)",
+          "Division 8 Chapter 3 (19000+)",
+          "Division 8 Chapter 3.1 (19225+)"
+        ],
+        "cslb_chapter_9_in_allowed_list": false,
+        "mitigating_info_request_allowed": true,
+        "mitigating_info_must_be": "voluntary, with notice that declining is not a factor in the decision"
+      },
+      "applies_to": "CSLB license applicants",
+      "citation": "B&P 480(f)(1)-(2)",
+      "source_location": "2026 CSLB Law Book, PDF page 192",
+      "verbatim_quote": "Except as provided in paragraph (1), a board shall not require an applicant for licensure to disclose any information or documentation regarding the applicant’s criminal history. However, a board may request mitigating information from an applicant regarding the applicant’s criminal history",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "CSLB still gets criminal history through fingerprinting (see B&P 144 in the earlier chunk). This rule limits self-disclosure questions on the application."
+    },
+    {
+      "id": "conviction-based-denial-notice-contents",
+      "title": "Required contents of a conviction-based denial notice",
+      "plain_english": "If CSLB denies an application wholly or partly because of conviction history, it must tell the applicant in writing: that the license is denied, any procedure to challenge or seek reconsideration, the right to appeal, and how to get a copy of their full conviction record and dispute its accuracy.",
+      "category": "required_notice",
+      "parameters": {
+        "trigger": "denial based solely or in part on conviction history",
+        "form": "written",
+        "required_elements": [
+          "the denial or disqualification",
+          "any procedure to challenge the decision or request reconsideration",
+          "right to appeal the board's decision",
+          "process to request a copy of complete conviction history and question its accuracy under Penal Code 11122-11127"
+        ]
+      },
+      "applies_to": "CSLB applicants denied for conviction history",
+      "citation": "B&P 480(f)(3)",
+      "source_location": "2026 CSLB Law Book, PDF page 192",
+      "verbatim_quote": "If a board decides to deny an application for licensure based solely or in part on the applicant’s conviction history, the board shall notify the applicant in writing of all of the following: (A) The denial or disqualification of licensure. (B) Any existing procedure the board has for the applicant to challenge the decision or to request reconsideration.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "This is the board's duty. A tool can use it to check whether a denial letter is complete. Element (D) is the Penal Code 11122-11127 record-review process.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 192 (B&P 480(f)(3)(A)-(D))",
+        "correction": "",
+        "note": "All four required elements (A)-(D) match."
+      }
+    },
+    {
+      "id": "substantial-relationship-criteria",
+      "title": "Three-factor test for whether a crime is substantially related",
+      "plain_english": "To decide whether a crime is substantially related to contracting, CSLB must consider the nature and gravity of the offense, how many years have passed since the offense, and the nature and duties of the trade. It may not deny a license for a conviction without considering rehabilitation evidence, and may not bar applicants by type of conviction alone. CSLB must post a summary of its criteria on its website.",
+      "category": "process_step",
+      "parameters": {
+        "factors": [
+          "nature and gravity of the offense",
+          "number of years elapsed since the date of the offense",
+          "nature and duties of the profession"
+        ],
+        "rehabilitation_evidence_must_be_considered": true,
+        "categorical_bars_by_conviction_type_allowed": false,
+        "criteria_summary_posted_online": true
+      },
+      "applies_to": "CSLB applicants and licensees facing conviction-based denial, suspension or revocation",
+      "citation": "B&P 481(b)-(d); B&P 493(b)",
+      "source_location": "2026 CSLB Law Book, PDF pages 196 and 201",
+      "verbatim_quote": "(1) The nature and gravity of the offense. (2) The number of years elapsed since the date of the offense. (3) The nature and duties of the profession in which the applicant seeks licensure or in which the licensee is licensed. (c) A board shall not deny a license based in whole or in part on a conviction without considering evidence of rehabilitation",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "CSLB's own substantial-relationship and rehabilitation criteria are in its regulations (16 CCR), not in this chunk."
+    },
+    {
+      "id": "rehabilitation-showing",
+      "title": "When CSLB must consider a showing of rehabilitation",
+      "plain_english": "CSLB must consider whether an applicant or licensee has shown rehabilitation if either (1) they finished the criminal sentence without violating parole or probation, or (2) CSLB, applying its rehabilitation criteria, finds them rehabilitated.",
+      "category": "process_step",
+      "parameters": {
+        "showing_considered_if_any": [
+          "completed criminal sentence without violation of parole or probation",
+          "board finds rehabilitation under its criteria"
+        ],
+        "applies_to_decisions": [
+          "denial under B&P 480",
+          "suspension or revocation under B&P 490"
+        ]
+      },
+      "applies_to": "CSLB applicants and licensees with convictions",
+      "citation": "B&P 482",
+      "source_location": "2026 CSLB Law Book, PDF pages 196-197",
+      "verbatim_quote": "Each board shall consider whether an applicant or licensee has made a showing of rehabilitation if either of the following are met: (1) The applicant or licensee has completed the criminal sentence at issue without a violation of parole or probation. (2) The board, applying its criteria for rehabilitation, finds that the applicant is rehabilitated.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "A showing of rehabilitation under 482 bars denial under 480(b)."
+    },
+    {
+      "id": "denial-hearing-request-60-days",
+      "title": "60 days to request a hearing after license denial",
+      "plain_english": "When CSLB denies an application by notice, the applicant has 60 days after service of the notice to send a written request for a hearing. If no written request arrives within 60 days, the right to a hearing is waived. If the notice was served by registered mail, service is complete on the mailing date, so the 60 days start then.",
+      "category": "deadline",
+      "parameters": {
+        "deadline_days": 60,
+        "day_type": "calendar",
+        "clock_starts": "service of the notice of denial",
+        "mail_service_complete_on": "date of mailing",
+        "service_methods": [
+          "manner authorized for service of summons in civil actions",
+          "registered mail to the latest address the applicant filed in writing with the board"
+        ],
+        "request_form": "written",
+        "consequence_of_missing": "right to hearing deemed waived",
+        "alternative_board_path": "file and serve a statement of issues under Gov Code 11500+"
+      },
+      "applies_to": "Denied CSLB license applicants (including denials for exam subversion under B&P 496)",
+      "citation": "B&P 485",
+      "source_location": "2026 CSLB Law Book, PDF page 197",
+      "verbatim_quote": "that the applicant has the right to a hearing under Chapter 5 ... if written request for hearing is made within 60 days after service of the notice of denial. Unless written request for hearing is made within the 60-day period, the applicant’s right to a hearing is deemed waived.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Service by mail is complete on the date of mailing, so the deadline is counted from the mailing date, not the date received. Keep your address of record current.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 197 (B&P 485)",
+        "correction": "",
+        "note": "The 60 days, the waiver and \"service by mail is complete on the date of mailing\" all match. The statute names registered mail. day_type \"calendar\" is an inference: the statute says only \"60 days\"."
+      }
+    },
+    {
+      "id": "reapply-after-denial-1-year",
+      "title": "Earliest reapplication: one year after denial",
+      "plain_english": "A denial decision or notice must state the earliest date the applicant can reapply. That date is one year from the decision's effective date or from service of the denial notice, unless CSLB sets an earlier date or another statute sets a later one. All competent evidence of rehabilitation will be considered on reapplication, and CSLB must send its rehabilitation criteria with the denial.",
+      "category": "deadline",
+      "parameters": {
+        "reapply_wait_years": 1,
+        "clock_starts": "effective date of the decision, or service of notice under B&P 485(b)",
+        "board_may_set_earlier_date": true,
+        "other_statute_may_set_later_date": true,
+        "board_must_enclose": "copy of rehabilitation criteria under B&P 482",
+        "rehabilitation_evidence_considered_on_reapplication": true
+      },
+      "applies_to": "Denied CSLB license applicants",
+      "citation": "B&P 486",
+      "source_location": "2026 CSLB Law Book, PDF page 198",
+      "verbatim_quote": "(a) The earliest date on which the applicant may reapply for a license which shall be one year from the effective date of the decision, or service of the notice under subdivision (b) of Section 485, unless the board prescribes an earlier date or a later date is prescribed by another statute. (b) That all competent evidence of rehabilitation presented will be considered upon a reapplication.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Check the denial decision itself for any earlier or later date. See B&P 489 on repeat denial without a hearing within one year.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 198 (B&P 486)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "denial-hearing-within-90-days",
+      "title": "Denial hearing must be held within 90 days of the request",
+      "plain_english": "Once an applicant requests a hearing, CSLB must hold it within 90 days of the request unless the applicant asks for or agrees in writing to a postponement. The Office of Administrative Hearings may add up to 45 days, or up to 180 days in alleged exam or licensing fraud cases, with no more than two such extensions.",
+      "category": "deadline",
+      "parameters": {
+        "hearing_deadline_days": 90,
+        "clock_starts": "date the hearing is requested",
+        "waiver": "applicant requests or agrees in writing to postponement or continuance",
+        "oah_extension_max_days": 45,
+        "oah_extension_max_days_exam_or_licensing_fraud": 180,
+        "max_extension_orders": 2
+      },
+      "applies_to": "CSLB applicants who requested a denial hearing",
+      "citation": "B&P 487",
+      "source_location": "2026 CSLB Law Book, PDF page 198",
+      "verbatim_quote": "If a hearing is requested by the applicant, the board shall conduct such hearing within 90 days from the date the hearing is requested unless the applicant shall request or agree in writing to a postponement or continuance of the hearing. ... up to 45 additional days within which to conduct a hearing, except in cases involving alleged examination or licensing fraud",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The 180-day period applies 'in cases involving alleged examination or licensing fraud' ('the period may be up to 180 days'). Whether that is the extension or the total period is ambiguous; it reads as the extension period. No more than two extension orders or grants.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 198 (B&P 487)",
+        "correction": "",
+        "note": "The 90 days, the 45 additional days, the 180-day period for exam or licensing fraud and the two-order limit all match. Reading 180 days as the extension period, not the total, is reasonable but the text is ambiguous."
+      }
+    },
+    {
+      "id": "post-hearing-outcomes",
+      "title": "Possible outcomes after a denial hearing",
+      "plain_english": "After a hearing on a denied application, CSLB may grant the license once all requirements are met, grant it then immediately revoke it, stay the revocation and impose probation (which may include suspension), deny the license, or take other action it considers proper.",
+      "category": "process_step",
+      "parameters": {
+        "outcomes": [
+          "grant license effective on completion of all requirements",
+          "grant, immediately revoke, stay revocation, and impose probationary conditions (may include suspension)",
+          "deny license",
+          "other action the board deems proper"
+        ]
+      },
+      "applies_to": "CSLB applicants after a denial hearing",
+      "citation": "B&P 488(a)",
+      "source_location": "2026 CSLB Law Book, PDF pages 198-199",
+      "verbatim_quote": "(1) Grant the license effective upon completion of all licensing requirements by the applicant. (2) Grant the license effective upon completion of all licensing requirements by the applicant, immediately revoke the license, stay the revocation, and impose probationary conditions on the license, which may include suspension. (3) Deny the license.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": "A probationary license is still a license for contracting purposes, but probation terms must be tracked."
+    },
+    {
+      "id": "repeat-denial-without-hearing",
+      "title": "Repeat application within one year can be denied without a hearing",
+      "plain_english": "If CSLB denied an application after a full administrative proceeding, and the same applicant reapplies within one year, CSLB can deny the new application on the same ground without another hearing.",
+      "category": "threshold",
+      "parameters": {
+        "window_years": 1,
+        "conditions": [
+          "same applicant",
+          "same ground (B&P 480 or 496)",
+          "prior denial after APA proceedings (Gov Code 11500+)"
+        ],
+        "hearing_required": false
+      },
+      "applies_to": "CSLB applicants reapplying after a denial",
+      "citation": "B&P 489",
+      "source_location": "2026 CSLB Law Book, PDF page 199",
+      "verbatim_quote": "may without a hearing deny an application upon any of those grounds, if within one year previously, and after proceedings conducted in accordance with Chapter 5 (commencing with Section 11500) of Part 1 of Division 3 of Title 2 of the Government Code, that agency has denied an application from the same applicant upon the same ground.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Pairs with the one-year earliest reapplication date in B&P 486.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 199 (B&P 489)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "conviction-suspension-revocation",
+      "title": "Suspension or revocation for substantially related conviction",
+      "plain_english": "CSLB may suspend or revoke a license if the licensee is convicted of a crime substantially related to contracting. A guilty plea, a guilty verdict or a no-contest plea counts. CSLB can act once the appeal time runs out, the conviction is affirmed, or probation is granted, even if the conviction is later dismissed under Penal Code 1203.4.",
+      "category": "penalty",
+      "parameters": {
+        "actions": [
+          "suspend",
+          "revoke"
+        ],
+        "crime_must_be": "substantially related to the qualifications, functions, or duties of the licensed business",
+        "conviction_includes": [
+          "plea of guilty",
+          "verdict of guilty",
+          "conviction after plea of nolo contendere"
+        ],
+        "may_act_when_any_of": [
+          "time for appeal has elapsed",
+          "judgment affirmed on appeal",
+          "order granting probation suspending imposition of sentence"
+        ],
+        "later_1203_4_dismissal_prevents_action": false
+      },
+      "applies_to": "CSLB licensees (including qualifiers and personnel of record) convicted of crimes",
+      "citation": "B&P 490(a)-(c)",
+      "source_location": "2026 CSLB Law Book, PDF pages 199-200",
+      "verbatim_quote": "a board may suspend or revoke a license on the ground that the licensee has been convicted of a crime, if the crime is substantially related to the qualifications, functions, or duties of the business or profession for which the license was issued.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Any other conviction-based discipline authority (for example in the Contractors License Law) also requires substantial relationship (490(b)). CSLB-specific conviction rules are in B&P 7123 (later chunk).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 199-200 (B&P 490(a)-(c)); 362 (B&P 7123)",
+        "correction": "",
+        "note": "490(c) names only Penal Code 1203.4 for the later-order point. applies_to's \"qualifiers and personnel of record\" goes beyond the text, which says \"licensee\". CSLB's B&P 7123 (PDF page 362) also makes a substantially related conviction a cause for discipline, with the conviction record as conclusive evidence."
+      }
+    },
+    {
+      "id": "conviction-record-conclusive",
+      "title": "Conviction record is conclusive proof of the conviction only",
+      "plain_english": "In a CSLB denial or discipline case based on a substantially related conviction, the record of conviction conclusively proves that the conviction happened, but only that fact. The circumstances and degree of discipline are still open.",
+      "category": "process_step",
+      "parameters": {
+        "conclusive_as_to": "fact that the conviction occurred",
+        "not_conclusive_as_to": [
+          "underlying circumstances",
+          "substantial relationship",
+          "degree of discipline"
+        ],
+        "license_includes": [
+          "certificate",
+          "permit",
+          "authority",
+          "registration"
+        ]
+      },
+      "applies_to": "CSLB applicants and licensees in conviction-based proceedings",
+      "citation": "B&P 493(a), (c)",
+      "source_location": "2026 CSLB Law Book, PDF pages 200-201",
+      "verbatim_quote": "the record of conviction of the crime shall be conclusive evidence of the fact that the conviction occurred, but only of that fact.",
+      "effective": "Operative July 1, 2020",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "child-support-suspension",
+      "title": "License suspension for unpaid child support",
+      "plain_english": "CSLB may suspend a contractor's license under Family Code 17520 if the licensee is not complying with a child support order or judgment.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": "licensee not in compliance with a child support order or judgment",
+        "action": "suspension",
+        "governing_law": "Family Code 17520"
+      },
+      "applies_to": "Individual CSLB licensees and personnel of record subject to child support orders",
+      "citation": "B&P 490.5",
+      "source_location": "2026 CSLB Law Book, PDF page 200",
+      "verbatim_quote": "A board may suspend a license pursuant to Section 17520 of the Family Code if a licensee is not in compliance with a child support order or judgment.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Procedure and timelines are in Family Code 17520, not in this chunk.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 200 (B&P 490.5)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "post-revocation-reinstatement-info",
+      "title": "Ex-licensee gets reinstatement law and rehabilitation criteria",
+      "plain_english": "When CSLB suspends or revokes a license for a conviction, it must send the ex-licensee a copy of Government Code 11522 (petition for reinstatement or reduction of penalty) and CSLB's rehabilitation criteria.",
+      "category": "required_notice",
+      "parameters": {
+        "trigger": "suspension or revocation on B&P 490 conviction grounds",
+        "documents_sent_to_ex_licensee": [
+          "copy of Government Code 11522",
+          "copy of rehabilitation criteria under B&P 482"
+        ]
+      },
+      "applies_to": "Contractors whose licenses are suspended or revoked for convictions",
+      "citation": "B&P 491",
+      "source_location": "2026 CSLB Law Book, PDF page 200",
+      "verbatim_quote": "Upon suspension or revocation of a license by a board on one or more of the grounds specified in Section 490, the board shall: (a) Send a copy of the provisions of Section 11522 of the Government Code to the ex-licensee. (b) Send a copy of the criteria relating to rehabilitation formulated under Section 482 to the ex-licensee.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Gov Code 11522 waiting periods for reinstatement petitions are not in this chunk. Do not compute them from this rule.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 200 (B&P 491)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "interim-suspension-order-standard",
+      "title": "Interim suspension or restriction order before a full hearing",
+      "plain_english": "On a petition backed by affidavits, CSLB or an administrative law judge can issue an interim order suspending a licensee or restricting the license (for example supervision, remedial training or drug testing) before the full case is decided. The board must show a code violation or substantially related conviction, and that letting the licensee keep working, or keep working without restrictions, would endanger public health, safety or welfare. The standard of proof is preponderance of the evidence.",
+      "category": "penalty",
+      "parameters": {
+        "actions": [
+          "interim suspension",
+          "interim license restrictions (e.g., mandatory biological fluid testing, supervision, remedial training)"
+        ],
+        "required_showing": [
+          "acts or omissions violating the code, or conviction of a crime substantially related to the licensed activity",
+          "continued practice would endanger public health, safety, or welfare"
+        ],
+        "evidence_form": "petition with affidavits",
+        "standard_of_proof": "preponderance of the evidence",
+        "without_notice_allowed_if": "serious injury to the public would result before the matter could be heard on notice",
+        "petition_filed_by": "executive officer (board) or chief/program administrator (bureau or program)",
+        "conviction_definition": "plea or verdict of guilty, or conviction after nolo contendere plea; action allowed even if appeal may be taken"
+      },
+      "applies_to": "CSLB licensees",
+      "citation": "B&P 494(a)-(b), (e), (j), (l)-(m)",
+      "source_location": "2026 CSLB Law Book, PDF pages 201-204",
+      "verbatim_quote": "A board or an administrative law judge sitting alone, as provided in subdivision (h), may, upon petition, issue an interim order suspending any licentiate or imposing license restrictions, including, but not limited to, mandatory biological fluid testing, supervision, or remedial training.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "494(m) says 'board' includes any agency described in B&P 22 and excludes only the Medical Board, Board of Podiatric Medicine and State Athletic Commission, so it covers CSLB. Interim orders are in addition to injunctive relief (494(k)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 201-204 (B&P 494(a)-(b), (e), (j), (l)-(m))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "iso-hearing-notice-timeline",
+      "title": "Interim order hearing notice and decision deadlines",
+      "plain_english": "A licensee must get at least 15 days' notice of the hearing on an interim order petition, with the supporting documents. If the order was issued without notice, the licensee must get notice within 2 days and a hearing within 20 days, or the order dissolves automatically unless the licensee waives the hearing. A decision is due within 5 business days after the matter is submitted. At the hearing the licensee may have a lawyer, a record, affidavits and oral argument.",
+      "category": "deadline",
+      "parameters": {
+        "min_notice_days_before_hearing": 15,
+        "ex_parte_notice_of_hearing_within_days": 2,
+        "ex_parte_hearing_within_days": 20,
+        "ex_parte_clock_starts": "issuance of the interim order without notice",
+        "consequence_no_hearing_in_20_days": "interim order dissolves by operation of law (unless licensee waives hearing)",
+        "decision_within_business_days": 5,
+        "decision_clock_starts": "submission of the matter",
+        "licensee_hearing_rights": [
+          "represented by counsel",
+          "record of proceedings (copies at transcript cost per Gov Code 11523)",
+          "present affidavits and documentary evidence",
+          "present oral argument"
+        ]
+      },
+      "applies_to": "CSLB licensees facing an interim suspension or restriction petition",
+      "citation": "B&P 494(c)-(e)",
+      "source_location": "2026 CSLB Law Book, PDF pages 201-202",
+      "verbatim_quote": "the licentiate shall be given at least 15 days’ notice of the hearing on the petition for an interim order. ... the licentiate shall be entitled to a hearing on the petition within 20 days of the issuance of the interim order without notice. The licentiate shall be given notice of the hearing within two days after issuance of the initial interim order",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Day type (calendar vs business) is not stated for the 15-, 2- and 20-day periods; only the 5-day decision period says business days.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 201-202 (B&P 494(c)-(e))",
+        "correction": "",
+        "note": "The 15-day, 2-day, 20-day and 5-business-day periods and the automatic dissolution all match."
+      }
+    },
+    {
+      "id": "iso-accusation-timeline",
+      "title": "Accusation within 15 days of interim order; hearing and decision within 30 days",
+      "plain_english": "After an interim order issues, CSLB must file an accusation within 15 days (for an order first issued without notice, counted from the order issued after the noticed hearing). If the licensee files a Notice of Defense, the hearing must be held within 30 days of the agency receiving it, and a decision is due within 30 days after submission. Missing any of these deadlines dissolves the interim order automatically.",
+      "category": "deadline",
+      "parameters": {
+        "accusation_within_days": 15,
+        "accusation_clock_starts": "issuance of interim order (for ex parte orders: date of order issued after the noticed hearing)",
+        "hearing_within_days_of_notice_of_defense_receipt": 30,
+        "decision_within_days_after_submission": 30,
+        "consequence_of_missed_deadline": "interim order dissolves by operation of law"
+      },
+      "applies_to": "CSLB licensees under an interim suspension or restriction order",
+      "citation": "B&P 494(f)",
+      "source_location": "2026 CSLB Law Book, PDF page 202",
+      "verbatim_quote": "The board shall file an accusation within 15 days of the issuance of an interim order. ... If the licentiate files a Notice of Defense, the hearing shall be held within 30 days of the agency’s receipt of the Notice of Defense. A decision shall be rendered on the accusation no later than 30 days after submission of the matter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Missing any deadline in 494(f) (accusation, hearing, or decision) dissolves the interim order by operation of law ('Failure to comply with any of the requirements in this subdivision shall dissolve the interim order by operation of law'). A deadline tracker for a licensee's counsel can flag dissolution dates. The Notice of Defense filing deadline itself is in the APA (Gov Code 11506), not here.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 202 (B&P 494(f))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "iso-judicial-review-venue",
+      "title": "Court review of interim orders: four superior courts only",
+      "plain_english": "An interim suspension or restriction order can be challenged in court by writ under Code of Civil Procedure 1094.5, but only in the superior court for Sacramento, San Francisco, Los Angeles or San Diego County. The court only decides whether the board abused its discretion.",
+      "category": "process_step",
+      "parameters": {
+        "procedure": "Code of Civil Procedure 1094.5",
+        "allowed_venues": [
+          "Sacramento County Superior Court",
+          "San Francisco County Superior Court",
+          "Los Angeles County Superior Court",
+          "San Diego County Superior Court"
+        ],
+        "standard_of_review": "abuse of discretion (not proceeding as required by law, or order not supported by substantial evidence in light of the whole record)"
+      },
+      "applies_to": "CSLB licensees under interim orders",
+      "citation": "B&P 494(g)-(h)",
+      "source_location": "2026 CSLB Law Book, PDF pages 202-203",
+      "verbatim_quote": "Interim orders shall be subject to judicial review pursuant to Section 1094.5 of the Code of Civil Procedure and shall be heard only in the superior court in and for the Counties of Sacramento, San Francisco, Los Angeles, or San Diego.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A decision by an administrative law judge sitting alone on the petition is final when filed with the board, subject only to this review (494(h))."
+    },
+    {
+      "id": "iso-violation-separate-discipline",
+      "title": "Violating an interim order is a separate ground for discipline",
+      "plain_english": "Not complying with an interim suspension or restriction order is its own ground for discipline and can be added to the main case any time before the decision. A violation is proven by showing the licensee knew of the order and its terms and that it was in effect. If the order was less than a full suspension, CSLB can expand it after notice and proof of violation.",
+      "category": "penalty",
+      "parameters": {
+        "violation_elements": [
+          "licensee was on notice of the interim order and its terms",
+          "order was in effect at the time of the violation"
+        ],
+        "may_be_alleged": "any time before decision on the accusation",
+        "board_may_modify_or_expand_order_if": "order was less than complete suspension and licensee violated it before the accusation hearing"
+      },
+      "applies_to": "CSLB licensees under interim orders",
+      "citation": "B&P 494(i)",
+      "source_location": "2026 CSLB Law Book, PDF page 203",
+      "verbatim_quote": "Failure to comply with an interim order issued pursuant to subdivision (a) or (b) shall constitute a separate cause for disciplinary action against any licentiate, and may be heard at, and as a part of, the noticed hearing provided for in subdivision (f).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 203 (B&P 494(i))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "tax-delinquency-494-5-cslb-excluded",
+      "title": "Top-500 tax delinquency suspension statute excludes CSLB",
+      "plain_english": "The B&P 494.5 procedure that makes state licensing agencies suspend or refuse licenses of people on the CDTFA (formerly BOE) or FTB 500-largest tax delinquency lists expressly excludes CSLB, and the DCA backstop also excludes CSLB. Contractors on those lists face CSLB action under the Contractors License Law instead, and their other state licenses, including a driver's license, are still covered by 494.5.",
+      "category": "definition",
+      "parameters": {
+        "certified_list": "500 largest tax delinquencies under R&TC 7063 (BOE list) or 19195 (FTB list)",
+        "list_size": 500,
+        "cslb_is_state_governmental_licensing_entity_under_494_5": false,
+        "dca_backstop_applies_to_cslb": false,
+        "still_covered_entities_examples": [
+          "Department of Motor Vehicles (driver's license suspension only)",
+          "other DCA boards",
+          "Department of Real Estate",
+          "Department of Insurance"
+        ]
+      },
+      "applies_to": "CSLB licensees and personnel of record whose names appear on a state top-500 tax delinquency list",
+      "citation": "B&P 494.5(b)(1), (b)(4), (f)(2)",
+      "source_location": "2026 CSLB Law Book, PDF pages 204-206",
+      "verbatim_quote": "“State governmental licensing entity” shall not include the Contractors State License Board.",
+      "effective": "Applies to names on a list on or after July 1, 2012 (494.5(v)); amended effective January 1, 2021",
+      "read_from_primary_text": true,
+      "notes": "Apparent conflict: B&P 31(d) (earlier chunk) says listed licensees 'shall be subject to Section 494.5', but 494.5(b)(4) and (f)(2) carve out CSLB. CSLB's own tax-delinquency handling appears to be in the Contractors License Law (the TOC in the next chunk lists B&P 7145.5 on outstanding liabilities). Verify there before building a CSLB-specific calculator.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 205-206 (B&P 494.5(b)(4), (f)(2)), 211 (494.5(v) and history)",
+        "correction": "",
+        "note": "Not a target category. Checked because it decides whether the 494.5 timeline rules apply to CSLB. The CSLB counterpart is B&P 7145.5 (PDF page 386): the registrar may refuse to issue or renew, or may suspend, a license for unresolved final liabilities to the board, DIR, EDD, FTB or BOE. A preliminary notice must be mailed at least 60 days before the date certain."
+      }
+    },
+    {
+      "id": "tax-delinquency-other-license-timeline",
+      "title": "Top-500 tax list: notice, 90-day temporary license, suspension at 90-120 days (non-CSLB licenses)",
+      "plain_english": "For state licenses other than CSLB (for example a contractor owner's driver's license or real estate license), the agency must mail a preliminary notice within 30 days of getting the tax list. An otherwise eligible applicant gets one non-extendable 90-day temporary license. The license is suspended or refused no sooner than 90 and no later than 120 days after the notice is mailed unless a release is received. Fees are not refunded.",
+      "category": "deadline",
+      "parameters": {
+        "preliminary_notice_within_days_of_list_receipt": 30,
+        "notice_delivery": "personally or by mail to last known mailing address on file (CCP 1013)",
+        "temporary_license_days": 90,
+        "temporary_license_extendable": false,
+        "temporary_licenses_per_term": 1,
+        "temporary_license_covers": "first 90 days of the regular license term",
+        "suspension_earliest_days_after_notice_mailed": 90,
+        "suspension_latest_days_after_notice_mailed": 120,
+        "fees_refunded_on_denial_or_suspension": false,
+        "apa_hearing_rights_apply": false,
+        "dmv_scope": "suspension only"
+      },
+      "applies_to": "Contractors and company principals holding non-CSLB state licenses who appear on a top-500 tax delinquency list",
+      "citation": "B&P 494.5(a), (e), (f)(1), (g)",
+      "source_location": "2026 CSLB Law Book, PDF pages 204-207",
+      "verbatim_quote": "A state governmental licensing entity shall refuse to issue or shall suspend a license pursuant to this section no sooner than 90 days and no later than 120 days of the mailing of the preliminary notice described in paragraph (2) of subdivision (e), unless the state governmental licensing entity has received a release pursuant to subdivision (h).",
+      "effective": "Applies to names on a list on or after July 1, 2012",
+      "read_from_primary_text": true,
+      "notes": "Does not apply to the CSLB contractor license itself (494.5(b)(4)). The notice must include the BOE or FTB address and phone number and a release-request form (494.5(g)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 204-207 (B&P 494.5(a), (e), (f)(1), (g))",
+        "correction": "",
+        "note": "494.5(g)(1) says the temporary license lasts \"90 calendar days\". Because 494.5(b)(4) excludes CSLB, this timeline does not apply to the CSLB license itself."
+      }
+    },
+    {
+      "id": "tax-delinquency-release-request",
+      "title": "Getting off the top-500 list: release request within 45 days",
+      "plain_english": "To stop a non-CSLB license suspension, the licensee must make a timely written release request to the BOE or FTB. A release issues if the taxes are paid or put on an installment agreement, if the request was made within 45 days of receiving the preliminary notice but the tax agency cannot finish review within 45 days, or if financial hardship is shown. The licensee must act diligently and bears the burden of proving it did. This is the only administrative remedy.",
+      "category": "process_step",
+      "parameters": {
+        "request_form": "written request for release to BOE or FTB",
+        "release_grounds": [
+          "paid unpaid taxes",
+          "entered installment payment agreement (R&TC 6832 or 19008)",
+          "requested release within 45 days of receiving preliminary notice and agency cannot complete review within 45 days",
+          "current financial hardship (unable to pay any part and unable to qualify for installment arrangement)"
+        ],
+        "request_within_days_of_notice_receipt": 45,
+        "agency_review_window_days": 45,
+        "erroneous_suspension_remedy": "reinstatement retroactive to date of erroneous suspension, not shown on license record",
+        "diligence_required": true,
+        "burden_of_proof_on": "applicant or licensee",
+        "sole_administrative_remedy": true
+      },
+      "applies_to": "Holders of non-CSLB state licenses on a top-500 tax delinquency list",
+      "citation": "B&P 494.5(h), (i), (m)",
+      "source_location": "2026 CSLB Law Book, PDF pages 207-209",
+      "verbatim_quote": "The applicant or licensee has submitted a request for release not later than 45 days after the applicant’s or licensee’s receipt of a preliminary notice described in paragraph (2) of subdivision (e), but the State Board of Equalization or the Franchise Tax Board, whichever is applicable, will be unable to complete the release review",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The statute still names the State Board of Equalization; sales and use tax administration has moved to CDTFA (general knowledge, not stated in this text)."
+    },
+    {
+      "id": "tax-release-processing-and-installment-default",
+      "title": "Release processed in 5 business days; installment default gives 30 days to suspension",
+      "plain_english": "A licensing agency must process a tax release within 5 business days of receiving it. If the licensee later defaults on the installment agreement, the release is rescinded and the agency must notify the licensee that the license will be suspended on a set date no more than 30 days from mailing. Once released from the list, the suspension must be purged from the agency's website within 3 business days, and any public status note must say in bold that the only reason was failure to pay taxes.",
+      "category": "deadline",
+      "parameters": {
+        "release_processing_business_days": 5,
+        "installment_default_suspension_max_days_after_form_mailed": 30,
+        "suspension_lasts_until": "new release issued",
+        "website_purge_business_days_after_release": 3,
+        "public_disclosure_requirement": "bold, adjacent statement that the only reason was failure to pay taxes",
+        "agency_may_charge_cost_based_fee_on_suspended_licensee": true
+      },
+      "applies_to": "Holders of non-CSLB state licenses on a top-500 tax delinquency list",
+      "citation": "B&P 494.5(j), (l), (n), (q)(3)",
+      "source_location": "2026 CSLB Law Book, PDF pages 208-210",
+      "verbatim_quote": "Any state governmental licensing entity that has received a release from the State Board of Equalization and the Franchise Tax Board pursuant to this subdivision shall process the release within five business days of its receipt.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The 30-day suspension notice language: 'the licensee’s license will be suspended on a specific date, and this date shall be no longer than 30 days from the date the form is mailed.' Not applicable to the CSLB license itself.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 208-210 (B&P 494.5(j), (l), (n), (q)(3))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "immigration-retaliation-license-suspension",
+      "title": "License can be suspended or revoked for Labor Code 244(b) violations",
+      "plain_english": "If the Labor Commissioner or a court finds that a business violated Labor Code 244(b), its business license may be suspended or revoked, after the decision-maker considers the harm to employees and the employer's good-faith efforts to fix it after notice. A CSLB licensee found in violation may also be disciplined by CSLB.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": "Labor Commissioner or court determination of violation of Labor Code 244(b)",
+        "actions": [
+          "suspension of business license",
+          "revocation of business license",
+          "CSLB disciplinary action"
+        ],
+        "factors_considered": [
+          "harm suspension or revocation would cause employees",
+          "licensee's good-faith efforts to resolve alleged violations after notice"
+        ]
+      },
+      "applies_to": "Contractors and other employers holding B&P-regulated business licenses",
+      "citation": "B&P 494.6(a)-(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 211",
+      "verbatim_quote": "A business license regulated by this code may be subject to suspension or revocation if the licensee has been determined by the Labor Commissioner or the court to have violated subdivision (b) of Section 244 of the Labor Code",
+      "effective": "January 1, 2014",
+      "read_from_primary_text": true,
+      "notes": "The text of Labor Code 244(b) is not in this chunk. Generally, 244(b) makes reporting or threatening to report an employee's or prospective employee's suspected immigration status, in retaliation for exercising rights, an adverse action. That description is general knowledge, not read here.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 211 (B&P 494.6(a)-(b) and history)",
+        "correction": "",
+        "note": "The law book does not contain the text of Labor Code 244(b), so the note's description of 244(b) is unverified."
+      }
+    },
+    {
+      "id": "i9-three-business-day-safe-harbor",
+      "title": "Requiring an I-9 within 3 business days is not grounds for suspension",
+      "plain_english": "An employer cannot have its license suspended or revoked under B&P 494.6 for requiring a new or current employee to submit a Form I-9 within three business days of their first day of paid work.",
+      "category": "deadline",
+      "parameters": {
+        "document": "Form I-9 Employment Eligibility Verification",
+        "deadline_business_days": 3,
+        "clock_starts": "first day of work for pay",
+        "applies_to_employees": [
+          "prospective",
+          "current"
+        ],
+        "protected_from": "suspension or revocation under B&P 494.6"
+      },
+      "applies_to": "Contractors with employees",
+      "citation": "B&P 494.6(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 211",
+      "verbatim_quote": "An employer shall not be subject to suspension or revocation under this section for requiring a prospective or current employee to submit, within three business days of the first day of work for pay, an I-9 Employment Eligibility Verification form.",
+      "effective": "January 1, 2014",
+      "read_from_primary_text": true,
+      "notes": "An HR or onboarding tool can set the I-9 due date as 3 business days after the first paid day of work. Federal I-9 timing rules apply separately.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 211 (B&P 494.6(c))",
+        "correction": "",
+        "note": "This is a safe harbor that limits suspension or revocation under 494.6. It is not a duty to collect the I-9 by that date. Federal I-9 timing is separate and is not in the law book."
+      }
+    },
+    {
+      "id": "public-reproval",
+      "title": "Public reproval as a lesser sanction",
+      "plain_english": "For any act that would justify suspending or revoking a license, CSLB may instead publicly reprove the licensee, alone or combined with suspension or revocation. The proceedings follow the Administrative Procedure Act.",
+      "category": "penalty",
+      "parameters": {
+        "sanctions": [
+          "public reproval",
+          "public reproval and suspension",
+          "public reproval and revocation"
+        ],
+        "trigger": "any act constituting grounds to suspend or revoke a license",
+        "procedure": "Gov Code 11500+ (APA)"
+      },
+      "applies_to": "CSLB licensees",
+      "citation": "B&P 495",
+      "source_location": "2026 CSLB Law Book, PDF pages 211-212",
+      "verbatim_quote": "any entity authorized to issue a license or certificate pursuant to this code may publicly reprove a licentiate or certificate holder thereof, for any act that would constitute grounds to suspend or revoke a license or certificate.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A public reproval is still public discipline and can appear on the license record.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 211-212 (B&P 495)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "exam-subversion-license-action",
+      "title": "Exam cheating: denial, suspension or revocation",
+      "plain_english": "CSLB may deny, suspend, revoke or restrict the license of an applicant or licensee who subverted a licensing exam in violation of B&P 123.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": "violation of B&P 123 (subversion of licensing examinations)",
+        "actions": [
+          "deny",
+          "suspend",
+          "revoke",
+          "otherwise restrict"
+        ],
+        "denial_hearing_rights": "B&P 485-486 apply to denials under 496"
+      },
+      "applies_to": "CSLB exam candidates and licensees",
+      "citation": "B&P 496",
+      "source_location": "2026 CSLB Law Book, PDF page 212",
+      "verbatim_quote": "A board may deny, suspend, revoke, or otherwise restrict a license on the ground that an applicant or licensee has violated Section 123 pertaining to subversion of licensing examinations.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Criminal and civil penalties for exam subversion (misdemeanor, up to $10,000 damages) are in B&P 123/123.5 (earlier chunk). OAH can extend a hearing on alleged exam fraud up to 180 days (B&P 487).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 212 (B&P 496); 197-198 (B&P 485, 486)",
+        "correction": "",
+        "note": "B&P 485 and 486 expressly cover denials under Section 496."
+      }
+    },
+    {
+      "id": "license-obtained-by-fraud",
+      "title": "License obtained by fraud or misrepresentation can be revoked",
+      "plain_english": "CSLB may revoke, suspend or restrict a license that was obtained by fraud, deceit, or knowingly misrepresenting or omitting a material fact.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": [
+          "license secured by fraud",
+          "deceit",
+          "knowing misrepresentation of a material fact",
+          "knowingly omitting a material fact"
+        ],
+        "actions": [
+          "revoke",
+          "suspend",
+          "otherwise restrict"
+        ]
+      },
+      "applies_to": "CSLB licensees",
+      "citation": "B&P 498",
+      "source_location": "2026 CSLB Law Book, PDF page 212",
+      "verbatim_quote": "A board may revoke, suspend, or otherwise restrict a license on the ground that the licensee secured the license by fraud, deceit, or knowing misrepresentation of a material fact or by knowingly omitting to state a material fact.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "No time limit is stated here. Check CSLB-specific limitation periods for disciplinary accusations in Chapter 9 (B&P 7091).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 212 (B&P 498)",
+        "correction": "",
+        "note": "B&P 7091 (PDF page 336) is the CSLB time limit for complaints and accusations. Whether it covers license-procurement fraud was not analyzed."
+      }
+    },
+    {
+      "id": "false-statement-supporting-another-application",
+      "title": "Licensee who lies in support of someone else's application can be disciplined",
+      "plain_english": "A licensed contractor who knowingly makes a false statement of material fact, or knowingly leaves out a material fact, to CSLB in support of another person's license application (for example when certifying that person's work experience) can have their own license revoked, suspended or restricted.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": "licensee knowingly made a false statement of material fact, or knowingly omitted a material fact, to the board regarding another person's application",
+        "actions": [
+          "revoke",
+          "suspend",
+          "otherwise restrict"
+        ],
+        "typical_situation": "certifying an applicant's journey-level work experience"
+      },
+      "applies_to": "CSLB licensees who certify experience for, or otherwise support, another person's application",
+      "citation": "B&P 499",
+      "source_location": "2026 CSLB Law Book, PDF page 212",
+      "verbatim_quote": "A board may revoke, suspend, or otherwise restrict a license on the ground that the licensee, in support of another person’s application for license, knowingly made a false statement of a material fact or knowingly omitted to state a material fact to the board regarding the application.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The example of experience certification is an interpretation; the statute says 'in support of another person’s application.'",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 212 (B&P 499)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "dca-default-delinquency-fee",
+      "title": "Default DCA late-renewal fee: 50% of renewal fee, $25-$150",
+      "plain_english": "Unless another law sets a different amount, a DCA licensee's late-renewal (delinquency) fee is 50% of the renewal fee in effect on the renewal date, but at least $25 and no more than $150. The fee cannot be charged until 30 days after the agency mailed a renewal notice to the last known address, and the notice must give the timely-renewal date and warn about the fee. This default does not apply to a CSLB contractor license. There, B&P 7137(a)(5) makes the delinquency fee 50% of the renewal fee with no $25 minimum or $150 maximum.",
+      "category": "money_amount",
+      "parameters": {
+        "delinquency_fee_percent_of_renewal_fee": 50,
+        "minimum_usd": 25,
+        "maximum_usd": 150,
+        "formula": "min(max(0.5 * renewal_fee, 25), 150)",
+        "renewal_fee_measured_on": "date of renewal",
+        "no_assessment_until_days_after_notice_mailed": 30,
+        "notice_must_state": [
+          "date for timely renewal",
+          "late renewal results in delinquency, penalty, or late fee"
+        ],
+        "notice_sent_to": "licensee's last known address of record",
+        "cslb_override": {
+          "citation": "B&P 7137(a)(5)",
+          "source_location": "2026 CSLB Law Book, PDF page 376",
+          "rule": "delinquency fee = 50% of renewal fee if the license is renewed after its expiration; no minimum or maximum",
+          "formula": "0.5 * renewal_fee",
+          "examples_usd_at_16_CCR_811_renewal_fees": {
+            "individual_active_450": 225,
+            "individual_inactive_300": 150,
+            "entity_active_700": 350,
+            "entity_inactive_500": 250
+          },
+          "renewal_fees_source": "16 CCR 811(d), PDF page 452",
+          "incomplete_timely_renewal_grace_days": 30,
+          "grace_source": "B&P 7141(b), PDF page 383-384"
+        }
+      },
+      "applies_to": "DCA licensees whose own licensing law sets no different delinquency fee. Does not govern CSLB contractor licenses: B&P 7137(a)(5) sets the CSLB delinquency fee.",
+      "citation": "B&P 163.5 (paras. 1-2)",
+      "source_location": "2026 CSLB Law Book, PDF page 160",
+      "verbatim_quote": "the delinquency, penalty, or late fee for any licensee within the Department of Consumer Affairs shall be 50 percent of the renewal fee for such license in effect on the date of the renewal of the license, but not less than twenty-five dollars ($25) nor more than one hundred fifty dollars ($150).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Default rule only (\"Except as otherwise provided by law\"). For CSLB licenses B&P 7137(a)(5) controls: 50% of the renewal fee with no floor or cap. B&P 7141(a) charges the delinquency fee when a license is renewed after expiration. Under 7141(b), the fee is waived if an incomplete renewal that was filed on time is corrected within 30 days after expiration. Unresolved: 163.5 para. 2 bars any fee until 30 days after a renewal notice is mailed. That paragraph has no \"except as otherwise provided\" wording of its own, but whether it binds CSLB is not settled by the text.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 160 (B&P 163.5); 376 (B&P 7137(a)(5)); 383-384 (B&P 7141(a)-(b)); 452 (16 CCR 811(d))",
+        "correction": "The statute text, the 50%/$25/$150 figures and the formula are correct for the DCA default, but the scope was wrong. applies_to said CSLB licensees are covered \"where CSLB law sets no different amount\", and CSLB law does set a different amount. B&P 7137(a)(5) makes the CSLB delinquency fee 50% of the renewal fee with no $25 floor or $150 cap. For example, a $450 individual active renewal carries a $225 fee, not $150. applies_to, plain_english and notes were changed and a cslb_override parameter was added."
+      }
+    },
+    {
+      "id": "dca-default-reinstatement-fee",
+      "title": "Default DCA reinstatement fee cap",
+      "plain_english": "Where a reinstatement fee is charged and no other law sets it, the fee is 150% of the renewal fee in effect on the reinstatement date, but no more than the renewal fee plus $25. If a statute fixes a lower fee, that lower fee applies.",
+      "category": "money_amount",
+      "parameters": {
+        "reinstatement_fee_percent_of_renewal_fee": 150,
+        "cap_over_renewal_fee_usd": 25,
+        "formula": "min(1.5 * renewal_fee, renewal_fee + 25), unless a statute fixes a lower fee",
+        "renewal_fee_measured_on": "date of reinstatement"
+      },
+      "applies_to": "DCA licensees reinstating a license, including CSLB licensees where CSLB law sets no different amount",
+      "citation": "B&P 163.5 (para. 3)",
+      "source_location": "2026 CSLB Law Book, PDF page 160",
+      "verbatim_quote": "the reinstatement fee shall be 150 percent of the renewal fee for such license in effect on the date of the reinstatement of the license, but not more than twenty-five dollars ($25) in excess of the renewal fee",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Default rule only. CSLB-specific reinstatement and delinquent renewal fees in B&P 7137 / 16 CCR control if different.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 160 (B&P 163.5 para. 3); 374-377 (B&P 7137); 384 (B&P 7141(d)); 451-452 (16 CCR 811)",
+        "correction": "",
+        "note": "The formula matches the statute. No CSLB reinstatement fee appears in B&P 7137 or 16 CCR 811. Under B&P 7141(d), a CSLB license not renewed within five years requires a new application under 7066. This default therefore has little practical use for CSLB licenses."
+      }
+    },
+    {
+      "id": "dishonored-check-blocks-license",
+      "title": "Bounced fee check blocks licensure until repaid",
+      "plain_english": "If a check paying a fee, fine or penalty bounces, the license or authority sought will not be granted until the person pays the outstanding amount plus the applicable fee, including any delinquency fee. CSLB may require future payments by cashier's check or money order.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": "check for fee, fine, or penalty dishonored",
+        "license_withheld_until": "outstanding amount paid plus applicable fee including any delinquency fee",
+        "board_may_require_payment_methods": [
+          "cashier's check",
+          "money order"
+        ]
+      },
+      "applies_to": "CSLB applicants, renewing licensees, and citation payers",
+      "citation": "B&P 206",
+      "source_location": "2026 CSLB Law Book, PDF page 165",
+      "verbatim_quote": "any person tendering a check for payment of a fee, fine, or penalty that was subsequently dishonored, shall not be granted a license, or other authority that they were seeking, until the applicant pays the amount outstanding from the dishonored payment together with the applicable fee, including any delinquency fee.",
+      "effective": "March 30, 1994",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 165 (B&P 206); 377 (B&P 7137(a)(6)(F))",
+        "correction": "",
+        "note": "CSLB also charges a $25 service charge per dishonored check under B&P 7137(a)(6)(F). B&P 206 bars granting \"a license, or other authority that they were seeking\", so applying it to citation payers who are not seeking a license goes beyond the text."
+      }
+    },
+    {
+      "id": "fee-refund-for-errors",
+      "title": "Fees collected by mistake must be refunded",
+      "plain_english": "Application fees, license fees or penalties collected illegally, by mistake, inadvertence or error must be refunded through a claim filed with the State Controller. With the DCA Director's approval, boards may also refund applicants found ineligible to take the exam or whose credentials are insufficient.",
+      "category": "money_amount",
+      "parameters": {
+        "mandatory_refund_when": [
+          "collected illegally",
+          "by mistake",
+          "by inadvertence",
+          "by error"
+        ],
+        "fee_types": [
+          "application fees",
+          "license fees",
+          "penalties"
+        ],
+        "refund_paid_by": "State Controller warrant on claim authorized by DCA",
+        "discretionary_refund_when": [
+          "applicant found ineligible to take exam",
+          "credentials insufficient for license"
+        ],
+        "discretionary_refund_requires": "approval of Director of Consumer Affairs"
+      },
+      "applies_to": "CSLB applicants and licensees who overpaid or were wrongly charged",
+      "citation": "B&P 158",
+      "source_location": "2026 CSLB Law Book, PDF page 158",
+      "verbatim_quote": "Notwithstanding any other law, any application fees, license fees, or penalties imposed and collected illegally, by mistake, inadvertence, or error shall be refunded. Claims authorized by the department shall be filed with the State Controller, and the Controller shall draw a warrant against the fund of the agency in payment of the refund.",
+      "effective": "January 1, 2020 (as amended)",
+      "read_from_primary_text": true,
+      "notes": "No deadline to claim a refund is stated here.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 158 (B&P 158)",
+        "correction": "",
+        "note": "The book index (PDF page 583) also lists B&P 7138 for CSLB fee refunds. That section was not checked here."
+      }
+    },
+    {
+      "id": "license-status-certificate-prima-facie-evidence",
+      "title": "Certified license-status record is prima facie evidence in court",
+      "plain_english": "A certificate from CSLB's records officer stating that a person was or was not licensed on a date or during a period, or that a license was revoked or suspended, is admitted in any court as prima facie evidence of those facts. Owners and contractors can use it to prove license status in payment disputes.",
+      "category": "required_document",
+      "parameters": {
+        "document": "certificate of the officer in charge of board records",
+        "can_certify": [
+          "licensed or not licensed on a specified date",
+          "licensed or not licensed during a specified period",
+          "license revoked",
+          "license under suspension"
+        ],
+        "evidentiary_weight": "prima facie evidence",
+        "admissible_in": "any court"
+      },
+      "applies_to": "Project owners, contractors and their attorneys in disputes where license status matters (for example B&P 7031 actions)",
+      "citation": "B&P 162",
+      "source_location": "2026 CSLB Law Book, PDF pages 159-160",
+      "verbatim_quote": "The certificate of the officer in charge of the records of any board in the department that any person was or was not on a specified date, or during a specified period of time, licensed ... or that the license, certificate or registration of any person was revoked or under suspension, shall be admitted in any court as prima facie evidence of the facts therein recited.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "In B&P 7031 actions, the contractor's proof of licensure is governed by 7031(d), which requires a verified certificate of licensure from CSLB (later chunk)."
+    },
+    {
+      "id": "record-certification-fee-2",
+      "title": "$2 fee to certify a copy of a board record",
+      "plain_english": "Unless a law sets a different fee, CSLB and DCA charge $2 to certify a copy of any record, document or paper in their custody, such as a certified license history.",
+      "category": "money_amount",
+      "parameters": {
+        "certification_fee_usd": 2,
+        "per": "certification of a copy of a record, document, or paper (or a document evidencing its content)",
+        "default_unless": "otherwise expressly provided by law"
+      },
+      "applies_to": "Anyone requesting certified CSLB records (owners, contractors, attorneys)",
+      "citation": "B&P 163",
+      "source_location": "2026 CSLB Law Book, PDF page 160",
+      "verbatim_quote": "Except as otherwise expressly provided by law, the department and each board in the department shall charge a fee of two dollars ($2) for the certification of a copy of any record, document, or paper in its custody",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "CSLB may charge separately for a certified license history under its own fee rules. Check the B&P 7137 fee schedule (later chunk).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 160 (B&P 163); 374-377 (B&P 7137); 451-452 (16 CCR 811)",
+        "correction": "",
+        "note": "Neither B&P 7137 nor 16 CCR 811 sets a CSLB certification fee, so nothing in the law book displaces the $2 default."
+      }
+    },
+    {
+      "id": "public-records-copies-at-cost",
+      "title": "Public record copies at actual cost",
+      "plain_english": "CSLB and DCA may provide copies, compilations or summaries of their public records under the Public Records Act and Information Practices Act, for a charge that covers the actual cost.",
+      "category": "money_amount",
+      "parameters": {
+        "charge_basis": "actual cost",
+        "charge_set_by": "Director of Consumer Affairs with Department of General Services approval",
+        "governing_acts": [
+          "California Public Records Act (Gov Code 7920.000+)",
+          "Information Practices Act of 1977 (Civil Code 1798+)"
+        ]
+      },
+      "applies_to": "Owners, contractors and the public requesting CSLB records",
+      "citation": "B&P 161",
+      "source_location": "2026 CSLB Law Book, PDF page 159",
+      "verbatim_quote": "make available to the public copies of any part of its respective public records, or compilations, extracts, or summaries of information contained in its public records, at a charge sufficient to pay the actual cost thereof.",
+      "effective": "January 1, 2022 (as amended)",
+      "read_from_primary_text": true,
+      "notes": "No dollar amount is stated.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 159 (B&P 161)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "dca-service-contract-records-3-years",
+      "title": "DCA service contractors keep performance records 3 years after final payment",
+      "plain_english": "A vendor with a service contract with DCA or a DCA board must keep all documents and records of its performance for three years after final payment, because DCA's internal auditor may audit the contract. Vendors treating impaired licensees keep records three years after the last treatment.",
+      "category": "deadline",
+      "parameters": {
+        "retention_years": 3,
+        "clock_starts": "final payment under the contract",
+        "records": "all documents and records of the contract vendor in connection with performance",
+        "auditor": "DCA internal auditor (State Auditor authority under Gov Code 8546.7 unaffected)",
+        "treatment_vendor_retention_years": 3,
+        "treatment_vendor_clock_starts": "date of last treatment or service rendered to the licensee"
+      },
+      "applies_to": "Companies, including construction or service firms, holding service contracts with DCA or any DCA board",
+      "citation": "B&P 156.1(a), (c)",
+      "source_location": "2026 CSLB Law Book, PDF page 157",
+      "verbatim_quote": "all documents and records of the contract vendor in connection with such performance shall be retained by the vendor for a period of three years after final payment under the contract.",
+      "effective": "January 1, 2020 (as amended)",
+      "read_from_primary_text": true,
+      "notes": "Edge case. Only relevant if the company contracts directly with DCA or a DCA board. Whether a construction contract counts as a 'contract for services' is not stated.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 157 (B&P 156.1(a), (c))",
+        "correction": "",
+        "note": "156.1(a) also requires treatment vendors to keep records until DCA has reviewed them for audit."
+      }
+    },
+    {
+      "id": "consumer-and-person-definitions",
+      "title": "Consumer Affairs Act definitions of 'consumer' and 'person'",
+      "plain_english": "Under the Consumer Affairs Act, a 'consumer' is an individual who buys or leases goods, services, money or credit for personal, family or household purposes, such as a homeowner hiring a contractor for home improvement. A 'person' includes individuals, partnerships, corporations, LLCs and associations; an 'individual' does not include entities.",
+      "category": "definition",
+      "parameters": {
+        "consumer": "individual who seeks or acquires, by purchase or lease, goods, services, money, or credit for personal, family, or household purposes",
+        "person_includes": [
+          "individual",
+          "partnership",
+          "corporation",
+          "limited liability company",
+          "association",
+          "other group"
+        ],
+        "individual_excludes": [
+          "partnership",
+          "corporation",
+          "association",
+          "other group"
+        ]
+      },
+      "applies_to": "Contractors dealing with residential owners; DCA complaint handling",
+      "citation": "B&P 302(c)-(e)",
+      "source_location": "2026 CSLB Law Book, PDF page 167",
+      "verbatim_quote": "(c) “Consumer” means any individual who seeks or acquires, by purchase or lease, any goods, services, money, or credit for personal, family, or household purposes. (d) “Person” means an individual, partnership, corporation, limited liability company, association, or other group, however organized.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "These definitions apply to B&P Chapter 4 (Consumer Affairs Act, B&P 300+), not automatically to the Contractors License Law, which has its own definitions (B&P 7025-7026)."
+    },
+    {
+      "id": "dca-consumer-complaints",
+      "title": "DCA Director receives consumer complaints and may contact the business",
+      "plain_english": "The DCA Director receives consumer complaints about unfair or deceptive practices, unsafe goods or services, and violations by DCA-licensed businesses, including contractors. The Director may tell the business the nature of the complaint and ask it to give the consumer relief, and may forward valid complaints or patterns of complaints to law enforcement, regulators or the Attorney General.",
+      "category": "process_step",
+      "parameters": {
+        "complaint_topics": [
+          "unfair methods of competition and unfair or deceptive acts or practices",
+          "goods or services endangering public health, safety, or welfare",
+          "violations of B&P provisions on DCA-licensed businesses and professions"
+        ],
+        "director_may": [
+          "notify the person complained against of the nature of the complaint",
+          "request appropriate relief for the consumer",
+          "transmit valid complaints to the local, state, or federal agency best able to secure relief",
+          "request Attorney General legal action on probable violations or complaint patterns"
+        ]
+      },
+      "applies_to": "Contractors subject to consumer complaints; homeowners",
+      "citation": "B&P 325; B&P 326",
+      "source_location": "2026 CSLB Law Book, PDF pages 172-173",
+      "verbatim_quote": "Upon receipt of any complaint pursuant to Section 325, the director may notify the person against whom the complaint is made of the nature of the complaint and may request appropriate relief for the consumer.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Complaints about contractors normally go to CSLB directly. This is DCA's parallel channel. No response deadline for the business is stated."
+    },
+    {
+      "id": "dca-ag-injunction-consumer-damage",
+      "title": "DCA Director or Attorney General may sue to stop practices that harm consumers",
+      "plain_english": "If any person is harming or may harm California consumers by violating state or federal law, the DCA Director (or a designee) or the Attorney General may go to court to stop the practice and seek other relief for consumers.",
+      "category": "penalty",
+      "parameters": {
+        "plaintiffs": [
+          "Director of Consumer Affairs or designated officer or employee",
+          "Attorney General"
+        ],
+        "trigger": "acts or practices violating state or federal law that damage or may damage consumers",
+        "relief": [
+          "injunction",
+          "other appropriate relief on behalf of consumers"
+        ]
+      },
+      "applies_to": "Any business, including contractors, dealing with consumers",
+      "citation": "B&P 321",
+      "source_location": "2026 CSLB Law Book, PDF page 172",
+      "verbatim_quote": "the director or any officer or employee designated by the director, or the Attorney General, may commence legal proceedings in the appropriate forum to enjoin such acts or practices and may seek other appropriate relief on behalf of such consumers.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "No dollar penalty is stated here.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 172 (B&P 321)",
+        "correction": "",
+        "note": "The trigger also covers a person who \"intends to engage in\" the unlawful acts or practices."
+      }
+    },
+    {
+      "id": "local-government-cannot-bar-licensed-business",
+      "title": "Cities and counties cannot prohibit state-licensed contractors from working; business tax allowed",
+      "plain_english": "A city or county cannot prohibit a person licensed by a DCA agency such as CSLB from engaging in the licensed business or any part of it. Cities and counties may still charge a business license tax purely for revenue, or a license tax to cover the cost of regulation.",
+      "category": "prohibition",
+      "parameters": {
+        "local_prohibition_of_licensed_business_allowed": false,
+        "covers": "business, occupation, or profession or any portion thereof authorized by a DCA license",
+        "local_taxes_still_allowed": [
+          "business license tax solely for revenue purposes",
+          "license tax solely to cover the cost of regulation"
+        ]
+      },
+      "applies_to": "CSLB licensees working in any California city or county; local permitting agencies",
+      "citation": "B&P 460(a), (c)",
+      "source_location": "2026 CSLB Law Book, PDF page 176",
+      "verbatim_quote": "(a) No city or county shall prohibit a person or group of persons, authorized by one of the agencies in the Department of Consumer Affairs by a license, certificate, or other such means to engage in a particular business, from engaging in that business, occupation, or profession or any portion thereof.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "This does not exempt contractors from local permits, zoning or business tax registration. B&P 7000.2 (next chunk, per TOC) addresses local business tax proof before permit issuance."
+    },
+    {
+      "id": "inactive-license-no-licensed-work",
+      "title": "Inactive license: no licensed work; renew on the active schedule",
+      "plain_english": "Under DCA's inactive-license framework, an inactive licensee may not do any work that requires a license. The inactive license is renewed on the same schedule as an active one, at the same fee unless the board sets a lower one, with no continuing education. To reactivate, the holder pays the renewal fee and completes any required continuing education.",
+      "category": "prohibition",
+      "parameters": {
+        "licensed_activity_allowed_while_inactive": false,
+        "renewal_period": "same as active license",
+        "renewal_fee": "same as active unless the board specifies a lesser fee",
+        "continuing_education_for_inactive_renewal": false,
+        "reactivation_steps": [
+          "pay renewal fee",
+          "complete equivalent continuing education if board requires CE for active renewal"
+        ]
+      },
+      "applies_to": "Contractors holding an inactive license",
+      "citation": "B&P 462",
+      "source_location": "2026 CSLB Law Book, PDF page 177",
+      "verbatim_quote": "(1) The holder of an inactive license issued pursuant to this section shall not engage in any activity for which a license is required. (2) An inactive license issued pursuant to this section shall be renewed during the same time period in which an active license is renewed.",
+      "effective": "March 30, 1994",
+      "read_from_primary_text": true,
+      "notes": "This is the general DCA framework for boards that adopt an inactive category by regulation. CSLB's own inactive license rules (B&P 7076.5, later chunk) and fee schedule control for contractors. Contracting on an inactive license is unlicensed contracting."
+    },
+    {
+      "id": "retired-license-framework",
+      "title": "Retired license: no renewal, no licensed work, conditions to reactivate",
+      "plain_english": "A DCA board may create a retired license by regulation for holders of an active license, or of an inactive license not inactivated for discipline. A retired licensee may not do licensed work unless board rules allow it, and does not renew. To return to active status, the holder pays the fee, certifies no acts or crimes that are grounds for denial, submits fingerprints, completes any required continuing education, and meets other board requirements.",
+      "category": "process_step",
+      "parameters": {
+        "eligible": "holder of active license, or inactive license not placed inactive for disciplinary reasons",
+        "licensed_activity_allowed": "no, unless the board specifies criteria by regulation",
+        "renewal_required": false,
+        "application_fee": "set by board to cover reasonable regulatory cost",
+        "reactivation_requirements": [
+          "pay fee set by statute or regulation",
+          "certify no act or crime constituting grounds for denial",
+          "comply with fingerprint submission requirements",
+          "complete equivalent continuing education if required",
+          "any other board requirements"
+        ],
+        "not_applicable_if": "board has other statutory authority to establish a retired license"
+      },
+      "applies_to": "Licensees of DCA boards that adopt a retired category",
+      "citation": "B&P 464(a)-(b), (d)",
+      "source_location": "2026 CSLB Law Book, PDF pages 177-178",
+      "verbatim_quote": "(2) The holder of a retired license issued pursuant to this section shall not engage in any activity for which a license is required, unless the board, by regulation, specifies the criteria for a retired licensee to practice his or her profession or vocation. (3) The holder of a retired license shall not be required to renew that license.",
+      "effective": "January 1, 2017",
+      "read_from_primary_text": true,
+      "notes": "This chunk does not say whether CSLB has adopted a retired license category. Do not offer 'retired' as a CSLB status without checking CSLB law and regulations."
+    },
+    {
+      "id": "board-investigates-inactive-revoked-licensees",
+      "title": "Complaints against inactive, retired, canceled, revoked or suspended licensees are investigated",
+      "plain_english": "A board may investigate any licensee on its own, and must investigate on a complaint from anyone, even if the license is retired, inactive, canceled, revoked or suspended. Letting a license lapse does not avoid investigation.",
+      "category": "process_step",
+      "parameters": {
+        "investigation_mandatory_on_complaint": true,
+        "investigation_on_own_motion": true,
+        "license_statuses_covered": [
+          "retired",
+          "inactive",
+          "canceled",
+          "revoked",
+          "suspended",
+          "restricted"
+        ],
+        "complainant": "any person"
+      },
+      "applies_to": "Contractors whose license is not active; owners filing complaints",
+      "citation": "B&P 464(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 178",
+      "verbatim_quote": "A board may upon its own determination, and shall upon receipt of a complaint from any person, investigate the actions of any licensee, including a person with a license that either restricts or prohibits the practice of that person in his or her profession or vocation, including, but not limited to, a license that is retired, inactive, canceled, revoked, or suspended.",
+      "effective": "January 1, 2017",
+      "read_from_primary_text": true,
+      "notes": "464(d) exempts boards with other statutory retired-license authority from 464(a)-(b) only, not from 464(c)."
+    },
+    {
+      "id": "drp-program-standards",
+      "title": "County dispute resolution programs: voluntary, sliding-scale, written settlement",
+      "plain_english": "County-funded dispute resolution programs, which owners and contractors can use for construction disputes, must be voluntary with no coercion, charge on a sliding scale and be free for indigent parties, use trained neutrals, apply procedures equally to all parties, and, if the parties consent, issue a written agreement or award stating the settlement and each party's future responsibilities.",
+      "category": "process_step",
+      "parameters": {
+        "participation": "voluntary, no coercion",
+        "fees": "sliding scale; no cost to indigents",
+        "neutrals": "adequately trained in conflict resolution",
+        "written_outcome": "on consent of the parties, written agreement or award setting out settlement and future responsibilities of each party",
+        "neutral_procedures_for_funders": "no special benefit to persons or entities funding the program"
+      },
+      "applies_to": "Owners and contractors using county dispute resolution programs",
+      "citation": "B&P 467.2",
+      "source_location": "2026 CSLB Law Book, PDF page 180",
+      "verbatim_quote": "(c) Provision of dispute resolution, on a sliding scale basis, and without cost to indigents. (d) Provision that, upon consent of the parties, a written agreement or an award resolving a dispute will be issued setting out a settlement of the issues involved in the dispute and the future responsibilities of each party.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "These are funding-eligibility conditions for programs (467.2(f) voluntary participation; (e) neutral procedures). Not every private mediator is bound by them."
+    },
+    {
+      "id": "drp-written-statement-before-proceeding",
+      "title": "Required pre-proceeding written statement from a county dispute program",
+      "plain_english": "Before a county-funded dispute resolution proceeding, the program must give the parties an easy-to-read written statement covering the nature of the dispute, the process, the parties' rights (including calling and examining witnesses and bringing a lawyer), the procedures, and, if arbitration, whether it is binding.",
+      "category": "required_notice",
+      "parameters": {
+        "timing": "prior to the dispute resolution proceeding",
+        "language": "easy to read and understand",
+        "required_contents": [
+          "nature of the dispute",
+          "nature of the dispute resolution process",
+          "rights and obligations of the parties, including right to call and examine witnesses and right to be accompanied by counsel",
+          "procedures for the dispute resolution",
+          "if arbitration, whether the process will be binding"
+        ]
+      },
+      "applies_to": "Owners and contractors entering county-funded dispute resolution",
+      "citation": "B&P 467.3",
+      "source_location": "2026 CSLB Law Book, PDF pages 180-181",
+      "verbatim_quote": "Programs funded pursuant to this chapter shall provide persons indicating an intention to utilize the dispute resolution process with a written statement prior to the dispute resolution proceeding, in language easy to read and understand, stating all of the following: (a) The nature of the dispute. (b) The nature of the dispute resolution process.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The program's duty. A contractor can use it as a checklist before agreeing to participate, especially whether arbitration is binding.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 180-181 (B&P 467.3(a)-(e))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "drp-agreement-enforceability-clause",
+      "title": "Dispute program settlement is unenforceable without an express enforceability clause",
+      "plain_english": "A settlement reached through a county dispute resolution program cannot be enforced in court or used as evidence unless the parties consent or the agreement includes a provision clearly stating that they intend the agreement or award to be enforceable or admissible. Include that clause if you want to be able to enforce the deal.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "default_enforceable_in_court": false,
+        "default_admissible_as_evidence": false,
+        "required_clause": "provision clearly stating the parties' intention that the agreement or any resulting award shall be enforceable or admissible as evidence",
+        "alternative": "consent of the parties"
+      },
+      "applies_to": "Owners and contractors settling disputes through county-funded dispute resolution programs",
+      "citation": "B&P 467.4(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 181",
+      "verbatim_quote": "An agreement resolving a dispute entered into with the assistance of a program shall not be enforceable in a court nor shall it be admissible as evidence in any judicial or administrative proceeding, unless the consent of the parties or the agreement includes a provision that clearly states the intention of the parties that the agreement or any resulting award shall be so enforceable",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A settlement generator should add a clause such as 'The parties intend this agreement and any resulting award to be enforceable in court and admissible as evidence.' Settlements involving CSLB licensees must also follow B&P 143.5 (no gag on board complaints; earlier chunk).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 181 (B&P 467.4(a))",
+        "correction": "",
+        "note": "Applies only to agreements made with the help of a program funded under B&P Division 1, Chapter 8 (Dispute Resolution Programs, 465.5+)."
+      }
+    },
+    {
+      "id": "drp-tolling-agreement",
+      "title": "Parties may agree in writing to pause the statute of limitations during dispute resolution",
+      "plain_english": "Owners and contractors in a county dispute resolution program may agree in writing to toll (pause) the statute of limitations while the dispute resolution is pending, so they do not lose the right to sue while trying to settle.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "tolling_allowed": true,
+        "form": "written agreement",
+        "tolling_period": "pendency of the dispute resolution process",
+        "automatic": false
+      },
+      "applies_to": "Owners and contractors in county-funded dispute resolution",
+      "citation": "B&P 467.4(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 181",
+      "verbatim_quote": "The parties may agree in writing to toll the applicable statute of limitations during the pendency of the dispute resolution process.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Tolling is not automatic; without a written agreement the limitations period keeps running. Useful for construction defect and payment claims near their deadlines.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 181 (B&P 467.4(b))",
+        "correction": ""
+      }
+    },
+    {
+      "id": "drp-confidentiality",
+      "title": "Dispute program proceedings, including arbitration, have mediation confidentiality",
+      "plain_english": "All proceedings in a county-funded dispute resolution program, including arbitrations and conciliations as well as mediations, are covered by the Evidence Code's mediation confidentiality rules (Evidence Code 1115 and following).",
+      "category": "definition",
+      "parameters": {
+        "confidentiality_rules": "Evidence Code 1115+ (mediation confidentiality)",
+        "proceedings_covered": [
+          "mediations",
+          "arbitrations",
+          "conciliations",
+          "all program proceedings"
+        ]
+      },
+      "applies_to": "Owners and contractors in county-funded dispute resolution",
+      "citation": "B&P 467.5",
+      "source_location": "2026 CSLB Law Book, PDF page 181",
+      "verbatim_quote": "all proceedings conducted by a program funded pursuant to this chapter, including, but not limited to, arbitrations and conciliations, are subject to Chapter 2 (commencing with Section 1115) of Division 9 of the Evidence Code.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Statements made in the program generally cannot be used later in court. Program statistical records must also keep parties anonymous (B&P 467.6, 471.5)."
+    },
+    {
+      "id": "drp-withdrawal-right",
+      "title": "Right to withdraw from dispute resolution unless a binding award was agreed",
+      "plain_english": "Unless the parties agreed to a binding award, anyone who voluntarily enters a county dispute resolution program can revoke consent, withdraw, and go to court or an agency instead.",
+      "category": "process_step",
+      "parameters": {
+        "withdrawal_allowed": true,
+        "exception": "parties have agreed to a binding award",
+        "after_withdrawal": "may seek judicial or administrative redress"
+      },
+      "applies_to": "Owners and contractors in county-funded dispute resolution",
+      "citation": "B&P 467.7(a)",
+      "source_location": "2026 CSLB Law Book, PDF page 182",
+      "verbatim_quote": "Unless the parties have agreed to a binding award, nothing in this chapter shall be construed to prohibit any person who voluntarily enters the dispute resolution process from revoking his or her consent, withdrawing from dispute resolution, and seeking judicial or administrative redress.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Before agreeing to binding arbitration through a program, confirm the binding status in the B&P 467.3 written statement."
+    },
+    {
+      "id": "drp-criminal-complaint-counsel",
+      "title": "Get legal advice before dispute resolution if a criminal complaint has been filed",
+      "plain_english": "If a prosecutor has filed a criminal complaint (anything other than an infraction), legal advice must be obtained before any county dispute resolution process starts, for example where a contractor is charged with unlicensed contracting. A defendant may knowingly and voluntarily waive counsel but should be encouraged to consult a public defender or private lawyer first.",
+      "category": "process_step",
+      "parameters": {
+        "trigger": "criminal complaint filed by a prosecutor, other than for an infraction",
+        "required_before_dispute_resolution": "advice of counsel",
+        "waiver_allowed": "knowing and voluntary",
+        "waiver_encouragement": "consult public defender or private counsel before waiving"
+      },
+      "applies_to": "Contractors or owners who are criminal defendants in a related matter",
+      "citation": "B&P 467.7(b)",
+      "source_location": "2026 CSLB Law Book, PDF page 182",
+      "verbatim_quote": "In cases in which a criminal complaint has been filed by a prosecutor, other than for an infraction, the advice of counsel shall be obtained before any dispute resolution process is initiated.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The unlicensed-contracting example is an illustration; the statute is general."
+    }
+  ],
+  "refuted": [],
+  "verification_summary": {
+    "checked_on": "2026-11-25",
+    "method": "Each target rule (deadline, money_amount, threshold, penalty, required_notice, required_contract_clause) was read against the full section text in sources/lawbook.txt. PDF page N is the Nth form-feed page. Every verbatim_quote fragment was string-matched against the cited pages. CSLB Chapter 9 and 16 CCR counterparts (B&P 7123, 7137, 7141, 7145.5; 16 CCR 811) were checked where a DCA default could be displaced. One definition rule (tax-delinquency-494-5-cslb-excluded) was also checked because it decides whether the 494.5 timeline rules apply.",
+    "counts": {
+      "confirmed": 34,
+      "corrected": 1
+    },
+    "rules_total": 61,
+    "rules_not_checked": [
+      "denial-grounds-division-1-5",
+      "no-denial-for-good-moral-character",
+      "license-application-material-definitions",
+      "rehabilitation-certificate-pardon-bars-denial",
+      "dismissed-conviction-no-denial",
+      "arrest-without-conviction-no-denial",
+      "no-arrest-record-question-on-application",
+      "false-statement-on-application",
+      "no-criminal-history-disclosure-required",
+      "substantial-relationship-criteria",
+      "rehabilitation-showing",
+      "post-hearing-outcomes",
+      "conviction-record-conclusive",
+      "iso-judicial-review-venue",
+      "tax-delinquency-release-request",
+      "license-status-certificate-prima-facie-evidence",
+      "consumer-and-person-definitions",
+      "dca-consumer-complaints",
+      "local-government-cannot-bar-licensed-business",
+      "inactive-license-no-licensed-work",
+      "retired-license-framework",
+      "board-investigates-inactive-revoked-licensees",
+      "drp-program-standards",
+      "drp-confidentiality",
+      "drp-withdrawal-right",
+      "drp-criminal-complaint-counsel"
+    ]
+  }
+}

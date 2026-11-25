@@ -1,0 +1,3015 @@
+{
+  "domain": "Running a California construction company compliantly: license bonds (contractor $25,000, qualifying individual $25,000, LLC worker $100,000, disciplinary, judgment), LLC liability insurance, CGL/workers' comp disclosures, CSLB workers' compensation certificate/exemption rules (incl. 2028 change), license maintenance and change reporting, fees, advertising and license-number rules, unlicensed-contracting penalties and the $1,000 minor work exemption, home improvement salesperson registration, record retention, sales and use tax for contractors (CDTFA Regulation 1521), seller's permit, local business license, Secretary of State Statement of Information, FTB LLC tax and nonresident withholding, EDD registration and 2026 payroll tax rates, and federal employer obligations (EIN, 941, deposits, W-2, 940/FUTA, 1099-NEC, backup withholding).",
+  "source_doc": "Read in full: 2026 CSLB California Contractors License Law & Reference Book (/home/user/Client/sources/lawbook.txt) - Ch.3 business management PDF pp. 40-50; B&P 30 (p.103); 494.5 (pp.204-206); 7027-7033 (pp.241-260); 7048 (p.268); 7059.1 (p.278); 7068.1-7068.2 (pp.287-288); 7071.4-7071.20 (pp.292-309); 7076, 7076.2, 7076.5 (pp.316-320); 7083 (p.323); 7110-7118 (pp.351-356); 7125-7127 (pp.365-373); 7140-7145.5 (pp.383-387); 7152-7157 (pp.389-395); 7159(e), 7159.10 (pp.401-402, 414-416); 7161 (pp.421-422); 7164 (pp.425-426); 16 CCR 811, 856, 861, 872, 884, 885 (pp.451-452, 476-477, 490, 535-542). CSLB web pages fetched 2026-11-25: Tax_Info, Bond_Basics, Bond_Information (Requirements, Suspensions, Alternatives, General Information), Workers_Compensation, About_Us/LLC, Library/Fees, AdvertisingGuidelines.pdf, Fast_Facts License Bond (8/2025), GetLicensedToBuild guide (5/2025). eCFR (fetched via API): 26 CFR 31.6001-1, 31.6011(b)-1, 31.6071(a)-1, 31.6302-1, 31.6051-1, 1.6041-1, 1.6041-3. NOT fetchable from this environment (hosts blocked): cdtfa.ca.gov, edd.ca.gov, sos.ca.gov, ftb.ca.gov, irs.gov, leginfo.legislature.ca.gov - rules relying on them use web-search excerpts and are marked read_from_primary_text=false.",
+  "rules": [
+    {
+      "id": "contractor-license-bond-25000",
+      "title": "Contractor's license bond: $25,000",
+      "plain_english": "Every active license must have a $25,000 contractor's bond (or cashier's check) on file with CSLB to be issued, reinstated, reactivated, renewed, or kept active. An inactive license does not need the bond.",
+      "category": "money_amount",
+      "parameters": {
+        "amount_usd": 25000,
+        "required_for": [
+          "issuance",
+          "reinstatement",
+          "reactivation",
+          "renewal",
+          "continued_maintenance"
+        ],
+        "required_if_license_inactive": false,
+        "operative_date": "2023-01-01",
+        "prior_amount_usd_before_2023": 15000
+      },
+      "applies_to": "All CSLB licensees with an active license (sole owner, partnership, corporation, LLC, joint venture)",
+      "citation": "B&P 7071.6(a), (c), (e)",
+      "source_location": "PDF page 295 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Requirements.aspx",
+      "verbatim_quote": "The board shall require as a condition precedent to the issuance, reinstatement, reactivation, renewal, or continued maintenance of a license, that the applicant or licensee file or have on file a contractor's bond in the sum of twenty-five thousand dollars ($25,000).",
+      "effective": "2023-01-01",
+      "read_from_primary_text": true,
+      "notes": "Subdivision (c): bond not required while license is inactive. The $15,000 pre-2023 amount is from general knowledge of the repealed version (repealed 1/1/2023 per the law book history note) and is not needed for calculations. Bond must be from a surety admitted by the CA Department of Insurance, on an Attorney General-approved form (CSLB Bond Requirements page)."
+    },
+    {
+      "id": "contractor-bond-7500-nonpriority-cap",
+      "title": "Bond: $7,500 cap for claimants other than homeowners/employees",
+      "plain_english": "Of the $25,000 bond, only $7,500 total can go to claimants who are not on the priority list (homeowners, single-family owners, fraud victims, unpaid employees, fringe-benefit trusts). The rest is reserved for the priority claimants.",
+      "category": "threshold",
+      "parameters": {
+        "aggregate_cap_nonpriority_usd": 7500,
+        "reserved_for_priority_usd": 17500,
+        "priority_beneficiaries_section": "B&P 7071.5(a)-(e)"
+      },
+      "applies_to": "Claims against any contractor's license bond",
+      "citation": "B&P 7071.6(b)",
+      "source_location": "PDF page 295 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Excluding the claims brought by the beneficiaries specified in subdivision (a) of Section 7071.5, the aggregate liability of a surety on claims brought against a bond required by this section shall not exceed the sum of seven thousand five hundred dollars ($7,500).",
+      "effective": "2023-01-01",
+      "read_from_primary_text": true,
+      "notes": "The statute literally cross-references 'subdivision (a) of Section 7071.5' while the beneficiaries are listed in 7071.5(a)-(e); reserved amount ($17,500) is derived (25,000 - 7,500)."
+    },
+    {
+      "id": "contractor-bond-beneficiaries",
+      "title": "Who the contractor's bond protects",
+      "plain_english": "The license bond pays: homeowners hurt by license-law violations on their own home, owners building a single-family home not for sale, anyone hurt by willful violations or fraud, unpaid employees, and fringe-benefit funds owed employer payments.",
+      "category": "definition",
+      "parameters": {
+        "beneficiaries": [
+          "homeowner_home_improvement_on_personal_residence",
+          "owner_building_single_family_not_for_sale",
+          "person_damaged_by_willful_violation_or_fraud",
+          "employee_unpaid_wages",
+          "fringe_benefit_payee_including_CC_8024b_laborer"
+        ]
+      },
+      "applies_to": "All contractor's bonds and qualifying individual's bonds",
+      "citation": "B&P 7071.5; B&P 7071.10",
+      "source_location": "PDF page 294 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 300 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "The contractor's bond shall be for the benefit of the following: (a) A homeowner contracting for home improvement upon the homeowner's personal family residence damaged as a result of a violation of this chapter by the licensee.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Bond must be executed by an admitted surety in favor of the State of California and filed with the registrar. Same beneficiary list applies to the qualifying individual's bond (7071.10)."
+    },
+    {
+      "id": "contractor-bond-double-for-prior-unlicensed",
+      "title": "Double bond ($50,000) for applicants with unlicensed-contracting history",
+      "plain_english": "CSLB can make a new applicant post twice the normal bond until first renewal if they were convicted of unlicensed contracting or had a final unlicensed citation that caused substantial public injury.",
+      "category": "money_amount",
+      "parameters": {
+        "multiplier": 2,
+        "amount_usd": 50000,
+        "duration": "until the license is renewed",
+        "triggers": [
+          "conviction under B&P 7028",
+          "citation under B&P 7028.7 reduced to final order"
+        ],
+        "requires_substantial_injury_to_public": true
+      },
+      "applies_to": "License applicants with a prior 7028 conviction or final 7028.7 citation",
+      "citation": "B&P 7071.6(d)",
+      "source_location": "PDF page 295 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "the board may require an applicant to post a contractor's bond in twice the amount required pursuant to subdivision (a) until the time that the license is renewed",
+      "effective": "2023-01-01",
+      "read_from_primary_text": true,
+      "notes": "Discretionary ('may'). $50,000 derived as 2 x $25,000."
+    },
+    {
+      "id": "llc-employee-worker-bond-100000",
+      "title": "LLC employee/worker bond: $100,000",
+      "plain_english": "An LLC license needs an extra $100,000 surety bond (on top of the $25,000 contractor bond) that protects workers against unpaid wages, interest on wages and fringe benefits. If the LLC is under a union agreement, the bond also covers welfare, pension and apprentice contributions.",
+      "category": "money_amount",
+      "parameters": {
+        "amount_usd": 100000,
+        "in_addition_to_usd": 25000,
+        "entity_type": "LLC",
+        "covers": [
+          "wages",
+          "interest_on_wages",
+          "fringe_benefits"
+        ],
+        "cba_extra_coverage": [
+          "welfare_fund",
+          "pension_fund",
+          "apprentice_program"
+        ],
+        "required_if_license_inactive": false
+      },
+      "applies_to": "Limited liability company licensees",
+      "citation": "B&P 7071.6.5(a)-(e)",
+      "source_location": "PDF page 296 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/About_Us/LLC.aspx",
+      "verbatim_quote": "The board shall require, as a condition precedent to the issuance, reissuance, reinstatement, reactivation, renewal, or continued valid use of a limited liability company license, that the applicant or licensee file or have on file a surety bond in the sum of one hundred thousand dollars ($100,000).",
+      "effective": "2011-01-01",
+      "read_from_primary_text": true,
+      "notes": "Statute (e) says not applicable while license is inactive; CSLB LLC page sentence first says required for 'both active and inactive licenses' then '(not required for inactive LLC licenses)' - follow the statute (inactive exempt)."
+    },
+    {
+      "id": "llc-liability-insurance-aggregate",
+      "title": "LLC liability insurance: $1M + $100K per extra person, max $5M",
+      "plain_english": "An LLC licensee must carry liability insurance for its contracting work with an aggregate limit of at least $1,000,000 if 5 or fewer people are on its personnel of record, plus $100,000 more for each additional person, capped at $5,000,000 per policy period.",
+      "category": "money_amount",
+      "parameters": {
+        "base_aggregate_usd": 1000000,
+        "base_covers_personnel_count_up_to": 5,
+        "additional_per_person_usd": 100000,
+        "max_required_usd": 5000000,
+        "formula": "min(5000000, 1000000 + 100000 * max(0, personnel_of_record_count - 5))",
+        "personnel_count_at_cap": 45
+      },
+      "applies_to": "Limited liability company licensees (issuance, reinstatement, reactivation, continued valid use)",
+      "citation": "B&P 7071.19(a)-(b)",
+      "source_location": "PDF page 307 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 43 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/About_Us/LLC.aspx",
+      "verbatim_quote": "(1) For a limited liability company licensee with five or fewer persons listed on the members of the personnel of record, the aggregate limit shall not be less than one million dollars ($1,000,000).",
+      "effective": "2011-01-01",
+      "read_from_primary_text": true,
+      "notes": "Statute text says '$100,000 ... for each person listed on the personnel of record'; CSLB law book narrative (p.43) and CSLB LLC page read it as each ADDITIONAL person beyond five - formula follows CSLB. Required in addition to bonds. Cap is 'in any one designated period, less amounts paid in defending, settling, or discharging claims'."
+    },
+    {
+      "id": "llc-insurance-policy-form",
+      "title": "LLC insurance: policy form, insurer and period rules",
+      "plain_english": "The LLC policy can be claims-made or occurrence, must cover a 'designated period' of no more than 12 months, and must come from a California-admitted insurer or an eligible surplus line insurer. Deductibles/self-insured retentions are allowed.",
+      "category": "required_document",
+      "parameters": {
+        "policy_basis_allowed": [
+          "claims-made",
+          "occurrence"
+        ],
+        "designated_period_max_months": 12,
+        "insurer_types_allowed": [
+          "admitted (licensed by CA Dept. of Insurance)",
+          "eligible surplus line insurer (Ins. Code 1765.1)"
+        ],
+        "deductible_allowed": true
+      },
+      "applies_to": "LLC licensees",
+      "citation": "B&P 7071.19(c)",
+      "source_location": "PDF page 308 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/About_Us/LLC.aspx",
+      "verbatim_quote": "For purposes of this section, \"designated period\" means a policy year or any other period designated in the policy that is not greater than 12 months.",
+      "effective": "2014-01-01",
+      "read_from_primary_text": true,
+      "notes": "Admitted/surplus line wording effective 1/1/2014 per CSLB LLC page (AB 1236)."
+    },
+    {
+      "id": "llc-insurance-reinstate-limit",
+      "title": "LLC insurance: restore full limit by next policy period or suspension",
+      "plain_english": "If claims use up the LLC's aggregate limit, it need not buy more for that period, but the full required limit must be back in place by the start of the next designated period or the license is suspended by law.",
+      "category": "deadline",
+      "parameters": {
+        "reinstate_by": "commencement date of next designated period",
+        "consequence": "license suspended by operation of law until compliant",
+        "depletion_may_be_posted_on_license_record": true
+      },
+      "applies_to": "LLC licensees whose aggregate limit is impaired or exhausted",
+      "citation": "B&P 7071.19(d)",
+      "source_location": "PDF page 308 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "the aggregate limit of liability coverage (coverage limit) required by this section shall be reinstated by not later than the commencement date of the next designated period, and the license of any licensee that fails to comply with this provision shall be suspended by operation of law",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "llc-insurance-dissolution-tail-3-years",
+      "title": "LLC dissolution: keep 3-year extended reporting (tail) coverage",
+      "plain_english": "When an LLC dissolves and winds up, it must keep or buy an extended reporting period endorsement at the full required aggregate limit for at least three years, if reasonably available.",
+      "category": "deadline",
+      "parameters": {
+        "min_years": 3,
+        "trigger": "dissolution and winding up of the LLC",
+        "limit": "maximum total aggregate limit required by 7071.19",
+        "condition": "if reasonably available from the insurer"
+      },
+      "applies_to": "Dissolving LLC licensees",
+      "citation": "B&P 7071.19(e)",
+      "source_location": "PDF page 308 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "maintain or obtain an extended reporting period endorsement or equivalent provision in the maximum total aggregate limit of liability required to comply with this section for a minimum of three years if reasonably available from the insurer.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "llc-insurance-certificate-filing",
+      "title": "LLC insurance: file Certificate of Liability Insurance with CSLB",
+      "plain_english": "Before an LLC license is issued, reinstated or reactivated, the LLC must prove its liability coverage; a Certificate of Liability Insurance signed by the insurer's authorized agent must be submitted to CSLB, and the insurer reports policy dates, claim payments and cancellations.",
+      "category": "required_document",
+      "parameters": {
+        "document": "Certificate of Liability Insurance",
+        "signed_by": "authorized agent or employee of the insurer",
+        "insurer_reports": [
+          "name",
+          "license number",
+          "policy number",
+          "coverage start and lapse dates",
+          "date and amount of claim payments",
+          "cancellation date"
+        ]
+      },
+      "applies_to": "LLC applicants/licensees",
+      "citation": "B&P 7071.19(f)-(h)",
+      "source_location": "PDF page 308 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-309",
+      "verbatim_quote": "For any insurance policy secured by a licensee in satisfaction of this section, a Certificate of Liability Insurance, signed by an authorized agent or employee of the insurer, shall be submitted electronically or otherwise to the registrar.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Registrar may post insurer name, policy numbers and aggregate limits on the public license record."
+    },
+    {
+      "id": "qualifier-bond-25000",
+      "title": "Bond of qualifying individual: $25,000",
+      "plain_english": "If the license qualifier (RME or RMO etc.) is not the sole owner, a general partner or a joint licensee, that qualifier must file a separate $25,000 qualifying individual's bond in addition to the contractor's bond. Each qualifier on the license needs one.",
+      "category": "money_amount",
+      "parameters": {
+        "amount_usd": 25000,
+        "separate_from_contractor_bond": true,
+        "required_when_qualifier_is": [
+          "RME",
+          "RMO owning <10% voting stock",
+          "LLC qualifier owning <10% membership interest"
+        ],
+        "not_required_when_qualifier_is": [
+          "sole proprietor",
+          "general partner",
+          "joint licensee"
+        ],
+        "aggregate_cap_nonpriority_usd": 7500,
+        "exempt_entities": [
+          "federally recognized tribe",
+          "participating tribe"
+        ]
+      },
+      "applies_to": "Corporations, LLCs and other licensees qualified by someone other than the owner/general partner",
+      "citation": "B&P 7071.9(a)-(b); B&P 7071.10",
+      "source_location": "PDF page 298 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-299; https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Requirements.aspx",
+      "verbatim_quote": "the qualifying individual shall file or have on file a qualifying individual's bond as provided in Section 7071.10 in the sum of twenty-five thousand dollars ($25,000). This bond is in addition to, and shall not be combined with, any contractor's bond required by Sections 7071.5 to 7071.8, inclusive",
+      "effective": "2023-01-01",
+      "read_from_primary_text": true,
+      "notes": "CSLB: 'If a license has more than one RME or RMO qualifying the license, each qualifier must comply with the qualifier bonding requirements.' Bond must show business name, license number and qualifier name exactly as on CSLB records."
+    },
+    {
+      "id": "qualifier-bond-10-percent-owner-exemption",
+      "title": "Qualifier bond exemption for 10%+ owners (RMO/LLC qualifier)",
+      "plain_english": "An RMO who owns at least 10% of the corporation's voting stock, or an LLC qualifier who owns at least 10% of the membership interest, does not need the qualifier bond if they certify ownership on CSLB's form. If ownership drops below 10%, the bond is needed immediately.",
+      "category": "threshold",
+      "parameters": {
+        "ownership_threshold_percent": 10,
+        "certification_form": "Bond of Qualifying Individual Exemption Certification",
+        "applies_to_roles": [
+          "RMO of corporation",
+          "qualifier of LLC"
+        ],
+        "rme_eligible": false,
+        "on_ownership_drop": "bond suspension effective from date ownership requirement no longer exists"
+      },
+      "applies_to": "Corporate RMOs and LLC qualifiers",
+      "citation": "B&P 7071.9(c)-(d); B&P 7083(a)",
+      "source_location": "PDF page 299 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Suspensions.aspx",
+      "verbatim_quote": "The responsible managing officer of a corporation shall not be required to file or have on file a qualifying individual's bond, if the responsible managing officer owns 10 percent or more of the voting stock of the corporation and certifies to that fact on a form prescribed by the registrar.",
+      "effective": "2023-01-01",
+      "read_from_primary_text": true,
+      "notes": "Changes to the qualifying individual bond exemption must be reported within 90 days (7083). CSLB Bond Suspensions page: suspension when RMO 'no longer owns at least 10 percent'."
+    },
+    {
+      "id": "bond-received-within-90-days",
+      "title": "Bond must reach CSLB within 90 days of its effective date",
+      "plain_english": "CSLB accepts a bond as of the effective date printed on it only if CSLB receives it within 90 days of that date; then the license is reinstated back to that date. Late bonds are accepted retroactively only if you show circumstances beyond your control (form 13B-31).",
+      "category": "deadline",
+      "parameters": {
+        "days": 90,
+        "measured_from": "effective date shown on the bond",
+        "late_exception_form": "13B-31 Request for 7071.7 Bond Acceptance",
+        "applies_to_bonds": [
+          "7071.6 contractor",
+          "7071.6.5 LLC",
+          "7071.8 disciplinary",
+          "7071.9 qualifier"
+        ]
+      },
+      "applies_to": "All bonded licensees",
+      "citation": "B&P 7071.7",
+      "source_location": "PDF page 296 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Suspensions.aspx",
+      "verbatim_quote": "the registrar shall accept a bond required by Section 7071.6, 7071.6.5, 7071.8, or 7071.9 as of the effective date shown on the bond, if the bond is received by the registrar within 90 days after that date",
+      "effective": "2011-01-01",
+      "read_from_primary_text": true,
+      "notes": "CSLB: a surety rescission notice must also be received within 90 days of the bond cancellation date to lift a bond suspension."
+    },
+    {
+      "id": "bond-cancellation-30-day-suspension",
+      "title": "Bond cancellation: license suspended 30 days after CSLB gets notice",
+      "plain_english": "When a surety cancels your bond, the cancellation takes effect 30 days after CSLB receives the notice. If no reinstatement or replacement bond reaches CSLB in that window, the license is suspended; work while suspended is unlicensed.",
+      "category": "deadline",
+      "parameters": {
+        "days": 30,
+        "measured_from": "date CSLB receives surety cancellation notice",
+        "consequence": "license suspended",
+        "recommended_lead_time_new_bond_weeks": 4,
+        "work_during_suspension": "treated as unlicensed"
+      },
+      "applies_to": "All bonded licensees",
+      "citation": "B&P 7071.15 (suspension for failure to maintain bond); CSLB Bond Basics",
+      "source_location": "https://www.cslb.ca.gov/Contractors/Bond_Basics.aspx; PDF page 303 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "A license bond is canceled 30 days from the date that CSLB receives a cancellation notice from a bond company. If a bond reinstatement notice or replacement bond is not received by CSLB before the end of the 30-day period, the license is suspended.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "CSLB advises arranging a new bond four weeks before the old one expires and matching the new bond's effective date to the old bond's cancellation date. Bond and license renewal dates usually differ."
+    },
+    {
+      "id": "bond-name-must-match-cslb-record",
+      "title": "Bond details must match CSLB records exactly",
+      "plain_english": "The bond must show the business name and license number exactly as on CSLB's records (plus the qualifier's name on a qualifier bond), be signed by the surety's attorney-in-fact, and be on an Attorney General-approved form. Only one bond can be in effect at a time; bonds are not transferable.",
+      "category": "required_document",
+      "parameters": {
+        "must_match": [
+          "business name",
+          "license number",
+          "qualifier name (qualifier bond)"
+        ],
+        "signature": "attorney-in-fact for the surety",
+        "form": "approved by the Attorney General's Office",
+        "surety": "licensed by CA Department of Insurance",
+        "bonds_in_effect_at_once": 1,
+        "transferable": false
+      },
+      "applies_to": "All bonded licensees",
+      "citation": "B&P 7071.5, 7071.6, 7071.9, 7071.10 (CSLB bond requirements)",
+      "source_location": "https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Requirements.aspx; https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_General_Information.aspx",
+      "verbatim_quote": "The business name and license number on the bond must correspond exactly with the business name and license number on the CSLB's records.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "'Only one bond can be in effect at a time. A second bond filed for the same period cancels out the first bond.'"
+    },
+    {
+      "id": "bond-alternative-cashiers-check-only",
+      "title": "Bond alternative: cashier's check only; held 3 years",
+      "plain_english": "Instead of a surety bond you may deposit a cashier's or bank-certified check for the full bond amount payable to CSLB. CDs, passbooks and similar deposits are no longer accepted. The deposit is held at least 3 years after the license period it covers ends, and longer if a claim is pending.",
+      "category": "money_amount",
+      "parameters": {
+        "accepted_alternatives": [
+          "cashier's check",
+          "bank-certified check"
+        ],
+        "not_accepted": [
+          "certificate of deposit",
+          "savings passbook",
+          "investment certificate",
+          "credit union share account"
+        ],
+        "amount_usd_contractor_bond": 25000,
+        "amount_usd_qualifier_bond": 25000,
+        "release_after_years": 3,
+        "payee_text": "Payable to the Contractors State License Board",
+        "check_must_list": [
+          "license number",
+          "exact business name",
+          "qualifier name (if for qualifier bond)"
+        ]
+      },
+      "applies_to": "Licensees using a deposit instead of a surety bond",
+      "citation": "B&P 7071.4; CCP 995.710(a)(1); 16 CCR 856",
+      "source_location": "PDF page 292 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Alternatives.aspx",
+      "verbatim_quote": "no other method of deposit, including, but not limited to, a certificate of deposit, shall satisfy a bond requirement under this article.",
+      "effective": "2019-01-01",
+      "read_from_primary_text": true,
+      "notes": "3-year hold period is from CSLB's Bond Alternatives page ('three (3) years after the expiration of the license period ... or three (3) years following license inactivation, expiration, cancellation or revocation, whichever occurs first'). 16 CCR 856 in the law book still describes certificates of deposit, which 7071.4 no longer allows."
+    },
+    {
+      "id": "bond-wage-claim-cap-4000",
+      "title": "Bond: wage/fringe claims capped at $4,000 total",
+      "plain_english": "Total payouts on a license bond for wage and fringe-benefit claims cannot exceed $4,000 (except disciplinary bonds). If the bond is too small for all claims, claimants share pro rata.",
+      "category": "threshold",
+      "parameters": {
+        "aggregate_wage_fringe_cap_usd": 4000,
+        "excludes": "disciplinary bond (7071.8)",
+        "insufficient_bond": "distributed pro rata"
+      },
+      "applies_to": "Claims against contractor and qualifier bonds",
+      "citation": "B&P 7071.11(a)",
+      "source_location": "PDF page 300 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-301",
+      "verbatim_quote": "The aggregate liability of a surety on a claim for wages and fringe benefits brought against a bond required by this article, other than a bond required by Section 7071.8, shall not exceed the sum of four thousand dollars ($4,000).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Note: the LLC $100,000 worker bond under 7071.6.5 is a separate bond specifically for wages and is in the same article; whether the $4,000 cap applies to it is not stated - verify before relying."
+    },
+    {
+      "id": "bond-claim-filing-deadlines",
+      "title": "Deadlines to sue on a license bond",
+      "plain_english": "Most bond claims must be filed within 2 years after the end of the license period when the act happened (or 2 years after the license would have expired if it was inactivated/cancelled/revoked). Wage and fringe claims must be brought within 6 months of discovering the shortfall and never more than 2 years after the pay was due.",
+      "category": "deadline",
+      "parameters": {
+        "general_years_after_license_period_expiration": 2,
+        "wage_fringe_months_after_discovery": 6,
+        "wage_fringe_absolute_years_after_due": 2,
+        "excludes": "judgment bond under 7071.17"
+      },
+      "applies_to": "Claimants against license bonds; contractors tracking exposure",
+      "citation": "B&P 7071.11(c)-(d)",
+      "source_location": "PDF page 301 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "A claim to recover wages or fringe benefits shall be brought within six months from the date that the wage or fringe benefit delinquencies were discovered, but in no event shall a civil action thereon be brought later than two years from the date the wage or fringe benefit contributions were due.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "bond-claim-protest-15-days-and-90-day-repay",
+      "title": "Bond claim: 15 days to protest; 90 days to repay surety",
+      "plain_english": "Before a surety settles a bond claim in good faith, you get at least 15 days to file a written protest. If you do not protest, you have 90 days from CSLB's notice to prove you repaid the surety (and any excess judgment) or the license is suspended automatically.",
+      "category": "deadline",
+      "parameters": {
+        "protest_window_days_min": 15,
+        "repay_surety_days_after_board_notice": 90,
+        "consequence": "automatic suspension; disclosed indefinitely as failure to settle outstanding final liabilities",
+        "surety_notice_to_registrar_days": 30
+      },
+      "applies_to": "Licensees whose bond receives a claim",
+      "citation": "B&P 7071.11(e)-(h)",
+      "source_location": "PDF page 301 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-302",
+      "verbatim_quote": "Prior to the settlement of a claim through a good faith payment by the surety, a licensee shall have not less than 15 days in which to provide a written protest.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Surety must notify the registrar within 30 days of any payment (7071.11(e)). A notarized accord with the surety may be filed in lieu of full payment; breaking the accord causes automatic suspension."
+    },
+    {
+      "id": "unsatisfied-judgment-report-and-bond",
+      "title": "Report unsatisfied construction judgments within 90 days; post judgment bond",
+      "plain_english": "You must tell CSLB in writing within 90 days about any unsatisfied final judgment against you related to construction (including final arbitration awards). Then you must file a bond equal to the unpaid judgments within 90 days of CSLB's notice (or file a notarized accord), or the license is suspended.",
+      "category": "deadline",
+      "parameters": {
+        "notify_registrar_days": 90,
+        "file_bond_days_after_board_notice": 90,
+        "bond_amount": "equal to all unsatisfied final judgments",
+        "bond_min_on_file_years": 1,
+        "alternatives": [
+          "notarized copy of accord with judgment creditor",
+          "cash/cashier's check deposit under CCP 995.710(a)(1)"
+        ],
+        "late_notice_consequence": "automatic suspension on date registrar learns of judgment"
+      },
+      "applies_to": "All licensees with unsatisfied final judgments for failing to pay a contractor, sub, consumer, supplier or employee",
+      "citation": "B&P 7071.17(a)-(l)",
+      "source_location": "PDF page 304 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-306",
+      "verbatim_quote": "all licensees shall notify the registrar in writing of any unsatisfied final judgment imposed on the licensee. If the licensee fails to notify the registrar in writing within 90 days, the license shall be automatically suspended on the date that the registrar is informed, or is made aware of the unsatisfied final judgment.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Personnel of record at the time are barred from serving on any other license until satisfied (7071.17(j)). Judgments discharged in bankruptcy generally excluded (f)."
+    },
+    {
+      "id": "disciplinary-bond-amount",
+      "title": "Disciplinary bond: $25,000 to 10x, at least 2 years",
+      "plain_english": "After a suspension or revocation for discipline, the registrar sets a disciplinary bond of at least $25,000 and at most 10 times the contractor bond ($250,000), kept on file at least 2 years while the license is active and in good standing. It is in addition to all other bonds.",
+      "category": "money_amount",
+      "parameters": {
+        "min_usd": 25000,
+        "max_multiplier_of_contractor_bond": 10,
+        "max_usd": 250000,
+        "min_years_on_file": 2,
+        "combinable_with_other_bonds": false
+      },
+      "applies_to": "Licensees/applicants with disciplined (suspended or revoked) licenses and associated personnel",
+      "citation": "B&P 7071.8(b)-(c)",
+      "source_location": "PDF page 298 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Requirements.aspx",
+      "verbatim_quote": "which sum shall not be less than twenty-five thousand dollars ($25,000) nor more than 10 times that amount required by Section 7071.6.",
+      "effective": "2023-01-01",
+      "read_from_primary_text": true,
+      "notes": "$250,000 derived as 10 x $25,000. Bond period runs only while license is current, active and in good standing."
+    },
+    {
+      "id": "no-bonded-claims-in-advertising",
+      "title": "Do not advertise that you are 'bonded' (license bond)",
+      "plain_english": "Referring to your license bond (or a disciplinary bond) in ads, solicitations or presentations to the public is grounds for discipline and license suspension.",
+      "category": "prohibition",
+      "parameters": {
+        "prohibited_terms_examples": [
+          "bonded"
+        ],
+        "applies_when_reference_is_to": [
+          "contractor's license bond (7071.6)",
+          "disciplinary bond (7071.8)",
+          "any bond required by the chapter (7071.13)"
+        ]
+      },
+      "applies_to": "All licensees' advertising",
+      "citation": "B&P 7071.13; B&P 7027.4(b)",
+      "source_location": "PDF page 303 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 243 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Resources/GuidesAndPublications/AdvertisingGuidelines.pdf",
+      "verbatim_quote": "Any reference by a contractor in his advertising, soliciting, or other presentments to the public to any bond required to be filed pursuant to this chapter is a ground for the suspension of the license of such contractor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A project-specific performance/payment bond is not a license bond; the prohibition targets license-law bonds. CSLB Advertising Guidelines: 'The law prevents you from noting in your advertising or any presentation to the public that you are bonded.'"
+    },
+    {
+      "id": "cgl-not-required-except-llc",
+      "title": "CGL insurance not required by license law (except LLCs)",
+      "plain_english": "State license law does not require general liability insurance unless the licensee is an LLC; but you must disclose whether you carry it on home improvement and single-family contracts, and many commercial owners require it.",
+      "category": "definition",
+      "parameters": {
+        "cgl_required_by_license_law": false,
+        "exception_entity_type": "LLC (B&P 7071.19)",
+        "disclosure_still_required_for": [
+          "home improvement bids and contracts",
+          "single-family dwelling contracts (B&P 7164)",
+          "service and repair contracts"
+        ]
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7071.19; 16 CCR 872",
+      "source_location": "PDF page 43 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Contractors State License Law does not require contractors to carry CGL insurance unless their business entity is a limited liability company (see below).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "cgl-disclosure-form-home-improvement-ccr-872a",
+      "title": "CGL disclosure statement with every home improvement bid and contract",
+      "plain_english": "Every home improvement estimate/bid and every home improvement contract must be accompanied by CSLB's 'Information About Commercial General Liability Insurance' statement, checking whether you do or do not carry CGL and, if you do, giving the insurer's name and phone number. Heading 14-point, questions 12-point, comments 11-point italics.",
+      "category": "required_notice",
+      "parameters": {
+        "attach_to": [
+          "every estimate (bid) intended to result in a home improvement contract",
+          "every home improvement contract"
+        ],
+        "heading_min_pt": 14,
+        "questions_min_pt": 12,
+        "comments_min_pt_italic": 11,
+        "heading_text": "Information About Commercial General Liability Insurance Home Improvement",
+        "checkbox_options": [
+          "does not carry Commercial General Liability Insurance",
+          "carries Commercial General Liability Insurance (insurer name + telephone)"
+        ],
+        "cslb_phone": "800-321-CSLB (2752)"
+      },
+      "applies_to": "Home improvement contractors",
+      "citation": "16 CCR 872(a); B&P 7159.3 (as cited in the form)",
+      "source_location": "PDF page 535 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-536",
+      "verbatim_quote": "The following statement, must accompany every estimate (bid) intended to result in a home improvement contract and every home improvement contract. The heading shall be printed in at least 14-point type, the questions in at least 12-point type, and the comments in italics of at least 11-point type.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Full form text (Q&A) on PDF pages 535-536 can be reproduced verbatim by a document generator. Form cites B&P 7159.3, which no longer appears in the 2026 code listing; current contract-level notice is in B&P 7159(e)(1)."
+    },
+    {
+      "id": "cgl-disclosure-form-single-family-ccr-872b",
+      "title": "CGL disclosure statement for single-family home construction contracts",
+      "plain_english": "Contracts to build a single-family home for an owner who will keep it at least a year must include CSLB's CGL disclosure statement (Single Family Home version), with the same font-size rules, and state whether you carry CGL and the insurer's contact.",
+      "category": "required_notice",
+      "parameters": {
+        "attach_to": "every contract described in B&P 7164 (single-family dwelling retained by owner >= 1 year)",
+        "owner_retention_min_years": 1,
+        "heading_min_pt": 14,
+        "questions_min_pt": 12,
+        "comments_min_pt_italic": 11,
+        "heading_text": "Information About Commercial General Liability Insurance Single Family Home"
+      },
+      "applies_to": "Contractors building single-family dwellings for owner-occupants",
+      "citation": "16 CCR 872(b); B&P 7164(b)(5)(A)",
+      "source_location": "PDF page 536 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-538; PDF page 426 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Contractors building single-family residences for owners who intend to occupy the home for at least a year are required by law to tell you whether or not they carry Commercial General Liability Insurance. This written statement must accompany the contract.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "7164 also requires the contract and all changes in writing signed by both parties, with name/address/license number, approximate start and completion dates, legal description, and Mechanics Lien Warning."
+    },
+    {
+      "id": "hic-cgl-notice-7159e1",
+      "title": "Home improvement contract: CGL notice (4 statement options)",
+      "plain_english": "Each home improvement contract must include (or attach, with a reference line) a notice headed 'Commercial General Liability Insurance (CGL)' with the one true statement: no CGL; CGL with insurer and phone; self-insured; or LLC carrying insurance/security required by law with phone to verify.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "heading": "Commercial General Liability Insurance (CGL)",
+        "attachment_reference_text": "A notice concerning commercial general liability insurance is attached to this contract.",
+        "options": {
+          "A": "does not carry commercial general liability insurance",
+          "B": "carries commercial general liability insurance written by (insurer). You may call (insurer) at ___ to check the contractor's insurance coverage.",
+          "C": "is self-insured",
+          "D": "is a limited liability company that carries liability insurance or maintains other security as required by law. You may call (the insurance company or trust company or bank) at ___ to check on the contractor's insurance coverage or security."
+        },
+        "llc_must_use_option": "D"
+      },
+      "applies_to": "Home improvement contracts (B&P 7151.2)",
+      "citation": "B&P 7159(e)(1)",
+      "source_location": "PDF page 401 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "The notice shall include the heading \"Commercial General Liability Insurance (CGL),\" followed by whichever of the following statements is both relevant and correct: (A) \"(The name on the license or 'This contractor') does not carry commercial general liability insurance.\"",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Exception: as provided in 7159.5(a)(8). CSLB LLC page: 'Specific general liability insurance information is required to be included on the LLC's home improvement and service and repair contracts.'"
+    },
+    {
+      "id": "hic-workers-comp-notice-7159e2",
+      "title": "Home improvement contract: workers' compensation notice",
+      "plain_english": "Each home improvement contract must include (or attach, with a reference line) a notice headed 'Workers' Compensation Insurance' stating either that the contractor has no employees and is exempt, or carries workers' comp for all employees.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "heading": "Workers' Compensation Insurance",
+        "attachment_reference_text": "A notice concerning workers' compensation insurance is attached to this contract.",
+        "options": {
+          "A": "has no employees and is exempt from workers' compensation requirements.",
+          "B": "carries workers' compensation insurance for all employees."
+        }
+      },
+      "applies_to": "Home improvement contracts",
+      "citation": "B&P 7159(e)(2)",
+      "source_location": "PDF page 401 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-402",
+      "verbatim_quote": "\"(The name on the license or 'This contractor') has no employees and is exempt from workers' compensation requirements.\" (B) \"(The name on the license or 'This contractor') carries workers' compensation insurance for all employees.\"",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Option A must not be used by C-8, C-20, C-22, C-39 or D-49 licensees or RME-qualified licenses (they cannot hold an exemption) and, from 1/1/2028, by most licensees (see wc-exemption-ends-2028)."
+    },
+    {
+      "id": "service-repair-contract-insurance-notices",
+      "title": "Service & repair contracts ($750 or less): CGL and WC notices",
+      "plain_english": "Service and repair contracts (buyer-initiated jobs of $750 or less) must also carry the CGL notice (same 4 options) and the workers' comp notice (same 2 options).",
+      "category": "required_contract_clause",
+      "parameters": {
+        "contract_amount_max_usd": 750,
+        "buyer_initiated": true,
+        "required_notices": [
+          "Commercial General Liability Insurance (CGL)",
+          "Workers' Compensation Insurance"
+        ],
+        "min_text_pt": 10
+      },
+      "applies_to": "Service and repair contracts under B&P 7159.10",
+      "citation": "B&P 7159.10(a)(1)(A), (d)(7)-(8)",
+      "source_location": "PDF page 414 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-416",
+      "verbatim_quote": "(7) A notice concerning commercial general liability insurance. This notice may be provided as an attachment to the contract if the contract includes the statement, \"A notice concerning commercial general liability insurance is attached to this contract.\"",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "advertising-insured-must-name-type",
+      "title": "Advertising 'insured' must name the insurance type",
+      "plain_english": "If you advertise that you are 'insured,' the ad must say what kind of insurance (for example 'commercial general liability insurance' or 'workers' compensation insurance'); abbreviations are allowed.",
+      "category": "prohibition",
+      "parameters": {
+        "trigger_terms": [
+          "insured",
+          "has insurance"
+        ],
+        "must_identify_type_examples": [
+          "commercial general liability insurance",
+          "workers' compensation insurance"
+        ],
+        "abbreviation_allowed": true
+      },
+      "applies_to": "All licensees' advertising (cards, signs, vehicles, print, web/electronic, directories)",
+      "citation": "B&P 7027.4(a), (c)",
+      "source_location": "PDF page 243 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "It is a cause for discipline for any contractor to advertise that he or she is \"insured\" or has insurance without identifying in the advertisement the type of insurance, including, for example, \"commercial general liability insurance\" or \"workers' compensation insurance\" that is carried by the contractor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "wc-certificate-or-exemption-on-file",
+      "title": "Keep a workers' comp certificate (or exemption) on file with CSLB",
+      "plain_english": "To get, renew, reactivate or keep an active license you must have on file at all times a current Certificate of Workers' Compensation Insurance (filed by your insurer) or DIR Certificate of Self-Insurance in your business name - or, if you truly have no employees and hold no mandatory class, a signed exemption. Inactive licenses need neither.",
+      "category": "required_document",
+      "parameters": {
+        "accepted_documents": [
+          "Certificate of Workers' Compensation Insurance (filed by CA-licensed WC insurer)",
+          "Certification of Self-Insurance (Director of Industrial Relations)",
+          "Exemption certificate (no employees, CSLB form)"
+        ],
+        "must_be_in": "applicant's or licensee's business name",
+        "required_if_inactive": false,
+        "exemption_conditions": [
+          "no employees subject to CA workers' comp law",
+          "no C-8, C-20, C-22, C-39 or D-49 classification"
+        ]
+      },
+      "applies_to": "All active licensees and applicants for active licenses",
+      "citation": "B&P 7125(a)-(d) [version in effect until 1/1/2028]",
+      "source_location": "PDF page 365 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-366; https://www.cslb.ca.gov/Contractors/Maintain_License/Workers_Compensation.aspx",
+      "verbatim_quote": "the board shall require as a condition precedent to the issuance, reinstatement, reactivation, renewal, or continued maintenance of a license, that the applicant or licensee have on file at all times a current and valid Certificate of Workers' Compensation Insurance or Certification of Self-Insurance in the applicant's or licensee's business name.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "This version is repealed 1/1/2028 (SB 1455, Stats 2024 ch 485). Joint ventures with no employees may also file the statement (7125(c)). B&P 7125.7: CSLB must set up an audit/verification process for no-employee exemptions by 1/1/2027."
+    },
+    {
+      "id": "wc-mandatory-classifications",
+      "title": "C-8, C-20, C-22, C-39 and D-49 must carry workers' comp even with no employees",
+      "plain_english": "Concrete (C-8), HVAC (C-20), Asbestos Abatement (C-22), Roofing (C-39) and Tree Service (C-61/D-49) licensees cannot file a no-employee exemption; they must carry workers' comp or self-insurance. If such a licensee also holds other classes and lacks a certificate, CSLB removes the mandatory class instead of suspending the whole license.",
+      "category": "license_classification",
+      "parameters": {
+        "classifications": [
+          "C-8",
+          "C-20",
+          "C-22",
+          "C-39",
+          "C-61/D-49"
+        ],
+        "exemption_allowed": false,
+        "multi_class_consequence": "mandatory classification removed from license unless certificate received (C-39 since 1/1/2013; C-8, C-20, C-22, D-49 after 7/1/2023)",
+        "single_class_consequence": "automatic license suspension"
+      },
+      "applies_to": "Licensees holding any listed classification",
+      "citation": "B&P 7125(b)(2), (f), (g)",
+      "source_location": "PDF page 365 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-367; PDF page 45 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Does not hold a C-8 license, as defined in Section 832.08 of Title 16 of the California Code of Regulations, a C-20 license, ... a C-22 license, ... a C-39 license, ... or a D-49 license, a subcategory of a C-61 license",
+      "effective": "2023-07-01",
+      "read_from_primary_text": true,
+      "notes": "Quote abbreviated with ellipses (removes the CCR cross-references). Out-of-state licensees with these classes whose employees do not reside in CA use exemption form 13L-50 plus home-state WC certificate (CSLB WC page)."
+    },
+    {
+      "id": "wc-exemption-ends-2028",
+      "title": "From Jan 1, 2028: no-employee exemption ends (except joint ventures)",
+      "plain_english": "Starting January 1, 2028, the no-employees exemption disappears for ordinary licensees: every active license must have a workers' comp certificate or self-insurance certificate on file. Only a joint-venture license with no employees can still file an exemption statement.",
+      "category": "deadline",
+      "parameters": {
+        "operative_date": "2028-01-01",
+        "exemption_remaining_for": "joint venture licenses (B&P 7029) with no employees",
+        "required_document": "Certificate of Workers' Compensation Insurance or Certification of Self-Insurance",
+        "required_if_inactive": false,
+        "enacting_bills": [
+          "SB 216 (Stats 2022 ch 978)",
+          "SB 1455 (Stats 2024 ch 485)"
+        ]
+      },
+      "applies_to": "All active CSLB licensees (sole owners, partnerships, corporations, LLCs) other than no-employee joint ventures",
+      "citation": "B&P 7125(a)-(c), (f) [version operative 1/1/2028]",
+      "source_location": "PDF page 367 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-368",
+      "verbatim_quote": "This section does not apply to an applicant or licensee organized as a joint venture pursuant to Section 7029 that has no employees, provided that the applicant or licensee files a statement with the board",
+      "effective": "2028-01-01",
+      "read_from_primary_text": true,
+      "notes": "SB 216 originally made this operative 1/1/2026; SB 1455 (2024) delayed it to 1/1/2028 per the law book history notes. A compliance tool should warn exempt sole owners to budget for a WC policy before 1/1/2028. Watch for further legislative delay."
+    },
+    {
+      "id": "wc-exemption-barred-rme-or-employees",
+      "title": "Cannot use the WC exemption if you have employees, an RME, or salespersons",
+      "plain_english": "You may not file (or keep) a workers' comp exemption if you employ anyone covered by CA workers' comp, if the license is qualified by a Responsible Managing Employee (the RME is an employee), or if you employ home improvement salespersons.",
+      "category": "prohibition",
+      "parameters": {
+        "exemption_barred_if": [
+          "any employee subject to CA workers' comp law",
+          "license qualified by an RME",
+          "employs home improvement salesperson(s)",
+          "holds C-8/C-20/C-22/C-39/D-49"
+        ]
+      },
+      "applies_to": "Licensees considering or holding a WC exemption",
+      "citation": "B&P 7125(b); B&P 7125.4(a)",
+      "source_location": "https://www.cslb.ca.gov/Contractors/Maintain_License/Workers_Compensation.aspx; https://www.cslb.ca.gov/Resources/GuidesAndPublications/GetLicensedToBuild_ENG0525_ADA.pdf (pp. 29-30, 34)",
+      "verbatim_quote": "If the license is qualified by a responsible managing employee (RME), CSLB will not accept an exemption certificate because the RME is an employee.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Quote from CSLB 'Get Licensed to Build' guide (Q4 Financial Requirements). The HIS trigger is from the same guide's list of when proof of WC is required ('You employ home improvement salesperson(s)')."
+    },
+    {
+      "id": "wc-proof-within-90-days-of-hire",
+      "title": "After hiring your first employee: get WC and file proof",
+      "plain_english": "An exemption on file becomes invalid the moment you hire someone covered by workers' comp. You must have coverage from that date and CSLB must receive proof within 90 days of the hire. Employing anyone after filing an exemption without first filing a certificate is cause for discipline.",
+      "category": "deadline",
+      "parameters": {
+        "days_to_file_proof_after_hire": 90,
+        "coverage_required_from": "date coverage is required (first hire)",
+        "exemption_invalid_on": "first hire"
+      },
+      "applies_to": "Licensees with a WC exemption on file who hire",
+      "citation": "B&P 7125.4(a); B&P 7125.2(a)(2)",
+      "source_location": "https://www.cslb.ca.gov/Contractors/Maintain_License/Workers_Compensation.aspx; PDF page 369 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-370",
+      "verbatim_quote": "Upon employing anyone in a manner that is subject to the workers' compensation laws of California, the exemption form on file will no longer be valid and you will be required to obtain and submit proof of workers' compensation insurance coverage. This proof must be received at CSLB's Headquarters within 90 days of the hire.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Coverage itself must start before the employee works; 7125.2 suspends the license on the date coverage is required."
+    },
+    {
+      "id": "wc-certificate-accepted-within-90-days",
+      "title": "WC certificate accepted retroactively if received within 90 days",
+      "plain_english": "CSLB accepts a workers' comp certificate as of its effective date (and reinstates the license back to that date) if received within 90 days; later filings are retroactive only for circumstances beyond your control.",
+      "category": "deadline",
+      "parameters": {
+        "days": 90,
+        "measured_from": "effective date shown on the certificate",
+        "late_exception": "circumstances beyond licensee's control (form acceptable to registrar)"
+      },
+      "applies_to": "Licensees filing WC certificates",
+      "citation": "B&P 7125.1; B&P 7125.3",
+      "source_location": "PDF page 368 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-370",
+      "verbatim_quote": "The registrar shall accept a certificate required by Section 7125 as of the effective date shown on the certificate, if the certificate is received by the registrar within 90 days after that date, and shall reinstate the license to which the certificate pertains, if otherwise eligible, retroactive to the effective date of the certificate.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "7125.3: contractor is considered duly licensed during periods the registrar must accept the certificate."
+    },
+    {
+      "id": "wc-lapse-automatic-suspension",
+      "title": "Workers' comp lapse = automatic license suspension",
+      "plain_english": "If required coverage lapses (or is never obtained when required), the license is automatically suspended as of the lapse date or the date coverage was required, whichever is earlier. CSLB may post a pending suspension up to 45 days before; work while suspended is unlicensed.",
+      "category": "penalty",
+      "parameters": {
+        "suspension_effective": "earlier of coverage lapse date or date coverage required",
+        "pending_suspension_posting_days_max": 45,
+        "reinstatement": "proof of compliance per 7125 and 7125.1",
+        "unlicensed_citation_hearing_request_working_days": 15
+      },
+      "applies_to": "Licensees required to carry WC",
+      "citation": "B&P 7125.2",
+      "source_location": "PDF page 369 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-370",
+      "verbatim_quote": "The failure of a licensee to obtain or maintain workers' compensation insurance coverage, if required under this chapter, shall result in the automatic suspension of the license by operation of law",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "wc-false-exemption-civil-penalties",
+      "title": "False WC exemption / uninsured employees: $10K-$30K CSLB penalties",
+      "plain_english": "Filing a false exemption, or employing workers without coverage, brings minimum civil penalties of $10,000 per violation for a sole owner and $20,000 for a partnership, corporation, LLC or tribal business, with total penalties up to $30,000 per occurrence. The qualifier can be charged with a misdemeanor, and the license will not be renewed until a valid certificate is filed.",
+      "category": "penalty",
+      "parameters": {
+        "min_penalty_sole_owner_usd": 10000,
+        "min_penalty_entity_usd": 20000,
+        "max_total_per_occurrence_usd": 30000,
+        "qualifier_liability": "misdemeanor",
+        "renewal_blocked_until": "valid WC certificate filed",
+        "ccr_884_range_usd": [
+          200,
+          30000
+        ]
+      },
+      "applies_to": "Licensees employing workers without WC or with a false exemption",
+      "citation": "B&P 7125.4; 16 CCR 884(a)",
+      "source_location": "PDF page 370 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 541 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "(1) A minimum civil penalty of ten thousand dollars ($10,000) per violation for any sole owner licensee found to have employed workers without maintaining workers' compensation coverage. (2) A minimum civil penalty of twenty thousand dollars ($20,000) per violation for any partnership, corporation, limited liability company, or tribal business licensee",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "B&P 7126: violations of the article are misdemeanors; prosecution within 2 years. DIR/Labor Code penalties (LC 3700.5, 3722) are separate (see labor-hr research file)."
+    },
+    {
+      "id": "wc-renewal-recertify-exemption",
+      "title": "At every renewal: recertify WC exemption or file certificate",
+      "plain_english": "When renewing, an active licensee with an exemption must recertify it on the renewal form or file a current WC certificate; otherwise the renewal is rejected. If the missing item arrives within 30 days of CSLB's rejection notice, renewal is retroactive.",
+      "category": "process_step",
+      "parameters": {
+        "when": "license renewal",
+        "cure_window_days_after_rejection_notice": 30,
+        "retroactive_to": "postmark of otherwise acceptable renewal"
+      },
+      "applies_to": "Active licensees with WC exemption",
+      "citation": "B&P 7125.5",
+      "source_location": "PDF page 371 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "The license shall not be renewed unless a licensee with an exemption for workers' compensation insurance on file with the board recertifies the exemption status or provides a current and valid Certificate of Workers' Compensation Insurance or Certificate of Self-Insurance in conjunction with the license renewal.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "wc-renewal-top-3-class-codes",
+      "title": "At renewal: report your top 3 WC classification codes",
+      "plain_english": "Licensees with a WC policy must list on the renewal form the three workers' comp classification codes with the highest estimated payroll on the policy (all codes if fewer than three). CSLB shows them on the public license record and will not renew without them (30-day cure).",
+      "category": "required_document",
+      "parameters": {
+        "codes_to_report": 3,
+        "ranking": "highest estimated payroll on the policy",
+        "if_fewer_than_3": "report every code",
+        "cure_window_days": 30,
+        "operative_date": "2024-07-01"
+      },
+      "applies_to": "Active licensees with or required to have WC coverage",
+      "citation": "B&P 7125.6",
+      "source_location": "PDF page 371 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-372",
+      "verbatim_quote": "shall certify on the license renewal form for the three workers' compensation classification codes for which the highest estimated payroll is reported on the policy. If the licensee has fewer than three classification codes reported on the policy, the licensee shall provide every classification code reported on the policy.",
+      "effective": "2024-07-01",
+      "read_from_primary_text": true,
+      "notes": "Added by AB 336 (Stats 2023 ch 323)."
+    },
+    {
+      "id": "wc-certificate-content-requirements",
+      "title": "WC certificate filed with CSLB: required fields",
+      "plain_english": "The insurer-issued certificate must list CSLB as certificate holder and show your exact business name, license (or application) number, policy number, policy effective and expiration dates, and an authorized insurer signature. Only CA-licensed WC insurers can file.",
+      "category": "required_document",
+      "parameters": {
+        "certificate_holder": "Contractors State License Board",
+        "required_fields": [
+          "business name",
+          "license number (or application fee number if not yet issued)",
+          "insurance company name",
+          "policy number",
+          "effective date",
+          "expiration date",
+          "authorized representative signature"
+        ],
+        "filer": "insurer licensed by CA Department of Insurance"
+      },
+      "applies_to": "Licensees filing WC certificates",
+      "citation": "B&P 7125(a), (e)(1)",
+      "source_location": "https://www.cslb.ca.gov/Contractors/Maintain_License/Workers_Compensation.aspx",
+      "verbatim_quote": "CSLB must be listed as the Certificate Holder.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Common rejection reasons per CSLB: wrong business name, wrong insurer name, wrong policy number, CSLB not listed as holder, invalid signature."
+    },
+    {
+      "id": "wc-required-even-one-employee",
+      "title": "Workers' comp required with even one employee",
+      "plain_english": "Any employer, including a contractor with just one part-time employee, must carry workers' compensation insurance (or be DIR-approved self-insured).",
+      "category": "threshold",
+      "parameters": {
+        "min_employees_triggering": 1,
+        "part_time_counts": true,
+        "ways_to_secure": [
+          "policy from licensed carrier",
+          "DIR self-insurance permit (LC 3700)",
+          "collectively bargained ADR program (LC 3201.5)"
+        ]
+      },
+      "applies_to": "All employers (contractors)",
+      "citation": "Labor Code 3700; B&P 7125",
+      "source_location": "PDF page 44 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Contractors/Maintain_License/Workers_Compensation.aspx",
+      "verbatim_quote": "If the employer has one or more employees, even part-time, they are required to insure for workers' compensation claims.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Labor Code penalties (stop orders, 3722 penalty assessments) are in the labor-hr research file."
+    },
+    {
+      "id": "cslb-stop-order-uninsured-employer",
+      "title": "CSLB stop order for uninsured employers",
+      "plain_english": "CSLB can serve a stop order barring use of employee labor on an employer (licensed or not) without workers' comp. Affected employees must be paid for lost time up to 10 days. Ignoring the order is a misdemeanor (up to 60 days jail and/or $10,000). Protest within 20 days; hearing within 5 days.",
+      "category": "penalty",
+      "parameters": {
+        "employee_lost_time_pay_max_days": 10,
+        "violation_jail_days_max": 60,
+        "violation_fine_max_usd": 10000,
+        "protest_deadline_days": 20,
+        "hearing_within_days_of_request": 5,
+        "findings_served_within_hours": 24,
+        "writ_deadline_days": 45
+      },
+      "applies_to": "Employers subject to licensure without WC (licensed or unlicensed)",
+      "citation": "B&P 7127",
+      "source_location": "PDF page 373 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "An employee affected by the work stoppage shall be paid by the employer for his or her time lost, not exceeding 10 days, pending compliance by the employer.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "DLSE has a parallel stop order power under Labor Code 3710.1."
+    },
+    {
+      "id": "building-permit-wc-declaration",
+      "title": "Building permit applications require a workers' comp declaration",
+      "plain_english": "When pulling a building permit, the applicant must declare workers' comp status (policy, self-insurance, or no employees) on the permit.",
+      "category": "required_document",
+      "parameters": {
+        "document": "Declaration of Workers' Compensation on building permit application"
+      },
+      "applies_to": "Contractors pulling building permits",
+      "citation": "Health & Safety Code 19825 (cross-referenced in law book); Labor Code 3800",
+      "source_location": "PDF page 373 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "—See also Health and Safety Code Section 19825, Declaration of Worker's Compensation Required on Building Permits, in Appendix",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Only the cross-reference title was read in the law book; the HSC 19825 / LC 3800 text itself was not fetched (leginfo blocked). Content of the declaration not verified - do not hard-code wording."
+    },
+    {
+      "id": "notify-cslb-changes-90-days",
+      "title": "Report license record changes to CSLB within 90 days",
+      "plain_english": "Tell CSLB in writing on its form within 90 days of any change in recorded information - business address, personnel, business name, qualifier bond exemption, or multiple-license qualifier exemption. Late notice makes the change effective only when CSLB receives it and is grounds for discipline.",
+      "category": "deadline",
+      "parameters": {
+        "days": 90,
+        "examples": [
+          "business address",
+          "personnel",
+          "business name",
+          "qualifying individual bond exemption (7071.9)",
+          "multiple-license qualifier exemption (7068.1)"
+        ],
+        "late_effect": "change effective on date CSLB HQ receives written notice",
+        "ccr_884_penalty_usd": [
+          100,
+          1000
+        ]
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7083; 16 CCR 884(a)",
+      "source_location": "PDF page 323 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 540 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "licensees shall notify the registrar, on a form prescribed by the registrar, in writing within 90 days of any change to information recorded under this chapter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "7083.1: expired/suspended/cancelled licensees must report address changes within 90 days and keep a current address for 5 years. 7083.2: report a valid email at application and renewal."
+    },
+    {
+      "id": "qualifier-disassociation-90-days",
+      "title": "Qualifier leaves: notify and replace within 90 days",
+      "plain_english": "If the RMO/RME/responsible managing member or manager leaves, notify CSLB within 90 days and replace the qualifier within 90 days of the departure, or the license is automatically suspended (or the class removed). One 90-day extension may be granted for good cause. Replacement fee $230.",
+      "category": "deadline",
+      "parameters": {
+        "notify_days": 90,
+        "replace_days": 90,
+        "extension_days": 90,
+        "max_extensions": 1,
+        "replacement_fee_usd": 230,
+        "consequence": "automatic suspension or classification removal"
+      },
+      "applies_to": "Corporations, LLCs, and other licensees qualified by an RMO/RME",
+      "citation": "B&P 7068.2; 16 CCR 811(a)(4)",
+      "source_location": "PDF page 288 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 451 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "the licensee or the qualifier shall notify the registrar in writing within 90 days after the date of disassociation. The licensee shall have 90 days after the date of disassociation in which to replace the qualifier.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Qualifier remains responsible for construction operations until the later of disassociation or CSLB's receipt of notice (7068.2(d))."
+    },
+    {
+      "id": "qualifier-multiple-firms-limit",
+      "title": "One qualifier, multiple firms: 20% common ownership, max 3 firms/year",
+      "plain_english": "A qualifier may qualify an additional firm only if there is at least 20% common ownership, a 20%-owned subsidiary/joint venture, or the same majority of partners/officers/managers - and never more than three firms in any one-year period. The qualifier must actually supervise and control construction operations.",
+      "category": "threshold",
+      "parameters": {
+        "common_ownership_min_percent": 20,
+        "max_firms_per_year": 3,
+        "qualifier_duty": "supervision and control of construction operations"
+      },
+      "applies_to": "Qualifying individuals and the firms they qualify",
+      "citation": "B&P 7068.1(a)-(c)",
+      "source_location": "PDF page 287 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Notwithstanding paragraphs (1) to (3), inclusive, of subdivision (a), a qualifying individual may act as the qualifier for no more than three firms in any one-year period.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Violation is a misdemeanor with fine of $3,000-$5,000 and/or up to 6 months jail (7068.1(e), PDF page 288)."
+    },
+    {
+      "id": "sos-good-standing-or-cslb-suspension",
+      "title": "Corporations/LLCs must stay in good standing with the Secretary of State",
+      "plain_english": "A corporation or LLC license is automatically suspended 30 days after CSLB's notice if the entity is not registered and in good standing with the Secretary of State (e.g., missed Statement of Information or FTB suspension). During an LLC suspension, each officer/manager/member can be personally liable up to $1,000,000 for damages to third parties.",
+      "category": "penalty",
+      "parameters": {
+        "suspension_days_after_notice": 30,
+        "llc_personal_liability_per_person_usd": 1000000,
+        "applies_to_entities": [
+          "corporation",
+          "LLC"
+        ],
+        "reinstatement": "proof of SOS registration and good standing"
+      },
+      "applies_to": "Corporation and LLC licensees",
+      "citation": "B&P 7076.2",
+      "source_location": "PDF page 320 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/About_Us/LLC.aspx",
+      "verbatim_quote": "the licensee shall be suspended 30 days from the date of the notice if the licensee does not provide proof satisfactory to the registrar that it is properly registered and in good standing with the Secretary of State.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Personal liability does not apply where there has been substantial compliance under 7031(e). Not applicable to tribes."
+    },
+    {
+      "id": "entity-change-cancellation-notices-90-days",
+      "title": "Entity events (death, dissolution, merger, partner exit): notify within 90 days",
+      "plain_english": "Individual licenses cancel on the owner's death (family may request a continuance within 90 days). Partnership licenses cancel when a general partner dies or leaves; corporation licenses cancel on dissolution, merger or surrender. In each case CSLB must be told in writing within 90 days; continuance requests also within 90 days.",
+      "category": "deadline",
+      "parameters": {
+        "notify_days": 90,
+        "continuance_request_days": 90,
+        "events": {
+          "individual_death": "license canceled; family continuance request within 90 days; bond within 90 days of board notice",
+          "general_partner_death_or_disassociation": "partnership license canceled",
+          "limited_partner_death_or_disassociation": "notify within 90 days; canceled only if sole limited partner not replaced within 90 days",
+          "corporation_dissolution_merger_surrender": "license canceled; notify within 90 days",
+          "joint_venture_entity_disassociation": "license canceled; notify within 90 days"
+        }
+      },
+      "applies_to": "All licensee entity types",
+      "citation": "B&P 7076(a)-(h)",
+      "source_location": "PDF page 316 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-318",
+      "verbatim_quote": "The corporation or participating tribe shall notify the registrar in writing within 90 days of the dissolution, merger, or surrender.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Section 7076 text for LLCs continues past PDF page 318 and was not fully read; LLC rule assumed parallel to corporation - verify."
+    },
+    {
+      "id": "license-renewal-every-2-years",
+      "title": "License term: 2 years; renew before expiration",
+      "plain_english": "Contractor licenses expire two years from the last day of the month issued (or two years from last expiration). Renew before the expiration date on CSLB's form with the renewal fee.",
+      "category": "deadline",
+      "parameters": {
+        "term_years": 2,
+        "expires": "2 years from last day of month of issuance or last expiration",
+        "renew_before": "expiration date"
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7140",
+      "source_location": "PDF page 383 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "All licenses issued under the provisions of this chapter shall expire two years from the last day of the month in which the license is issued, or two years from the date on which the renewed license last expired.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "license-late-renewal-rules",
+      "title": "Late renewal: 90-day retroactive window, 5-year limit",
+      "plain_english": "If you renew within 90 days after expiration (with renewal plus delinquency fee), CSLB renews retroactively with no gap. After that, renewal is effective only on filing and you were unlicensed in the gap; after 5 years you must apply for a new license. Incomplete timely renewals get a 30-day grace on the delinquency fee.",
+      "category": "deadline",
+      "parameters": {
+        "retroactive_window_days": 90,
+        "max_years_to_renew": 5,
+        "incomplete_renewal_grace_days_delinquency_fee": 30,
+        "abandonment_days_after_rejection": 90
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7141; B&P 7141.5; B&P 7145",
+      "source_location": "PDF page 383 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-385",
+      "verbatim_quote": "The registrar shall grant the retroactive renewal of a license if, within 90 days of the expiration of the license, the otherwise eligible licensee submits a completed application for renewal on a form prescribed by the registrar, and pays the appropriate renewal fee and delinquency fee prescribed by this chapter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "cslb-fee-schedule-2026",
+      "title": "CSLB fees (application, initial, renewal, HIS)",
+      "plain_english": "Key CSLB fees: original application $450; initial license $200 (sole owner) / $350 (others); active renewal $450 / $700 (delinquent $675 / $1,050); inactive renewal $300 / $500; additional class $230; replace qualifier $230; add personnel $125; HIS registration and renewal $200 (delinquent $300); business name change $100. C-10 electricians pay $20 more on active renewals.",
+      "category": "money_amount",
+      "parameters": {
+        "application_original_usd": 450,
+        "initial_license_sole_owner_usd": 200,
+        "initial_license_non_sole_owner_usd": 350,
+        "additional_class_with_original_usd": 150,
+        "additional_class_existing_license_usd": 230,
+        "replace_qualifier_usd": 230,
+        "add_personnel_usd": 125,
+        "renewal_active_sole_owner_usd": 450,
+        "renewal_active_non_sole_owner_usd": 700,
+        "renewal_active_delinquent_sole_owner_usd": 675,
+        "renewal_active_delinquent_non_sole_owner_usd": 1050,
+        "renewal_inactive_sole_owner_usd": 300,
+        "renewal_inactive_non_sole_owner_usd": 500,
+        "renewal_inactive_delinquent_sole_owner_usd": 450,
+        "renewal_inactive_delinquent_non_sole_owner_usd": 750,
+        "c10_active_renewal_surcharge_usd": 20,
+        "his_registration_usd": 200,
+        "his_renewal_usd": 200,
+        "his_renewal_delinquent_usd": 300,
+        "reactivation_sole_owner_usd": 450,
+        "reactivation_non_sole_owner_usd": 700,
+        "business_name_change_usd": 100,
+        "fingerprint_doj_usd": 32,
+        "fingerprint_fbi_usd": 17
+      },
+      "applies_to": "All applicants, licensees and HIS registrants",
+      "citation": "16 CCR 811; B&P 7137",
+      "source_location": "PDF page 451 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-452; https://www.cslb.ca.gov/About_Us/Library/Fees.aspx",
+      "verbatim_quote": "(1) The renewal fee for an active license for an individual owner is $450. (2) The renewal fee for an inactive license for an individual owner is $300. (3) The renewal fee for an active license for a partnership, corporation, limited liability company, or joint venture is $700.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Delinquent and C-10 amounts are from CSLB's Fees page (read 2026-11-25), not 16 CCR 811. Fees are tied to postmark date."
+    },
+    {
+      "id": "inactive-license-rules",
+      "title": "Inactive license: cannot contract; no bond/WC needed; 4-year validity",
+      "plain_english": "You may inactivate a license when not contracting. An inactive licensee may not bid or contract until reactivated; no contractor bond, qualifier bond, LLC bond or WC certificate/exemption is required while inactive. Inactive licenses are valid four years from their due date.",
+      "category": "definition",
+      "parameters": {
+        "may_contract": false,
+        "bond_required": false,
+        "wc_required": false,
+        "validity_years": 4,
+        "reactivation_fee_sole_owner_usd": 450,
+        "reactivation_fee_non_sole_owner_usd": 700
+      },
+      "applies_to": "Licensees not currently contracting",
+      "citation": "B&P 7076.5; B&P 7071.6(c); B&P 7125(d)",
+      "source_location": "PDF page 320 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Resources/GuidesAndPublications/GetLicensedToBuild_ENG0525_ADA.pdf (p.30)",
+      "verbatim_quote": "The holder of an inactive license shall not be entitled to practice as a contractor until their license is reactivated.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Acting as a contractor under an inactive license is cause for discipline (7117.5(a))."
+    },
+    {
+      "id": "outstanding-tax-liabilities-license-suspension",
+      "title": "Unpaid EDD, FTB, CDTFA/BOE or DIR debts can block renewal or suspend the license",
+      "plain_english": "CSLB may refuse to issue, renew or reactivate, or may suspend, a license if the licensee has unresolved final liabilities (taxes, penalties, interest, fees) owed to CSLB, DIR, EDD, FTB or the Board of Equalization (now CDTFA). CSLB must mail a notice at least 60 days before the suspension date. The same personnel cannot serve on other licenses until paid.",
+      "category": "penalty",
+      "parameters": {
+        "agencies": [
+          "CSLB",
+          "Department of Industrial Relations",
+          "Employment Development Department",
+          "Franchise Tax Board",
+          "State Board of Equalization (sales/use tax now administered by CDTFA)"
+        ],
+        "preliminary_notice_days_min": 60,
+        "installment_agreement_exception": "BOE/CDTFA liabilities under an installment agreement in compliance",
+        "ftb_operative_days_after_tin_shared": 60,
+        "other_licenses_same_personnel": "suspended until debt satisfied or personnel disassociate"
+      },
+      "applies_to": "All licensees with final tax or fee liabilities",
+      "citation": "B&P 7145.5",
+      "source_location": "PDF page 386 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-387",
+      "verbatim_quote": "may suspend a license for the failure of a licensee to resolve all outstanding final liabilities, which include taxes, additions to tax, penalties, interest, and any fees that may be assessed by the board, the Department of Industrial Relations, the Employment Development Department, the Franchise Tax Board, or the State Board of Equalization.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "B&P 494.5 (top-500 tax delinquent list suspension) expressly excludes CSLB (PDF page 205); CSLB uses 7145.5 instead. Personnel may still work as nonsupervising bona fide employees."
+    },
+    {
+      "id": "tin-required-on-license-application",
+      "title": "Provide EIN/SSN/ITIN on the license application",
+      "plain_english": "CSLB will not process an initial license application without the applicant's federal EIN (partnerships) or SSN/ITIN (others). Licensees who fail to provide it are reported to the FTB and can be penalized under R&TC 19528.",
+      "category": "required_document",
+      "parameters": {
+        "partnership_id": "federal employer identification number",
+        "other_applicants_id": [
+          "social security number",
+          "individual taxpayer identification number"
+        ],
+        "failure": "reported to FTB; penalty under R&TC 19528(b)(2)",
+        "citizenship_status_required": false
+      },
+      "applies_to": "All license applicants",
+      "citation": "B&P 30(a)-(c)",
+      "source_location": "PDF page 103 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "a licensing board shall not process an application for an initial license unless the applicant provides its federal employer identification number, or individual taxpayer identification number or social security number where requested on the application.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "CSLB shares this data with FTB/EDD on request (B&P 30(d))."
+    },
+    {
+      "id": "business-name-style-rules",
+      "title": "Business name rules: one name per license; no misleading names",
+      "plain_english": "A licensee may use only one business name per license, and the name cannot suggest classifications the license does not have or be incompatible with the entity type (e.g., an LLC name must end in 'LLC'/'L.L.C.'/'Limited Liability Company' and cannot use 'Inc.' or 'Corp.').",
+      "category": "prohibition",
+      "parameters": {
+        "names_per_license_max": 1,
+        "prohibited": [
+          "name implying classifications not held",
+          "name incompatible with entity type"
+        ],
+        "llc_name_endings": [
+          "Limited Liability Company",
+          "LLC",
+          "L.L.C."
+        ],
+        "llc_name_banned_words": [
+          "bank",
+          "trust",
+          "trustee",
+          "incorporated",
+          "inc.",
+          "corporation",
+          "corp.",
+          "insurer",
+          "insurance company"
+        ],
+        "name_change_fee_usd": 100
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7059.1; Corp. Code 17701.08 (per CSLB)",
+      "source_location": "PDF page 278 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/About_Us/LLC.aspx",
+      "verbatim_quote": "(a) A licensee shall not use any business name that indicates the licensee is qualified to perform work in classifications other than those issued for that license, or any business name that is incompatible with the type of business entity licensed. (b) A licensee shall not conduct business under more than one name for each license.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "LLC naming rules quoted from CSLB's LLC page summarizing Corp. Code 17701.08 (statute itself not fetched)."
+    },
+    {
+      "id": "vehicle-business-name-license-number",
+      "title": "Commercial vehicles must show business name and license number",
+      "plain_english": "Every commercially registered vehicle used in the construction business must display the business name and CSLB license number in a clearly visible spot in at least 72-point type (3/4 inch). Plumbing (C-36), sign (C-45) and well-drilling (C-57) contractors must show name, business address and license number on both sides in letters at least 1.5 inches high.",
+      "category": "required_notice",
+      "parameters": {
+        "general_min_font_pt": 72,
+        "general_min_height_inches": 0.75,
+        "c36_c45_c57_min_height_inches": 1.5,
+        "c36_c45_c57_sides": "each side of each vehicle",
+        "c36_c45_c57_contents": [
+          "name",
+          "permanent business address",
+          "license number"
+        ],
+        "applies_to_vehicles": "commercially registered (Vehicle Code 9400 fee paid)",
+        "ccr_884_penalty_usd": [
+          100,
+          500
+        ]
+      },
+      "applies_to": "All licensees' commercial vehicles",
+      "citation": "B&P 7029.5; B&P 7029.6; 16 CCR 884",
+      "source_location": "PDF page 255 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-256; https://www.cslb.ca.gov/Resources/GuidesAndPublications/AdvertisingGuidelines.pdf",
+      "verbatim_quote": "every contractor licensed under this chapter shall have displayed, in or on each motor vehicle used in his or her construction business, for which a commercial vehicle registration fee has been paid ... his or her business name and contractors' license number in a clearly visible location in print type of at least 72-point font or three-quarters of an inch in height and width.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Also applies to water-well drill rigs (7029.5). Vehicle lettering is also 'advertising' under 16 CCR 861."
+    },
+    {
+      "id": "report-convictions-90-days",
+      "title": "Report felony / job-related convictions to CSLB within 90 days",
+      "plain_english": "A licensee must report in writing to CSLB within 90 days of learning of its conviction of any felony or of any other crime substantially related to contracting.",
+      "category": "deadline",
+      "parameters": {
+        "days": 90,
+        "measured_from": "licensee obtains knowledge of the event",
+        "events": [
+          "felony conviction",
+          "conviction substantially related to contractor qualifications/functions/duties"
+        ]
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7071.18(a)",
+      "source_location": "PDF page 306 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "a licensee shall report to the registrar in writing the occurrence of any of the following within 90 days after the licensee obtains knowledge of the event: (1) The conviction of the licensee for any felony.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "report-multifamily-structural-judgment-1m",
+      "title": "Report $1M+ multifamily load-bearing defect judgments/settlements within 90 days",
+      "plain_english": "Within 90 days of knowing of it, report to CSLB any final judgment, signed settlement or arbitration award of $1,000,000 or more (filed on or after 1/1/2019) in a 'complex case' over construction defects in load-bearing parts of a multifamily rental building.",
+      "category": "deadline",
+      "parameters": {
+        "days": 90,
+        "threshold_usd": 1000000,
+        "filed_on_or_after": "2019-01-01",
+        "structure_type": "multifamily rental residential",
+        "defect_type": "failure or condition creating substantial risk of failure in load-bearing portions",
+        "case_type": "designated complex case (CRC 3.400-3.403) if civil"
+      },
+      "applies_to": "Licensees named as defendant/cross-defendant in qualifying actions",
+      "citation": "B&P 7071.20(a)",
+      "source_location": "PDF page 309 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "A licensee shall report to the registrar in writing within 90 days after the licensee has knowledge of any civil action resulting in a final judgment, executed settlement agreement, or final arbitration award in which the licensee is named as a defendant or cross-defendant, filed on or after January 1, 2019",
+      "effective": "2019-01-01",
+      "read_from_primary_text": true,
+      "notes": "Remaining subdivisions (after PDF page 309) were not read; check for additional criteria and exclusions."
+    },
+    {
+      "id": "license-number-in-contracts-bids-ads",
+      "title": "License number required on contracts, subcontracts, bids and all advertising",
+      "plain_english": "Put your CSLB license number on every construction contract, subcontract and call for bids, and on all forms of advertising (cards, signs, vehicles, brochures, contract proposals, print, radio/TV, websites, social media, directories).",
+      "category": "required_notice",
+      "parameters": {
+        "where_required": [
+          "all construction contracts",
+          "subcontracts",
+          "calls for bid",
+          "all forms of advertising"
+        ],
+        "ccr_884_penalty_range_usd": [
+          100,
+          1000
+        ]
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7030.5; 16 CCR 861; 16 CCR 884",
+      "source_location": "PDF page 258 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 490 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 540 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Every person licensed pursuant to this chapter shall include his license number in: (a) all construction contracts; (b) subcontracts and calls for bid; and (c) all forms of advertising, as prescribed by the registrar of contractors, used by such a person.",
+      "effective": "1973-07-01",
+      "read_from_primary_text": true,
+      "notes": "CSLB Advertising Guidelines: 'The civil penalty for not complying with this requirement is between $100 and $1,000 for a first offense.'"
+    },
+    {
+      "id": "advertising-definition-ccr-861",
+      "title": "What counts as 'advertising' for the license-number rule",
+      "plain_english": "For the license-number rule, advertising includes cards, contract proposals, signs, billboards, vehicle lettering (any state), brochures, pamphlets, circulars, newspapers, magazines, airwave or electronic transmissions, and any directory listing under 'Contractor' or similar words.",
+      "category": "definition",
+      "parameters": {
+        "includes": [
+          "card",
+          "contract proposal",
+          "sign",
+          "billboard",
+          "lettering on vehicles registered in this or any other state",
+          "brochure",
+          "pamphlet",
+          "circular",
+          "newspaper",
+          "magazine",
+          "airwave or any electronic transmission",
+          "any form of directory under a listing denoting 'Contractor' or similar"
+        ]
+      },
+      "applies_to": "All licensees",
+      "citation": "16 CCR 861",
+      "source_location": "PDF page 490 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "the term \"advertising\" includes but is not limited to the following: any card, contract proposal, sign, billboard, lettering on vehicles registered in this or any other state, brochure, pamphlet, circular, newspaper, magazine, airwave or any electronic transmission, and any form of directory under any listing denoting \"Contractor\"",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "advertise-only-licensed-classifications",
+      "title": "Advertise only for classifications you hold",
+      "plain_english": "It is a misdemeanor to advertise construction work unless you hold a valid license in the classification advertised; A and B general contractors may advertise as 'general contractor.' Fine $700-$1,000 on top of other punishment; CSLB may cite unlicensed advertisers.",
+      "category": "prohibition",
+      "parameters": {
+        "criminal_fine_min_usd": 700,
+        "criminal_fine_max_usd": 1000,
+        "exception": "licensed building (B) or engineering (A) contractor may advertise as general contractor",
+        "ccr_884_citation_range_usd": [
+          100,
+          1000
+        ]
+      },
+      "applies_to": "All persons advertising construction work",
+      "citation": "B&P 7027.1; B&P 7027; 16 CCR 884",
+      "source_location": "PDF page 241 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-242; https://www.cslb.ca.gov/Resources/GuidesAndPublications/AdvertisingGuidelines.pdf",
+      "verbatim_quote": "It is a misdemeanor for any person to advertise for construction or work of improvement covered by this chapter unless that person holds a valid license under this chapter in the classification so advertised, except that a licensed building or engineering contractor may advertise as a general contractor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "7027: anyone who advertises as a contractor is subject to the License Law even if otherwise exempt."
+    },
+    {
+      "id": "unlicensed-advertising-under-1000-disclaimer",
+      "title": "Unlicensed handyperson ads: under $1,000 and must say 'not licensed'",
+      "plain_english": "An unlicensed person may advertise construction work only for projects totaling less than $1,000 (labor, materials, everything) and only if the ad states that the person is not licensed by CSLB.",
+      "category": "threshold",
+      "parameters": {
+        "project_total_less_than_usd": 1000,
+        "required_ad_statement": "states that the person is not licensed under the Contractors State License Law"
+      },
+      "applies_to": "Unlicensed persons relying on the minor work exemption",
+      "citation": "B&P 7027.2",
+      "source_location": "PDF page 242 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "a person who is not licensed pursuant to this chapter may advertise for construction work or a work of improvement covered by this chapter only if the aggregate contract price for labor, material, and all other items on a project or undertaking is less than one thousand dollars ($1,000) and the person states in the advertisement that the person is not licensed under this chapter.",
+      "effective": "2025-01-01",
+      "read_from_primary_text": true,
+      "notes": "Raised from $500 to $1,000 by AB 2622 (Stats 2024 ch 240), effective 1/1/2025, per history note."
+    },
+    {
+      "id": "fraudulent-license-number-use",
+      "title": "Using someone else's license number: up to $10,000 fine / prison",
+      "plain_english": "Willfully using a license number that is not your own currently valid license, with intent to defraud, is punishable by a fine up to $10,000, state prison or up to 1 year county jail, or both.",
+      "category": "penalty",
+      "parameters": {
+        "fine_max_usd": 10000,
+        "jail_county_max_years": 1,
+        "state_prison": true
+      },
+      "applies_to": "Licensed and unlicensed persons",
+      "citation": "B&P 7027.3",
+      "source_location": "PDF page 242 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Any person, licensed or unlicensed, who willfully and intentionally uses, with intent to defraud, a contractor's license number that does not correspond to the number on a currently valid contractor's license held by that person, is punishable by a fine not exceeding ten thousand dollars ($10,000)",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "false-misleading-advertising",
+      "title": "No false, misleading or bait advertising",
+      "plain_english": "Using false, misleading or deceptive advertising to induce a construction contract, or advertising work/prices you do not intend to honor, is a misdemeanor and cause for discipline (FTC-compliant ads are safe-harbored).",
+      "category": "prohibition",
+      "parameters": {
+        "ccr_884_citation_range_usd": [
+          100,
+          8000
+        ],
+        "safe_harbor": "ads complying with FTC rules/guides"
+      },
+      "applies_to": "All persons and licensees",
+      "citation": "B&P 7161(a), (e); 16 CCR 884",
+      "source_location": "PDF page 421 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-422; PDF page 541 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "(a) Using false, misleading, or deceptive advertising as an inducement to enter into any contract for a work of improvement, including, but not limited to, any home improvement contract, whereby any member of the public may be misled or injured.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "prime-contract-cslb-notice-7030a",
+      "title": "Prime contracts (non-home-improvement): CSLB jurisdiction notice, 10-pt",
+      "plain_english": "Every written contract where you are the prime contractor (other than home improvement and service/repair contracts) must include CSLB's statement about licensing and complaint deadlines (4 years patent / 10 years latent structural) in at least 10-point type.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "min_font_pt": 10,
+        "applies_to": "written prime contracts other than home improvement (7151.2) and service and repair (7159.10)",
+        "notice_text": "Contractors are required by law to be licensed and regulated by the Contractors State License Board which has jurisdiction to investigate complaints against contractors if a complaint regarding a patent act or omission is filed within four years of the date of the alleged violation. A complaint regarding a latent act or omission pertaining to structural defects must be filed within 10 years of the date of the alleged violation. Any questions concerning a contractor may be referred to the Registrar, Contractors State License Board, P.O. Box 26000, Sacramento, CA 95826.",
+        "ccr_884_penalty_usd": [
+          500,
+          1500
+        ]
+      },
+      "applies_to": "Licensed prime contractors (commercial, new construction, etc.)",
+      "citation": "B&P 7030(a), (c); 16 CCR 884",
+      "source_location": "PDF page 256 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 540 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Contractors are required by law to be licensed and regulated by the Contractors State License Board which has jurisdiction to investigate complaints against contractors if a complaint regarding a patent act or omission is filed within four years of the date of the alleged violation.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Home improvement and service/repair contracts instead use the 12-point 'Information about the Contractors State License Board (CSLB)' notice in 7030(b) (PDF pages 256-257)."
+    },
+    {
+      "id": "repeat-suspension-disclosure-7030-1",
+      "title": "Licensees suspended/revoked 2+ times in 8 years must disclose before residential contracts",
+      "plain_english": "If your license was suspended or revoked two or more times within eight years, you must disclose those actions in a document given before contracting on residential property of 1-4 units (10-pt bold caps or 8-pt bold red). Penalties: $1,000, $2,500, then $5,000 plus 1-year suspension, then revocation.",
+      "category": "required_notice",
+      "parameters": {
+        "trigger_count": 2,
+        "lookback_years": 8,
+        "property": "residential, 4 or fewer units",
+        "format": [
+          "capital letters 10-point roman boldface",
+          "contrasting red print at least 8-point roman boldface"
+        ],
+        "penalties_usd": {
+          "1st": 1000,
+          "2nd": 2500,
+          "3rd": 5000
+        },
+        "3rd_violation_suspension_years": 1,
+        "4th_violation": "revocation"
+      },
+      "applies_to": "Licensees with 2+ disciplinary suspensions/revocations in 8 years",
+      "citation": "B&P 7030.1",
+      "source_location": "PDF page 257 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-258",
+      "verbatim_quote": "A contractor, who has his or her license suspended or revoked two or more times within an eight-year period, shall disclose either in capital letters in 10-point roman boldface type or in contrasting red print in at least 8-point roman boldface type, in a document provided prior to entering into a contract to perform work on residential property with four or fewer units",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "May be provided in a bid, estimate or other pre-contract document."
+    },
+    {
+      "id": "minor-work-exemption-1000",
+      "title": "Minor work exemption: under $1,000 total, no permit, no employees",
+      "plain_english": "No license is needed only if the whole project (labor, materials and everything else, by one or more contracts) totals less than $1,000, the work needs no building permit, it is not part of a larger job or split up to evade the law, and the person neither advertises as a contractor nor employs anyone to help.",
+      "category": "threshold",
+      "parameters": {
+        "aggregate_contract_price_less_than_usd": 1000,
+        "includes": [
+          "labor",
+          "materials",
+          "all other items"
+        ],
+        "building_permit_required_disqualifies": true,
+        "splitting_or_part_of_larger_operation_disqualifies": true,
+        "advertising_as_contractor_disqualifies": true,
+        "employing_helpers_disqualifies": true,
+        "prior_threshold_usd_before_2025": 500
+      },
+      "applies_to": "Unlicensed persons doing small jobs; contractors vetting unlicensed subs/handypersons",
+      "citation": "B&P 7048",
+      "source_location": "PDF page 268 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); https://www.cslb.ca.gov/Resources/GuidesAndPublications/GetLicensedToBuild_ENG0525_ADA.pdf (p.4-5)",
+      "verbatim_quote": "This chapter does not apply to a work or operation on one undertaking or project by one or more contracts if the aggregate contract price for labor, materials, and all other items is less than one thousand dollars ($1,000), that work or operation being considered of casual, minor, or inconsequential nature, and the work or operation does not require a building permit.",
+      "effective": "2025-01-01",
+      "read_from_primary_text": true,
+      "notes": "Amended by AB 2622 (eff. 1/1/2025) and AB 1170 (eff. 1/1/2026) per history note. CSLB guide: materials count 'whether purchased by the contractor or the consumer'. Prior $500 limit is from general knowledge of the pre-2025 statute."
+    },
+    {
+      "id": "unlicensed-contracting-criminal-penalties",
+      "title": "Unlicensed contracting: criminal penalties (1st, 2nd, 3rd offense)",
+      "plain_english": "Contracting without a license (or under a license suspended for unpaid penalties/liabilities) is a misdemeanor. 1st: up to $5,000 fine and/or 6 months jail. 2nd: the greater of 20% of the contract price, 20% of payments received, or $5,000, plus at least 90 days jail. 3rd+: $5,000 up to the greater of $10,000 or 20%, and 90 days to 1 year jail. Charges can be filed up to 4 years later.",
+      "category": "penalty",
+      "parameters": {
+        "first_offense_fine_max_usd": 5000,
+        "first_offense_jail_max_months": 6,
+        "second_offense_fine": "max(0.20 * contract_price, 0.20 * aggregate_payments, 5000)",
+        "second_offense_jail_min_days": 90,
+        "third_offense_fine_min_usd": 5000,
+        "third_offense_fine_max": "max(10000, 0.20 * contract_price, 0.20 * aggregate_payments)",
+        "third_offense_jail_days": [
+          90,
+          365
+        ],
+        "statute_of_limitations_years": 4,
+        "sol_measured_from": "latest of contract proposal, contract, completion, or abandonment",
+        "hourly_contract_price": "cost of materials and labor furnished plus cost of completing the work"
+      },
+      "applies_to": "Unlicensed persons acting as contractors",
+      "citation": "B&P 7028",
+      "source_location": "PDF page 245 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-246",
+      "verbatim_quote": "A first conviction for the offense described in this section is punishable by a fine not exceeding five thousand dollars ($5,000) or by imprisonment in a county jail not exceeding six months, or by both that fine and imprisonment.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Customers of an unlicensed contractor are crime victims eligible for restitution (7028(h)). Third-offense penalties apply to anyone named on a previously revoked license held responsible (7028(e))."
+    },
+    {
+      "id": "unlicensed-citation-civil-penalty",
+      "title": "CSLB citation for unlicensed activity: $1,500-$15,000 (from July 1, 2026)",
+      "plain_english": "CSLB must cite unlicensed contractors and unregistered salespersons. Each citation has an order to stop and a civil penalty of $1,500 to $15,000 (it was $200-$15,000 before July 1, 2026). Citations can be issued up to 4 years after the act (or 18 months after a complaint, if later); appeal within 15 working days.",
+      "category": "penalty",
+      "parameters": {
+        "civil_penalty_min_usd": 1500,
+        "civil_penalty_max_usd": 15000,
+        "operative_date": "2026-07-01",
+        "prior_min_usd_until_2026_06_30": 200,
+        "issue_within_years_of_act": 4,
+        "or_months_after_complaint": 18,
+        "appeal_working_days": 15,
+        "service": "certified mail to last known business or residence address",
+        "cpi_adjustment_every_years": 5
+      },
+      "applies_to": "Unlicensed contractors and unregistered home improvement salespersons",
+      "citation": "B&P 7028.7; B&P 7028.8; B&P 7028.9; B&P 7028.10",
+      "source_location": "PDF page 248 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-250",
+      "verbatim_quote": "each citation shall contain an order of abatement and an assessment of a civil penalty in an amount not less than fifteen hundred dollars ($1,500) nor more than fifteen thousand dollars ($15,000).",
+      "effective": "2026-07-01",
+      "read_from_primary_text": true,
+      "notes": "16 CCR 884 in the 2026 law book still lists 7028.7 at $200-$15,000 (not yet updated). Failure to comply with a final citation is a misdemeanor (7028.17). Registrar may waive part of the penalty if the person gets licensed (7028.14)."
+    },
+    {
+      "id": "unlicensed-no-right-to-sue-disgorgement",
+      "title": "Unlicensed contractor cannot collect and must repay all compensation",
+      "plain_english": "A contractor who was not properly licensed at all times during the work cannot sue to collect payment, and the customer can sue to recover everything already paid. Liens/security interests taken for payment are unenforceable. Substantial compliance helps only someone previously licensed who acted promptly and in good faith.",
+      "category": "penalty",
+      "parameters": {
+        "may_sue_for_payment": false,
+        "customer_may_recover": "all compensation paid",
+        "security_interest_enforceable": false,
+        "proof": "verified CSLB certificate of licensure; burden on licensee",
+        "substantial_compliance_requirements": [
+          "was duly licensed in CA before performance",
+          "acted reasonably and in good faith to maintain licensure",
+          "acted promptly to remedy upon learning of failure"
+        ]
+      },
+      "applies_to": "Anyone performing work requiring a license (including subs and those with lapsed/suspended licenses)",
+      "citation": "B&P 7031",
+      "source_location": "PDF page 258 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-259",
+      "verbatim_quote": "a person who utilizes the services of an unlicensed contractor may bring an action in any court of competent jurisdiction in this state to recover all compensation paid to the unlicensed contractor for performance of any act or contract.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Key risk for lapses in bond/WC/SOS status, which cause suspension and therefore unlicensed periods."
+    },
+    {
+      "id": "unlicensed-disaster-area-felony",
+      "title": "Unlicensed work on declared-disaster damage: felony-level penalties",
+      "plain_english": "Contracting without a license to repair damage from a Governor- or President-declared disaster is punishable by up to $10,000 fine and/or 16 months, 2 or 3 years (or up to 1 year county jail and/or $1,000).",
+      "category": "penalty",
+      "parameters": {
+        "fine_max_usd": 10000,
+        "prison_terms_years": [
+          1.33,
+          2,
+          3
+        ],
+        "alt_fine_max_usd": 1000,
+        "alt_jail_max_years": 1,
+        "trigger": "state of emergency (Gov. Code 8625) or federal emergency/major disaster declaration"
+      },
+      "applies_to": "Unlicensed persons doing disaster repair",
+      "citation": "B&P 7028.16",
+      "source_location": "PDF page 254 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "shall be punished by a fine up to ten thousand dollars ($10,000), or by imprisonment pursuant to subdivision (h) of Section 1170 of the Penal Code for 16 months, or for two or three years, or by both that fine and imprisonment",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "unlicensed-public-agency-bid",
+      "title": "Bidding public work without a license: misdemeanor; bid rejected; contract void",
+      "plain_english": "Submitting a bid to a public agency without a license is a misdemeanor (with narrow exceptions); repeat offenders face the greater of 20% of the contract price or $4,500, and/or 10 days to 6 months jail. Unlicensed bids are nonresponsive and contracts awarded to unlicensed contractors are void.",
+      "category": "penalty",
+      "parameters": {
+        "repeat_fine": "max(0.20 * contract_price, 4500)",
+        "repeat_jail_days": [
+          10,
+          180
+        ],
+        "bid_status": "nonresponsive",
+        "contract_status": "void",
+        "agency_verify_before_award": true,
+        "board_response_business_days": 3
+      },
+      "applies_to": "Bidders on public agency projects",
+      "citation": "B&P 7028.15",
+      "source_location": "PDF page 252 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-253",
+      "verbatim_quote": "If a person has been previously convicted of the offense described in this section, the court shall impose a fine of 20 percent of the price of the contract under which the unlicensed person performed contracting work, or four thousand five hundred dollars ($4,500), whichever is greater",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Exceptions: State projects under PCC 10164 and local projects under PCC 20103.5 (license at award)."
+    },
+    {
+      "id": "hiring-unlicensed-sub-prohibited",
+      "title": "Do not contract with unlicensed contractors (or help them evade the law)",
+      "plain_english": "Entering into a contract with a contractor who is not licensed is cause for discipline against your license; CSLB citation range $500-$30,000. Aiding or conspiring with an unlicensed person (7114) carries the same range. Verify each sub's license, classification and status before contracting.",
+      "category": "prohibition",
+      "parameters": {
+        "ccr_884_range_7118_usd": [
+          500,
+          30000
+        ],
+        "ccr_884_range_7114_usd": [
+          500,
+          30000
+        ],
+        "per_citation_cap_usd": 30000,
+        "check_before_contract": [
+          "license active",
+          "classification matches scope",
+          "bond active",
+          "WC certificate or valid exemption"
+        ]
+      },
+      "applies_to": "Prime contractors and anyone hiring subcontractors",
+      "citation": "B&P 7118; B&P 7114; 16 CCR 884(a), (c)",
+      "source_location": "PDF page 356 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 541 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-542",
+      "verbatim_quote": "Entering into a contract with a contractor while such contractor is not licensed as provided in this chapter constitutes a cause for disciplinary action.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "7114 text itself was not read (only its title and the CCR 884 penalty row)."
+    },
+    {
+      "id": "work-only-within-license-status-and-class",
+      "title": "Do not work under an inactive, suspended or expired license or outside your classes",
+      "plain_english": "Acting as a contractor under an inactive, suspended or expired (renewable) license, or in a classification you do not hold, or under a name/personnel not on the license, is cause for discipline (CCR 884: $200-$8,000; name/personnel $100-$1,000).",
+      "category": "prohibition",
+      "parameters": {
+        "ccr_884_range_7117_5_usd": [
+          200,
+          8000
+        ],
+        "ccr_884_range_7117_6_usd": [
+          200,
+          8000
+        ],
+        "ccr_884_range_7117_usd": [
+          100,
+          1000
+        ],
+        "statuses_barred": [
+          "inactive",
+          "suspended (any reason)",
+          "expired but renewable"
+        ]
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7117; B&P 7117.5; B&P 7117.6; 16 CCR 884",
+      "source_location": "PDF page 355 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-356; PDF page 541 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "(b) Acting in the capacity of a contractor under any license that has been suspended for any reason constitutes a cause for disciplinary action.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Specialty contractors may do work in other trades only if incidental and supplemental to their licensed craft (7059)."
+    },
+    {
+      "id": "personnel-cannot-contract-individually",
+      "title": "Officers/members of a licensed entity need their own license to contract individually",
+      "plain_english": "Being a partner, officer, director, manager, RME/RMO or other personnel of record of a licensed company does not let you contract on your own; doing so without your own license in good standing is unlawful (CCR 884: $200-$8,000).",
+      "category": "prohibition",
+      "parameters": {
+        "ccr_884_range_usd": [
+          200,
+          8000
+        ]
+      },
+      "applies_to": "Personnel of record of licensed entities",
+      "citation": "B&P 7028.5; 16 CCR 884",
+      "source_location": "PDF page 248 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 540 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "It is unlawful for a person who is or has been a partner, officer, director, manager, responsible managing employee, responsible managing member, responsible managing manager, or responsible managing officer of ... a licensed partnership, corporation, limited liability company, firm, association or other organization to individually engage in the business",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "building-permit-license-statement",
+      "title": "Building permit applications: signed statement of license number",
+      "plain_english": "Cities and counties must require each permit applicant to sign a statement giving their CSLB license number and stating it is in full force, or stating the basis for any exemption. A violation carries a civil penalty of up to $500.",
+      "category": "required_document",
+      "parameters": {
+        "statement_contents": [
+          "licensed under Contractors License Law",
+          "license number",
+          "license in full force and effect",
+          "or basis for claimed exemption"
+        ],
+        "civil_penalty_max_usd": 500,
+        "ccr_884_range_usd": [
+          100,
+          500
+        ]
+      },
+      "applies_to": "Contractors (and owner-builders) applying for building permits",
+      "citation": "B&P 7031.5",
+      "source_location": "PDF page 259 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-260",
+      "verbatim_quote": "Any violation of this section by any applicant for a permit shall be subject to a civil penalty of not more than five hundred dollars ($500).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "city-business-license-cslb-statement",
+      "title": "City business license: file signed CSLB license statement",
+      "plain_english": "Cities that require a business license for contractors must require each licensee/applicant to file a signed statement that the CSLB license is in full force, or proof of exemption. Most California cities also levy a local business license tax; rates and registration rules vary by city.",
+      "category": "process_step",
+      "parameters": {
+        "statement_contents": [
+          "licensed under the Contractors License Law",
+          "license in full force and effect",
+          "or proof of exemption"
+        ],
+        "local_tax_rates": "vary by city - not standardized"
+      },
+      "applies_to": "Contractors doing business in cities requiring a business license",
+      "citation": "B&P 7033",
+      "source_location": "PDF page 260 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 41 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "shall require that each licensee and each applicant for issuance or renewal of such license shall file, or have on file, with such city or city and county, a signed statement that such licensee or applicant is licensed under the provisions of this chapter and stating that the license is in full force and effect",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Local business license tax amounts are set by each city/county ordinance (B&P 16000 et seq. authority); a tool should store per-jurisdiction rules rather than a statewide number. The law book (p.41) also says to determine if city or county permits are required before starting a job."
+    },
+    {
+      "id": "ccr-884-citation-penalty-ranges",
+      "title": "CSLB citation civil penalty ranges and per-citation caps",
+      "plain_english": "When CSLB cites a licensee, each violated section has a set penalty range (e.g., 7030.5 license number $100-$1,000; 7111 records $100-$1,000; 7118 $500-$30,000; 7125.4 $200-$30,000; 7159 $100-$1,000). Multiple violations on one project are capped at $8,000 per citation, except $15,000 (7028.7) and $30,000 (7110, 7114, 7118, 7125.4). Appeal within 15 working days.",
+      "category": "penalty",
+      "parameters": {
+        "ranges_usd": {
+          "7027.1": [
+            100,
+            1000
+          ],
+          "7028": [
+            200,
+            8000
+          ],
+          "7028.5": [
+            200,
+            8000
+          ],
+          "7028.7": [
+            200,
+            15000
+          ],
+          "7029.1": [
+            200,
+            2500
+          ],
+          "7029.5": [
+            100,
+            500
+          ],
+          "7029.6": [
+            100,
+            500
+          ],
+          "7030": [
+            500,
+            1500
+          ],
+          "7030.1": [
+            1000,
+            8000
+          ],
+          "7030.5": [
+            100,
+            1000
+          ],
+          "7031.5": [
+            100,
+            500
+          ],
+          "7068.1": [
+            100,
+            8000
+          ],
+          "7068.2": [
+            100,
+            1000
+          ],
+          "7076": [
+            100,
+            1000
+          ],
+          "7083": [
+            100,
+            1000
+          ],
+          "7083.1": [
+            100,
+            1000
+          ],
+          "7107": [
+            200,
+            8000
+          ],
+          "7108": [
+            200,
+            8000
+          ],
+          "7108.5": [
+            200,
+            2000
+          ],
+          "7109": [
+            200,
+            8000
+          ],
+          "7110": [
+            200,
+            30000
+          ],
+          "7111": [
+            100,
+            1000
+          ],
+          "7111.1": [
+            100,
+            1500
+          ],
+          "7113": [
+            200,
+            8000
+          ],
+          "7114": [
+            500,
+            30000
+          ],
+          "7117": [
+            100,
+            1000
+          ],
+          "7117.5": [
+            200,
+            8000
+          ],
+          "7117.6": [
+            200,
+            8000
+          ],
+          "7118": [
+            500,
+            30000
+          ],
+          "7125": [
+            100,
+            500
+          ],
+          "7125.4": [
+            200,
+            30000
+          ],
+          "7154": [
+            100,
+            1000
+          ],
+          "7157": [
+            100,
+            1000
+          ],
+          "7158": [
+            500,
+            8000
+          ],
+          "7159": [
+            100,
+            1000
+          ],
+          "7161": [
+            100,
+            8000
+          ],
+          "7164": [
+            100,
+            1000
+          ]
+        },
+        "per_citation_cap_same_project_usd": 8000,
+        "cap_7028_7_usd": 15000,
+        "cap_7110_7114_7118_7125_4_usd": 30000,
+        "appeal_working_days": 15,
+        "aggravating_factors": [
+          "multiple violations",
+          "history of similar violations",
+          "bad faith",
+          "serious or harmful",
+          "senior citizen or disabled victim",
+          "natural disaster repair (7158)"
+        ]
+      },
+      "applies_to": "Licensees and unlicensed persons cited by CSLB",
+      "citation": "16 CCR 884; 16 CCR 885",
+      "source_location": "PDF page 540 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-542",
+      "verbatim_quote": "Where a citation lists more than one violation and each of the violations relates to the same construction project, the total penalty assessment in each citation shall not exceed $ 8,000, except as provided for violations of Section 7028.7, in which case the total penalty assessment in each citation shall not exceed $ 15,000",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Table lists 7071.1 and 7099.1 twice (as printed). 7028.7 statutory minimum rose to $1,500 on 7/1/2026; regulation not yet updated."
+    },
+    {
+      "id": "his-registration-required",
+      "title": "Home improvement salespersons must be registered with CSLB",
+      "plain_english": "Anyone who solicits, sells, negotiates or signs home improvement contracts (including pools/spas) for a licensed contractor must hold a current CSLB Home Improvement Salesperson (HIS) registration at the time of the sale. Selling without one is a misdemeanor and can be cited.",
+      "category": "license_classification",
+      "parameters": {
+        "registration": "Home Improvement Salesperson (HIS)",
+        "activities": [
+          "soliciting",
+          "selling",
+          "negotiating",
+          "executing contracts for home improvements",
+          "swimming pools, spas, hot tubs"
+        ],
+        "fee_usd": 200,
+        "fingerprints_required": true,
+        "may_work_for_multiple_contractors": true
+      },
+      "applies_to": "Salespersons for home improvement contractors; contractors employing them",
+      "citation": "B&P 7152(a)-(c); B&P 7153(a); B&P 7153.1",
+      "source_location": "PDF page 389 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-391",
+      "verbatim_quote": "A home improvement salesperson shall register with the board in order to engage in the business of, or act in the capacity of, a home improvement salesperson.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Employing HIS means the contractor has employees and needs workers' comp (CSLB Get Licensed to Build guide)."
+    },
+    {
+      "id": "his-registration-exemptions",
+      "title": "Who does not need an HIS registration",
+      "plain_english": "No HIS registration is needed for: corporate officers of record; LLC managers/members/officers of record; general partners on the license; the license qualifier (all only while listed on that licensee's personnel of record); retail-store salespeople where the buyer initiated at a fixed store; appointment setters only; and the contractor's service repair employees handling only the requested repair.",
+      "category": "definition",
+      "parameters": {
+        "exempt": [
+          "officer of record of licensed corporation",
+          "manager, member, or officer of record of licensed LLC",
+          "general partner listed on partnership license",
+          "qualifying person (B&P 7025)",
+          "salesperson at general merchandise retail establishment with buyer-initiated negotiation at fixed location",
+          "person only scheduling appointments for a registered HIS",
+          "bona fide service repairperson employed by licensee limited to requested service/repair"
+        ],
+        "personnel_exemption_condition": "listed as personnel of record of the licensee at time of the sale"
+      },
+      "applies_to": "Home improvement contractors and their sales staff",
+      "citation": "B&P 7152(d)-(e)",
+      "source_location": "PDF page 389 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-390",
+      "verbatim_quote": "The exemption to registration provided under paragraphs (1), (2), and (3) of subdivision (d) shall apply only to those individuals who, at the time of the sales transaction, are listed as personnel of record for the licensee responsible for soliciting, negotiating, or contracting for a service or improvement",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "his-identify-contractor-before-selling",
+      "title": "Salesperson must identify the contractor's name and license number first",
+      "plain_english": "Before soliciting or selling, the salesperson must tell the owner or tenant the business name and license number of the contractor they represent for that transaction.",
+      "category": "required_notice",
+      "parameters": {
+        "disclose": [
+          "contractor business name",
+          "contractor license number"
+        ],
+        "timing": "prior to engaging in any sales activity"
+      },
+      "applies_to": "Home improvement salespersons",
+      "citation": "B&P 7152(c)",
+      "source_location": "PDF page 389 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "prior to engaging in any activity described in subdivision (a) of this section, a home improvement salesperson shall identify to the owner or tenant the business name and license number of the contractor they are representing for the purposes of that transaction.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "his-employment-notice-to-cslb",
+      "title": "Contractor must notify CSLB before an HIS starts and within 90 days after they leave",
+      "plain_english": "A home improvement contractor must file CSLB's form (name and registration number) before a registered salesperson begins work, and file again within 90 days after the salesperson stops working for it. Using an unregistered salesperson, or not reporting, is cause for discipline.",
+      "category": "deadline",
+      "parameters": {
+        "notify_before": "salesperson begins work",
+        "notify_after_separation_days": 90,
+        "form_contents": [
+          "salesperson name",
+          "HIS registration number"
+        ],
+        "ccr_884_range_usd": [
+          100,
+          1000
+        ]
+      },
+      "applies_to": "Home improvement contractors employing salespersons",
+      "citation": "B&P 7154; 16 CCR 884",
+      "source_location": "PDF page 393 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 541 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "The form shall be submitted prior to the home improvement salesperson beginning work for the contractor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "An HIS may not guide an owner to a contractor whose employment notification CSLB has not received (7156(c)). Electronic filing permitted (7156.6)."
+    },
+    {
+      "id": "his-registration-term-and-renewal",
+      "title": "HIS registration: 2-year term; late renewal +50%; 3-year limit",
+      "plain_english": "HIS registrations expire two years after issuance (end of month). Renew before expiration; late renewals within three years pay a 50% delinquency penalty ($200 renewal -> $300). After three years, apply anew. Incomplete renewal applications are abandoned if not corrected within 90 days.",
+      "category": "deadline",
+      "parameters": {
+        "term_years": 2,
+        "delinquent_penalty_percent": 50,
+        "renewal_fee_usd": 200,
+        "delinquent_total_usd": 300,
+        "max_years_after_expiration_to_renew": 3,
+        "abandonment_days": 90
+      },
+      "applies_to": "Registered home improvement salespersons",
+      "citation": "B&P 7153.2; B&P 7153.3; 16 CCR 811",
+      "source_location": "PDF page 391 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)-392; https://www.cslb.ca.gov/About_Us/Library/Fees.aspx",
+      "verbatim_quote": "A registration may, however, still be renewed at any time within three years after its expiration upon the filing of an application for renewal on a form prescribed by the registrar and the payment of the renewal fee prescribed by this chapter and a delinquent renewal penalty equal to 50 percent of the renewal fee.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "his-unregistered-security-interest-void",
+      "title": "Contract sold by unregistered salesperson: security interest unenforceable",
+      "plain_english": "Any security interest (e.g., lien, deed of trust) a contractor takes to secure payment on a home improvement contract is unenforceable if the salesperson who solicited it was neither registered nor exempt when the homeowner signed.",
+      "category": "penalty",
+      "parameters": {
+        "consequence": "security interest unenforceable",
+        "test_date": "date homeowner signs the contract"
+      },
+      "applies_to": "Home improvement contractors",
+      "citation": "B&P 7153(b)",
+      "source_location": "PDF page 391 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Any security interest taken by a contractor, to secure any payment for the performance of any act or conduct described in Section 7151 that occurs on or after January 1, 1995, is unenforceable if the person soliciting the act or contract was not a duly registered salesperson or was not exempt from registration",
+      "effective": "1995-01-01",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "his-contractor-liable-for-salesperson",
+      "title": "Contractor is disciplined for its salesperson's violations",
+      "plain_english": "A salesperson's violations of the License Law are also grounds for discipline against the contractor employing them, even if the contractor did not know.",
+      "category": "penalty",
+      "parameters": {
+        "knowledge_required": false
+      },
+      "applies_to": "Home improvement contractors employing salespersons",
+      "citation": "B&P 7155.5",
+      "source_location": "PDF page 394 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "Violations of any provisions of this chapter by a home improvement salesperson likewise constitute cause for disciplinary action against the contractor, by whom he or she was employed at the time the violation occurred, whether or not the contractor had knowledge of or participated in the act or omission constituting violations of this chapter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "his-misdemeanors-remit-funds-contract-form",
+      "title": "Salespersons must remit payments; contract forms must name the contractor",
+      "plain_english": "It is a misdemeanor for a salesperson to fail to account for or remit customer payments to the employing contractor, and for anyone to use a contract form that does not disclose the name of the contractor principal.",
+      "category": "prohibition",
+      "parameters": {
+        "prohibited": [
+          "HIS failing to account for or remit payments to employing contractor",
+          "contract form not disclosing name of contractor principal",
+          "HIS guiding owner to contractor without CSLB employment notice on file"
+        ]
+      },
+      "applies_to": "Home improvement salespersons and contractors",
+      "citation": "B&P 7156",
+      "source_location": "PDF page 394 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "(b) For any person to use a contract form in connection with any home improvement transaction or any other transaction involving a work of improvement if the form fails to disclose the name of the contractor principal by whom the person is employed.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "prohibited-inducements-5-dollar-gift",
+      "title": "No referral rewards to owners; promotional gifts max $5",
+      "plain_english": "You may not offer an owner/tenant compensation for referring other home improvement business. Promotional gifts not conditioned on a contract are allowed only up to $5 in value and one per transaction. Salespersons may only be paid by the contractor they represent; contractors may not pay unlicensed persons for work requiring a license.",
+      "category": "prohibition",
+      "parameters": {
+        "gift_max_value_usd": 5,
+        "gifts_per_transaction_max": 1,
+        "gift_must_not_be_conditioned_on_contract": true,
+        "ccr_884_range_usd": [
+          100,
+          1000
+        ]
+      },
+      "applies_to": "Contractors, agents and salespersons",
+      "citation": "B&P 7157; 16 CCR 884",
+      "source_location": "PDF page 395 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 541 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "A contractor or his or her agent or salesperson may give tangible items to prospective customers for advertising or sales promotion purposes where the gift is not conditioned upon obtaining a contract for home improvement work if the gift does not exceed a value of five dollars ($5) and only one such gift is given in connection with any one transaction.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Violation is a misdemeanor and cause for discipline."
+    },
+    {
+      "id": "cslb-records-retention-5-years",
+      "title": "Keep all contracting records 5 years after project completion",
+      "plain_english": "Keep records of all contracts, documents, receipts and disbursements for every contracting transaction, available for CSLB inspection, for at least five years after the project is completed. Refusing a written CSLB request for records is cause for discipline.",
+      "category": "deadline",
+      "parameters": {
+        "years_after_project_completion": 5,
+        "records": [
+          "contracts",
+          "documents",
+          "records",
+          "receipts",
+          "disbursements"
+        ],
+        "ccr_884_range_usd": [
+          100,
+          1000
+        ],
+        "ccr_884_range_7111_1_usd": [
+          100,
+          1500
+        ],
+        "board_request": "must comply with registrar's written request to make records available"
+      },
+      "applies_to": "All licensees",
+      "citation": "B&P 7111",
+      "source_location": "PDF page 352 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt); PDF page 50 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "failure to have those records available for inspection by the registrar or his or her duly authorized representative for a period of not less than five years after completion of any construction project or operation to which the records refer",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "B&P 7111.1: failing to respond to a written request to cooperate in a complaint investigation is also cause for discipline. B&P 7159.9 (fire alarm exemption, PDF pp.413-414) separately requires its documents be kept 5 years and produced within 30 days of a written request. Longest-of rule for a retention tool: CSLB 5 yrs after completion; IRS employment tax 4 yrs; EDD payroll 4 yrs (8 yrs if treating workers as non-employees); DIR payroll 3 yrs."
+    },
+    {
+      "id": "irs-employment-tax-records-4-years",
+      "title": "Keep federal employment tax records at least 4 years",
+      "plain_english": "Keep payroll/employment tax records available for IRS inspection for at least four years after the tax due date for the period (or the date paid, if later).",
+      "category": "deadline",
+      "parameters": {
+        "years": 4,
+        "measured_from": "later of due date of the tax for the return period or date tax paid",
+        "claims_records_years_after_claim": 4
+      },
+      "applies_to": "All employers",
+      "citation": "26 CFR 31.6001-1(e)(2)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6001-1 (fetched via eCFR API, version 2016-12-30)",
+      "verbatim_quote": "every person required by the regulations in this part to keep records in respect of a tax (whether or not such person incurs liability for such tax) shall maintain such records for at least four years after the due date of such tax for the return period to which the records relate, or the date such tax is paid, whichever is the later.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "edd-payroll-records-4-years",
+      "title": "Keep California payroll records at least 4 years (8 if you claim no employees)",
+      "plain_english": "EDD requires payroll records for all workers (including former workers and independent contractors) to be kept at least four years; if you believe you are not a subject employer or workers are exempt, keep payment records at least eight years.",
+      "category": "deadline",
+      "parameters": {
+        "years": 4,
+        "years_if_claiming_non_employer_or_exempt_workers": 8,
+        "covers": [
+          "current employees",
+          "former employees",
+          "workers on leave",
+          "independent contractors"
+        ]
+      },
+      "applies_to": "All California employers",
+      "citation": "CUIC 1085; 22 CCR 1085-2",
+      "source_location": "https://edd.ca.gov/siteassets/files/pdf_pub_ctr/de44.pdf (not fetched; host blocked - from search excerpt)",
+      "verbatim_quote": "Employers must keep payroll records for at least four years.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "edd.ca.gov could not be fetched from this environment; quote and 8-year figure come from web search excerpts of EDD DE 44 and DE 40. Verify before relying."
+    },
+    {
+      "id": "lawbook-sellers-permit-and-deposit",
+      "title": "Seller's permit for selling tangible property; possible security deposit",
+      "plain_english": "If the business sells tangible personal property, it needs a California seller's permit, and the tax agency may require a security deposit (the law book says up to six months of estimated sales tax). Collect sales tax from the customer unless tax on the materials was already paid at purchase.",
+      "category": "required_document",
+      "parameters": {
+        "permit": "California Seller's Permit (CDTFA)",
+        "security_deposit_estimate_basis": "estimated sales tax for first six months (per law book)",
+        "security_deposit_statutory_max_usd_unverified": 50000
+      },
+      "applies_to": "Contractors that sell fixtures, materials over the counter, or otherwise act as retailers",
+      "citation": "R&TC 6066 et seq.; 18 CCR 1521",
+      "source_location": "PDF page 41 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "California requires a Seller's Permit for businesses that sell tangible personal property. The State Board of Equalization can require a deposit of the estimated sales tax for the first six months. The contractor must collect the required sales tax from the customer unless the tax on materials is already paid at the time of purchase.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Sales and use tax is now administered by CDTFA (not BOE). The law book's summary is simplified; Regulation 1521 controls (materials = consumer, fixtures = retailer). The $50,000 max (R&TC 6701) is from a CDTFA manual search excerpt, not read. CDTFA says permit issuance is not delayed pending deposit."
+    },
+    {
+      "id": "reg1521-contractor-consumer-of-materials",
+      "title": "Sales tax: contractor is the consumer of materials it installs",
+      "plain_english": "On ordinary (non-federal) construction contracts the contractor is the final consumer of 'materials' it furnishes and installs (lumber, drywall, concrete, windows, nails, etc.), so it pays sales tax to its supplier (or use tax) on its cost and does not charge sales tax to the customer on them. It may not buy materials for resale.",
+      "category": "definition",
+      "parameters": {
+        "tax_role_materials": "consumer",
+        "measure": "sale price of materials to the contractor (purchase price)",
+        "resale_certificate_for_materials": false,
+        "examples_materials": [
+          "windows and window frames",
+          "supports, catwalks, platforms",
+          "nails, glue, caulking"
+        ],
+        "installation_labor_taxable": false
+      },
+      "applies_to": "Construction contractors (prime and sub) on non-U.S.-government contracts",
+      "citation": "18 CCR 1521 (CDTFA Regulation 1521)",
+      "source_location": "https://www.cdtfa.ca.gov/lawguides/vol1/sutr/1521.html (not fetched; host blocked - search excerpts)",
+      "verbatim_quote": "Construction contractors are consumers of materials which they furnish and install in the performance of construction contracts.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "cdtfa.ca.gov could not be fetched from this environment. Quote is from search excerpts of Regulation 1521 and CDTFA annotations. Examples come from CDTFA annotations. Exception: time-and-material contracts meeting title/separate-price test, or 'plus sales tax' billing (see reg1521-time-and-material-retailer)."
+    },
+    {
+      "id": "reg1521-contractor-retailer-of-fixtures",
+      "title": "Sales tax: contractor is the retailer of fixtures it installs",
+      "plain_english": "The contractor is treated as the retailer of 'fixtures' it furnishes and installs (items that keep their identity as accessories, e.g., cabinets, lighting fixtures, plumbing fixtures, alarm systems, plants/trees). Tax applies to the fixture's stated sale price or, if none is stated (lump-sum contract), to the contractor's cost price. Fixtures may be bought for resale with a resale certificate.",
+      "category": "definition",
+      "parameters": {
+        "tax_role_fixtures": "retailer",
+        "measure_if_price_stated": "stated sale price of fixture",
+        "measure_if_not_stated": "cost price of fixture to contractor",
+        "manufactured_fixture_cost_build_up_profit_percent": 5,
+        "seller_permit_required": true,
+        "resale_certificate_allowed_for_fixtures": true,
+        "examples_fixtures": [
+          "prefabricated cabinets",
+          "plantation shutters/blinds",
+          "fluorescent tubes and ballasts",
+          "plants, trees, shrubs",
+          "alarm systems"
+        ]
+      },
+      "applies_to": "Construction contractors installing fixtures",
+      "citation": "18 CCR 1521 (CDTFA Regulation 1521)",
+      "source_location": "https://www.cdtfa.ca.gov/lawguides/vol1/sutr/1521.html (not fetched; host blocked - search excerpts)",
+      "verbatim_quote": "Construction contractors are retailers of fixtures which they furnish and install in the performance of construction contracts and tax applies to their sales of the fixtures.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "From search excerpts only. 5% profit build-up for contractor-manufactured fixtures quoted in excerpt ('shall be deemed to be 5 percent of the sum of the preceding factors'). Regulation's full fixtures/materials definitions not read - verify classification of specific items."
+    },
+    {
+      "id": "reg1521-time-and-material-retailer",
+      "title": "Time-and-material contracts: when the contractor becomes retailer of materials",
+      "plain_english": "On a time-and-material contract the contractor is normally still the consumer of materials. It becomes the retailer (and must collect sales tax on the materials' selling price) if the contract both transfers title to materials before installation and separately states the materials' sale price - or if it bills 'sales tax' on marked-up materials.",
+      "category": "definition",
+      "parameters": {
+        "default_role": "consumer",
+        "retailer_if_all": [
+          "contract explicitly transfers title to materials before installation",
+          "contract separately states sale price of materials exclusive of installation"
+        ],
+        "retailer_if_billing": "bills customer sales tax computed on marked-up materials (time and material plus tax)"
+      },
+      "applies_to": "Contractors using time-and-material contracts",
+      "citation": "18 CCR 1521 (CDTFA Regulation 1521); CDTFA Publication 9",
+      "source_location": "https://www.cdtfa.ca.gov/lawguides/vol1/sutr/1521.html; https://cdtfa.ca.gov/formspubs/pub9.pdf (not fetched; search excerpts)",
+      "verbatim_quote": "If the contract explicitly provides for the transfer of title to the materials prior to the time the materials are installed, and separately states the sale price of the materials, exclusive of the charge for installation, the contractor will be deemed to be the retailer of the materials.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt. CDTFA annotations say both conditions must be met; a title clause alone is not enough."
+    },
+    {
+      "id": "reg1521-lump-sum-definition",
+      "title": "Lump-sum contract: separately stating items on the invoice does not change it",
+      "plain_english": "A lump-sum contract (one stated price to furnish and install) stays lump-sum even if the invoice separately lists materials, fixtures, labor or tax; the contractor remains consumer of materials and retailer of fixtures (measured by cost price if not stated).",
+      "category": "definition",
+      "parameters": {
+        "definition": "contract under which contractor for a stated lump sum agrees to furnish and install materials or fixtures, or both",
+        "separately_stated_invoice_converts_to_tm": false
+      },
+      "applies_to": "Contractors using lump-sum contracts",
+      "citation": "18 CCR 1521(a)(8)",
+      "source_location": "https://www.cdtfa.ca.gov/lawguides/vol1/sutr/1521.html (not fetched; search excerpt)",
+      "verbatim_quote": "A lump sum contract does not become a time and material contract when the amounts attributable to materials, fixtures, labor, or tax are separately stated in the invoice.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Subsection number (a)(8) as shown in search excerpt. CDTFA Pub 9 example: $15,000 lump sum with $2,000 materials (tax paid on purchase) and $5,000 fixture cost -> fixture tax measured on $5,000."
+    },
+    {
+      "id": "reg1521-no-resale-certificate-to-avoid-tax",
+      "title": "Subcontractors cannot avoid tax by taking a resale certificate from the prime",
+      "plain_english": "A contractor (including a sub) cannot escape sales/use tax on materials or fixtures it furnishes and installs by accepting a resale certificate from the prime contractor, designers, decorators or others.",
+      "category": "prohibition",
+      "parameters": {
+        "resale_certificate_from_prime_avoids_tax": false
+      },
+      "applies_to": "Subcontractors and prime contractors",
+      "citation": "18 CCR 1521",
+      "source_location": "https://www.cdtfa.ca.gov/lawguides/vol1/sutr/1521.html (not fetched; search excerpt)",
+      "verbatim_quote": "A contractor cannot avoid liability for sales or use tax on materials or fixtures furnished and installed by him or her by taking a resale certificate from the prime contractor, interior decorators, designers, department stores, or others.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt only."
+    },
+    {
+      "id": "reg1521-us-government-contracts",
+      "title": "Federal (U.S. government) jobs: contractor is consumer of materials AND fixtures",
+      "plain_english": "On contracts with the United States Government, the contractor is the consumer of both materials and fixtures (pays tax on purchase; no sales tax to the government), but is the retailer of machinery and equipment it furnishes.",
+      "category": "definition",
+      "parameters": {
+        "materials_role": "consumer",
+        "fixtures_role": "consumer",
+        "machinery_and_equipment_role": "retailer"
+      },
+      "applies_to": "Contractors on U.S. government construction contracts",
+      "citation": "18 CCR 1521(b)(1)",
+      "source_location": "https://www.cdtfa.ca.gov/lawguides/vol1/sutr/1521.html (not fetched; search excerpt)",
+      "verbatim_quote": "United States construction contractors are consumers of materials and fixtures which they furnish and install in the performance of contracts with the United States Government.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt only."
+    },
+    {
+      "id": "contractor-sellers-permit-when-required",
+      "title": "When a contractor needs a CDTFA seller's permit",
+      "plain_english": "A contractor needs a seller's permit if it sells fixtures, sells materials (e.g., T&M retailer, over-the-counter), machinery/equipment or other tangible property; contractors who only furnish and install materials on lump-sum jobs generally do not, but may need to register for use tax as a qualified purchaser.",
+      "category": "required_document",
+      "parameters": {
+        "permit_required_if": [
+          "installs fixtures (retail sales)",
+          "retailer of materials under T&M contract",
+          "over-the-counter sales",
+          "sells machinery and equipment",
+          "furnishes and installs solar systems that include fixtures"
+        ],
+        "generally_not_required": "only furnishing and installing materials in lump-sum contracts",
+        "alternate_registration": "qualified purchaser / consumer use tax account"
+      },
+      "applies_to": "Construction contractors",
+      "citation": "18 CCR 1521; R&TC 6066",
+      "source_location": "https://cdtfa.ca.gov/formspubs/pub9.pdf (not fetched; search excerpt)",
+      "verbatim_quote": "If a contractor is a seller or retailer because he or she makes sales of fixtures, materials, or machinery and equipment, or other tangible personal property either in connection with or as part of a construction contract, or otherwise, he or she is required to hold a seller's permit.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpts of Regulation 1521 and CDTFA Pub 9. Seller's permits are free (general knowledge; not verified here)."
+    },
+    {
+      "id": "use-tax-out-of-state-purchases",
+      "title": "Use tax on materials bought without CA tax (e.g., out of state)",
+      "plain_english": "If you buy materials or equipment from an out-of-state seller who does not charge California tax, you owe use tax at the rate where the item is used; if used in a higher-rate district than the rate paid, the difference is due.",
+      "category": "process_step",
+      "parameters": {
+        "tax": "use tax",
+        "rate_basis": "rate in effect where property is used",
+        "district_rate_difference_due": true
+      },
+      "applies_to": "Contractors buying taxable items without CA sales tax",
+      "citation": "R&TC 6201-6202 (use tax)",
+      "source_location": "https://cdtfa.ca.gov/taxes-and-fees/tax-rate-faq.htm (not fetched; search excerpt)",
+      "verbatim_quote": "if the property is used in a district with a higher tax rate than the rate paid at the time of purchase, the additional tax is due.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt (paraphrase in search summary). Verify reporting method (sales and use tax return or CDTFA use tax account)."
+    },
+    {
+      "id": "statewide-sales-tax-base-rate",
+      "title": "California statewide base sales/use tax rate 7.25% plus district taxes",
+      "plain_english": "The statewide base sales and use tax rate is 7.25%; local district taxes of 0.10% to 2.00% each are added on top depending on location, so job-site/delivery location determines the total rate.",
+      "category": "money_amount",
+      "parameters": {
+        "statewide_base_rate_percent": 7.25,
+        "district_tax_each_min_percent": 0.1,
+        "district_tax_each_max_percent": 2.0,
+        "total_rate": "statewide + applicable district rates"
+      },
+      "applies_to": "Retailers (fixtures/material sales) and consumers owing use tax",
+      "citation": "R&TC 6051 et seq.; CDTFA rate tables",
+      "source_location": "https://cdtfa.ca.gov/taxes-and-fees/sales-use-tax-rates.htm (not fetched; search excerpt)",
+      "verbatim_quote": "the total rate for the district (statewide rate + district rate)",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt; look up current rate per address with CDTFA before filing. Base rate figure from search summary."
+    },
+    {
+      "id": "ftb-nonresident-withholding-7-percent",
+      "title": "Withhold 7% on CA-source payments over $1,500/yr to nonresident subs",
+      "plain_english": "If you pay a nonresident (e.g., an out-of-state subcontractor) for services performed in California, you must withhold 7% of payments once the calendar-year total exceeds $1,500, unless the payee gives an exemption (Form 590) or FTB waiver. Report on Form 592 / 592-B.",
+      "category": "threshold",
+      "parameters": {
+        "withholding_rate_percent": 7,
+        "annual_threshold_usd": 1500,
+        "applies_to": "California-source nonwage payments to nonresidents (services performed in CA)",
+        "forms": {
+          "exemption": "590",
+          "report": "592",
+          "payee_statement": "592-B",
+          "payment_voucher": "592-V",
+          "waiver_or_reduced": "588/589"
+        },
+        "goods_exempt": true
+      },
+      "applies_to": "Contractors paying nonresident individuals/entities for CA services",
+      "citation": "R&TC 18662",
+      "source_location": "https://www.cslb.ca.gov/contractors/Tax_Info.aspx (read: obligation exists); https://www.ftb.ca.gov/pay/withholding/withholding-on-nonresidents.html (not fetched; search excerpt for 7%/$1,500)",
+      "verbatim_quote": "If you pay California source income to nonresidents, then you may have withholding responsibilities including those under California Revenue and Taxation Code Section 18662.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "CSLB Tax Info page (read) confirms the obligation and code section; the 7% rate and $1,500 threshold are from FTB search excerpts (ftb.ca.gov blocked). Payer can be liable for tax not withheld."
+    },
+    {
+      "id": "ftb-llc-annual-tax-800",
+      "title": "LLC: $800 annual tax + gross-receipts fee at $250,000+",
+      "plain_english": "Every LLC doing business or organized/registered in California owes an $800 annual tax (Form FTB 3522, due by the 15th day of the 4th month of the tax year) and, if total California income is $250,000 or more, an additional LLC fee estimated by the 15th day of the 6th month (Form FTB 3536).",
+      "category": "money_amount",
+      "parameters": {
+        "annual_tax_usd": 800,
+        "annual_tax_due": "15th day of 4th month of taxable year",
+        "annual_tax_form": "FTB 3522",
+        "fee_threshold_total_ca_income_usd": 250000,
+        "fee_estimate_due": "15th day of 6th month",
+        "fee_estimate_form": "FTB 3536",
+        "return": "Form 568"
+      },
+      "applies_to": "LLCs (including contractor LLCs)",
+      "citation": "R&TC 17941; R&TC 17942",
+      "source_location": "https://www.ftb.ca.gov/forms/misc/3556.html (not fetched; search excerpt)",
+      "verbatim_quote": "Every LLC that is doing business or organized in California must pay an annual tax of $800.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt; fee tier amounts not verified (FTB LLC fee chart not retrieved). Corporations owe an $800 minimum franchise tax (general knowledge - not verified here)."
+    },
+    {
+      "id": "sos-statement-of-information-llc",
+      "title": "LLC Statement of Information: within 90 days, then every 2 years ($20)",
+      "plain_english": "An LLC must file its Statement of Information with the Secretary of State within 90 days of registering and then every two years during its filing period; fee $20. Updates between periods are free.",
+      "category": "deadline",
+      "parameters": {
+        "initial_days_after_registration": 90,
+        "frequency_years": 2,
+        "fee_usd": 20,
+        "update_fee_usd": 0
+      },
+      "applies_to": "California and foreign LLCs registered with SOS",
+      "citation": "Corp. Code 17702.09 (citation from general knowledge; verify)",
+      "source_location": "https://www.sos.ca.gov/business-programs/cannabizfile/cannabis-forms-and-fees/limited-liability-companies-llc-california (not fetched; search excerpt)",
+      "verbatim_quote": "The filing fee for the initial and required biennial Statement of Information is $20",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "sos.ca.gov could not be fetched. Missing the filing can lead to SOS/FTB suspension, which triggers CSLB license suspension under B&P 7076.2."
+    },
+    {
+      "id": "sos-statement-of-information-corporation",
+      "title": "Stock corporation Statement of Information: every year ($25)",
+      "plain_english": "A California stock corporation (and foreign corporation) files a Statement of Information every year during its filing period; fee $25.",
+      "category": "deadline",
+      "parameters": {
+        "frequency_years": 1,
+        "fee_usd": 25
+      },
+      "applies_to": "California stock corporations and foreign corporations",
+      "citation": "Corp. Code 1502 (citation from general knowledge; verify)",
+      "source_location": "https://www.sos.ca.gov/business-programs/business-entities/faqs (not fetched; search excerpt)",
+      "verbatim_quote": "the fee to file the statement is $25 for California stock and foreign corporations",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Initial filing within 90 days of incorporation is general knowledge, not confirmed here. Filing period is commonly the month of original registration and the preceding five months (general knowledge - verify)."
+    },
+    {
+      "id": "sos-statement-of-information-penalty-250",
+      "title": "$250 penalty for missing Statement of Information",
+      "plain_english": "If a corporation or LLC fails to file its Statement of Information, it gets a delinquency notice with 60 more days to file; if still not filed, a $250 penalty is assessed (collected by FTB) and the entity can be suspended.",
+      "category": "penalty",
+      "parameters": {
+        "penalty_usd": 250,
+        "cure_days_after_delinquency_notice": 60,
+        "assessed_by": "Franchise Tax Board"
+      },
+      "applies_to": "Corporations and LLCs",
+      "citation": "Corp. Code 2204; Corp. Code 17713.13 (citations from general knowledge; verify)",
+      "source_location": "https://bpd.cdn.sos.ca.gov/bizfile/welcome-letter-universal.pdf; https://www.sos.ca.gov/business-programs/business-entities/faqs (not fetched; search excerpt)",
+      "verbatim_quote": "you may be assessed a $250 penalty for not filing your Statement of Information",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt. Ties to CSLB: SOS not-in-good-standing -> CSLB suspension 30 days after notice (B&P 7076.2)."
+    },
+    {
+      "id": "lawbook-edd-registration-100-per-quarter",
+      "title": "Register with EDD once you pay employees over $100 in a quarter",
+      "plain_english": "A contractor must register with EDD, get a state employer account number, and pay state payroll and UI taxes for employees who earn over $100 in a calendar quarter. Also get a federal EIN and pay federal withholding and Social Security taxes on schedule.",
+      "category": "threshold",
+      "parameters": {
+        "wage_threshold_usd_per_quarter": 100,
+        "registrations": [
+          "EDD employer payroll tax account",
+          "IRS EIN"
+        ]
+      },
+      "applies_to": "Contractors with employees",
+      "citation": "CUIC 1086",
+      "source_location": "PDF page 41 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "The contractor must register with the Employment Development Department, obtain a state EIN, and pay state payroll and unemployment insurance taxes for employees who earn over $100 in a calendar quarter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "See edd-registration-15-days for the deadline."
+    },
+    {
+      "id": "edd-registration-15-days",
+      "title": "EDD employer registration due within 15 days of paying over $100",
+      "plain_english": "Register with EDD (online via e-Services for Business or Form DE 1) within 15 calendar days after you first pay more than $100 in wages in a calendar quarter. Wages include cash, checks, app payments and the value of meals/lodging.",
+      "category": "deadline",
+      "parameters": {
+        "days": 15,
+        "trigger": "paying more than $100 in wages in a calendar quarter",
+        "wage_threshold_usd": 100,
+        "form": "DE 1 (Commercial Employer Account Registration) or e-Services for Business",
+        "household_employer_threshold_usd_cash_per_quarter": 750
+      },
+      "applies_to": "All employers (contractors) with California employees",
+      "citation": "CUIC 1086",
+      "source_location": "https://edd.ca.gov/en/payroll_taxes/Am_I_Required_to_Register_as_an_Employer (not fetched; host blocked - search excerpt)",
+      "verbatim_quote": "Not available verbatim - page not fetched (host blocked). Search excerpt: a business that pays more than $100 in wages in a calendar quarter must register within 15 days.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "edd.ca.gov blocked from this environment; the $100 trigger is confirmed by the CSLB law book (p.41, read), the 15-day deadline only by EDD search excerpts."
+    },
+    {
+      "id": "edd-ui-rate-new-employer-2026",
+      "title": "California UI tax: new employer rate 3.4% on first $7,000 per employee",
+      "plain_english": "Employers pay state Unemployment Insurance tax on the first $7,000 of each employee's wages per year. New employers are assigned a 3.4% rate for two to three years (max $238 per employee per year at 3.4%); later rates come from the annual DE 2088 notice.",
+      "category": "money_amount",
+      "parameters": {
+        "year": 2026,
+        "new_employer_rate_percent": 3.4,
+        "new_employer_rate_years": "2-3",
+        "taxable_wage_base_usd": 7000,
+        "max_per_employee_at_new_rate_usd": 238,
+        "paid_by": "employer",
+        "rate_notice": "DE 2088"
+      },
+      "applies_to": "California employers",
+      "citation": "CUIC 982(b); CUIC 930",
+      "source_location": "https://edd.ca.gov/en/payroll_taxes/rates_and_withholding/ (not fetched; search excerpt)",
+      "verbatim_quote": "New employers are assigned a 3.4 percent UI rate for two to three years.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt; $238 derived (7,000 x 3.4%). CUIC 930 citation for wage base from general knowledge - verify."
+    },
+    {
+      "id": "edd-ett-rate-2026",
+      "title": "Employment Training Tax (ETT): 0.1% on first $7,000",
+      "plain_english": "Most employers also pay ETT of 0.1% on the same first $7,000 of each employee's wages ($7 per employee per year). Employers with a negative UI reserve balance pay no ETT (shown as 0.0%).",
+      "category": "money_amount",
+      "parameters": {
+        "year": 2026,
+        "rate_percent": 0.1,
+        "taxable_wage_base_usd": 7000,
+        "max_per_employee_usd": 7,
+        "negative_reserve_rate_percent": 0.0,
+        "paid_by": "employer"
+      },
+      "applies_to": "California UI-rated employers",
+      "citation": "CUIC 976.6 (citation from general knowledge; verify)",
+      "source_location": "https://edd.ca.gov/en/payroll_taxes/rates_and_withholding/ (not fetched; search excerpt)",
+      "verbatim_quote": "The ETT rate for 2026 is 0.1 percent.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt; $7 derived."
+    },
+    {
+      "id": "edd-sdi-withholding-2026",
+      "title": "SDI employee withholding 2026: 1.3% of all wages (no cap)",
+      "plain_english": "Withhold State Disability Insurance (SDI) from employees' pay at 1.3% for 2026. There is no taxable wage limit or maximum withholding since 2024.",
+      "category": "money_amount",
+      "parameters": {
+        "year": 2026,
+        "rate_percent": 1.3,
+        "taxable_wage_limit": null,
+        "paid_by": "employee (withheld by employer)",
+        "prior_year_rate_percent_2025": 1.2,
+        "wage_cap_removed_effective": "2024-01-01"
+      },
+      "applies_to": "California employers withholding from employee wages",
+      "citation": "CUIC 984 (citation from general knowledge; verify); SB 951 (2022)",
+      "source_location": "https://edd.ca.gov/en/payroll_taxes/rates_and_withholding/ (not fetched; search excerpt)",
+      "verbatim_quote": "The 2026 SDI withholding rate is 1.3 percent (.013).",
+      "effective": "2026-01-01",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt. 2025 rate 1.2% also from search excerpt."
+    },
+    {
+      "id": "edd-de9-de9c-quarterly-filing",
+      "title": "File DE 9 and DE 9C every quarter (even with no payroll)",
+      "plain_english": "Active employers file the Quarterly Contribution Return (DE 9) and Wage and Withholding report (DE 9C) every quarter, even if no wages were paid. 2026 quarters are due the 1st of the month after quarter end and delinquent if not filed by the last day of that month (Q3 2026 delinquent after Nov 2, 2026; Q4 delinquent after Feb 1, 2027).",
+      "category": "deadline",
+      "parameters": {
+        "forms": [
+          "DE 9",
+          "DE 9C"
+        ],
+        "file_even_if_no_wages": true,
+        "2026_schedule": [
+          {
+            "quarter": "Q1 (Jan-Mar)",
+            "due": "2026-04-01",
+            "delinquent_after": "2026-04-30"
+          },
+          {
+            "quarter": "Q2 (Apr-Jun)",
+            "due": "2026-07-01",
+            "delinquent_after": "2026-07-31"
+          },
+          {
+            "quarter": "Q3 (Jul-Sep)",
+            "due": "2026-10-01",
+            "delinquent_after": "2026-11-02"
+          },
+          {
+            "quarter": "Q4 (Oct-Dec)",
+            "due": "2027-01-01",
+            "delinquent_after": "2027-02-01"
+          }
+        ],
+        "weekend_holiday_rule": "delinquent date moves to next business day"
+      },
+      "applies_to": "California employers",
+      "citation": "CUIC (quarterly returns); EDD Payroll Tax Calendar",
+      "source_location": "https://edd.ca.gov/en/payroll_taxes/Due_Dates_Calendar/ (not fetched; search excerpt)",
+      "verbatim_quote": "Not available verbatim - page not fetched (host blocked). Search excerpt: DE 9 and DE 9C for Jan-Mar due April 1, delinquent after April 30.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": false,
+      "notes": "Dates from search excerpt of EDD 2026 calendar. PIT/SDI deposits (DE 88) follow federal deposit schedule (not verified here)."
+    },
+    {
+      "id": "edd-efile-epay-mandate-penalties",
+      "title": "EDD e-file / e-pay mandate: paper filing penalties",
+      "plain_english": "All employers must file payroll tax returns/reports and pay deposits electronically. Penalties for noncompliance: $50 per paper DE 9, $20 per wage item on a paper DE 9C, and 15% of a non-electronic payment (credit-card DE 88 payments count as electronic).",
+      "category": "penalty",
+      "parameters": {
+        "paper_de9_penalty_usd": 50,
+        "paper_de9c_penalty_per_wage_item_usd": 20,
+        "non_electronic_payment_penalty_percent": 15,
+        "credit_card_counts_as_epay": true
+      },
+      "applies_to": "California employers",
+      "citation": "CUIC e-file and e-pay mandate (AB 1245, Stats. 2015 - citation from general knowledge)",
+      "source_location": "https://edd.ca.gov/en/payroll_taxes/E-file_and_E-pay_Mandate_for_Employers/ (not fetched; search excerpt)",
+      "verbatim_quote": "Not available verbatim - page not fetched (host blocked). Search excerpt: $50 per DE 9 return, $20 per wage item on the DE 9C, 15% of the amount due on DE 88 payments.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt only."
+    },
+    {
+      "id": "edd-de542-independent-contractor-report",
+      "title": "Report independent contractors (subs) to EDD on DE 542 within 20 days",
+      "plain_english": "If you must file a federal 1099 for a sole-proprietor independent contractor, report them to EDD on Form DE 542 within 20 calendar days of paying $600 or more in a calendar year or signing a contract for $600 or more, whichever is first. Materials included in the payment count toward $600.",
+      "category": "deadline",
+      "parameters": {
+        "days": 20,
+        "threshold_usd": 600,
+        "trigger": "earlier of paying >= $600 in calendar year or entering contract >= $600",
+        "materials_count_toward_threshold": true,
+        "verbal_contracts_count": true,
+        "report_frequency": "once per year per service provider (check Ongoing box)",
+        "form": "DE 542",
+        "penalty_per_failure_usd_unverified": 24
+      },
+      "applies_to": "Businesses paying independent contractors (individuals/sole proprietors) for services",
+      "citation": "CUIC 1088.8 (citation from general knowledge; verify)",
+      "source_location": "https://edd.ca.gov/en/payroll_taxes/independent_contractor_reporting/ (not fetched; search excerpt)",
+      "verbatim_quote": "You must report independent contractor information to us within 20 calendar days if either of the following applies.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt. EDD pages still show $600 even though the federal 1099-NEC threshold became $2,000 for 2026 payments - verify which threshold EDD now applies. $24 penalty from older EDD documents (unverified for 2026). See also labor-hr research file rule independent-contractor-report-de542."
+    },
+    {
+      "id": "federal-ein-ss4-within-7-days",
+      "title": "Get a federal EIN (Form SS-4) by 7 days after first wages",
+      "plain_english": "An employer paying wages subject to Social Security/Medicare or income tax withholding must apply for an Employer Identification Number on Form SS-4 no later than the seventh day after the first wage payment, and use it on returns, W-2s and deposits.",
+      "category": "deadline",
+      "parameters": {
+        "days_after_first_wage_payment": 7,
+        "form": "SS-4",
+        "required_for": [
+          "employment tax returns",
+          "Forms W-2",
+          "deposits"
+        ]
+      },
+      "applies_to": "All employers",
+      "citation": "26 CFR 31.6011(b)-1(a)(2)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6011(b)-1 (fetched via eCFR API)",
+      "verbatim_quote": "The application for an identification number shall be filed on or before the seventh day after the first payment of wages to which reference is made in paragraph (a)(1) of this section.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The CSLB law book (p.41) also says a federal EIN must be requested from the IRS. Partnership license applicants must give their EIN to CSLB (B&P 30)."
+    },
+    {
+      "id": "form-941-quarterly-due-dates",
+      "title": "Form 941 due the last day of the month after each quarter",
+      "plain_english": "File Form 941 (quarterly federal payroll tax return) by the last day of the month after the quarter: April 30, July 31, October 31 and January 31. If all taxes were deposited on time and in full, you get until the 10th of the following month. Weekend/holiday dates roll to the next business day.",
+      "category": "deadline",
+      "parameters": {
+        "due": "last day of first calendar month after quarter",
+        "extended_due_if_timely_deposits": "10th day of second month after quarter",
+        "standard_dates": [
+          "04-30",
+          "07-31",
+          "10-31",
+          "01-31"
+        ],
+        "2026_adjusted_dates": {
+          "Q1": "2026-04-30",
+          "Q2": "2026-07-31",
+          "Q3": "2026-11-02",
+          "Q4": "2027-02-01"
+        },
+        "weekend_rule": "26 CFR 301.7503-1"
+      },
+      "applies_to": "All employers filing Form 941",
+      "citation": "26 CFR 31.6071(a)-1(a)(1), (d)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6071(a)-1 (fetched via eCFR API)",
+      "verbatim_quote": "shall be filed on or before the last day of the first calendar month following the period for which it is made. A return may be filed on or before the 10th day of the second calendar month following such period if timely deposits under section 6302(c) of the Code and the regulations have been made in full payment of such taxes due for the period.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "2026 adjusted dates computed: Oct 31, 2026 is a Saturday and Jan 31, 2027 is a Sunday, so they roll to Monday."
+    },
+    {
+      "id": "federal-deposit-schedule-monthly-semiweekly",
+      "title": "Federal payroll tax deposits: monthly vs semiweekly ($50,000 lookback)",
+      "plain_english": "If total employment taxes in the lookback period (12 months ending the prior June 30) were $50,000 or less, deposit monthly by the 15th of the next month; above $50,000, deposit semiweekly (Wed-Fri paydays by next Wednesday; Sat-Tue paydays by next Friday). Deposits must be by electronic funds transfer.",
+      "category": "deadline",
+      "parameters": {
+        "lookback_threshold_usd": 50000,
+        "lookback_period_form_941": "12 months ended preceding June 30",
+        "monthly_due": "15th day of following month",
+        "semiweekly_rules": {
+          "Wed/Thu/Fri payday": "following Wednesday",
+          "Sat/Sun/Mon/Tue payday": "following Friday"
+        },
+        "method": "electronic funds transfer",
+        "safe_harbor_shortfall": "greater of $100 or 2% of required deposit, made up by shortfall date"
+      },
+      "applies_to": "All employers",
+      "citation": "26 CFR 31.6302-1(b), (c), (f)(1)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6302-1 (fetched via eCFR API)",
+      "verbatim_quote": "An employer is a monthly depositor for the entire calendar year if the aggregate amount of employment taxes reported for the lookback period is $50,000 or less.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "New employers with no lookback history are monthly depositors (general rule; specific new-employer paragraph not extracted)."
+    },
+    {
+      "id": "federal-deposit-100k-next-day",
+      "title": "Federal deposit: $100,000 accumulated = deposit by next day",
+      "plain_english": "If you accumulate $100,000 or more of employment taxes on any day, deposit by the close of the next business day; a monthly depositor then becomes a semiweekly depositor for the rest of the year and the next year.",
+      "category": "threshold",
+      "parameters": {
+        "threshold_usd": 100000,
+        "deposit_by": "close of next day (business day)",
+        "status_change": "monthly depositor becomes semiweekly for remainder of year and following year"
+      },
+      "applies_to": "All employers",
+      "citation": "26 CFR 31.6302-1(c)(3), (b)(2)(ii)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6302-1 (fetched via eCFR API)",
+      "verbatim_quote": "if on any day within a deposit period (monthly or semi-weekly) an employer has accumulated $100,000 or more of employment taxes, those taxes must be deposited by electronic funds transfer in time to satisfy the tax obligation by the close of the next day.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "federal-deposit-de-minimis-2500",
+      "title": "Under $2,500 per quarter: may pay with the timely filed return",
+      "plain_english": "If total employment taxes for the quarter (or the prior quarter) are under $2,500, you may pay them with a timely filed Form 941 instead of making deposits.",
+      "category": "threshold",
+      "parameters": {
+        "threshold_usd": 2500,
+        "period": "return period (quarter) or immediately preceding quarter",
+        "condition": "fully paid with timely filed return; one-day $100,000 rule not triggered"
+      },
+      "applies_to": "Small employers",
+      "citation": "26 CFR 31.6302-1(f)(4)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6302-1 (fetched via eCFR API)",
+      "verbatim_quote": "The total amount of accumulated employment taxes is de minimis if it is less than $2,500 for the return period or if it is de minimis pursuant to paragraph (f)(4)(ii) of this section.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "w2-furnish-and-file-jan-31",
+      "title": "Forms W-2: give employees and file with SSA by January 31",
+      "plain_english": "Furnish each employee's W-2 by January 31 of the following year and file W-2s (with W-3) with the government by January 31. For a terminated employee who asks, you may need to furnish it sooner.",
+      "category": "deadline",
+      "parameters": {
+        "furnish_to_employee_by": "January 31 of following year",
+        "file_by": "January 31 of following year",
+        "2026_wages_due": "2027-02-01 (Jan 31, 2027 is a Sunday)"
+      },
+      "applies_to": "All employers",
+      "citation": "26 CFR 31.6051-1(d)(1)(i); 26 CFR 31.6071(a)-1(a)(3)(i)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6051-1; https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6071(a)-1 (fetched via eCFR API)",
+      "verbatim_quote": "Each statement required by this section for a calendar year and each corrected statement required for the year shall be furnished to the employee on or before January 31 of the year succeeding such calendar year.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Weekend roll-forward per 26 CFR 301.7503-1 (computed)."
+    },
+    {
+      "id": "form-940-futa-annual-due",
+      "title": "Form 940 (FUTA) due January 31 (10 more days if fully deposited)",
+      "plain_english": "File the annual federal unemployment (FUTA) return, Form 940, by the last day of the month after the year ends (January 31); you get until February 10 if all FUTA tax was deposited on time.",
+      "category": "deadline",
+      "parameters": {
+        "due": "January 31 of following year",
+        "extended_due_if_timely_deposits": "February 10",
+        "2026_return_due": "2027-02-01"
+      },
+      "applies_to": "Employers subject to FUTA",
+      "citation": "26 CFR 31.6071(a)-1(c)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-C/part-31/subpart-G/section-31.6071(a)-1 (fetched via eCFR API)",
+      "verbatim_quote": "Each return of the tax imposed by the Federal Unemployment Tax Act required to be made under § 31.6011(a)-3 shall be filed on or before the last day of the first calendar month following the period for which it is made.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Annual return period from 26 CFR 31.6011(a)-3 (not separately fetched)."
+    },
+    {
+      "id": "futa-california-credit-reduction-2026",
+      "title": "FUTA: California credit reduction state (2025: 1.2%; 2026: 1.5%)",
+      "plain_english": "FUTA is 6.0% on the first $7,000 per employee less a normal 5.4% state credit. California employers lose part of the credit because of the state's federal UI loan: an extra 1.2% for 2025 ($84/employee) and 1.5% listed for 2026 ($105/employee), paid with Form 940 Schedule A.",
+      "category": "money_amount",
+      "parameters": {
+        "futa_gross_rate_percent": 6.0,
+        "normal_credit_percent": 5.4,
+        "wage_base_usd": 7000,
+        "ca_credit_reduction_percent": {
+          "2025": 1.2,
+          "2026": 1.5
+        },
+        "extra_cost_per_employee_usd": {
+          "2025": 84,
+          "2026": 105
+        },
+        "effective_futa_rate_percent": {
+          "2025": 1.8,
+          "2026": 2.1
+        },
+        "form": "Form 940 Schedule A"
+      },
+      "applies_to": "California employers",
+      "citation": "IRC 3301; IRC 3302(c)(2)",
+      "source_location": "https://www.irs.gov/pub/irs-dft/f940sa--dft.pdf; https://edd.ca.gov/en/payroll_taxes/federal-unemployment-tax-act/ (not fetched; search excerpt)",
+      "verbatim_quote": "California is 0.015 (1.5%).",
+      "effective": "2026-01-01",
+      "read_from_primary_text": false,
+      "notes": "From search excerpt of the 2026 Schedule A (Form 940) draft; EDD calls 1.5% a projection pending DOL final notice (after Nov 10, 2026). Effective rates and per-employee amounts derived (0.6% + reduction)."
+    },
+    {
+      "id": "form-1099-nec-threshold-2000",
+      "title": "Form 1099-NEC: $2,000 threshold for payments made in 2026",
+      "plain_english": "For nonemployee compensation paid after December 31, 2025, file Form 1099-NEC for each payee (e.g., unincorporated subcontractor) paid at least $2,000 in the year (was $600). The threshold is inflation-adjusted after 2026. Always file if you backup-withheld, regardless of amount.",
+      "category": "threshold",
+      "parameters": {
+        "threshold_usd": {
+          "payments_before_2026": 600,
+          "payments_in_2026": 2000
+        },
+        "inflation_adjusted_after": 2026,
+        "file_regardless_if_backup_withholding": true
+      },
+      "applies_to": "Businesses paying non-corporate service providers (subcontractors)",
+      "citation": "IRC 6041(a) as amended by P.L. 119-21 (One Big Beautiful Bill Act); 26 CFR 1.6041-1",
+      "source_location": "https://www.irs.gov/instructions/i1099mec; https://www.irs.gov/publications/p15 (not fetched; search excerpt); https://www.ecfr.gov/current/title-26/chapter-I/subchapter-A/part-1/section-1.6041-1 (fetched; still says $600)",
+      "verbatim_quote": "You made payments to the payee of at least $2,000 during the year",
+      "effective": "2026-01-01",
+      "read_from_primary_text": false,
+      "notes": "IRS sites blocked; $2,000 from IRS instructions search excerpt. The eCFR regulation 26 CFR 1.6041-1 (read) still reads 'payments of $600 or more' because Treasury has not updated it - the statute controls. California EDD DE 542 still references $600."
+    },
+    {
+      "id": "form-1099-nec-due-jan-31",
+      "title": "Form 1099-NEC due to IRS and recipient by January 31",
+      "plain_english": "File Form 1099-NEC with the IRS and furnish the recipient copy by January 31 of the year after payment (paper filers include Form 1096). For 2026 payments, January 31, 2027 is a Sunday.",
+      "category": "deadline",
+      "parameters": {
+        "file_with_irs_by": "January 31",
+        "furnish_recipient_by": "January 31",
+        "paper_transmittal": "Form 1096",
+        "2026_payments_due_computed": "2027-02-01"
+      },
+      "applies_to": "Businesses filing 1099-NEC",
+      "citation": "IRC 6071(c)",
+      "source_location": "https://www.irs.gov/instructions/i1099mec (not fetched; search excerpt)",
+      "verbatim_quote": "Section 6071(c) requires you to file Form 1099-NEC on or before January 31, using either paper or electronic filing procedures.",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt. Weekend roll to Feb 1, 2027 is computed (general IRS weekend rule), not confirmed by IRS text here."
+    },
+    {
+      "id": "form-1099-not-required-for-corporations",
+      "title": "No 1099 needed for payments to corporations (except attorneys/medical)",
+      "plain_english": "Payments to corporations (C or S) generally do not require an information return; exceptions include attorneys' fees and medical/health care service corporations.",
+      "category": "definition",
+      "parameters": {
+        "exempt_payee": "corporation",
+        "exceptions": [
+          "attorneys' fees (after 1997)",
+          "corporations providing medical and health care services or billing for them"
+        ],
+        "note_llc": "LLCs taxed as corporations are corporations for this rule; single-member/partnership LLCs are not (general knowledge)"
+      },
+      "applies_to": "Businesses paying subcontractors and vendors",
+      "citation": "26 CFR 1.6041-3(p)(1)",
+      "source_location": "https://www.ecfr.gov/current/title-26/chapter-I/subchapter-A/part-1/section-1.6041-3 (fetched via eCFR API)",
+      "verbatim_quote": "(p) Payments made to the following persons: (1) A corporation described in § 1.6049-4(c)(1)(ii)(A), except with respect to payments made to a corporation after December 31, 1997 for attorneys' fees, and except a corporation engaged in providing medical and health care services",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Collect Form W-9 from every sub to determine entity type and TIN. LLC note is general knowledge."
+    },
+    {
+      "id": "backup-withholding-24-percent",
+      "title": "Backup withholding: 24% if a sub gives no TIN (W-9)",
+      "plain_english": "If a payee does not furnish a taxpayer identification number (e.g., no W-9), withhold 24% from reportable payments such as nonemployee compensation, deposit it, and report it; for 2026 the backup-withholding reporting threshold matches the $2,000 1099 threshold.",
+      "category": "money_amount",
+      "parameters": {
+        "rate_percent": 24,
+        "trigger": "payee fails to furnish TIN (Form W-9) or IRS notice of incorrect TIN",
+        "awaiting_tin_grace_for_nonemployee_comp": false,
+        "2026_reportable_payment_threshold_usd": 2000,
+        "payee_penalty_failure_to_furnish_tin_usd": 50
+      },
+      "applies_to": "Businesses paying subcontractors and service providers",
+      "citation": "IRC 3406",
+      "source_location": "https://www.irs.gov/instructions/iw9; https://www.irs.gov/publications/p15 (not fetched; search excerpt)",
+      "verbatim_quote": "the backup withholding rate is 24% for reportable payments",
+      "effective": "",
+      "read_from_primary_text": false,
+      "notes": "Search excerpt."
+    },
+    {
+      "id": "estimated-income-tax-owners",
+      "title": "Sole owners and partners must prepay income tax quarterly",
+      "plain_english": "If the business is a sole ownership or partnership, owners must prepay estimated federal and state income taxes (quarterly). Federal income tax and Social Security withheld from employees must be paid quarterly, monthly or semimonthly as required.",
+      "category": "process_step",
+      "parameters": {
+        "applies_to_entities": [
+          "sole proprietorship",
+          "partnership"
+        ],
+        "frequency": "quarterly (estimated tax)"
+      },
+      "applies_to": "Sole proprietors and partners",
+      "citation": "IRC 6654; R&TC 19136 (citations from general knowledge)",
+      "source_location": "PDF page 41 of the 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt)",
+      "verbatim_quote": "If the business is a sole ownership or partnership, estimated federal and state income taxes must be prepaid or paid quarterly.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Specific estimated-tax due dates and safe-harbor percentages not verified here."
+    }
+  ]
+}

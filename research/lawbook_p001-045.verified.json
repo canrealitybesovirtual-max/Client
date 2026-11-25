@@ -1,0 +1,2769 @@
+{
+  "domain": "California contractor licensing, home improvement contracts, enforcement and contractor business compliance (CSLB)",
+  "source_doc": "2026 CSLB California Contractors License Law & Reference Book (official), PDF pages 1-46: front matter, Summary of Recent Changes (2025 legislation effective 2026), Sections Affected by 2025 Legislation, CSLB background, Ch. 1 Enforcement (complaints and citations), Ch. 2 Home Improvement, Ch. 3 Managing a Business (business forms, taxes/permits, bonds, insurance, workers' compensation)",
+  "rules": [
+    {
+      "id": "hic-down-payment-cap",
+      "title": "Home improvement down payment cap: lesser of $1,000 or 10%",
+      "plain_english": "On a home improvement contract, the down payment cannot be more than $1,000 or 10% of the contract price, whichever is less.",
+      "category": "money_amount",
+      "parameters": {
+        "max_down_payment_usd": 1000,
+        "max_down_payment_percent_of_contract_price": 10,
+        "formula": "max_down_payment = min(1000, 0.10 * contract_amount_excluding_finance_charges)",
+        "contract_type": "home improvement contract",
+        "basis": "contract amount = entire cost incl. profit, labor and materials, excluding finance charges (B&P 7159.5(a)(1))",
+        "exempt_if": [
+          "contractor furnishes a performance and payment bond covering full performance and payment",
+          "lien and completion bond",
+          "bond equivalent approved by the registrar",
+          "joint control approved by the registrar covering full performance and payment"
+        ],
+        "required_contract_statement": "THE DOWNPAYMENT MAY NOT EXCEED $1,000 OR 10 PERCENT OF THE CONTRACT PRICE, WHICHEVER IS LESS.",
+        "required_statement_min_font_pt": 12,
+        "required_statement_bold": true,
+        "criminal_exposure": "violation of 7159.5(a)(3) is a misdemeanor: fine $100-$5,000 and/or up to 1 year county jail; maximum fine mandatory in declared disaster areas (B&P 7159.5(b)(1))"
+      },
+      "applies_to": "Licensed contractors (and their salespersons) on residential home improvement contracts",
+      "citation": "B&P 7159.5(a)(3) (cap); B&P 7159(d)(8) (required Downpayment heading/statement); B&P 7159.5(a)(8) (bond/joint-control exemption)",
+      "source_location": "2026 CSLB Law Book, PDF pages 34-35 (summary); PDF pages 400, 410-411 (statutory text)",
+      "verbatim_quote": "If a downpayment will be charged, the downpayment shall not exceed one thousand dollars ($1,000) or 10 percent of the contract amount, whichever amount is less.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Chapter 2 is a summary; full statutory text (Chapter 8, not in this chunk) may contain special cases (e.g., swimming pool contracts) - verify against B&P 7159/7159.5 full text. CSLB lists excessive down payments as a common complaint and contract problem (PDF pages 24, 36). Verified against statute. No separate swimming-pool down payment rule appears in current 7159.5.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.34-35 (summary); PDF p.410-411 B&P 7159.5(a)(1),(a)(3),(a)(8); PDF p.400 B&P 7159(d)(8)",
+        "correction": "Cap itself confirmed, but it lives in B&P 7159.5(a)(3) and is measured on the \"contract amount\" (excludes finance charges, 7159.5(a)(1)). Rule omitted the statutory exemption: a contractor furnishing a performance and payment bond, lien and completion bond, bond equivalent or registrar-approved joint control is exempt from the cap (7159.5(a)(8)). Also added the mandatory 12-pt bold downpayment statement (7159(d)(8)(C)). Citation, quote and parameters updated."
+      }
+    },
+    {
+      "id": "hic-no-payment-ahead-of-work",
+      "title": "No payment ahead of completed work or delivered materials",
+      "plain_english": "Apart from the down payment, you cannot demand or accept payment for work or materials until that work is done or those materials are delivered.",
+      "category": "prohibition",
+      "parameters": {
+        "permitted_advance_payment": "down payment only",
+        "payment_allowed_when": [
+          "work for that payment is completed",
+          "materials for that payment are delivered"
+        ]
+      },
+      "applies_to": "Licensed contractors on home improvement contracts",
+      "citation": "B&P 7159 (see also B&P 7159.5)",
+      "source_location": "2026 CSLB Law Book, PDF page 34",
+      "verbatim_quote": "Except for a down payment, a contractor cannot demand or accept payment for work or materials until the work is completed or the materials are delivered.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "A payment-schedule checker can flag any progress payment due before the corresponding work/material milestone."
+    },
+    {
+      "id": "hic-written-and-signed",
+      "title": "Contract and all changes must be written and signed by all parties",
+      "plain_english": "The home improvement contract and every change to it (change orders) must be in writing, legible, and signed by everyone involved.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "written": true,
+        "signed_by": "all parties",
+        "applies_to_changes": true,
+        "legible": true,
+        "printed_forms_readable": true
+      },
+      "applies_to": "Home improvement contracts and change orders",
+      "citation": "B&P 7159",
+      "source_location": "2026 CSLB Law Book, PDF page 34",
+      "verbatim_quote": "The contract and any changes to the contract must be in writing and signed by all parties. The writing must be legible and printed forms must be readable.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "CSLB lists 'Change orders not included' as a common contract problem (PDF page 36). Verified: B&P 7159(d). Timing matters: the contract and any change must be written and signed by the parties BEFORE work covered by the contract or change order starts (7159(d), (c)(5)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.34 (summary); PDF p.398-399 B&P 7159(c)(1)-(2),(c)(5),(d)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-plain-language-and-cancel-right",
+      "title": "Contracts and changes must be legible, understandable and state the cancellation right",
+      "plain_english": "Any change to a home improvement contract must be written, legible and easy to understand, and the consumer must be told of their right to cancel or rescind.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "written": true,
+        "legible": true,
+        "easy_to_understand": true,
+        "must_inform_of": "consumer's right to cancel or rescind"
+      },
+      "applies_to": "Home improvement contracts and changes to them",
+      "citation": "B&P 7150-7159.9 (specifically 7159 and 7159.5)",
+      "source_location": "2026 CSLB Law Book, PDF page 31",
+      "verbatim_quote": "The following rules are required for improvement contracts: any changes made to contracts must be in writing, be legible, be easy to understand, and inform a consumer of their right to cancel or rescind the contract; and a home improvement contract must contain various information, notices, and disclosures for the protection of the consumer.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Summary text; sentence structure is ambiguous whether the 'inform of right to cancel' requirement attaches to changes or to the contract generally. Treat as applying to the contract (and conservatively to change documents). Verified against the book summary on PDF p.31. Statutory terms are \"legible\" and \"readable\" (7159(c)(1)-(2)); \"easy to understand\" is CSLB paraphrase. Cancellation rights are in the 7159(e)(6)-(7) notices.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.31 (summary); PDF p.398-406 B&P 7159(c),(e)(6)-(7)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-signed-copy-before-work",
+      "title": "Give buyer a signed, dated copy before work starts",
+      "plain_english": "Before starting any work, give the homeowner a copy of the contract signed and dated by both you and the homeowner.",
+      "category": "required_document",
+      "parameters": {
+        "deadline": "before any work is started",
+        "document": "copy of contract",
+        "signed_and_dated_by": [
+          "contractor",
+          "buyer"
+        ],
+        "recipient": "buyer"
+      },
+      "applies_to": "Licensed contractors on home improvement contracts",
+      "citation": "B&P 7159",
+      "source_location": "2026 CSLB Law Book, PDF page 34",
+      "verbatim_quote": "Before any work is started, the contractor must give the buyer a copy of the contract signed and dated by both the contractor and the buyer.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Workflow gate: block 'start work' status until signed copy delivery is recorded."
+    },
+    {
+      "id": "hic-minimum-type-size",
+      "title": "Minimum 10-point type; 10-point bold headings",
+      "plain_english": "Printed home improvement contract text must be at least 10-point type and headings at least 10-point bold, unless the law requires something larger for a specific notice.",
+      "category": "threshold",
+      "parameters": {
+        "min_body_font_pt": 10,
+        "min_heading_font_pt": 10,
+        "heading_must_be_bold": true,
+        "override": "larger size where a specific notice requires it"
+      },
+      "applies_to": "Printed home improvement contract forms, notices and disclosures",
+      "citation": "B&P 7159",
+      "source_location": "2026 CSLB Law Book, PDF page 34",
+      "verbatim_quote": "Unless a larger typeface is specified in the law referenced above, text in any printed form shall be in at least 10-point typeface and the headings shall be in at least 10-point boldface type.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Also stated on PDF page 31. Specific notices with larger type requirements are in the full B&P 7159 text (Chapter 8), not in this chunk. Verified: B&P 7159(c)(2). Larger sizes in the statute: 12-pt boldface for the \"You are entitled to a completely filled in copy...\" statement (7159(d)(4)), the downpayment statement (d)(8)(C), the progress-payment statement (d)(9)(C) and the right-to-cancel notices (e)(6)-(7); 12-pt (not necessarily bold) for the CSLB information notice (e)(5); first-page Notice of Cancellation items no smaller than body text (c)(3)(B). 16 CCR 872 CGL form: heading 14-pt, questions 12-pt, comments 11-pt italics.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.31 and p.34 (summary); PDF p.398 B&P 7159(c)(2)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-salesperson-commission-pro-rata",
+      "title": "Salesperson commission paid pro rata with payments",
+      "plain_english": "If a salesperson's commission is built into the contract price, pay the salesperson in proportion to the payments the contractor actually receives.",
+      "category": "money_amount",
+      "parameters": {
+        "trigger": "contract provides for payment of a salesperson commission out of the contract price",
+        "payout_method": "pro rata to the schedule of payments made to the contractor by the disbursing party (7159.5(a)(4) schedule)",
+        "formula": "commission_payable_to_date = total_commission * (payments_received_to_date / contract_price)"
+      },
+      "applies_to": "Contractors paying home improvement salespersons",
+      "citation": "B&P 7159.5(a)(7)",
+      "source_location": "2026 CSLB Law Book, PDF page 35 (summary); PDF page 411 (statutory text)",
+      "verbatim_quote": "If the contract provides for a payment of a salesperson’s commission out of the contract price, that payment shall be made on a pro rata basis in proportion to the schedule of payments made to the contractor by the disbursing party in accordance with paragraph (4).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Formula is a direct arithmetic reading of 'pro rata ... in proportion to the schedule of payments'.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.35 (summary); PDF p.411 B&P 7159.5(a)(7)",
+        "correction": "Wrong section: the pro-rata commission rule is B&P 7159.5(a)(7), not 7159. Statute ties the pro-rata basis to the schedule of payments made to the contractor by the disbursing party under 7159.5(a)(4). Citation and quote replaced with statutory text."
+      }
+    },
+    {
+      "id": "hic-salesperson-name-registration",
+      "title": "Contract must show salesperson name and HIS registration number",
+      "plain_english": "The home improvement contract must list the salesperson's name and their CSLB salesperson registration number.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "required_fields": [
+          "salesperson name",
+          "salesperson registration number"
+        ],
+        "condition": "only if a home improvement salesperson solicited or negotiated the contract",
+        "related": "before soliciting, the HIS must tell the owner/tenant the business name and license number of the contractor represented (B&P 7152(c))"
+      },
+      "applies_to": "Home improvement contracts sold through a salesperson",
+      "citation": "B&P 7159(d)(2)",
+      "source_location": "2026 CSLB Law Book, PDF page 35 (summary); PDF page 399 (statutory text)",
+      "verbatim_quote": "If applicable, the name and registration number of the home improvement salesperson that solicited or negotiated the contract.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Missing HIS registration numbers is listed as a common contract problem (PDF page 36).",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.35 (summary); PDF p.399 B&P 7159(d)(2); PDF p.389 B&P 7152(c)",
+        "correction": "The requirement is conditional: \"If applicable\", it covers only the HIS who solicited or negotiated the contract. Rule made it unconditional, which would fail contracts sold by exempt personnel (owners, officers, qualifiers) or with no salesperson. Citation, quote and parameters updated."
+      }
+    },
+    {
+      "id": "hic-contractor-identification",
+      "title": "Contract must show contractor name, business address and license number",
+      "plain_english": "Put your business name, business address and CSLB license number on the home improvement contract.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "required_fields": [
+          "contractor name",
+          "contractor business address",
+          "contractor license number"
+        ]
+      },
+      "applies_to": "Home improvement contracts",
+      "citation": "B&P 7159",
+      "source_location": "2026 CSLB Law Book, PDF page 35",
+      "verbatim_quote": "The name, business address, and license number of the contractor must be included.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Effective 2026-01-01, contractor email address is also required (AB 1327) - see hic-contractor-email-required. Verified: B&P 7159(d)(1). Separately, the first page must carry the contractor's name, address and email for the Notice of Cancellation and a phone number (7159(c)(3)(B)); see hic-contractor-email-required and hic-notice-of-cancellation-phone. Any contract form must disclose the contractor principal's name (7156(b), misdemeanor).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.35 (summary); PDF p.399 B&P 7159(d)(1)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-required-contract-contents",
+      "title": "Required descriptive sections of a home improvement contract",
+      "plain_english": "The contract must fully describe the work, materials and equipment, price, payment schedule, start and completion dates, permits and tests, permissible delays, extra work, mechanics' lien release statements, and the owner's right to cancel.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "statutory_required_items": [
+          "7159(c)(3)(B) first page: date buyer signed; contractor name, address and email for Notice of Cancellation, immediately preceded by statement that notice may be sent there; contractor (or representative) phone number to help with Notice of Cancellation",
+          "7159(c)(4) statement: upon satisfactory payment for any portion of work, contractor furnishes full and unconditional lien release for that portion before further payment",
+          "7159(c)(5) change-order form incorporated; effective only if written and signed before the covered work starts",
+          "7159(c)(6) notice near owner/contractor signatures that owner/tenant may require a performance and payment bond",
+          "7159(c)(7) subcontractor Yes/No checkbox statement; if Yes, verbatim disclaimer, repeated on each change order",
+          "7159(c)(8) if contractor furnishes joint control: no financial or other interest in it",
+          "7159(d)(1) contractor name, business address, license number",
+          "7159(d)(2) if applicable, HIS name and registration number",
+          "7159(d)(3) heading \"Home Improvement\" in at least 10-pt bold",
+          "7159(d)(4) statement in at least 12-pt bold: \"You are entitled to a completely filled in copy of this agreement, signed by both you and the contractor, before any work may be started.\"",
+          "7159(d)(5) heading \"Contract Price\" + amount in dollars and cents",
+          "7159(d)(6) if finance charge: heading \"Finance Charge\" + amount, separate from contract amount",
+          "7159(d)(7) heading \"Description of the Project and Description of the Significant Materials to be Used and Equipment to be Installed\" + descriptions (pools: plan and scale drawing with shape, size, dimensions, construction and equipment specs)",
+          "7159(d)(8) if downpayment: heading \"Downpayment\", amount space, 12-pt bold statement \"THE DOWNPAYMENT MAY NOT EXCEED $1,000 OR 10 PERCENT OF THE CONTRACT PRICE, WHICHEVER IS LESS.\"",
+          "7159(d)(9) if progress payments: heading \"Schedule of Progress Payments\", each payment in dollars and cents referencing work/materials, 12-pt bold statement",
+          "7159(d)(10) statement describing substantial commencement of work; heading \"Approximate Start Date\" + date",
+          "7159(d)(11) heading \"Approximate Completion Date\" + date",
+          "7159(d)(12) if applicable: heading \"List of Documents to be Incorporated into the Contract\" + list",
+          "7159(d)(13) heading \"Note About Extra Work and Change Orders\" + prescribed statement"
+        ],
+        "bonded_contractor_exemption": "contractors furnishing bonds/joint control under 7159.5(a)(8) need not include the downpayment statement, progress-payment details/statement, or Mechanics Lien Warning",
+        "cslb_summary_items": [
+          "Description of work",
+          "Description of materials and equipment",
+          "Contract price",
+          "Payment schedule",
+          "Start and completion of work (dates and descriptions)",
+          "Permits and tests",
+          "Permissible delays",
+          "Extra work",
+          "Required release of mechanics’ liens statements",
+          "Owner’s applicable right to cancellation"
+        ],
+        "cslb_summary_items_without_matching_7159_text": [
+          "Permits and tests",
+          "Permissible delays"
+        ]
+      },
+      "applies_to": "Home improvement contracts",
+      "citation": "B&P 7159(c)-(d)",
+      "source_location": "2026 CSLB Law Book, PDF page 35 (summary); PDF pages 398-401 (statutory text)",
+      "verbatim_quote": "A home improvement contract and any changes to the contract shall be in writing and signed by the parties to the contract prior to the commencement of work covered by the contract or an applicable change order and, except as provided in paragraph (8) of subdivision (a) of Section 7159.5, shall include or comply with all of the following:",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Book says this list is not complete; see full B&P 7159 in Chapter 8 for exact wording and subdivision numbers.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.35 (summary); PDF p.398-401 B&P 7159(c)-(d)",
+        "correction": "The summary list is CSLB paraphrase and not the statutory checklist. \"Permits and tests\" and \"Permissible delays\" have no matching provision in current 7159 text. The statute instead prescribes exact headings and statements, several in fixed type sizes: Home Improvement, Contract Price, Finance Charge, Description of the Project and Description of the Significant Materials to be Used and Equipment to be Installed, Downpayment, Schedule of Progress Payments, Approximate Start Date, Approximate Completion Date, List of Documents to be Incorporated into the Contract, and Note About Extra Work and Change Orders. It also requires the bond-right notice, the subcontractor Yes/No statement and the first-page cancellation contact data. Parameters, citation and quote now follow 7159(c)-(d); the CSLB list is kept for reference."
+      }
+    },
+    {
+      "id": "hic-required-notices-checklist",
+      "title": "Required notices and disclosures in home improvement and pool contracts",
+      "plain_english": "Home improvement and swimming pool contracts must include the full text of several notices: extra work/change orders, CGL insurance, workers' comp insurance, extra/change-order work notice, mechanics lien warning, Contractors Board information, and right to cancel with Notice of Cancellation instructions.",
+      "category": "required_notice",
+      "parameters": {
+        "required_notices": [
+          {
+            "notice": "Commercial General Liability Insurance (CGL)",
+            "cite": "7159(e)(1)",
+            "placement": "contract, or attachment if contract states \"A notice concerning commercial general liability insurance is attached to this contract.\"",
+            "content": "one of four prescribed statements (no CGL / carries CGL with insurer + phone / self-insured / LLC with insurance or other security + phone)"
+          },
+          {
+            "notice": "Workers’ Compensation Insurance",
+            "cite": "7159(e)(2)",
+            "placement": "contract, or attachment if contract states \"A notice concerning workers’ compensation insurance is attached to this contract.\"",
+            "content": "no employees and exempt / carries WC for all employees"
+          },
+          {
+            "notice": "Performance of extra or change-order work",
+            "cite": "7159(e)(3)",
+            "content": "written authorization required before work; change order unenforceable unless scope, price change and effect on payments/completion date stated in writing beforehand; unjust-enrichment recovery preserved"
+          },
+          {
+            "notice": "Mechanics Lien Warning",
+            "cite": "7159(e)(4)",
+            "content": "verbatim statutory text",
+            "exempt_if": "bonded/joint-control contractor under 7159.5(a)(8)"
+          },
+          {
+            "notice": "Information about the Contractors State License Board (CSLB)",
+            "cite": "7159(e)(5)",
+            "min_font_pt": 12,
+            "content": "verbatim statutory text"
+          },
+          {
+            "notice": "Three-Day Right to Cancel (Five-Day for senior citizen 65+)",
+            "cite": "7159(e)(6)",
+            "exceptions": [
+              "negotiated at contractor’s place of business",
+              "subject to Seven-Day notice",
+              "Alarm Company Act licensee complying with Civ. Code 1689.5-1689.7"
+            ],
+            "format": "12-pt bold; immediate proximity to owner signature space; owner signs and dates; same language as oral sales presentation; may be attached only with 12-pt bold initialed checkbox statement; accompanied by completed duplicate easily detachable \"Notice of Cancellation\" form"
+          },
+          {
+            "notice": "Seven-Day Right to Cancel",
+            "cite": "7159(e)(7)",
+            "applies_to": "repair/restoration of residential premises damaged by a sudden or catastrophic event with a declared state or local emergency",
+            "format": "same as Three-Day notice"
+          }
+        ],
+        "contract_body_notices": [
+          {
+            "notice": "Right to require a performance and payment bond",
+            "cite": "7159(c)(6)",
+            "placement": "in close proximity to owner and contractor signatures"
+          },
+          {
+            "notice": "Subcontractor Yes/No statement and disclaimer",
+            "cite": "7159(c)(7)",
+            "placement": "contract and each change order (if Yes)"
+          },
+          {
+            "notice": "Note About Extra Work and Change Orders",
+            "cite": "7159(d)(13)",
+            "content": "prescribed statement"
+          }
+        ],
+        "bid_stage_notice": {
+          "notice": "Information About Commercial General Liability Insurance form",
+          "cite": "16 CCR 872(a)",
+          "must_accompany": [
+            "every estimate (bid) intended to result in an HIC",
+            "every HIC"
+          ]
+        },
+        "cslb_summary_list": [
+          "Extra Work and Change Orders",
+          "Commercial General Liability Insurance",
+          "Workers’ Compensation Insurance",
+          "Performance of Extra or Change-Order Work Notice",
+          "Mechanics Lien Warning",
+          "Contractors Board Information",
+          "Applicable Right to Cancel and Notice of Cancellation Instructions"
+        ]
+      },
+      "applies_to": "Home improvement contracts and swimming pool contracts",
+      "citation": "B&P 7159(c)(6)-(7), (d)(13), (e)(1)-(7); B&P 7159.5(a)(8); 16 CCR 872(a)",
+      "source_location": "2026 CSLB Law Book, PDF pages 35-36 (summary); PDF pages 398-407, 411, 535-536 (statutory/regulatory text)",
+      "verbatim_quote": "Except as provided in paragraph (8) of subdivision (a) of Section 7159.5, all of the following notices shall be provided to the owner as part of the contract form as specified or, if otherwise authorized under this subdivision, may be provided as an attachment to the contract:",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Full notice text and which notices must be in the body vs attached are NOT in this chunk (see Chapter 8 B&P 7159). 'Missing notices and/or disclosures' is CSLB's first-listed common contract problem.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.35-36 (summary); PDF p.398-407 B&P 7159(c),(d)(13),(e); PDF p.411 B&P 7159.5(a)(8); PDF p.535-536 16 CCR 872(a)",
+        "correction": "Summary list is incomplete and gives no placement rules. Statute 7159(e) requires: CGL and WC notices (each may be attached only if the contract carries the prescribed \"is attached\" sentence); the extra/change-order work notice; the verbatim Mechanics Lien Warning; the CSLB information notice (12-pt); and the Three-Day / Five-Day (senior) / Seven-Day (disaster) right-to-cancel notice. The cancel notice must be 12-pt bold next to the owner's signature, signed and dated, in the sales language, and come with a detachable duplicate Notice of Cancellation form. Contract-body notices also required: performance/payment bond right next to the signatures (7159(c)(6)), the subcontractor Yes/No statement (c)(7) and the Note About Extra Work and Change Orders (d)(13). Bonded contractors (7159.5(a)(8)) may omit the Mechanics Lien Warning. The CGL disclosure form must also accompany bids (16 CCR 872(a)). Parameters, citation and quote updated."
+      }
+    },
+    {
+      "id": "hic-contractor-email-required",
+      "title": "Contract must include contractor's email address (AB 1327)",
+      "plain_english": "Starting 2026, home improvement contracts must include the contractor's email address.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "required_fields": [
+          "contractor name",
+          "contractor address",
+          "contractor email address (for Notice of Cancellation)"
+        ],
+        "bill": "AB 1327 (Ch. 348, Stats. 2025)",
+        "placement": "first page of the contract",
+        "min_typeface": "no smaller than that generally used in the body of the document",
+        "must_be_immediately_preceded_by": "statement advising the buyer that the Notice of Cancellation may be sent to the contractor at the address or email address noted on the contract"
+      },
+      "applies_to": "Home improvement contracts",
+      "citation": "B&P 7159(c)(3)(B)(ii) (as amended by AB 1327, Ch. 348, Stats. 2025)",
+      "source_location": "2026 CSLB Law Book, PDF page 13 (bill summary); PDF page 398 (statutory text)",
+      "verbatim_quote": "The name, address, and email address of the contractor to whom the applicable “Notice of Cancellation” is to be sent, immediately preceded by a statement advising the buyer that the “Notice of Cancellation” may be sent to the contractor at the address or email address noted on the contract.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Bill summary; exact statutory wording/placement in B&P 7159 full text (Chapter 8).",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.13 (bill summary); PDF p.398 B&P 7159(c)(3)(B)(ii)",
+        "correction": "Rule only said \"include email\". Statute requires the contractor's name, address and email for the Notice of Cancellation on the FIRST PAGE, in type no smaller than the body text, immediately preceded by a statement that the Notice may be sent to that address or email. Citation, quote and parameters updated."
+      }
+    },
+    {
+      "id": "hic-cancel-by-email",
+      "title": "Buyer may cancel home improvement contract by email (AB 1327)",
+      "plain_english": "Starting 2026, the homeowner must be allowed to cancel the home improvement contract by email.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "cancellation_methods_must_include": [
+          "email"
+        ],
+        "bill": "AB 1327 (Ch. 348, Stats. 2025)"
+      },
+      "applies_to": "Home improvement contracts and their Notice of Cancellation",
+      "citation": "B&P 7159; Civ. Code 1689.6, 1689.7, 1689.20, 1689.21 (as amended by AB 1327)",
+      "source_location": "2026 CSLB Law Book, PDF page 13",
+      "verbatim_quote": "This bill requires home improvement contracts (HIC) to include the contractor’s email address and allow for cancelation of the HIC by the buyer via email.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Cancellation period lengths (e.g., 3-day/5-day) are not stated in this chunk; see Civil Code 1689.6/1689.7 and B&P 7159 full text. AB 1327 also amends B&P 17511.5. Verified: the statutory Three-Day, Five-Day (senior citizen, 65+) and Seven-Day (declared-disaster repair) notices read \"You may cancel by emailing, mailing, faxing, or delivering a written notice to the contractor...\" Cancellation windows run to midnight of the 3rd/5th/7th business day after the buyer receives a signed, dated copy. The attached \"Notice of Cancellation\" form text in 7159(e)(6)(C)(vi) and (e)(7)(B)(vi) still says \"mail or deliver ... or send a telegram\". Civil Code 1689.6/1689.7 are not reproduced in the book.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.13 (bill summary); PDF p.403-407 B&P 7159(e)(6)(B)(i), (e)(7)(A)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-notice-of-cancellation-phone",
+      "title": "Contract must include phone number for help with Notice of Cancellation (AB 1327)",
+      "plain_english": "Starting 2026, the contract must give a telephone number the homeowner can call for help finding and filling out the Notice of Cancellation.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "required_fields": [
+          "telephone number of the contractor or the contractor’s representative"
+        ],
+        "bill": "AB 1327 (Ch. 348, Stats. 2025)",
+        "purpose": "assist the buyer with locating and filling out the Notice of Cancellation",
+        "placement": "first page of the contract",
+        "min_typeface": "no smaller than that generally used in the body of the document"
+      },
+      "applies_to": "Home improvement contracts",
+      "citation": "B&P 7159(c)(3)(B)(iii) (as amended by AB 1327, Ch. 348, Stats. 2025)",
+      "source_location": "2026 CSLB Law Book, PDF page 13 (bill summary); PDF page 398 (statutory text)",
+      "verbatim_quote": "The telephone number of the contractor, or the contractor’s representative, to assist the buyer with locating and filling out the “Notice of Cancellation.”",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Whose number (contractor's or CSLB's) is not specified in this summary; check full text.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.13 (bill summary); PDF p.398 B&P 7159(c)(3)(B)(iii)",
+        "correction": "Resolved the gap flagged in notes. The number must be the contractor's or the contractor's representative's (not CSLB's), and it must appear on the first page in type no smaller than the body text. Citation, quote and parameters updated."
+      }
+    },
+    {
+      "id": "hic-notice-of-cancellation-must-be-included",
+      "title": "Missing Notice of Cancellation is grounds for CSLB complaint (AB 1327)",
+      "plain_english": "The Notice of Cancellation must be included in or attached to the contract; if it is missing, the homeowner can file a complaint with CSLB.",
+      "category": "required_notice",
+      "parameters": {
+        "document": "Notice of Cancellation",
+        "placement": "included in or attached to the HIC",
+        "consequence_if_missing": "buyer may file complaint with CSLB"
+      },
+      "applies_to": "Home improvement contracts",
+      "citation": "B&P 7159; Civ. Code 1689.6, 1689.7 (as amended by AB 1327)",
+      "source_location": "2026 CSLB Law Book, PDF page 13",
+      "verbatim_quote": "The bill also provides that if the “Notice of Cancellation” is not included in or attached to the HIC, the buyer may file a complaint with the Contractors State License Board (CSLB).",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Verified: B&P 7159(a)(6). The Notice of Cancellation must be a completed form in duplicate, attached and easily detachable, in the contract's language (7159(e)(6)(C)(vi)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.13 (bill summary); PDF p.397 B&P 7159(a)(6); PDF p.405-407 B&P 7159(e)(6)(C)(vi), (e)(7)(B)(vi)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-subcontractor-disclosure-on-request",
+      "title": "Subcontractor Yes/No statement and disclaimer in every HIC; subcontractor list on request",
+      "plain_english": "Every home improvement contract must say, with a Yes/No checkbox, whether subcontractors will be used. If Yes, it must include the statutory disclaimer (repeated on every change order), and you must give the homeowner, on request, each subcontractor's name, contact information, license number and classification.",
+      "category": "required_notice",
+      "parameters": {
+        "trigger": "consumer request",
+        "fields_per_subcontractor": [
+          "name",
+          "contact information",
+          "license number",
+          "license classification"
+        ],
+        "bill": "SB 517 (Ch. 585, Stats. 2025)",
+        "contract_statement_required": true,
+        "checkbox": [
+          "[__] Yes",
+          "[__] No"
+        ],
+        "if_yes_disclaimer_verbatim": "One or more subcontractors will be used on this project, and the contractor is aware that a list of subcontractors is required to be provided, upon request, along with the names, contact information, license number, and classification of those subcontractors.",
+        "disclaimer_on_each_change_order": true,
+        "trigger_for_list": "consumer request",
+        "response_deadline": "not specified in statute"
+      },
+      "applies_to": "Prime/direct contractors on home improvement contracts using subcontractors",
+      "citation": "B&P 7159(c)(7) (as amended by SB 517, Ch. 585, Stats. 2025)",
+      "source_location": "2026 CSLB Law Book, PDF pages 14, 31 (summaries); PDF page 399 (statutory text)",
+      "verbatim_quote": "“One or more subcontractors will be used on this project, and the contractor is aware that a list of subcontractors is required to be provided, upon request, along with the names, contact information, license number, and classification of those subcontractors.”",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Also described on PDF page 31. Response deadline after request is not stated in this chunk.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.14 and p.31 (summaries); PDF p.399 B&P 7159(c)(7)",
+        "correction": "The disclosure is not only on request. B&P 7159(c)(7) requires every HIC to say whether a subcontractor will be used, with a [__] Yes / [__] No checkbox. If Yes, the contract must carry a verbatim disclaimer that a list of subcontractors (name, contact information, license number, classification) will be provided on request, and the same disclaimer must appear on every change order. Title, citation, quote and parameters updated."
+      }
+    },
+    {
+      "id": "hic-prime-contractor-responsible",
+      "title": "Prime/direct contractor responsible for the project (SB 517)",
+      "plain_english": "On a home improvement job the prime (direct) contractor is responsible for the whole project, but subcontractors and salespersons can still be disciplined for their own violations.",
+      "category": "definition",
+      "parameters": {
+        "responsible_party": "prime or direct contractor",
+        "subcontractor_discipline_still_possible": true,
+        "salesperson_discipline_still_possible": true,
+        "bill": "SB 517 (Ch. 585, Stats. 2025)"
+      },
+      "applies_to": "Home improvement projects with subcontractors or salespersons",
+      "citation": "B&P 7159 (as amended by SB 517)",
+      "source_location": "2026 CSLB Law Book, PDF page 15 (also PDF page 31)",
+      "verbatim_quote": "the prime or direct contractor is responsible for the construction project; however, it does not preclude administrative discipline against any subcontractor or home improvement salesperson for violations of Contractors State License Law.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "service-repair-contract-750",
+      "title": "Service and repair contract for jobs of $750 or less",
+      "plain_english": "For jobs of $750 or less, a licensed contractor uses a 'service and repair contract' instead of a full home improvement contract, but only if the contract meets all four statutory requirements.",
+      "category": "threshold",
+      "parameters": {
+        "max_contract_price_usd": 750,
+        "comparison": "<=",
+        "required_conditions_count": 4,
+        "fallback_if_conditions_not_met": "full home improvement contract requirements apply regardless of price",
+        "mandatory": false,
+        "required_conditions": [
+          "contract amount <= $750",
+          "prospective buyer initiated contact with the contractor to request the work",
+          "contractor sells no goods/services beyond those reasonably necessary for the particular problem",
+          "no payment due or accepted until the work is completed (all conditions fully corrected and, if applicable, building department accepted the work)"
+        ],
+        "effect_if_all_met": "only the 7159.10 notices and requirements apply (7159.10(c)); 7159 does not apply (7159(a)(2))",
+        "related_hic_threshold": "a home improvement contract under 7159 is one whose aggregate contract price exceeds $500 (7159(b))"
+      },
+      "applies_to": "Licensed contractors doing small residential service/repair jobs",
+      "citation": "B&P 7159.10(a), (c)-(e); B&P 7159(a)(2); B&P 7159.14",
+      "source_location": "2026 CSLB Law Book, PDF page 31 (summary); PDF pages 397, 414-420 (statutory text)",
+      "verbatim_quote": "“Service and repair contract” means an agreement between a contractor or salesperson for a contractor, whether a general contractor or a specialty contractor, who is licensed or subject to be licensed pursuant to this chapter with regard to the transaction, and a homeowner or a tenant, for the performance of a home improvement as defined in Section 7151, that conforms to the following requirements: (A) The contract amount is seven hundred fifty dollars ($750) or less. (B) The prospective buyer initiated contact with the contractor to request the work. (C) The contractor does not sell the buyer goods or services beyond those reasonably necessary to take care of the particular problem that caused the buyer to contact the contractor. (D) No payment is due, or accepted by the contractor, until the work is completed.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The four requirements and the service-and-repair disclosures are NOT listed in this chunk (see Chapter 8, Home Improvement Business). Commonly codified at B&P 7159.10 et seq. - verify.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.31 (summary); PDF p.397 B&P 7159(a)(2); PDF p.414-418 B&P 7159.10; PDF p.419-420 B&P 7159.14",
+        "correction": "Book summary says a service and repair contract \"must be used\" for jobs of $750 or less; the statute does not mandate it. B&P 7159.10(a) defines a service and repair contract as one meeting all four conditions, and 7159(a)(2) exempts such a contract from 7159. It is an optional reduced-disclosure form, not a mandatory one. The four conditions (not listed in the summary) are now encoded. Citation and quote replaced."
+      }
+    },
+    {
+      "id": "service-repair-noncompliant-treated-as-hic",
+      "title": "Non-compliant service and repair contract is treated as a home improvement contract",
+      "plain_english": "If a service and repair contract does not meet its specific requirements, all home improvement contract rules apply to it no matter how small the price.",
+      "category": "threshold",
+      "parameters": {
+        "condition": "service and repair contract fails specified requirements",
+        "result": "subject to all HIC requirements",
+        "price_irrelevant": true
+      },
+      "applies_to": "Service and repair contracts",
+      "citation": "B&P 7150-7159.9 et seq. (service and repair contract provisions)",
+      "source_location": "2026 CSLB Law Book, PDF page 31",
+      "verbatim_quote": "In addition, a service and repair contract that does not meet specified requirements is subject to the requirements applicable to a home improvement contract regardless of the aggregate contract price.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Verified: B&P 7159.10(b) applies 7159(c), (d) and (e) \"including any rights to rescind the contract as set forth in Section 1689.6 or 1689.7 of the Civil Code, regardless of the aggregate contract price\" to any contract written or presented as a service and repair contract that fails any of the four conditions.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.31 (summary); PDF p.414 B&P 7159.10(b)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-violation-discipline",
+      "title": "Violating home improvement or service and repair contract law is grounds for discipline",
+      "plain_english": "Any violation of the home improvement or service and repair contract rules can lead to CSLB discipline against the contractor.",
+      "category": "penalty",
+      "parameters": {
+        "trigger": "any violation of HIC or service and repair contract provisions",
+        "consequence": "contractor subject to discipline"
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7150-7159.9",
+      "source_location": "2026 CSLB Law Book, PDF page 31",
+      "verbatim_quote": "Any violation of the provisions of law applicable to home improvement and service and repair contracts subject the contractor to discipline.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Verified: 7159(a)(5)(A), 7159.5(a), 7159.11 and 7159.14(a) each make noncompliance cause for discipline. Criminal: violating 7159.5(a)(1),(3),(5) or 7159.14(a)(1)-(6),(8) is a misdemeanor, fine $100-$5,000 and/or up to 1 year jail (7159.5(b)(1), 7159.14(b)). 16 CCR 884 citation ranges: 7159 $100-$1,000; 7159.5(a)(1),(3),(5) $100-$8,000. Since 7/1/2026 the B&P 7099.2(b)(1) $500 statutory minimum overrides lower 884 minimums.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.31 (summary); PDF p.397 B&P 7159(a)(5)(A); PDF p.410 B&P 7159.5(a); PDF p.419 B&P 7159.11, 7159.14(a)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "hic-common-problems-checklist",
+      "title": "CSLB list of common home improvement contract problems (compliance checklist)",
+      "plain_english": "CSLB's list of frequent contract defects is a ready-made checklist: missing notices, excessive down payment, vague materials/equipment, unclear start/completion dates, unclear price, missing change orders, missing license/HIS numbers, permits not identified or not saying who pays, and no payment schedule.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "checks": [
+          "all required notices/disclosures present",
+          "down payment within cap",
+          "equipment detailed and materials specifically described",
+          "start and completion information clearly stated including dates",
+          "price carefully and completely established",
+          "change orders included",
+          "contractor license number present",
+          "HIS registration number present",
+          "required building permits identified and who pays for them stated",
+          "payment schedule present"
+        ]
+      },
+      "applies_to": "Home improvement contracts",
+      "citation": "B&P 7159 (CSLB guidance)",
+      "source_location": "2026 CSLB Law Book, PDF page 36",
+      "verbatim_quote": "Common Problems with Home Improvement Contracts • Missing notices and/or disclosures • Excessive down payment requested or received • Equipment to be used or installed is not detailed, and materials to be used not described specifically • Job start and completion information not clearly stated and described including dates",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Remaining items on the page: bid or price not carefully or completely established; change orders not included; license number and HIS registration numbers missing; failure to identify required building permits or indicate who is paying for them; no payment schedule. Verified: list matches PDF p.36. This is CSLB guidance; the binding checklist is 7159(c)-(e) (see hic-required-contract-contents).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.36",
+        "correction": ""
+      }
+    },
+    {
+      "id": "home-improvement-definition",
+      "title": "Definition of home improvement",
+      "plain_english": "Home improvement means repairing, remodeling, altering, converting, modernizing or adding to residential property, including driveways, pools/spas, patios, solar, landscaping, fences, garages and similar work next to a dwelling, plus installing home improvement goods or services.",
+      "category": "definition",
+      "parameters": {
+        "property_type": "residential",
+        "activities": [
+          "repairing",
+          "remodeling",
+          "altering",
+          "converting",
+          "modernizing",
+          "adding to"
+        ],
+        "included_examples": [
+          "driveways",
+          "swimming pools (including spas and hot tubs)",
+          "terraces",
+          "patios",
+          "awnings",
+          "storm windows",
+          "solar energy systems",
+          "landscaping",
+          "fences",
+          "porches",
+          "garages",
+          "fallout shelters",
+          "basements",
+          "other improvements of structures or land adjacent to a dwelling"
+        ],
+        "also_includes": [
+          "installation of home improvement goods",
+          "furnishing of home improvement services"
+        ]
+      },
+      "applies_to": "Classifying whether a residential job is home improvement (triggers HIC rules)",
+      "citation": "B&P 7150-7159.9 (Home Improvement; definition section not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 30",
+      "verbatim_quote": "Home improvement is the repairing, remodeling, altering, converting, or modernizing of, or adding to, residential property ... Home improvement is also the installation of home improvement goods or the furnishing of home improvement services.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Statutory definition is commonly B&P 7151 - not cited on this page."
+    },
+    {
+      "id": "home-improvement-contractor-definition",
+      "title": "Definition of home improvement contractor",
+      "plain_english": "A home improvement contractor (including a swimming pool contractor) is any CSLB-licensed contractor doing home improvement work, full-time or part-time.",
+      "category": "definition",
+      "parameters": {
+        "includes": [
+          "swimming pool contractor"
+        ],
+        "full_or_part_time": true,
+        "must_be_licensed": true
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7150-7159.9",
+      "source_location": "2026 CSLB Law Book, PDF page 30",
+      "verbatim_quote": "A home improvement contractor, including a swimming pool contractor, is a contractor licensed by the Contractors State License Board (CSLB) who is engaged in the business of home improvement either full-time or part-time.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "roof-warranty-transferable",
+      "title": "Home roof warranties transfer to later buyers unless conspicuously limited",
+      "plain_english": "For roofing contracts signed on or after Jan 1, 1994, the roof warranty automatically benefits later owners of the home unless the contract has a clear and conspicuous clause limiting transfer.",
+      "category": "required_contract_clause",
+      "parameters": {
+        "contract_date_on_or_after": "1994-01-01",
+        "default_transferable": true,
+        "beneficiaries": "all subsequent purchasers and transferees of the residential structure",
+        "to_limit_transfer": "clear and conspicuous provision in contract"
+      },
+      "applies_to": "Roofing contractors issuing home roof warranties on residential structures",
+      "citation": "Civ. Code 1797.92",
+      "source_location": "2026 CSLB Law Book, PDF page 32",
+      "verbatim_quote": "For any contract subject to this chapter that is entered into on or after January 1, 1994, the warranty obligations shall inure to the benefit of, and shall be directly enforceable by, all subsequent purchasers and transferees of the residential structure, without limitation, unless the contract contains a clear and conspicuous provision limiting transferability of the warranty",
+      "effective": "1994-01-01",
+      "read_from_primary_text": true,
+      "notes": "Book states home warranties generally are not transferable except home roof warranties as provided here. Verified: quote matches the Civil Code 1797.92 language reproduced on PDF p.32. The rest of the home roof warranty chapter is not reproduced, so the scope of \"contract subject to this chapter\" is not visible here.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.32 (statutory text of Civ. Code 1797.92 quoted in the book)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "his-registration-required",
+      "title": "Home Improvement Salesperson (HIS) registration required",
+      "plain_english": "Anyone who sells, solicits, negotiates or signs home improvement contracts for a contractor away from the contractor's normal place of business must be registered with CSLB as a Home Improvement Salesperson, no matter the contract amount.",
+      "category": "license_classification",
+      "parameters": {
+        "trigger_activities": [
+          "solicits",
+          "sells",
+          "negotiates",
+          "executes home improvement contracts"
+        ],
+        "location_trigger": "outside the contractor's normal place of business",
+        "dollar_threshold": "none (regardless of amount)",
+        "registration": "HIS",
+        "multiple_employers_on_single_registration": true
+      },
+      "applies_to": "Salespeople of licensed home improvement contractors",
+      "citation": "B&P 7152, 7153 (HIS provisions B&P 7150-7170)",
+      "source_location": "2026 CSLB Law Book, PDF page 32",
+      "verbatim_quote": "Anyone who solicits, sells, negotiates, or executes home improvement contracts for a licensed contractor outside of the contractor’s normal place of business, regardless of the dollar amount of these contracts, must be registered with CSLB as a Home Improvement Salesperson (HIS).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "B&P 7152 ('Home improvement salesperson' definition) was amended by 2025 legislation (Ch. 592) per Sections Affected table (PDF page 16); amended text not in this chunk."
+    },
+    {
+      "id": "his-employment-notification",
+      "title": "Notify CSLB before employing a registered HIS and when employment ends",
+      "plain_english": "A licensed contractor must notify CSLB in writing before employing an already-registered salesperson, and again in writing when that salesperson's employment ends.",
+      "category": "required_notice",
+      "parameters": {
+        "notice_1": {
+          "when": "before the registered HIS begins work for the contractor",
+          "method": "written, on registrar-prescribed form",
+          "content": [
+            "HIS name",
+            "HIS registration number"
+          ]
+        },
+        "notice_2": {
+          "when": "within 90 days after the HIS ceases to be employed",
+          "days": 90,
+          "method": "written, on registrar-prescribed form",
+          "content": [
+            "HIS name",
+            "HIS registration number"
+          ]
+        },
+        "forms": "CSLB HIS forms (www.cslb.ca.gov, search: HIS forms)",
+        "consequence": "contractor subject to disciplinary action (7154(c)); HIS guiding owner selection before notice received is a misdemeanor (7156(c))",
+        "electronic_submission": "permitted if board implements system (7156.6)"
+      },
+      "applies_to": "Licensed contractors employing home improvement salespersons",
+      "citation": "B&P 7154(a)-(c); B&P 7156(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 32 (summary); PDF pages 393-394 (statutory text)",
+      "verbatim_quote": "The form shall be submitted prior to the home improvement salesperson beginning work for the contractor. ... The form shall be submitted within 90 days after the home improvement salesperson ceases to be employed by the contractor.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "No day-count deadline for the end-of-employment notice is stated in this chunk.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.32 (summary); PDF p.393 B&P 7154(a)-(c); PDF p.394 B&P 7156(c)",
+        "correction": "Filled the missing timing: the employment notice must be filed before the HIS starts work for the contractor, and the end-of-employment notice within 90 days after employment ends. Both go on the registrar's form and must include the HIS name and registration number. Failure to report is cause for discipline (7154(c)). An HIS whose employment notice CSLB has not received commits a misdemeanor by guiding an owner to a contractor (7156(c)). Citation, quote and parameters updated."
+      }
+    },
+    {
+      "id": "his-exemptions",
+      "title": "Who is exempt from HIS registration",
+      "plain_english": "You don't need HIS registration if you only sell at a fixed showroom, are listed official personnel on the license, only schedule appointments for a registered HIS, or are a service/repair employee limited to the repair the customer requested.",
+      "category": "definition",
+      "parameters": {
+        "exempt": [
+          "salespersons selling goods or negotiating only at a fixed business establishment where goods/services are exhibited or offered",
+          "official personnel of record on the license (individual contractor, qualifiers, partners, corporate officers, RMOs, LLC members/managers/employees listed)",
+          "persons who only contact buyers to schedule appointments for a registered HIS",
+          "bona fide service or repair employees of a licensed contractor whose calls are limited to the service/repair initially requested"
+        ]
+      },
+      "applies_to": "Contractor sales and staff",
+      "citation": "B&P 7150-7170 (HIS provisions)",
+      "source_location": "2026 CSLB Law Book, PDF page 32",
+      "verbatim_quote": "Salespersons who only sell goods or negotiate contracts at a fixed business establishment where the goods or services are exhibited or offered for sale are not considered home improvement salespeople.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "his-qualifications",
+      "title": "HIS qualifications: age 18+, fingerprints",
+      "plain_english": "A home improvement salesperson must be at least 18 and submit fingerprints; there are no education, residency or experience requirements.",
+      "category": "threshold",
+      "parameters": {
+        "min_age_years": 18,
+        "fingerprints_required": true,
+        "education_required": false,
+        "residency_required": false,
+        "experience_required": false
+      },
+      "applies_to": "Home improvement salesperson applicants",
+      "citation": "B&P 7150-7170 (HIS provisions)",
+      "source_location": "2026 CSLB Law Book, PDF page 33",
+      "verbatim_quote": "A home improvement salesperson must be at least 18 years old. There are no educational, residency, or experience requirements. However, a home improvement salesperson must submit their fingerprints to CSLB as part of the application process.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.33 (summary); PDF p.391 B&P 7153.1",
+        "correction": "Fingerprint requirement confirmed by B&P 7153.1(c). The minimum age of 18 and the absence of education/residency/experience requirements appear only in the CSLB narrative; no statute or regulation in the book states them."
+      }
+    },
+    {
+      "id": "his-application-fee",
+      "title": "HIS application fee $200 (nonrefundable)",
+      "plain_english": "The HIS registration application fee is $200, nonrefundable and nontransferable.",
+      "category": "money_amount",
+      "parameters": {
+        "fee_usd": 200,
+        "refundable": false,
+        "transferable": false,
+        "submit_to": "CSLB headquarters"
+      },
+      "applies_to": "Home improvement salesperson applicants",
+      "citation": "B&P 7137 (fee schedule) - not cited on this page",
+      "source_location": "2026 CSLB Law Book, PDF page 33",
+      "verbatim_quote": "Submit the required nonrefundable, nontransferable application fee of $200 and your application to the CSLB headquarters office.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "B&P 7137 fee schedule was amended by 2025 legislation (Ch. 592) per PDF page 16; confirm the current fee against the fee schedule in Chapter 8. Verified: 16 CCR 811(c)(3) sets the HIS registration fee at $200 (B&P 7137(a)(3)(C) allows up to $250 by regulation). Statute calls it the \"registration fee\" (there is no separate HIS application fee in 7137(a)(1)). Veterans not dishonorably discharged get a 50% reduction (7137(a)(3)(D)). HIS renewal fee is also $200 (16 CCR 811(d)(5)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.33 (summary); PDF p.452 16 CCR 811(c)(3); PDF p.375 B&P 7137(a)(3)(C)-(D)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "his-no-work-before-registration-number",
+      "title": "No HIS work until CSLB issues registration number",
+      "plain_english": "A salesperson cannot start selling home improvement contracts just by applying; they must wait until CSLB issues a registration number.",
+      "category": "prohibition",
+      "parameters": {
+        "may_work_after": "CSLB issues registration number",
+        "application_submitted_alone_sufficient": false
+      },
+      "applies_to": "Home improvement salesperson applicants and contractors who would employ them",
+      "citation": "B&P 7153",
+      "source_location": "2026 CSLB Law Book, PDF page 33",
+      "verbatim_quote": "No. CSLB must review your application and issue a registration number before you may legally work as a home improvement salesperson.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Citation inferred from the misdemeanor rule on PDF page 34 (acting as HIS without registration)."
+    },
+    {
+      "id": "his-registration-expiration",
+      "title": "HIS registration expires 2 years from end of issue month",
+      "plain_english": "A salesperson registration expires two years after the last day of the month it was issued.",
+      "category": "deadline",
+      "parameters": {
+        "term_years": 2,
+        "anchor": "last day of the month of issuance",
+        "formula": "expiration_date = last_day_of_month(issue_date) + 2 years"
+      },
+      "applies_to": "Registered home improvement salespersons",
+      "citation": "B&P 7150-7170 (HIS provisions)",
+      "source_location": "2026 CSLB Law Book, PDF page 33",
+      "verbatim_quote": "The HIS registration expires two years from the last day of the month in which it was issued.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "CSLB mails a renewal application several weeks before expiration. Verified: B&P 7153.2. For renewed registrations the term runs two years from the date the renewed registration last expired (expiration = prior_expiration + 2 years), not from the issue month. Renewal must be applied for before expiration; late renewal possible within 3 years with a 50% delinquency penalty (7153.3(b)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.33 (summary); PDF p.391 B&P 7153.2; PDF p.392 B&P 7153.3",
+        "correction": ""
+      }
+    },
+    {
+      "id": "his-address-change-90-days",
+      "title": "HIS address change: notify CSLB within 30 days (B&P 136; book narrative says 90)",
+      "plain_english": "If your mailing address changes, tell CSLB in writing. Use 30 days: B&P 136 sets that limit for registration holders. The CSLB book narrative says 90 days, but no HIS provision supports it.",
+      "category": "deadline",
+      "parameters": {
+        "days": 30,
+        "trigger": "change in mailing address",
+        "method": "notify CSLB at its principal office",
+        "book_narrative_days": 90,
+        "consequence": "citation and administrative fine (B&P 136(b))"
+      },
+      "applies_to": "Registered home improvement salespersons",
+      "citation": "B&P 136(a)-(b) (30 days, all DCA registration holders); cf. B&P 7083 (90 days, licensees only)",
+      "source_location": "2026 CSLB Law Book, PDF page 33 (narrative, 90 days); PDF page 147 (B&P 136); PDF page 323 (B&P 7083)",
+      "verbatim_quote": "Each person holding a license, certificate, registration, permit, or other authority to engage in a profession or occupation issued by a board within the department shall notify the issuing board at its principal office of any change in the person’s mailing address within 30 days after the change, unless the board has specified by regulations a shorter time period.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Original book narrative (PDF p.33): \"notify CSLB in writing within 90 days of the change.\"",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.33 (summary); PDF p.147 B&P 136(a)-(b); PDF p.323 B&P 7083 (licensees only)",
+        "correction": "No HIS-specific 90-day provision exists in the book. The 90-day rule in B&P 7083 applies to \"licensees\", not registrants. B&P 136(a) requires each person holding a \"registration\" issued by a DCA board to report a mailing-address change within 30 days, and failure can draw a citation and fine (136(b)). Deadline corrected to a conservative 30 days, keeping the book narrative 90 days as a note. The id keeps its legacy name."
+      }
+    },
+    {
+      "id": "his-missing-renewal-notice-3-weeks",
+      "title": "Contact CSLB if no renewal notice 3 weeks before HIS expiry",
+      "plain_english": "If a salesperson hasn't received the renewal notice, they should contact CSLB no later than three weeks before the registration expires.",
+      "category": "deadline",
+      "parameters": {
+        "weeks_before_expiration": 3,
+        "days_before_expiration": 21,
+        "trigger": "advance renewal notice not received"
+      },
+      "applies_to": "Registered home improvement salespersons",
+      "citation": "B&P 7150-7170 (HIS provisions)",
+      "source_location": "2026 CSLB Law Book, PDF page 34",
+      "verbatim_quote": "If you have not received an advance notification of renewal, notify CSLB. This should be done no later than three weeks before your registration expires.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Phrased as 'should' - CSLB guidance rather than a statutory penalty deadline. Verified: quote matches PDF p.34. It is CSLB guidance (\"should\"), not a statutory deadline. The binding rule is 7153.3: renew before expiration, or the renewal is delinquent unless postmarked or electronically received by the expiration date.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.34; PDF p.392 B&P 7153.3",
+        "correction": ""
+      }
+    },
+    {
+      "id": "employing-unregistered-his-discipline",
+      "title": "Contractor discipline for employing unregistered salesperson",
+      "plain_english": "A contractor who uses an unregistered person to negotiate home improvement contracts can be disciplined by CSLB.",
+      "category": "penalty",
+      "parameters": {
+        "violation": "employing unregistered person to negotiate home improvement contracts",
+        "consequence": "disciplinary action against contractor's license"
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7154",
+      "source_location": "2026 CSLB Law Book, PDF page 34",
+      "verbatim_quote": "According to B&P Code section 7154, a contractor who employs an unregistered person to negotiate home improvement contracts is subject to disciplinary action by the registrar.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "PDF page 29: unregistered salespersons are cited using the same citation process as unlicensed contractors, and the employing contractor may also be disciplined. Verified: B&P 7154(d) (\"employs a person to sell home improvement contracts while that person is not registered\"). The contractor is also liable for any HIS violation, with or without knowledge (7155.5). 16 CCR 884 range for 7154 is $100-$1,000, subject to the $500 statutory minimum from 7/1/2026.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.34 (summary); PDF p.393 B&P 7154(d); PDF p.394 B&P 7155.5",
+        "correction": ""
+      }
+    },
+    {
+      "id": "unregistered-his-misdemeanor",
+      "title": "Acting as a salesperson without registration is a misdemeanor",
+      "plain_english": "Working as a home improvement salesperson without CSLB registration is a misdemeanor and can also bring an administrative citation.",
+      "category": "penalty",
+      "parameters": {
+        "violation": "acting as HIS without registration",
+        "criminal": "misdemeanor",
+        "administrative": "citation may be issued"
+      },
+      "applies_to": "Home improvement salespersons",
+      "citation": "B&P 7153",
+      "source_location": "2026 CSLB Law Book, PDF page 34",
+      "verbatim_quote": "Furthermore, B&P Code section 7153 states that it is a misdemeanor for a person to act as a home improvement salesperson without being registered.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Citation process for unregistered HIS follows the unlicensed-contractor process (PDF page 29), including the 15-working-day appeal window. Verified: B&P 7153(a). A citation may issue under 7028.7, now $1,500-$15,000. Also, a contractor's security interest is unenforceable if an unregistered, non-exempt salesperson solicited the contract (7153(b)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.34 (summary); PDF p.390-391 B&P 7153(a)-(b)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "joint-control-no-financial-interest",
+      "title": "Contractor may not have an interest in the joint control company",
+      "plain_english": "If you provide a joint control (funds control) arrangement as part of a home improvement contract, you cannot have any financial or other interest in the joint control company.",
+      "category": "prohibition",
+      "parameters": {
+        "prohibited": "any financial or other interest in the joint control company",
+        "joint_control_use": "optional",
+        "addendum_responsibility": "joint control company"
+      },
+      "applies_to": "Home improvement contractors using joint control agreements",
+      "citation": "B&P Code joint control provisions (section not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 36",
+      "verbatim_quote": "Contractors who furnish a joint control as part of the terms of a home improvement contract should be aware that the law prohibits them from having any financial or other interest in the joint control company.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "CSLB does not license, list, or monitor joint control companies. Joint control must be registrar-approved 'covering full performance and payment'. CSLB advises consulting an attorney first."
+    },
+    {
+      "id": "citation-civil-penalty-maximum",
+      "title": "Citation civil penalty up to $8,000 (most) / $30,000 (serious)",
+      "plain_english": "A CSLB citation can order you to correct the work, pay restitution, and pay a civil penalty of up to $8,000 for most violations, or up to $30,000 for serious violations of B&P 7110, 7114, 7118 and 7125.4.",
+      "category": "penalty",
+      "parameters": {
+        "max_civil_penalty_usd_most_violations": 8000,
+        "max_civil_penalty_usd_serious_violations": 30000,
+        "serious_violation_sections": [
+          "B&P 7110",
+          "B&P 7114",
+          "B&P 7118",
+          "B&P 7125.4"
+        ],
+        "possible_orders": [
+          "order of correction",
+          "restitution to injured party",
+          "civil penalty"
+        ],
+        "min_civil_penalty_usd_most_violations": 500,
+        "min_civil_penalty_usd_7110_7114_7118": 1500,
+        "serious_tier_source": {
+          "B&P 7110, 7114, 7118": "B&P 7099.2(b)(1)",
+          "B&P 7125.4": "B&P 7125.4(a) (minimum $10,000 sole owner / $20,000 entity; total not to exceed $30,000 per occurrence) and 16 CCR 884(c)"
+        },
+        "per_citation_total_cap_same_project_usd": {
+          "general": 8000,
+          "B&P 7028.7": 15000,
+          "B&P 7110/7114/7118/7125.4": 30000
+        },
+        "pre_2026_07_01_minimum": "none in statute; 16 CCR 884(a) table minimums ($100-$3,000) applied"
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7099.2(b)(1) (operative July 1, 2026); B&P 7125.4(a) (WC violations); 16 CCR 884(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 25 (summary); PDF pages 340-341, 370, 540-542 (statutory/regulatory text)",
+      "verbatim_quote": "Notwithstanding Section 125.9, and except as otherwise provided by this chapter, a civil penalty shall be assessed in an amount not less than five hundred dollars ($500) nor greater than eight thousand dollars ($8,000). Notwithstanding Section 125.9, a civil penalty shall be assessed in an amount not less than one thousand five hundred dollars ($1,500) nor greater than thirty thousand dollars ($30,000) for a violation of Section 7110, 7114, or 7118.",
+      "effective": "2026-07-01",
+      "read_from_primary_text": true,
+      "notes": "Per PDF page 16, B&P 7099.2 is repealed and replaced effective July 1, 2026 (new version adds minimum penalties and CPI adjustments); confirm maxima against operative text. CCR 883 (order of correction - extension of time to correct) was amended in 2025.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.25 (summary); PDF p.340-341 B&P 7099.2 (both versions); PDF p.370 B&P 7125.4(a); PDF p.540-542 16 CCR 884(a),(c)",
+        "correction": "Maxima confirmed. But B&P 7099.2(b) (both the repealed text and the version operative 7/1/2026) lists only 7110, 7114 and 7118 for the $30,000 tier. The $30,000 figure for 7125.4 comes from 7125.4(a)(3) and 16 CCR 884(c). Also missing: the statutory minimums operative 7/1/2026 ($500 general, $1,500 for 7110/7114/7118) and the 16 CCR 884(c) per-citation caps for several violations on one project. Citation and parameters updated."
+      }
+    },
+    {
+      "id": "citation-contest-process",
+      "title": "Process to contest a citation (licensed contractor)",
+      "plain_english": "If you contest a citation, CSLB may hold an informal citation conference; if unresolved, an administrative law judge hearing follows. If you lose and don't comply with the final citation, your license can be suspended and then revoked.",
+      "category": "process_step",
+      "parameters": {
+        "steps": [
+          "citation issued",
+          "comply (no further action) OR contest all/part",
+          "informal citation conference (optional)",
+          "hearing before administrative law judge",
+          "if licensee loses and does not comply with final order: suspension, then revocation"
+        ]
+      },
+      "applies_to": "Licensed contractors receiving citations",
+      "citation": "B&P 7099.2 et seq. (citation provisions)",
+      "source_location": "2026 CSLB Law Book, PDF page 25",
+      "verbatim_quote": "If the licensee contests all or any part of the citation, an informal citation conference may be held to resolve the citation. If the matter is not settled, a hearing can be set before an administrative law judge of the State of California.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The deadline to contest a citation issued to a licensee is not stated in this chunk (the 15-working-day rule on PDF page 28 is stated for unlicensed persons)."
+    },
+    {
+      "id": "advisory-notice-and-letter-of-admonishment",
+      "title": "Advisory notice and letter of admonishment (disclosed 1-2 years)",
+      "plain_english": "For minor violations CSLB may send an advisory notice; for some violations it may issue a letter of admonishment, which can require a corrective action plan and is publicly shown on the license for one or two years.",
+      "category": "penalty",
+      "parameters": {
+        "advisory_notice": "isolated or minor violations; warns of stricter action on repeat",
+        "letter_of_admonishment_public_disclosure_years": [
+          1,
+          2
+        ],
+        "may_require": "corrective action plan",
+        "letter_of_admonishment_disclosure_anchor": "date of service (personal or certified mail; effective on deposit in mail) per 7099.9(c)",
+        "response_window_days": 30,
+        "response_options": [
+          "submit written request for office conference to contest",
+          "comply and, if required, submit written corrective action plan"
+        ],
+        "retain_copy_min_years": 1,
+        "is_discipline": false,
+        "advisory_notice_source": "CSLB practice described on PDF p.25; no statute for advisory notices found in the book"
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7099.9; B&P 7124.6(c)(2)",
+      "source_location": "2026 CSLB Law Book, PDF page 25 (summary); PDF pages 343-344, 364 (statutory text)",
+      "verbatim_quote": "For some violations, CSLB may issue a letter of admonishment. This may require the licensee to submit a corrective action plan showing compliance with the law and is publicly disclosable on the license record for one or two years.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.25 (summary); PDF p.343-344 B&P 7099.9; PDF p.364 B&P 7124.6(c)(2)",
+        "correction": "Wrong section: letters of admonishment are governed by B&P 7099.9, with disclosure in 7124.6(c)(2), not 7099.2 (only the repealed 7099.2 title mentions them). Disclosure runs one or two years from the date of service, chosen on the 7099.2(a) factors. The licensee has 30 days from service to request an office conference or comply (and file any corrective action plan), and must keep a copy for at least one year. A letter is not discipline. Citation and parameters updated."
+      }
+    },
+    {
+      "id": "accusation-process",
+      "title": "Accusation for flagrant violations",
+      "plain_english": "For flagrant violations, CSLB files an accusation through the Attorney General to suspend or revoke the license; the case may settle (stipulation) or go to an administrative law judge, and blatant violations can be referred to the district attorney.",
+      "category": "process_step",
+      "parameters": {
+        "steps": [
+          "accusation filed with Attorney General",
+          "informal settlement conference (optional)",
+          "stipulated settlement OR hearing before administrative law judge",
+          "registrar decision"
+        ],
+        "possible_outcomes": [
+          "revocation",
+          "suspension",
+          "stayed suspension/revocation (probation)",
+          "cost recovery",
+          "dismissal",
+          "injunction",
+          "criminal referral to district attorney"
+        ]
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P disciplinary proceedings (sections not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 25",
+      "verbatim_quote": "For flagrant violations of law, the registrar will take administrative action by filing an accusation with the state attorney general stating the board’s intent to suspend or revoke the license.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Outcomes listed on PDF pages 26-27."
+    },
+    {
+      "id": "revocation-reinstatement-bar",
+      "title": "Revoked license: 1-5 year bar plus disciplinary bond",
+      "plain_english": "A revoked license cannot be reinstated or reissued for one to five years from the decision; involved personnel are also barred, and reinstatement requires complying with the decision, settling losses and filing a disciplinary bond.",
+      "category": "penalty",
+      "parameters": {
+        "bar_min_years": 1,
+        "bar_max_years": 5,
+        "bar_start": "final decision of revocation (B&P 7102)",
+        "personnel_barred": "official personnel who knew of or participated in the violation",
+        "reinstatement_conditions": [
+          "comply with all provisions of decision",
+          "settle any loss caused",
+          "file disciplinary bond in amount set by registrar"
+        ],
+        "disciplinary_bond_min_usd": 25000,
+        "disciplinary_bond_max_usd": 250000,
+        "disciplinary_bond_min_years_on_file": 2,
+        "bankruptcy_exception": "monetary loss discharged in bankruptcy need not be satisfied; non-monetary conditions still apply (7102)"
+      },
+      "applies_to": "Licensees and their personnel of record",
+      "citation": "B&P 7102 (1-5 year bar and reinstatement conditions); B&P 7071.8 (disciplinary bond)",
+      "source_location": "2026 CSLB Law Book, PDF page 26 (summary); PDF pages 297-298, 347 (statutory text)",
+      "verbatim_quote": "After revocation of a license upon any of the grounds set forth in this chapter, the license shall not be reinstated or reissued and a license shall not be issued to any member of the personnel of the revoked licensee found to have had knowledge of or participated in the acts or omissions constituting grounds for revocation, within a minimum period of one year and a maximum period of five years after the final decision of revocation and then only on proper showing that all loss caused by the act or omission for which the license was revoked has been fully satisfied and that all conditions imposed by the decision of revocation have been complied with.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Disciplinary bond amount is set by the registrar - no fixed number in this chunk.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.26 (summary); PDF p.347 B&P 7102; PDF p.297-298 B&P 7071.8(b)-(c)",
+        "correction": "The 1-5 year bar is in B&P 7102, not 7071.8. Statute runs it from the final decision of revocation, and it applies to personnel who knew of or took part in the violation. 7071.8 supplies the disciplinary bond: at least $25,000 and at most 10 times the 7071.6 amount ($250,000), on file for at least two years while the license is current and active. Losses discharged in bankruptcy need not be repaid. Citation and parameters updated."
+      }
+    },
+    {
+      "id": "suspension-probation-disciplinary-bond",
+      "title": "Suspension and probation require a disciplinary bond",
+      "plain_english": "A suspended licensee cannot operate and must file a disciplinary bond before reinstatement; a licensee on probation must follow its terms and file a disciplinary bond to stay in business.",
+      "category": "penalty",
+      "parameters": {
+        "suspension": {
+          "may_operate": false,
+          "disciplinary_bond_before_reinstatement": true
+        },
+        "probation": {
+          "must_follow_terms": true,
+          "disciplinary_bond_to_remain_in_business": true,
+          "violation_result": "suspension or revocation takes effect"
+        }
+      },
+      "applies_to": "Disciplined licensees",
+      "citation": "B&P 7071.8",
+      "source_location": "2026 CSLB Law Book, PDF page 26",
+      "verbatim_quote": "The licensee is not entitled to operate during the period of suspension. A disciplinary bond must be filed before the license is reinstated or reissued.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Probation text: 'They also must file a disciplinary bond to remain in business during this period.' Verified: 7071.8(b) requires a disciplinary bond for removal of suspension and for continued use of a license whose suspension or revocation is stayed. The registrar sets the amount by seriousness, from $25,000 to $250,000 (10x the 7071.6 bond). It is in addition to other bonds, stays on file at least 2 years while the license is current and active, and only one is required per license (7071.8(c)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.26 (summary); PDF p.297-298 B&P 7071.8(a)-(c); PDF p.347 B&P 7102",
+        "correction": ""
+      }
+    },
+    {
+      "id": "enforcement-cost-recovery",
+      "title": "Pay investigation and enforcement costs to keep or renew license",
+      "plain_english": "If ordered, you must pay CSLB's investigation and enforcement costs to stay in good standing or to renew or reinstate your license.",
+      "category": "penalty",
+      "parameters": {
+        "condition_of": [
+          "good and clear standing",
+          "renewal",
+          "reinstatement"
+        ],
+        "amount": "as ordered or stipulated"
+      },
+      "applies_to": "Disciplined licensees",
+      "citation": "B&P disciplinary provisions (section not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 26",
+      "verbatim_quote": "The licensee, to maintain good and clear standing or as a condition for renewal and reinstatement of their license, must pay the costs as ordered or as stipulated.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Verified: B&P 125.3. ALJ may order payment up to the reasonable costs of investigation and enforcement; board shall not renew or reinstate until paid (125.3(g)(1)) except discretionary conditional renewal up to 1 year on financial hardship with a repayment agreement (125.3(g)(2)); may be included in stipulated settlements (125.3(i)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.26 (summary); PDF p.135-136 B&P 125.3(a),(g),(i)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "complaint-public-disclosure",
+      "title": "When complaints are publicly disclosed",
+      "plain_english": "Once CSLB finds a probable violation serious enough for suspension or revocation, the complaint's date, nature and status are shown publicly with a disclaimer; dismissed matters are not disclosed.",
+      "category": "process_step",
+      "parameters": {
+        "disclosure_trigger": "probable violation presenting risk of harm for which suspension/revocation would be appropriate",
+        "disclosed_fields": [
+          "date",
+          "nature",
+          "status"
+        ],
+        "disclaimer": "allegation only",
+        "dismissed_matters_disclosed": false
+      },
+      "applies_to": "Licensed contractors (reputation / license-check tools)",
+      "citation": "B&P 7124.6 (not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 27",
+      "verbatim_quote": "Once CSLB has determined that a probable violation of law has occurred, which, if proven, would present a risk of harm to the public—and for which suspension or revocation of the contractor’s license would be appropriate—the date, nature, and status of the complaint will be disclosed to the public.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Citation section number is not stated on the page; B&P 7124.6 is the usual disclosure section - verify."
+    },
+    {
+      "id": "citation-disclosure-5-years",
+      "title": "Citations disclosed for 5 years after compliance",
+      "plain_english": "A citation appears on the public license record from issuance until five years after you comply with it.",
+      "category": "penalty",
+      "parameters": {
+        "disclosure_start": "date of issuance",
+        "disclosure_years_after_compliance": 5,
+        "formula": "disclosure_end = compliance_date + 5 years, unless another disciplinary action is filed in that window; then disclosure continues as long as the most recent action is disclosable",
+        "extension_if_additional_actions": true,
+        "also_disclosed_on_licenses_sharing_qualifier": true
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7124.6(e)(1)",
+      "source_location": "2026 CSLB Law Book, PDF page 27 (summary); PDF page 364 (statutory text)",
+      "verbatim_quote": "Citations shall be disclosed from the date of issuance and for five years after the date of compliance if no additional disciplinary actions have been filed against the licensee during the five-year period. If additional disciplinary actions were filed against the licensee during the five-year period, all disciplinary actions shall be disclosed for as long as the most recent disciplinary action is subject to disclosure under this section.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Citation section number not stated on the page.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.27 (summary); PDF p.364 B&P 7124.6(e)(1)",
+        "correction": "Unconditional 5-year end date is wrong. The 5 years after compliance applies only if no other disciplinary action is filed in that window. Otherwise all actions stay disclosed while the most recent one is disclosable. The citation also shows on any other license sharing a qualifier with the cited license. Citation and parameters updated."
+      }
+    },
+    {
+      "id": "accusation-disclosure-7-years",
+      "title": "Accusations disclosed 7 years after settlement; revocations indefinitely",
+      "plain_english": "Accusations that end in suspension or stayed revocation are public from filing until seven years after settlement; non-stayed revocations are public indefinitely.",
+      "category": "penalty",
+      "parameters": {
+        "suspension_stayed_suspension_or_stayed_revocation": {
+          "disclosure_start": "date accusation filed",
+          "years_after_settlement": 7,
+          "includes_probation_terms": true,
+          "extension_if_additional_actions": "if additional disciplinary actions filed during the 7-year period, all actions posted as long as the most recent is disclosable"
+        },
+        "non_stayed_revocation": {
+          "disclosure_start": "effective date of revocation",
+          "duration": "indefinite"
+        }
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7124.6(e)(2)-(3)",
+      "source_location": "2026 CSLB Law Book, PDF page 27 (summary); PDF pages 364-365 (statutory text)",
+      "verbatim_quote": "Accusations that result in suspension, stayed suspension, or stayed revocation of the contractor’s license shall be disclosed from the date the accusation is filed and for seven years after the accusation has been settled, including the terms and conditions of probation if no additional disciplinary actions have been filed against the licensee during the seven-year period. ... All revocations that are not stayed shall be disclosed indefinitely from the effective date of the revocation.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.27 (summary); PDF p.364-365 B&P 7124.6(e)(2)-(3)",
+        "correction": "Statute also covers stayed suspension, which the rule left out. The 7-year period after settlement applies only if no other disciplinary action is filed in that window; otherwise all actions stay posted while the most recent is disclosable. Citation and parameters updated."
+      }
+    },
+    {
+      "id": "unlicensed-contracting-misdemeanor",
+      "title": "Contracting without a license is a misdemeanor",
+      "plain_english": "It is a crime (misdemeanor) to do or offer contracting work without a CSLB license unless you fit an exemption in B&P 7040-7054.5.",
+      "category": "prohibition",
+      "parameters": {
+        "violation": "engaging in business or acting as contractor without license",
+        "criminal": "misdemeanor",
+        "exemptions_range": "B&P 7040-7054.5"
+      },
+      "applies_to": "Anyone performing or offering construction contracting in California; owners hiring them",
+      "citation": "B&P 7040-7054.5 (exemptions)",
+      "source_location": "2026 CSLB Law Book, PDF page 27",
+      "verbatim_quote": "In California, it is a misdemeanor to engage in the business or act in the capacity of a contractor without a contractor license unless the contractor meets the criteria for exemption specified in Business and Professions Code sections 7040 through 7054.5.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The misdemeanor section itself (commonly B&P 7028) is not cited on this page. New 2026 exemption: murals (B&P 7050). B&P 7048 minor-work exemption amended in 2025."
+    },
+    {
+      "id": "unlicensed-citation-max-15000",
+      "title": "Unlicensed contractor citation: cease-and-desist plus penalty up to $15,000",
+      "plain_english": "CSLB can cite an unlicensed (or suspended/not-current) contractor with an order to stop and a civil penalty of up to $15,000.",
+      "category": "penalty",
+      "parameters": {
+        "max_civil_penalty_usd": 15000,
+        "order": "abatement - cease and desist",
+        "applies_when": "no license in good standing (current and not suspended)",
+        "min_civil_penalty_usd_from_2026_07_01": 1500
+      },
+      "applies_to": "Unlicensed persons and contractors without a license in good standing; also unregistered HIS",
+      "citation": "B&P 7028.7",
+      "source_location": "2026 CSLB Law Book, PDF page 28",
+      "verbatim_quote": "The citation includes an order of abatement to cease and desist and a civil penalty of up to $15,000.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "The $1,500 minimum is from SB 779 (PDF page 15), commencing July 1, 2026. Section number taken from Sections Affected table (PDF page 16, 7028.7 'Unlicensed contracting; Citation and penalties'). Verified: 7028.7(c) as operative 7/1/2026 sets $1,500-$15,000 (the version repealed 7/1/2026 had a $200 minimum). Applies to unlicensed contractors and unregistered salespersons (7028.7(a)). Per-citation total cap $15,000 (16 CCR 884(c)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.28 (summary); PDF p.249-250 B&P 7028.7(c) (both versions)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "unlicensed-citation-appeal-15-working-days",
+      "title": "Appeal unlicensed citation within 15 working days",
+      "plain_english": "A cited unlicensed person must get a written appeal to CSLB within 15 working days after the citation is served, or it becomes a final order.",
+      "category": "deadline",
+      "parameters": {
+        "days": 15,
+        "day_type": "working days per B&P 7028.10/7028.11; B&P 7099.8(a) says \"15 days\"",
+        "trigger": "service of the citation (certified mail to last known business or residence address permitted, B&P 7028.8)",
+        "requirement": "written request for administrative hearing and/or written request for informal citation conference (B&P 7099.8(a)-(b))",
+        "consequence_if_missed": "citation deemed a final order of the registrar, not subject to review by any court or agency (B&P 7028.11)",
+        "conservative_deadline_calendar_days": 15,
+        "extension": "registrar may extend for good cause (B&P 7028.11)"
+      },
+      "applies_to": "Unlicensed contractors and unregistered home improvement salespersons who are cited",
+      "citation": "B&P 7028.10, 7028.11; B&P 7099.8(a)-(b); service per B&P 7028.8",
+      "source_location": "2026 CSLB Law Book, PDF page 28 (summary); PDF pages 250-251, 342-343 (statutory text)",
+      "verbatim_quote": "If within 15 working days after service of the citation, the person cited fails to notify the registrar that he or she intends to appeal the citation, the citation shall be deemed a final order of the registrar and not subject to review by any court or agency. The 15-day period may be extended by the registrar for good cause.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Deadline is based on board receipt, not mailing. Appeal path: informal settlement conference, then administrative law judge.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.28 (summary); PDF p.250-251 B&P 7028.8, 7028.10, 7028.11; PDF p.342-343 B&P 7099.8(a)-(b)",
+        "correction": "Wrong section: the appeal window is in B&P 7028.10/7028.11, not 7028.7. Statutes conflict on the day count: 7028.10/7028.11 say 15 working days, but 7099.8(a), which applies \"notwithstanding any other law\" to 7028.7 citations, requires a written request for an administrative hearing (or informal citation conference) within 15 days after service. Parameters now carry a conservative 15-calendar-day deadline. Also added: the registrar may extend for good cause, and service may be by certified mail."
+      }
+    },
+    {
+      "id": "unlicensed-enforcement-options",
+      "title": "CSLB options against unlicensed contractors",
+      "plain_english": "Against unlicensed contractors CSLB can issue a citation, refer for criminal prosecution (fine, probation, restitution, jail), or seek a court injunction; continuing to contract after a citation can lead to a DA referral.",
+      "category": "process_step",
+      "parameters": {
+        "options": [
+          "administrative citation",
+          "criminal referral to district attorney/prosecutor",
+          "injunction via Attorney General or district attorney"
+        ],
+        "criminal_outcomes": [
+          "fine",
+          "probation",
+          "restitution",
+          "jail"
+        ],
+        "injunction_venue": [
+          "county where practice/transaction occurred",
+          "county where unlicensed person has business or residence"
+        ]
+      },
+      "applies_to": "Unlicensed persons; owners evaluating remedies",
+      "citation": "B&P 7028.7 and related (not all cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 28",
+      "verbatim_quote": "When the board receives a complaint against an unlicensed contractor, it may issue an administrative citation or file a criminal action with the local district attorney’s office. In some cases, it may initiate injunction proceedings against the unlicensed person through the Office of the Attorney General or the district attorney.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "swift-jobsite-proof-of-license",
+      "title": "Be ready to show proof of license on any jobsite (SWIFT)",
+      "plain_english": "CSLB's SWIFT team can visit any jobsite without a complaint, demand proof of a license in good standing, and cite anyone not properly licensed.",
+      "category": "required_document",
+      "parameters": {
+        "document": "proof of licensure in good standing",
+        "inspection_without_cause": true,
+        "location": "any jobsite"
+      },
+      "applies_to": "All contractors on active jobsites",
+      "citation": "B&P 7011.4, 7099",
+      "source_location": "2026 CSLB Law Book, PDF page 29",
+      "verbatim_quote": "SWIFT has the authority to visit any jobsite without cause or complaint, ask contractors to produce proof of licensure in good standing, and cite those who are not properly licensed.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "complaint-resolution-process",
+      "title": "CSLB complaint handling steps",
+      "plain_english": "When a complaint is filed, CSLB notifies the contractor to try to resolve it, may request documents and attempt mediation, and may then recommend arbitration, a bond claim, small claims or a civil suit, or open an investigation.",
+      "category": "process_step",
+      "parameters": {
+        "who_may_file": [
+          "homeowners",
+          "contractors",
+          "subcontractors",
+          "material suppliers",
+          "employees",
+          "any entity"
+        ],
+        "steps": [
+          "jurisdiction review",
+          "confirmation to complainant and notice to contractor",
+          "request for information/documentation",
+          "mediation",
+          "recommend CSLB arbitration / contact bond surety / small claims / superior court",
+          "investigation if warranted"
+        ]
+      },
+      "applies_to": "Licensed contractors and project owners",
+      "citation": "CSLB enforcement procedures (no section cited)",
+      "source_location": "2026 CSLB Law Book, PDF page 24",
+      "verbatim_quote": "If appropriate, CSLB will attempt mediation. If mediation is unsuccessful, CSLB may recommend settlement through its arbitration program, recommend that the complainant contact the surety company that issued the contractor’s bond, file a claim in small claims court, or file a civil suit in superior court.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "common-complaint-grounds",
+      "title": "Common grounds for complaints against contractors",
+      "plain_english": "Typical complaint triggers include poor workmanship, abandonment, not paying subs/suppliers/employees, code violations, lack of diligence, deceptive advertising, excessive down payments or missing payment schedules, no workers' comp, and home improvement contract violations.",
+      "category": "prohibition",
+      "parameters": {
+        "risk_items": [
+          "poor workmanship",
+          "abandonment of project",
+          "failure to pay subcontractors, suppliers, or employees",
+          "building code violations",
+          "lack of reasonable diligence",
+          "false, misleading, or deceptive advertising",
+          "excessive down payments",
+          "no payment schedule in HIC",
+          "failure to obtain workers’ compensation insurance",
+          "violations of home improvement contract law"
+        ]
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "CSLB enforcement overview (no section cited)",
+      "source_location": "2026 CSLB Law Book, PDF page 24",
+      "verbatim_quote": "Common complaints made against contractors involve poor workmanship; abandonment of a project; failure to pay subcontractors, suppliers, or employees; building code violations; lack of reasonable diligence in executing a construction project; use of false, misleading, or deceptive advertising;",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Remaining items in the sentence: excessive down payments or not including payment schedules in HICs; failure to obtain workers’ compensation insurance; violations of home improvement contract law."
+    },
+    {
+      "id": "license-lookup-verification",
+      "title": "Verify contractor license, bond and workers' comp online",
+      "plain_english": "Owners and prime contractors can look up any contractor (or HIS) on CSLB's website by license number, name or business name to check status, legal actions, classifications, bond and workers' comp.",
+      "category": "process_step",
+      "parameters": {
+        "websites": [
+          "www.cslb.ca.gov",
+          "www.CheckTheLicenseFirst.com"
+        ],
+        "lookup_keys": [
+          "license number",
+          "name",
+          "business name"
+        ],
+        "data_returned": [
+          "contact information",
+          "license status",
+          "CSLB legal actions",
+          "classifications held",
+          "business type",
+          "bond information",
+          "workers’ compensation insurance information"
+        ],
+        "phone_line": "(800) 321-2752 (24 hours)",
+        "his_registrations_listed": true
+      },
+      "applies_to": "Project owners, general contractors vetting subcontractors",
+      "citation": "None (CSLB informational text)",
+      "source_location": "2026 CSLB Law Book, PDF pages 18-19",
+      "verbatim_quote": "CSLB’s website, www.cslb.ca.gov or www.CheckTheLicenseFirst.com, provides the ability to look ... up a contractor by license number, name, or business name, and obtain the licensee’s contact information, license status, CSLB legal actions (if any), classifications held, business type, and bond and workers’ compensation insurance information.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Useful as an automated pre-hire / pre-subcontract verification step."
+    },
+    {
+      "id": "license-classifications-count",
+      "title": "CSLB has 45 license classifications",
+      "plain_english": "CSLB licenses contractors in 45 classifications covering the construction industry.",
+      "category": "license_classification",
+      "parameters": {
+        "classification_count": 45
+      },
+      "applies_to": "All contractors",
+      "citation": "None (CSLB background); classifications in 16 CCR 832",
+      "source_location": "2026 CSLB Law Book, PDF page 18",
+      "verbatim_quote": "CSLB licenses and regulates contractors in 45 license classifications that constitute the construction industry.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Classification list itself is not in this chunk (Chapter 9). 16 CCR 832 reference is outside this chunk - verify."
+    },
+    {
+      "id": "ag-civil-action-wage-violations",
+      "title": "Attorney General may seek license discipline for unpaid wages (AB 1002)",
+      "plain_english": "Starting 2026, the Attorney General can sue to suspend, revoke or deny a contractor's license for failing to pay workers or ignoring a wage judgment or court order.",
+      "category": "penalty",
+      "parameters": {
+        "triggers": [
+          "failure to pay workers",
+          "failure to comply with wage judgment or court order"
+        ],
+        "possible_actions": [
+          "suspend license",
+          "revoke license",
+          "deny licensure"
+        ],
+        "brought_by": "Attorney General (must notify CSLB first)",
+        "bill": "AB 1002 (Ch. 567, Stats. 2025)"
+      },
+      "applies_to": "Licensed contractors and applicants",
+      "citation": "B&P 7036 (added by AB 1002)",
+      "source_location": "2026 CSLB Law Book, PDF page 12",
+      "verbatim_quote": "This bill authorizes the Attorney General (AG) to file a civil action to suspend, revoke, or deny licensure of a contractor for failure to pay workers or failure to comply with a wage judgment or court order.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "CSLB may intervene or collaborate in the AG proceeding. Verified: B&P 7036. AG must notify the registrar at least 30 days before filing, though failure is no defense (7036(b)). Board may intervene within 60 days of the complaint, later only by leave of court (7036(c)). Grounds: failure to pay full wages owed, an unfulfilled wage judgment, or violating a wage injunction or order. Relief is a court order directing the registrar to suspend, revoke or deny, treated as discipline under 7071.8 and a legal action under 7124.6.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.12 (summary); PDF p.262 B&P 7036(a)-(d)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "cash-deposit-in-lieu-of-bond-attorney-fees",
+      "title": "CSLB not liable for attorney fees on cash-deposit bond claims (AB 521)",
+      "plain_english": "A contractor may file a cash deposit with CSLB instead of a license bond; starting 2026, CSLB is not liable for attorney fees in civil claims against that deposit.",
+      "category": "definition",
+      "parameters": {
+        "bond_alternative": "cash deposit filed with CSLB in lieu of license bond",
+        "cslb_liable_for_attorney_fees": false,
+        "bill": "AB 521 (Ch. 265, Stats. 2025)"
+      },
+      "applies_to": "Contractors using a cash deposit instead of a surety license bond; claimants against it",
+      "citation": "B&P 7071.4 (as amended by AB 521)",
+      "source_location": "2026 CSLB Law Book, PDF page 12",
+      "verbatim_quote": "This bill expressly provides that CSLB is not liable for attorney fees in civil claims involving a contractor’s cash deposit filed with CSLB in lieu of a license bond.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Liability allocation rule; no dollar amounts stated."
+    },
+    {
+      "id": "wc-civil-penalties-increased",
+      "title": "Higher civil penalties for workers' comp violations (SB 291)",
+      "plain_english": "Starting 2026, civil penalties for workers' compensation violations are significantly increased.",
+      "category": "penalty",
+      "parameters": {
+        "violation_type": "workers’ compensation requirements",
+        "penalty_amounts_usd": {
+          "min_per_violation_sole_owner": 10000,
+          "min_per_violation_entity": 20000,
+          "entity_types": [
+            "partnership",
+            "corporation",
+            "limited liability company",
+            "tribal business"
+          ],
+          "subsequent_violations_total_cap_per_occurrence": 30000
+        },
+        "bill": "SB 291 (Ch. 455, Stats. 2025)",
+        "grounds": [
+          "filing a false WC exemption certificate",
+          "employing a person subject to WC after filing an exemption without first filing a WC certificate",
+          "employing a person subject to WC without maintaining coverage"
+        ],
+        "no_renewal_or_reinstatement_until": "current and valid WC certificate or self-insurance certification filed (7125.4(c))",
+        "qualifier_misdemeanor": "qualifier responsible under 7068.1 is guilty of a misdemeanor (7125.4(b))"
+      },
+      "applies_to": "Licensed contractors",
+      "citation": "B&P 7125.4(a)-(c) (as amended by SB 291, Ch. 455, Stats. 2025)",
+      "source_location": "2026 CSLB Law Book, PDF page 13 (summary); PDF page 370 (statutory text)",
+      "verbatim_quote": "(1) A minimum civil penalty of ten thousand dollars ($10,000) per violation for any sole owner licensee found to have employed workers without maintaining workers’ compensation coverage. (2) A minimum civil penalty of twenty thousand dollars ($20,000) per violation for any partnership, corporation, limited liability company, or tribal business licensee found to have employed workers without maintaining workers’ compensation coverage. (3) Additional civil penalties for any subsequent violations, not to exceed a total of thirty thousand dollars ($30,000) per occurrence.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Specific penalty amounts are NOT stated in this chunk; see B&P 7099.2 (operative July 1, 2026) at book page 317. Do not compute without the operative text.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.13 (summary); PDF p.370 B&P 7125.4(a)-(c) (history: Stats 2025 ch 455 § 3, SB 291, effective 1/1/2026)",
+        "correction": "penalty_amounts_usd was null. B&P 7125.4(a) as amended by SB 291 sets minimum penalties per violation for employing workers without WC coverage: $10,000 for a sole owner, $20,000 for a partnership, corporation, LLC or tribal business. Additional penalties for subsequent violations may not exceed a total of $30,000 per occurrence. 7125.4(c) bars renewal or reinstatement until a valid WC certificate is filed. Citation, quote and parameters filled."
+      }
+    },
+    {
+      "id": "no-renewal-without-wc-certificate",
+      "title": "No license renewal/reinstatement without valid WC certificate (SB 291)",
+      "plain_english": "Starting 2026, CSLB will not renew or reinstate a license that is out of compliance with workers' comp rules until a current, valid workers' comp certificate is provided.",
+      "category": "required_document",
+      "parameters": {
+        "document": "current and valid workers’ compensation certificate",
+        "blocks": [
+          "license renewal",
+          "license reinstatement"
+        ],
+        "bill": "SB 291 (Ch. 455, Stats. 2025)"
+      },
+      "applies_to": "Licensees and applicants for renewal/reinstatement",
+      "citation": "B&P 7125.4 / 7125.7 (as amended by SB 291; exact section not stated)",
+      "source_location": "2026 CSLB Law Book, PDF page 13",
+      "verbatim_quote": "The bill significantly increases civil penalties for violations of workers’ compensation (WC) requirements and prohibits CSLB from renewing or reinstating a license in violation of WC requirements until the applicant or licensee provides a current and valid WC certificate.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Renewal workflow should check WC certificate (or valid exemption) status before submission."
+    },
+    {
+      "id": "wc-exemption-verification",
+      "title": "CSLB to verify workers' comp exemption eligibility (SB 291)",
+      "plain_english": "CSLB must create an evidence-based process to verify that contractors claiming a workers' comp exemption actually qualify, and report to the Legislature by January 1, 2027.",
+      "category": "process_step",
+      "parameters": {
+        "subject": "eligibility for WC insurance exemption",
+        "cslb_report_deadline": "2027-01-01",
+        "bill": "SB 291 (Ch. 455, Stats. 2025)"
+      },
+      "applies_to": "Contractors filing workers' comp exemptions",
+      "citation": "B&P 7125.7 (Exemptions; Verification)",
+      "source_location": "2026 CSLB Law Book, PDF page 13",
+      "verbatim_quote": "This bill also requires CSLB to determine an evidence-based process and procedure to verify eligibility for a workers’ compensation (WC) insurance exemption and to report its findings to the Legislature by January 1, 2027.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "The 2027-01-01 date is CSLB's reporting deadline, not a contractor filing deadline. Contractors claiming exemptions should expect evidence requests; process details not in this chunk."
+    },
+    {
+      "id": "mural-artist-license-exemption",
+      "title": "Mural artists exempt from contractor licensing (SB 456)",
+      "plain_english": "Starting 2026, artists who paint, apply, restore or conserve a mural under an agreement with someone authorized to approve the work do not need a contractor license.",
+      "category": "license_classification",
+      "parameters": {
+        "exempt_activities": [
+          "draw",
+          "paint",
+          "apply",
+          "execute",
+          "restore",
+          "conserve"
+        ],
+        "subject": "mural",
+        "condition": "agreement with a person who can legally authorize the work",
+        "excludes": "painted wall signs",
+        "bill": "SB 456 (Ch. 758, Stats. 2025)"
+      },
+      "applies_to": "Muralists; owners hiring them",
+      "citation": "B&P 7050 (added by SB 456)",
+      "source_location": "2026 CSLB Law Book, PDF page 14",
+      "verbatim_quote": "This bill exempts artists who draw, paint, apply, execute, restore or conserve a mural pursuant to an agreement with a person who can legally authorize the work from licensure.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "See mural-definition."
+    },
+    {
+      "id": "mural-definition",
+      "title": "Definition of mural for licensing exemption",
+      "plain_english": "A 'mural' is a unique, hand-drawn or hand-painted work of fine art protected by copyright, trademark, label or patent, applied directly to a building's wall, ceiling, fixture or appurtenance; painted wall signs are not murals.",
+      "category": "definition",
+      "parameters": {
+        "must_be": [
+          "unique work of fine art",
+          "protected by copyright, trademark, label, or patent",
+          "drawn or painted by hand",
+          "directly upon interior/exterior wall, ceiling, fixture, or other appurtenance of building/structure"
+        ],
+        "excluded": [
+          "painted wall signs"
+        ]
+      },
+      "applies_to": "Determining whether the mural exemption applies",
+      "citation": "B&P 7050 (added by SB 456)",
+      "source_location": "2026 CSLB Law Book, PDF page 14",
+      "verbatim_quote": "This bill also defines a “mural” as a unique work of fine art that is protected by copyright, trademark, label, or patent and that is drawn or painted by hand directly upon an interior or exterior wall or ceiling, fixture, or other appurtenances of a building or structure. Additionally, this bill provides that a mural does not include painted wall signs.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": ""
+    },
+    {
+      "id": "unlicensed-minimum-penalty-1500",
+      "title": "Minimum $1,500 civil penalty for unlicensed activity from July 1, 2026 (SB 779)",
+      "plain_english": "Starting July 1, 2026, citations for violations involving unlicensed persons carry a minimum civil penalty of $1,500.",
+      "category": "penalty",
+      "parameters": {
+        "min_civil_penalty_usd": 1500,
+        "violation_type": "violations related to unlicensed persons",
+        "operative_date": "2026-07-01",
+        "bill": "SB 779 (Ch. 233, Stats. 2025)"
+      },
+      "applies_to": "Unlicensed persons (and possibly those aiding them) cited by CSLB",
+      "citation": "B&P 7028.7 (operative July 1, 2026)",
+      "source_location": "2026 CSLB Law Book, PDF page 15",
+      "verbatim_quote": "This bill, commencing July 1, 2026, would increase the minimum civil penalties for violations related to unlicensed persons to at least $1,500 and would impose minimum civil penalties of at least $500 or $1,500 for other specified violations, as provided.",
+      "effective": "2026-07-01",
+      "read_from_primary_text": true,
+      "notes": "Maximum remains as stated elsewhere ($15,000 per PDF page 28) unless changed by the operative text - verify. Verified: 7028.7(c) operative 7/1/2026: \"not less than fifteen hundred dollars ($1,500) nor more than fifteen thousand dollars ($15,000)\". Maximum unchanged at $15,000.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.15 (summary); PDF p.249-250 B&P 7028.7(c),(g) (operative July 1, 2026)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "citation-minimum-penalties-500-1500",
+      "title": "Minimum citation penalties of $500 or $1,500 for other violations (SB 779)",
+      "plain_english": "Starting July 1, 2026, other specified citation violations carry minimum civil penalties of either $500 or $1,500.",
+      "category": "penalty",
+      "parameters": {
+        "min_civil_penalty_usd_options": [
+          500,
+          1500
+        ],
+        "operative_date": "2026-07-01",
+        "violation_mapping": {
+          "licensee citation, default (B&P 7099.2(b)(1))": {
+            "min_usd": 500,
+            "max_usd": 8000
+          },
+          "violation of B&P 7110, 7114 or 7118": {
+            "min_usd": 1500,
+            "max_usd": 30000
+          },
+          "unlicensed contractor / unregistered salesperson (B&P 7028.7)": {
+            "min_usd": 1500,
+            "max_usd": 15000
+          },
+          "WC violations (B&P 7125.4)": {
+            "min_usd": "10000 sole owner / 20000 entity",
+            "max_usd": "30000 total per occurrence"
+          }
+        },
+        "bill": "SB 779 (Ch. 233, Stats. 2025)",
+        "overrides": "16 CCR 884(a) table minimums below these amounts are superseded by statute from 2026-07-01"
+      },
+      "applies_to": "Licensed contractors receiving citations",
+      "citation": "B&P 7099.2(b)(1) (operative July 1, 2026); B&P 7028.7(c)",
+      "source_location": "2026 CSLB Law Book, PDF page 15 (summary); PDF pages 250, 340 (statutory text)",
+      "verbatim_quote": "Notwithstanding Section 125.9, and except as otherwise provided by this chapter, a civil penalty shall be assessed in an amount not less than five hundred dollars ($500) nor greater than eight thousand dollars ($8,000). Notwithstanding Section 125.9, a civil penalty shall be assessed in an amount not less than one thousand five hundred dollars ($1,500) nor greater than thirty thousand dollars ($30,000) for a violation of Section 7110, 7114, or 7118.",
+      "effective": "2026-07-01",
+      "read_from_primary_text": true,
+      "notes": "Which violations get $500 vs $1,500 is NOT specified in this chunk; see B&P 7099.2 full text (book page 317).",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.15 (summary); PDF p.340 B&P 7099.2(b)(1) (operative July 1, 2026); PDF p.250 B&P 7028.7(c)",
+        "correction": "violation_mapping was null. B&P 7099.2(b)(1) (operative 7/1/2026) sets a $500 minimum for licensee citations generally (max $8,000) and $1,500 for violations of 7110, 7114 or 7118 (max $30,000); unlicensed citations under 7028.7 carry $1,500 (max $15,000). WC violations under 7125.4 have their own higher minimums. Lower 16 CCR 884(a) table minimums are overridden. Citation, quote and parameters filled."
+      }
+    },
+    {
+      "id": "penalty-cpi-adjustment-5-years",
+      "title": "Minimum fines may be raised by CPI every five years (SB 779)",
+      "plain_english": "CSLB may raise minimum citation fine amounts based on Consumer Price Index increases every five years.",
+      "category": "penalty",
+      "parameters": {
+        "adjustment_interval_years": 5,
+        "index": "Consumer Price Index",
+        "adjusts": "minimum fine amounts",
+        "bill": "SB 779 (Ch. 233, Stats. 2025)"
+      },
+      "applies_to": "Penalty calculators for CSLB citations",
+      "citation": "B&P 7099.2 (operative July 1, 2026; 'Civil penalty assessment; Factors and inflation adjustments')",
+      "source_location": "2026 CSLB Law Book, PDF page 15",
+      "verbatim_quote": "This bill establishes and increases minimum fine amounts included with enforcement citations and allows CSLB to raise minimum fine amounts based on increases to the Consumer Price Index every five years.",
+      "effective": "2026-07-01",
+      "read_from_primary_text": true,
+      "notes": "Penalty tables should be versioned by effective date to absorb CPI adjustments. Verified: board \"may\" (discretionary) adjust minimum penalties every five years by CPI (Rev. & Tax. Code 2212) relative to the CPI when the subdivision took effect (7/1/2026). Rounding: 7028.7(f) uses $100 multiples for penalties over $100. 7099.2(b)(2) uses $100 multiples for penalties over $100 up to $1,000, and $1,000 multiples above $1,000. Maximums are not indexed.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.15 (summary); PDF p.341 B&P 7099.2(b)(2); PDF p.250 B&P 7028.7(f)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "minor-work-exemption-amended-2025",
+      "title": "Minor work (small contract) exemption B&P 7048 amended in 2025",
+      "plain_english": "The exemption for small contracts under a set dollar amount (B&P 7048) was amended by 2025 legislation; check the current threshold before relying on it.",
+      "category": "threshold",
+      "parameters": {
+        "threshold_usd": 1000,
+        "amending_chapter": "Ch. 67, Stats. 2025",
+        "full_text_book_page": 245,
+        "comparison": "<",
+        "measured_on": "aggregate contract price for labor, materials and all other items on one undertaking or project, by one or more contracts",
+        "additional_conditions": [
+          "work of casual, minor or inconsequential nature",
+          "work does not require a building permit"
+        ],
+        "exemption_unavailable_if": [
+          "work is part of a larger or major operation (same or different contractor)",
+          "operation divided into contracts under $1,000 to evade the chapter",
+          "person advertises or uses a sign/card/device indicating they are a contractor",
+          "person employs another person to perform or assist with the work"
+        ]
+      },
+      "applies_to": "Unlicensed handypersons and owners hiring them for small jobs",
+      "citation": "B&P 7048 (amended 2025)",
+      "source_location": "2026 CSLB Law Book, PDF page 16 (table); PDF page 268 (statutory text)",
+      "verbatim_quote": "This chapter does not apply to a work or operation on one undertaking or project by one or more contracts if the aggregate contract price for labor, materials, and all other items is less than one thousand dollars ($1,000), that work or operation being considered of casual, minor, or inconsequential nature, and the work or operation does not require a building permit.",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Only the section title appears in this chunk (Sections Affected table); the dollar threshold and conditions are NOT stated here. Do not hard-code a number from this source.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.16 (table); PDF p.268 B&P 7048 (history: Stats 2025 ch 67 § 12, AB 1170)",
+        "correction": "threshold_usd was null. B&P 7048 sets the minor-work exemption at an aggregate contract price below $1,000 (labor, materials and all other items, one project by one or more contracts), and only if the work needs no building permit. The exemption is lost if the work is part of a larger operation or split to evade, or if the person advertises as a contractor or employs anyone. Parameters and quote filled from the statute."
+      }
+    },
+    {
+      "id": "inactive-license-no-practice",
+      "title": "Holder of inactive license may not contract (B&P 7076.5 amended)",
+      "plain_english": "A contractor holding an inactive license certificate is not entitled to practice contracting until reinstated; this section was amended in 2025.",
+      "category": "prohibition",
+      "parameters": {
+        "license_status": "inactive",
+        "may_contract": false,
+        "amending_chapter": "Ch. 592, Stats. 2025",
+        "full_text_book_page": 297
+      },
+      "applies_to": "Contractors with inactive licenses; owners verifying license status",
+      "citation": "B&P 7076.5 (amended 2025)",
+      "source_location": "2026 CSLB Law Book, PDF page 16",
+      "verbatim_quote": "Inactive license certificate; 7076.5 Reinstatement; Holder not entitled Amended 592 297 to practice",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Derived from section title in the Sections Affected table; substantive changes not described in this chunk."
+    },
+    {
+      "id": "fee-schedule-amended-2025",
+      "title": "CSLB fee schedule (B&P 7137) amended in 2025",
+      "plain_english": "CSLB's fee schedule was amended by 2025 legislation; license, renewal and registration fees should be checked against the current schedule.",
+      "category": "money_amount",
+      "parameters": {
+        "fee_amounts_usd": {
+          "application_original_license_single_classification": {
+            "current": 450,
+            "statutory_max": 563
+          },
+          "application_additional_classification_with_original": {
+            "current": 150,
+            "statutory_max": 188
+          },
+          "application_additional_classification_7059": {
+            "current": 230,
+            "statutory_max": 288
+          },
+          "application_replace_qualifier_7068_2": {
+            "current": 230,
+            "statutory_max": 288
+          },
+          "application_add_personnel_non_qualifier": {
+            "current": 125,
+            "statutory_max": 157
+          },
+          "application_asbestos_certification": {
+            "current": 125,
+            "statutory_max": 157
+          },
+          "application_hazardous_substance_certification": {
+            "current": 125,
+            "statutory_max": 157
+          },
+          "exam_rescheduling": {
+            "current": 100
+          },
+          "initial_license_individual_active_or_inactive": {
+            "current": 200,
+            "statutory_max": 250
+          },
+          "initial_license_entity_active_or_inactive": {
+            "current": 350,
+            "statutory_max": 438
+          },
+          "his_registration": {
+            "current": 200,
+            "statutory_max": 250
+          },
+          "renewal_active_individual": {
+            "current": 450,
+            "statutory_max": 563
+          },
+          "renewal_inactive_individual": {
+            "current": 300,
+            "statutory_max": 375
+          },
+          "renewal_active_entity": {
+            "current": 700,
+            "statutory_max": 875
+          },
+          "renewal_inactive_entity": {
+            "current": 500,
+            "statutory_max": 625
+          },
+          "renewal_his": {
+            "current": 200,
+            "statutory_max": 250
+          },
+          "business_name_change": {
+            "current": 100,
+            "statutory_max": 125
+          },
+          "duplicate_certificate": {
+            "current": 25
+          },
+          "dishonored_check": {
+            "current": 25
+          },
+          "c10_renewal_surcharge_electrician_cert_enforcement": {
+            "current": 20
+          },
+          "cash_deposit_service_fee_ccp_995_710": {
+            "current": 100
+          }
+        },
+        "amending_chapter": "Ch. 592, Stats. 2025",
+        "full_text_book_page": 351,
+        "delinquency_fee": "50% of the renewal fee if renewed after expiration (7137(a)(5))",
+        "veteran_reduction": "50% of initial license and registration fees (7137(a)(3)(D))"
+      },
+      "applies_to": "Contractors paying CSLB fees",
+      "citation": "B&P 7137 (amended Stats 2025 ch 592, SB 861); 16 CCR 811 (current fee amounts)",
+      "source_location": "2026 CSLB Law Book, PDF page 16 (table); PDF pages 374-377 (B&P 7137); PDF pages 451-452 (16 CCR 811)",
+      "verbatim_quote": "7137 Fee schedule Amended 592 351",
+      "effective": "2026-01-01",
+      "read_from_primary_text": true,
+      "notes": "Fee amounts are NOT in this chunk. The $200 HIS fee on PDF page 33 should be cross-checked.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.16 (Sections Affected); PDF p.374-377 B&P 7137 (history shows Stats 2025 ch 592 § 19, SB 861); PDF p.451-452 16 CCR 811",
+        "correction": "Amendment confirmed (Stats 2025 ch 592, SB 861). Parameter fee_amounts_usd was null; filled with the current fees from 16 CCR 811 and the statutory ceilings from B&P 7137."
+      }
+    },
+    {
+      "id": "incidental-supplemental-definition-amended",
+      "title": "Definition of incidental and supplemental work (16 CCR 831) amended",
+      "plain_english": "The regulation defining 'incidental and supplemental' work (work outside your classification that you may still perform) was amended in 2025.",
+      "category": "license_classification",
+      "parameters": {
+        "register": "2025-26",
+        "full_text_book_page": 436
+      },
+      "applies_to": "Specialty contractors performing work outside their classification",
+      "citation": "16 CCR 831 (amended)",
+      "source_location": "2026 CSLB Law Book, PDF page 16",
+      "verbatim_quote": "831 Incidental and Supplemental Defined Amended 2025-26 436",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Definition text not in this chunk (Chapter 9). Effective date of the regulatory amendment not stated."
+    },
+    {
+      "id": "order-of-correction-extension-amended",
+      "title": "Extension of time to correct under an order of correction (16 CCR 883) amended",
+      "plain_english": "The regulation on getting more time to comply with a CSLB order of correction was amended in 2025.",
+      "category": "deadline",
+      "parameters": {
+        "register": "2025-26",
+        "full_text_book_page": 516,
+        "extension_days": null,
+        "request_deadline": "before expiration of the time allowed in the order of correction",
+        "request_format": "written",
+        "grounds": "unable to complete despite substantial efforts and reasonable diligence because of conditions beyond the cited person's control",
+        "standard": "good cause; registrar discretion",
+        "consequence_if_late": "failure to correct within the time allowed is a violation of the order whether or not good cause existed",
+        "amendment_2025": "change without regulatory effect filed 6-26-2025 (1 CCR 100)"
+      },
+      "applies_to": "Contractors under a citation order of correction",
+      "citation": "16 CCR 883 (amended)",
+      "source_location": "2026 CSLB Law Book, PDF page 17 (table); PDF page 539 (16 CCR 883 text); PDF page 558 (history)",
+      "verbatim_quote": "Such request must be made in writing, and must be made prior to the expiration of the time allowed in the order of correction. An extension may be granted upon showing of good cause which determination is within the discretion of the Registrar. If a request for extension of time is not made prior to the expiration of time allowed in the order of correction, failure to correct within the time allowed shall constitute a violation of the order of correction whether or not good cause for an extension of time existed.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Extension rules/time periods are NOT in this chunk.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.17 (table); PDF p.539 16 CCR 883; PDF p.558 (883 history note)",
+        "correction": "Rule said the extension rules were not in this chunk, but the full regulation is at PDF p.539. An extension request must be in writing and made before the correction period expires. Grounds: inability to finish despite substantial efforts because of conditions beyond the person's control, granted for good cause at the registrar's discretion. A late request makes failure to correct a violation even if good cause existed. No fixed extension length (extension_days stays null). The 2025 amendment was a change without regulatory effect. Parameters and quote filled."
+      }
+    },
+    {
+      "id": "general-partnership-license-canceled",
+      "title": "Partnership license canceled when a general partner leaves or is added",
+      "plain_english": "If your license is issued to a general partnership, the license is canceled when any general partner leaves or a new general partner is added.",
+      "category": "process_step",
+      "parameters": {
+        "entity_type": "general partnership",
+        "cancel_triggers": [
+          "general partner leaves for any reason",
+          "partnership adds a general partner"
+        ],
+        "result": "license canceled"
+      },
+      "applies_to": "Contractors licensed as general partnerships",
+      "citation": "B&P (partnership license cancellation; section not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 40",
+      "verbatim_quote": "when a contractor’s license is issued to a general partnership and a ... general partner leaves for any reason or the partnership wants to add another general partner, the license is canceled.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Partners may be personally liable for partnership debts and other partners' negligence. Also: a general partnership requires registration of the business name (PDF pages 39-40)."
+    },
+    {
+      "id": "llc-operating-agreement-and-articles",
+      "title": "LLC: file Articles of Organization (LLC-1); keep operating agreement on site",
+      "plain_english": "To form an LLC, file Articles of Organization (Form LLC-1) with the Secretary of State; the LLC must also have a members' operating agreement kept at its records office (not filed with the state).",
+      "category": "required_document",
+      "parameters": {
+        "file_with_secretary_of_state": [
+          "Articles of Organization (Form LLC-1)"
+        ],
+        "operating_agreement_required": true,
+        "operating_agreement_filed_with_sos": false,
+        "operating_agreement_kept_at": "office where LLC records are kept"
+      },
+      "applies_to": "Contractors organized as California LLCs",
+      "citation": "California LLC law (section not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 41",
+      "verbatim_quote": "In addition to filing the applicable documents with the Secretary of State, an operating agreement among the members as to the affairs of the LLC and the conduct of its business is required. The LLC does not file the operating agreement with the Secretary of State but maintains it at the office where the LLC’s records are kept.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Form text: 'To form an LLC in California, Articles of Organization (Form LLC-1) must be filed with the California Secretary of State’s office.' LLC licensees also need the $100,000 wage bond and liability insurance (see related rules)."
+    },
+    {
+      "id": "corporation-articles-of-incorporation",
+      "title": "Corporations begin by filing articles of incorporation",
+      "plain_english": "To incorporate, file articles of incorporation with the California Secretary of State.",
+      "category": "required_document",
+      "parameters": {
+        "document": "articles of incorporation",
+        "file_with": "Secretary of State"
+      },
+      "applies_to": "Contractors forming corporations",
+      "citation": "California Corporations Code (not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 40",
+      "verbatim_quote": "You can begin the process of incorporation by filing articles of incorporation with the Secretary of State.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Corporate officers may be personally liable even though stockholders usually are not."
+    },
+    {
+      "id": "estimated-income-tax-quarterly",
+      "title": "Sole owners and partnerships pay estimated taxes quarterly",
+      "plain_english": "If the business is a sole proprietorship or partnership, estimated federal and state income taxes must be prepaid or paid quarterly.",
+      "category": "deadline",
+      "parameters": {
+        "frequency": "quarterly",
+        "entity_types": [
+          "sole ownership",
+          "partnership"
+        ],
+        "taxes": [
+          "federal income tax",
+          "state income tax"
+        ]
+      },
+      "applies_to": "Sole proprietor and partnership contractors",
+      "citation": "Federal/state tax law (not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 41",
+      "verbatim_quote": "If the business is a sole ownership or partnership, estimated federal and state income taxes must be prepaid or paid quarterly.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Specific quarterly due dates are not stated in this source.",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.41",
+        "correction": "Quote matches PDF p.41, but federal and California income tax law is not reproduced in the law book. The \"quarterly\" schedule cannot be checked against primary text."
+      }
+    },
+    {
+      "id": "federal-ein-and-withholding-deposits",
+      "title": "Get a federal EIN; deposit withheld payroll taxes on schedule",
+      "plain_english": "Employers must get a federal Employer Identification Number from the IRS and pay withheld federal income and Social Security taxes quarterly, monthly or semimonthly as required.",
+      "category": "required_document",
+      "parameters": {
+        "document": "federal Employer Identification Number (EIN)",
+        "issuer": "IRS",
+        "withholding_deposit_frequency_options": [
+          "quarterly",
+          "monthly",
+          "semimonthly"
+        ]
+      },
+      "applies_to": "Contractors with employees",
+      "citation": "Federal tax law (not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 41",
+      "verbatim_quote": "A federal Employer Identification Number (EIN) must be requested from the Internal Revenue Service, and the federal income and Social Security taxes withheld from employee wages must be paid quarterly, monthly, or semimonthly, as required.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Which deposit frequency applies is set by IRS rules, not stated here."
+    },
+    {
+      "id": "edd-registration-100-per-quarter",
+      "title": "Register with EDD; pay state payroll taxes for employees earning over $100/quarter",
+      "plain_english": "Register with California's EDD, get a state employer number, and pay state payroll and unemployment insurance taxes for any employee who earns more than $100 in a calendar quarter.",
+      "category": "threshold",
+      "parameters": {
+        "wage_threshold_usd_per_calendar_quarter": 100,
+        "comparison": ">",
+        "agency": "Employment Development Department",
+        "obligations": [
+          "register with EDD",
+          "obtain state EIN",
+          "pay state payroll taxes",
+          "pay unemployment insurance taxes"
+        ]
+      },
+      "applies_to": "Contractors with employees in California",
+      "citation": "California Unemployment Insurance Code (not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 41",
+      "verbatim_quote": "The contractor must register with the Employment Development Department, obtain a state EIN, and pay state payroll and unemployment insurance taxes for employees who earn over $100 in a calendar quarter.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.41",
+        "correction": "Quote matches PDF p.41, but the Unemployment Insurance Code is not reproduced in the law book, so the $100-per-quarter trigger cannot be checked against primary text."
+      }
+    },
+    {
+      "id": "sellers-permit-and-sales-tax",
+      "title": "Seller's permit, possible 6-month sales tax deposit, collect sales tax",
+      "plain_english": "Businesses selling tangible personal property need a California Seller's Permit, may be required to deposit six months of estimated sales tax, and must collect sales tax from customers unless tax on materials was paid at purchase.",
+      "category": "required_document",
+      "parameters": {
+        "document": "Seller’s Permit",
+        "trigger": "selling tangible personal property",
+        "possible_security_deposit": "estimated sales tax for first 6 months",
+        "deposit_months": 6,
+        "collect_sales_tax_unless": "tax on materials already paid at purchase"
+      },
+      "applies_to": "Contractors that sell tangible personal property (e.g., fixtures/materials sold to customers)",
+      "citation": "California sales and use tax law (not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 41",
+      "verbatim_quote": "California requires a Seller’s Permit for businesses that sell tangible personal property. The State Board of Equalization can require a deposit of the estimated sales tax for the first six months. The contractor must collect the required sales tax from the customer unless the tax on materials is already paid at the time of purchase.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Book names the State Board of Equalization; seller's permit administration has since moved to the California Department of Tax and Fee Administration (CDTFA) - verify current agency."
+    },
+    {
+      "id": "local-permits-before-job",
+      "title": "Determine city/county permits before starting a job",
+      "plain_english": "Before starting any job, find out whether city or county permits are required, and know the applicable zoning laws and building codes.",
+      "category": "process_step",
+      "parameters": {
+        "timing": "before starting a job",
+        "check": [
+          "city permits",
+          "county permits",
+          "zoning laws",
+          "building codes"
+        ]
+      },
+      "applies_to": "All contractors",
+      "citation": "Local ordinances / building codes (not cited on this page)",
+      "source_location": "2026 CSLB Law Book, PDF page 41",
+      "verbatim_quote": "Before starting a job, determine if city or county permits are required. In addition, the contractor must be familiar with zoning laws and building codes.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Ties to the HIC requirement to describe permits and state who pays for them."
+    },
+    {
+      "id": "project-bond-cost-estimate",
+      "title": "Project bond cost typically 1-2% of contract price",
+      "plain_english": "Performance/payment bonds usually cost about 1 to 2 percent of the contract price; include that cost in your bid.",
+      "category": "money_amount",
+      "parameters": {
+        "typical_premium_percent_min": 1,
+        "typical_premium_percent_max": 2,
+        "basis": "contract price",
+        "formula": "bond_cost_estimate = contract_price * [0.01, 0.02]"
+      },
+      "applies_to": "Contractors bidding bonded projects (often lender-financed or commercial)",
+      "citation": "None (CSLB business guidance)",
+      "source_location": "2026 CSLB Law Book, PDF page 42",
+      "verbatim_quote": "Bonds can be obtained from bonding companies for a percentage of the contract price, usually in the one to two percent range. This requirement is the cost of doing business that should be recognized when the bid is submitted.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Industry guidance, not a legal requirement. Bonding is 'generally mandatory for large jobs financed by institutional lenders'. Verified: quote matches PDF p.42. This is CSLB business guidance, not a statutory requirement; the book itself is the source.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.42",
+        "correction": ""
+      }
+    },
+    {
+      "id": "project-bond-types",
+      "title": "Performance, payment and contract bonds; surety liability capped at face amount",
+      "plain_english": "Performance bonds guarantee completion, payment bonds protect against labor/material liens, contract bonds do both; the surety generally pays no more than the bond's face amount unless it took over completion.",
+      "category": "definition",
+      "parameters": {
+        "bond_types": {
+          "performance_bond": "guarantees completion per plans and specs",
+          "payment_bond": "assures owner no liens for labor and materials",
+          "contract_bond": "guarantees both completion and payment"
+        },
+        "surety_max_liability": "face amount of bond (unless surety assumed completion)"
+      },
+      "applies_to": "Contractors and owners on bonded projects",
+      "citation": "None (CSLB business guidance)",
+      "source_location": "2026 CSLB Law Book, PDF page 42",
+      "verbatim_quote": "In general, unless the bonding company has taken responsibility for completing the project, the bonding company will not have to pay more than the face amount of the bond.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Project bonds are distinct from the contractor license bond."
+    },
+    {
+      "id": "contractor-license-bond-25000",
+      "title": "Contractor license bond $25,000; qualifying individual bond $25,000",
+      "plain_english": "Every licensed contractor must carry a $25,000 contractor license bond; a qualifying individual's bond is also $25,000.",
+      "category": "money_amount",
+      "parameters": {
+        "contractor_license_bond_usd": 25000,
+        "qualifying_individual_bond_usd": 25000,
+        "scope": "any project the contractor agrees to perform"
+      },
+      "applies_to": "All licensed contractors; qualifying individuals where required",
+      "citation": "B&P contractor bond provisions (section not cited on this page; commonly B&P 7071.6 and 7071.9)",
+      "source_location": "2026 CSLB Law Book, PDF page 42",
+      "verbatim_quote": "Each licensed contractor is required to carry a contractor bond. ... The contractor license bond amount is $25,000. The bond for qualifying individuals is $25,000.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Cash deposit may be filed in lieu of bond (AB 521, PDF page 12). When a qualifying-individual bond is required is not specified in this chunk. Verified: 7071.6(a) $25,000 contractor bond as condition of issuance/reinstatement/reactivation/renewal/continued maintenance; not required while license inactive (7071.6(c)); board may require double ($50,000) for applicants with unlicensed-contracting conviction/final citation causing substantial injury (7071.6(d)); surety aggregate liability for non-wage claimants capped at $7,500 (7071.6(b)). Qualifying individual bond $25,000 is required only when the qualifier is neither the proprietor, a general partner, nor a joint licensee (7071.9(a)(1)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.42 (summary); PDF p.295 B&P 7071.6(a)-(d); PDF p.298 B&P 7071.9(a)(1)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "llc-wage-bond-100000",
+      "title": "LLC licensees need an additional $100,000 employee/worker bond",
+      "plain_english": "An LLC contractor must carry a $100,000 surety bond for workers, on top of the $25,000 license bond, to issue, reissue, reinstate, reactivate or renew the license.",
+      "category": "money_amount",
+      "parameters": {
+        "bond_amount_usd": 100000,
+        "in_addition_to_usd": 25000,
+        "entity_type": "LLC",
+        "required_for": [
+          "issuance",
+          "reissuance",
+          "reinstatement",
+          "reactivation",
+          "renewal"
+        ],
+        "beneficiaries": "employees/workers damaged by failure to pay wages, interest on wages, fringe benefits, other contributions"
+      },
+      "applies_to": "Contractors licensed as limited liability companies",
+      "citation": "B&P 7071.6.5",
+      "source_location": "2026 CSLB Law Book, PDF page 42",
+      "verbatim_quote": "A $100,000 surety bond (in addition to the $25,000 contractor bond) is required for the issuance, reissuance, reinstatement, reactivation, and renewal of an LLC license for the benefit of any employee or worker damaged by the LLC’s failure to pay wages, interest on wages, or fringe benefits, as well as other contributions.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Total bonding for an LLC licensee: $125,000 (25,000 + 100,000). Verified: 7071.6.5(a) $100,000 surety bond for issuance, reissuance, reinstatement, reactivation, renewal or continued valid use of an LLC license; for employees damaged by failure to pay wages, interest on wages or fringe benefits; also covers welfare, pension and apprentice contributions if party to a collective bargaining agreement (7071.6.5(d)); not applicable while inactive (7071.6.5(e)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.42 (summary); PDF p.296 B&P 7071.6.5",
+        "correction": ""
+      }
+    },
+    {
+      "id": "cgl-required-only-for-llc",
+      "title": "CGL insurance not required by license law except for LLCs",
+      "plain_english": "California license law doesn't require general liability insurance unless your business is an LLC, though commercial owners commonly require it by contract.",
+      "category": "threshold",
+      "parameters": {
+        "cgl_required_by_license_law": {
+          "llc": true,
+          "other_entities": false
+        }
+      },
+      "applies_to": "All contractors",
+      "citation": "B&P 7071.19 (LLC insurance)",
+      "source_location": "2026 CSLB Law Book, PDF page 43",
+      "verbatim_quote": "Contractors State License Law does not require contractors to carry CGL insurance unless their business entity is a limited liability company (see below).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Home improvement contractors must still disclose CGL status in writing (16 CCR 872(a)). Verified: 7071.19(a) requires LLC licensees to maintain liability insurance \"in addition to any bond\"; no comparable license-law requirement for other entity types appears in the book. HIC contracts must still state CGL status (B&P 7159(e)(1); 16 CCR 872).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.43 (summary); PDF p.307 B&P 7071.19(a)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "cgl-disclosure-home-improvement",
+      "title": "Home improvement contractors must disclose CGL insurance status in writing",
+      "plain_english": "Home improvement contractors must tell the homeowner in writing whether they carry general liability insurance, and if so, give the insurer's name and phone number in writing.",
+      "category": "required_notice",
+      "parameters": {
+        "must_disclose": "whether contractor carries CGL insurance",
+        "if_insured_provide": [
+          "insurance company name",
+          "insurance company telephone number"
+        ],
+        "format": "16 CCR 872(a) prescribed form with contractor-name checkboxes (does not carry / carries CGL), insurer name and phone",
+        "must_accompany": [
+          "every estimate (bid) intended to result in a home improvement contract",
+          "every home improvement contract"
+        ],
+        "heading_min_font_pt": 14,
+        "questions_min_font_pt": 12,
+        "comments_min_font_pt": 11,
+        "comments_italic": true,
+        "contract_notice_7159e1_options": [
+          "(Name) does not carry commercial general liability insurance.",
+          "(Name) carries commercial general liability insurance written by (insurer). You may call (insurer) at ___ to check the contractor’s insurance coverage.",
+          "(Name) is self-insured.",
+          "(Name) is a limited liability company that carries liability insurance or maintains other security as required by law. You may call (insurer/trust company/bank) at ___ to check on the contractor’s insurance coverage or security."
+        ]
+      },
+      "applies_to": "Home improvement contractors",
+      "citation": "16 CCR 872(a); B&P 7159(e)(1)",
+      "source_location": "2026 CSLB Law Book, PDF page 43 (summary); PDF pages 401, 535-536 (statutory/regulatory text)",
+      "verbatim_quote": "The following statement, must accompany every estimate (bid) intended to result in a home improvement contract and every home improvement contract. The heading shall be printed in at least 14-point type, the questions in at least 12-point type, and the comments in italics of at least 11-point type.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Corresponds to the 'Commercial General Liability Insurance' notice in the HIC required-notices list.",
+      "verification": {
+        "status": "corrected",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.43 (summary); PDF p.535-536 16 CCR 872(a); PDF p.401 B&P 7159(e)(1)",
+        "correction": "Rule said only \"disclose in writing\". 16 CCR 872(a) requires a prescribed form (\"Information About Commercial General Liability Insurance\") with every estimate or bid intended to lead to an HIC and with every HIC. Type sizes: heading at least 14-pt, questions 12-pt, comments 11-pt italics. Separately, the contract needs the 7159(e)(1) CGL notice with one of four statutory statements. Citation, quote and parameters updated."
+      }
+    },
+    {
+      "id": "llc-liability-insurance-minimum",
+      "title": "LLC liability insurance: $1M aggregate + $100K per personnel over 5, max $5M",
+      "plain_english": "An LLC contractor must carry liability insurance with at least a $1 million aggregate limit if it has five or fewer personnel of record, plus $100,000 for each additional person, up to $5 million.",
+      "category": "money_amount",
+      "parameters": {
+        "base_aggregate_usd": 1000000,
+        "base_covers_personnel_of_record_up_to": 5,
+        "increment_per_additional_personnel_usd": 100000,
+        "max_total_usd": 5000000,
+        "formula": "required_aggregate = min(5000000, 1000000 + 100000 * max(0, personnel_of_record - 5))"
+      },
+      "applies_to": "Contractors licensed as LLCs",
+      "citation": "B&P 7071.19",
+      "source_location": "2026 CSLB Law Book, PDF page 43",
+      "verbatim_quote": "Liability insurance with the aggregate limit of $1 million for licensees with five or fewer people listed as members of the personnel of record is required for a limited liability company; plus, an additional $100,000 in insurance is required for each additional member of the personnel of record, not to exceed $5 million total.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Cap reached at 45 personnel of record (1,000,000 + 40 * 100,000 = 5,000,000). Verified with a caveat: statute 7071.19(b)(2) literally says \"an additional one hundred thousand dollars ($100,000) of insurance shall be obtained for each person listed on the personnel of record\" for LLCs with more than five persons; CSLB (book p.43) reads it as each ADDITIONAL person beyond five, which the formula follows. A more conservative literal reading would be 1,000,000 + 100,000 * personnel_of_record (still capped at 5,000,000). Cap is per designated period (policy year, max 12 months), less amounts paid on claims; limit must be reinstated by the next designated period or the license is suspended by operation of law (7071.19(d)).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.43 (summary); PDF p.307-308 B&P 7071.19(a)-(d)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "wc-required-with-any-employee",
+      "title": "Workers' comp required with one or more employees (even part-time)",
+      "plain_english": "If you have even one employee, including part-time and employed relatives, you must carry workers' compensation coverage.",
+      "category": "threshold",
+      "parameters": {
+        "min_employees_triggering_wc": 1,
+        "includes_part_time": true,
+        "includes_employed_relatives": true,
+        "employer_obligations": [
+          "weekly benefit payments (indemnity)",
+          "necessary medical and hospital treatment"
+        ]
+      },
+      "applies_to": "All employer-contractors",
+      "citation": "Labor Code 3700; see Labor Code 2750.5 (owner-operators/independent contractors)",
+      "source_location": "2026 CSLB Law Book, PDF page 44",
+      "verbatim_quote": "If the employer has one or more employees, even part-time, they are required to insure for workers’ compensation claims.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Employer may be sued for damages if illegally uninsured or if it conceals an employee's injury. 'Owner-operators' and 'independent contractors' should review Labor Code 2750.5. Certain classifications must carry WC even with no employees (see wc-mandatory-classifications).",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.44 (summary); PDF p.365 B&P 7125(a)-(b); PDF p.370 B&P 7125.4(a)",
+        "correction": "Labor Code 3700/2750.5 text is not in the book, so the part-time and employed-relatives details cannot be checked. The licensing side agrees: B&P 7125 requires a WC certificate unless the licensee employs no one subject to WC law, and 7125.4 penalizes employing without coverage."
+      }
+    },
+    {
+      "id": "wc-coverage-methods",
+      "title": "Three ways to secure workers' comp coverage",
+      "plain_english": "You can cover workers' comp by (1) a standard policy from a licensed carrier, (2) a DIR self-insurance permit, or (3) a collectively bargained alternative dispute resolution program recognized by DWC.",
+      "category": "definition",
+      "parameters": {
+        "methods": [
+          "standard approved policy from licensed carrier",
+          "self-insurer permit from Director of Department of Industrial Relations (Labor Code 3700)",
+          "collectively bargained ADR program recognized by Division of Workers’ Compensation (Labor Code 3201.5)"
+        ]
+      },
+      "applies_to": "Employer-contractors",
+      "citation": "Labor Code 3700, 3201.5",
+      "source_location": "2026 CSLB Law Book, PDF page 44",
+      "verbatim_quote": "The employer-contractor may provide insurance protection in one of three ways: ● A standard approved policy of workers’ compensation insurance available through any licensed carrier; or ● Securing a permit from the Director of the state Department of Industrial Relations to become a self-insurer (Labor Code §3700); or",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Third method (Labor Code 3201.5 collectively bargained ADR program) follows on the same page."
+    },
+    {
+      "id": "wc-insurer-excluded-penalties",
+      "title": "Workers' comp penalties the insurer does not absorb",
+      "plain_english": "Your WC insurer takes on your WC obligations, except penalties for your serious and willful misconduct, injury to an illegally employed worker under 16, or discriminating against an employee for filing a claim.",
+      "category": "penalty",
+      "parameters": {
+        "employer_retains_penalties_for": [
+          {
+            "basis": "serious and willful misconduct",
+            "code": "Labor Code 4553"
+          },
+          {
+            "basis": "injury to illegally employed person under 16",
+            "code": "Labor Code 4557",
+            "age_threshold_years": 16
+          },
+          {
+            "basis": "discrimination against employee for filing industrial injury claim",
+            "code": "Labor Code 132a"
+          }
+        ]
+      },
+      "applies_to": "Insured employer-contractors",
+      "citation": "Labor Code 4553, 4557, 132a",
+      "source_location": "2026 CSLB Law Book, PDF page 45",
+      "verbatim_quote": "In general, if a contractor carries workers’ compensation insurance, the workers’ compensation insurance company assumes the obligation of the contractor under the workers’ compensation laws. Some exceptions include penalties based on:",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Penalty amounts not stated in this source.",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.45",
+        "correction": "Quote matches PDF p.45. Labor Code text is not reproduced anywhere in the law book (only cited in the Ch. 3 summary); book quote matches, primary statute not visible."
+      }
+    },
+    {
+      "id": "wc-certificate-on-file",
+      "title": "Keep a current WC certificate on file with CSLB in the business name",
+      "plain_english": "Applicants and licensees must always have a current, valid Certificate of Workers' Compensation Insurance (or self-insurance certification) on file with CSLB in the license's business name; insurers can file it electronically.",
+      "category": "required_document",
+      "parameters": {
+        "document": [
+          "Certificate of Workers’ Compensation Insurance",
+          "Certification of Self-Insurance"
+        ],
+        "must_be": [
+          "current",
+          "valid",
+          "in licensee’s business name"
+        ],
+        "on_file_with": "CSLB",
+        "always": true,
+        "electronic_submission_by_insurer": true
+      },
+      "applies_to": "License applicants and licensees with employees (or in WC-mandatory classifications)",
+      "citation": "B&P 7125",
+      "source_location": "2026 CSLB Law Book, PDF page 45",
+      "verbatim_quote": "B&P Code section 7125 provides that an applicant or licensee always has on file a current and valid Certificate of Workers’ Compensation Insurance or Certification of Self-Insurance in the licensee’s business name.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Monitor policy expiration dates so the certificate on file never lapses; SB 291 blocks renewal/reinstatement without a valid certificate."
+    },
+    {
+      "id": "wc-exemption-if-no-employees",
+      "title": "File a WC exemption if you have no employees",
+      "plain_english": "If you have no employees, you must file a workers' comp exemption with CSLB, unless you hold a classification that must carry WC anyway.",
+      "category": "required_document",
+      "parameters": {
+        "trigger": "no employees",
+        "document": "workers’ compensation exemption certificate",
+        "not_allowed_for_classifications": [
+          "C-8",
+          "C-20",
+          "C-22",
+          "C-39",
+          "C-61/D-49"
+        ],
+        "electronic_submission": true
+      },
+      "applies_to": "Licensees without employees",
+      "citation": "B&P 7125",
+      "source_location": "2026 CSLB Law Book, PDF page 45",
+      "verbatim_quote": "If you don’t have employees, you must file an exemption from the workers’ compensation requirement unless you hold one of these classifications which requires you to carry workers’ compensation insurance: C-8 Concrete; C-20 Warm-Air Heating, Ventilating and Air-Conditioning; C-22 Asbestos Abatement; C-39 Roofing; C-61/D-49 Tree Service.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "SB 291 directs CSLB to create an evidence-based verification process for exemptions (PDF page 13)."
+    },
+    {
+      "id": "wc-mandatory-classifications",
+      "title": "Classifications that must carry WC even with no employees",
+      "plain_english": "C-8 Concrete, C-20 HVAC, C-22 Asbestos Abatement, C-39 Roofing and C-61/D-49 Tree Service licensees must carry workers' comp insurance even if they have no employees.",
+      "category": "license_classification",
+      "parameters": {
+        "classifications": [
+          {
+            "code": "C-8",
+            "name": "Concrete"
+          },
+          {
+            "code": "C-20",
+            "name": "Warm-Air Heating, Ventilating and Air-Conditioning"
+          },
+          {
+            "code": "C-22",
+            "name": "Asbestos Abatement"
+          },
+          {
+            "code": "C-39",
+            "name": "Roofing"
+          },
+          {
+            "code": "C-61/D-49",
+            "name": "Tree Service"
+          }
+        ],
+        "wc_exemption_allowed": false
+      },
+      "applies_to": "Licensees holding any of the listed classifications",
+      "citation": "B&P 7125",
+      "source_location": "2026 CSLB Law Book, PDF page 45",
+      "verbatim_quote": "If you don’t have employees, you must file an exemption from the workers’ compensation requirement unless you hold one of these classifications which requires you to carry workers’ compensation insurance: C-8 Concrete; C-20 Warm-Air Heating, Ventilating and Air-Conditioning; C-22 Asbestos Abatement; C-39 Roofing; C-61/D-49 Tree Service.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Check against B&P 7125 full text in Chapter 8 for any additions."
+    },
+    {
+      "id": "occupational-injury-report-required",
+      "title": "Report every lost-time or beyond-first-aid work injury/illness",
+      "plain_english": "Employers must file a complete report of every employee injury or illness that causes lost time beyond the day of injury or needs more than first aid, with DIR's Division of Labor Statistics and Research, or with the insurer if insured.",
+      "category": "required_document",
+      "parameters": {
+        "reportable_if_any": [
+          "lost time beyond the date of injury or illness",
+          "medical treatment beyond first aid"
+        ],
+        "file_with": {
+          "uninsured_or_self_insured": "DIR Division of Labor Statistics and Research",
+          "insured": "insurer"
+        },
+        "form": "original of DLSR-required form",
+        "must_include": "injured employee Social Security number"
+      },
+      "applies_to": "Employer-contractors",
+      "citation": "Labor Code 6409.1",
+      "source_location": "2026 CSLB Law Book, PDF pages 45-46",
+      "verbatim_quote": "An employer-contractor MUST file a complete report of every employee occupational injury or occupational illness that results in lost time beyond the date of injury or illness, or which requires medical treatment beyond first aid, with the Department of Industrial Relations through its Division of Labor Statistics and Research or, if an insured employer, with the insurer (Labor Code §6409.1).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "See injury-report-5-day-deadline for timing."
+    },
+    {
+      "id": "injury-report-5-day-deadline",
+      "title": "File occupational injury/illness report within 5 days of knowledge",
+      "plain_english": "File the occupational injury or illness report within five days after you learn of the injury or illness.",
+      "category": "deadline",
+      "parameters": {
+        "days": 5,
+        "day_type": "days (calendar not specified)",
+        "trigger": "employer obtains knowledge of injury or illness",
+        "includes_alleged_injuries": true
+      },
+      "applies_to": "Employer-contractors",
+      "citation": "Labor Code 6409.1",
+      "source_location": "2026 CSLB Law Book, PDF pages 45-46",
+      "verbatim_quote": "A report shall be filed concerning each injury and illness that has, or is alleged to have, arisen out of and in the course of employment, within ... five days after the employer obtains knowledge of the injury or illness.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Source does not say whether 'days' are calendar or working days.",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.45-46",
+        "correction": "Quote matches PDF p.45-46. Labor Code text is not reproduced anywhere in the law book (only cited in the Ch. 3 summary); book quote matches, primary statute not visible."
+      }
+    },
+    {
+      "id": "insured-employer-report-to-insurer",
+      "title": "Insured employer must report injuries to insurer; WCAB 5-day order; contempt",
+      "plain_english": "Insured employers must report every employee injury or illness to their insurer; if they don't, the WCAB can order a report within five days, and ignoring the order can be punished as contempt.",
+      "category": "penalty",
+      "parameters": {
+        "report_to": "insurer",
+        "wcab_order_compliance_days": 5,
+        "penalty_for_noncompliance": "contempt"
+      },
+      "applies_to": "Insured employer-contractors",
+      "citation": "Labor Code 3760",
+      "source_location": "2026 CSLB Law Book, PDF page 46",
+      "verbatim_quote": "If a report is not filed with the insurance carrier, the Workers’ Compensation Appeals Board may issue an order directing the insured employer to report the injury or illness within five ... days. Failure of the employer to comply with this order may be punished as contempt (Labor Code §3760).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.46",
+        "correction": "Quote matches PDF p.46. Labor Code text is not reproduced anywhere in the law book (only cited in the Ch. 3 summary); book quote matches, primary statute not visible."
+      }
+    },
+    {
+      "id": "serious-injury-immediate-report-dosh",
+      "title": "Report serious injury, illness or death immediately to Cal/OSHA",
+      "plain_english": "For any serious injury, illness or death, report immediately to the Division of Occupational Safety and Health by phone or email, in addition to the regular injury report.",
+      "category": "deadline",
+      "parameters": {
+        "trigger": [
+          "serious injury",
+          "serious illness",
+          "death"
+        ],
+        "timing": "immediately",
+        "methods": [
+          "telephone",
+          "email"
+        ],
+        "agency": "Division of Occupational Safety and Health (Cal/OSHA)",
+        "in_addition_to": "regular occupational injury report"
+      },
+      "applies_to": "Employer-contractors",
+      "citation": "Labor Code 6409.1",
+      "source_location": "2026 CSLB Law Book, PDF page 46",
+      "verbatim_quote": "In every case involving a serious injury or illness, or death, in addition to the report described above, the employer must report immediately by telephone or email to the Division of Occupational Safety and Health (Labor Code §6409.1).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "This source does not define an hour limit for 'immediately'; Cal/OSHA regulations do - check them before encoding a numeric deadline.",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.46",
+        "correction": "Quote matches PDF p.46. Labor Code text is not reproduced anywhere in the law book (only cited in the Ch. 3 summary); book quote matches, primary statute not visible. Any numeric hour limit for \"immediately\" must come from Cal/OSHA regulations outside this book."
+      }
+    },
+    {
+      "id": "wc-new-hire-notice",
+      "title": "Give new employees written WC rights notice by end of first pay period",
+      "plain_english": "Give every new employee written notice of their workers' comp rights at hire or by the end of their first pay period, using DWC-approved content, in English and Spanish if you have Spanish-speaking employees.",
+      "category": "required_notice",
+      "parameters": {
+        "deadline": "at time of hire or by end of first pay period",
+        "format": "written",
+        "content_spec": "approved by DWC Administrative Director; info in 8 CCR 9880",
+        "languages": [
+          "English",
+          "Spanish (when Spanish-speaking employees)"
+        ]
+      },
+      "applies_to": "Employer-contractors subject to WC law",
+      "citation": "Labor Code 3551; 8 CCR 9880",
+      "source_location": "2026 CSLB Law Book, PDF page 46",
+      "verbatim_quote": "Give every new employee, either at the time of hiring or by the end of their first pay period, written notice of the employee’s right to receive workers’ compensation benefits should they be injured on the job while working for the employer.",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Onboarding checklist item; due date computable from hire date + first pay period end.",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.46",
+        "correction": "Quote matches PDF p.46. Labor Code 3551 and 8 CCR 9880 are not reproduced in the law book; primary text not visible."
+      }
+    },
+    {
+      "id": "wc-notice-to-employees-poster",
+      "title": "Post WC Notice to Employees poster (misdemeanor if not posted)",
+      "plain_english": "Conspicuously post the workers' comp 'Notice to Employees' poster where employees frequent, in English and Spanish if you have Spanish-speaking employees; failing to keep it posted is a misdemeanor.",
+      "category": "required_notice",
+      "parameters": {
+        "document": "Notice to Employees poster",
+        "location": "conspicuous place frequented by employees",
+        "languages": [
+          "English",
+          "Spanish (when Spanish-speaking employees)"
+        ],
+        "content_spec": "8 CCR 9881 or approved poster in 8 CCR 9881.1",
+        "penalty": "misdemeanor"
+      },
+      "applies_to": "Employer-contractors subject to WC law",
+      "citation": "Labor Code 3550; 8 CCR 9881, 9881.1",
+      "source_location": "2026 CSLB Law Book, PDF page 46",
+      "verbatim_quote": "Post conspicuously, in a location frequented by employees, a Notice to Employees poster. ... Failure to keep such a notice conspicuously posted is punishable as a misdemeanor (Labor Code §3550).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.46",
+        "correction": "Quote matches PDF p.46. Labor Code 3550 and 8 CCR 9881/9881.1 are not reproduced in the law book; primary text not visible."
+      }
+    },
+    {
+      "id": "osh-rights-posting",
+      "title": "Post occupational safety and health rights and citations",
+      "plain_english": "Post information about employees' rights and obligations under occupational safety and health laws, and any related citations.",
+      "category": "required_notice",
+      "parameters": {
+        "post": [
+          "employee protections and obligations under occupational safety and health laws",
+          "related citations"
+        ]
+      },
+      "applies_to": "Employer-contractors",
+      "citation": "Labor Code 6408",
+      "source_location": "2026 CSLB Law Book, PDF page 46",
+      "verbatim_quote": "Post information regarding protections and obligations of employees under occupational safety and health laws, and related citations (Labor Code §6408).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "Posting duration for citations not stated in this source.",
+      "verification": {
+        "status": "unverifiable",
+        "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.46",
+        "correction": "Quote matches PDF p.46. Labor Code 6408 is not reproduced in the law book; primary text not visible."
+      }
+    }
+  ],
+  "refuted": [],
+  "verification_meta": {
+    "verified_on": "2026-11-25",
+    "method": "Each in-scope rule (deadline, money_amount, threshold, penalty, required_contract_clause, required_notice) checked against sources/lawbook.txt: Ch. 1-3 summary pages and, where reproduced, the full statutory/regulatory text in Ch. 7-9 (B&P Code, 16 CCR). Statuses: confirmed = matches primary text; corrected = parameters/citation/quote changed (wrong value, wrong section, missing material condition, or previously-null value filled); unverifiable = book quote matches but the underlying primary law (e.g., Labor Code, tax/UI code) is not reproduced in the book; refuted = contradicted and removed. Effective-date note: as of 2026-11-25 the July 1, 2026 operative versions of B&P 7028.7 and 7099.2 are in force.",
+    "in_scope_rules_checked": 60,
+    "out_of_scope_rules_unchanged": 38,
+    "counts": {
+      "corrected": 23,
+      "confirmed": 26,
+      "unverifiable": 11
+    }
+  }
+}
