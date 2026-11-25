@@ -1,0 +1,1815 @@
+
+=== PDF page 1 ===
+Next Page
+
+=== PDF page 2 ===
+          California
+    Contractors License Law
+      & Reference Book
+
+                 2026 Edition
+            With Rules and Regulations
+
+
+
+
+             Contractors State License Board
+                  State of California
+           Gavin Christopher Newsom, Governor
+
+
+
+
+Previous                                        Next Page
+
+=== PDF page 3 ===
+This book is an official publication of the State of California. It may not be reproduced
+in whole or in part without the express permission of the California Contractors State
+License Board.
+The California Contractors License Law & Reference Book (2026 Edition) is available from
+Matthew Bender & Company, Inc. Copies may be purchased by calling 1-877-394-8826;
+or through the www.lexisnexis.com/bookstore website. The price is $68.50, plus $13.08
+Shipping & Handling. Plus local tax rate.
+The California Contractors License Law & Reference Book is not sold at any office
+of the Contractors State License Board. Copies may be available from specialty book-
+stores—check your local telephone directory.
+
+
+
+ISBN: 979-8-3417-2782-3
+© 2026 California Contractors State License Board
+© 2026 Matthew Bender & Company, Inc., a member of the LexisNexis Group.
+All rights reserved.
+LexisNexis, the knowledge burst logo, and Michie are trademarks of Reed Elsevier
+Properties Inc., used under license. Matthew Bender is a registered trademark of Matthew
+Bender Properties Inc.
+
+The California regulations appearing in this publication have been extracted
+from Barclays Official California Code of Regulations, copyright © 2026, State of
+California.
+This material may not be commercially reproduced or sold in printed or electronic form
+without written permission of Thomson/West, and is subject to the following disclaimer:
+THOMSON/WEST      MAKES  NO   WARRANTY     OR    REPRESENTATION
+WHATSOEVER, EXPRESS OR IMPLIED, WITH RESPECT TO THE
+MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE WITH
+RESPECT TO THE INFORMATION CON-TAINED IN THIS PUBLICATION; AND
+THOMSON/WEST ASSUMES NO LIABILITY WHATSOEVER WITH RESPECT TO
+ANY USE OF THIS PUBLICATION OR ANY PORTION THEREOF OR WITH
+RESPECT TO ANY DAMAGES WHICH MAY RESULT FROM SUCH USE.
+
+
+
+Matthew Bender & Company, Inc.
+Editorial Offices
+9443 Springboro Pike
+Miamisburg, OH 45342
+800-833-9844
+www.lexisnexis.com
+
+                                                                             (Pub. 29700)
+
+
+
+
+     Previous                                                                         Next Page
+
+=== PDF page 4 ===
+           CONTRACTORS STATE LICENSE BOARD
+                 OFFICERS & MEMBERS
+                        Miguel Galarza, Chair,
+                        “B” Contractor Member
+                         Alan Guy, Vice Chair,
+                        “B” Contractor Member
+                      Rodney M. Cobos, Secretary,
+                           Public Member
+                      Joël Barton, Public Member
+                     Amanda Gallo, Public Member
+                      Jacob Lopez, Public Member
+       Diana Love, Public Member - Senior Citizen Organization
+           Michael Mark, Public Member - Labor Organization
+            Henry Nutt III, “C” Specialty Contractor Member
+            Steven Panelli, Public Member - Building Official
+                     Josef Preciado, Public Member
+            James Ruane, “C” Specialty Contractor Member
+                    Thomas J. Ruiz, Public Member
+           Mary Teichert, “A” General Engineering Contractor
+
+                 David R. Fogt, Registrar of Contractors
+
+
+
+
+Previous                                                   Next Page
+
+=== PDF page 5 ===
+Previous   Next Page
+
+=== PDF page 6 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK                                                       v
+
+
+
+                                  TABLE OF CONTENTS
+
+                                                                                                         Page
+     Introduction ............................................................................................ ix
+     Summary of Recent Changes to Construction or
+          Contractors’ Law ............................................................................. xi
+     Sections Affected by 2025 Legislation .................................................. xv
+     CSLB History & Background.............................................................. xvii
+     CSLB Mission ....................................................................................... xix
+     Contractors State License Board Offices ............................................ xxi
+
+
+
+                    Section I. The California Contractor License
+
+     Chapter 1.             Enforcement Procedures: Complaints and
+                            Citations ......................................................................... 1
+                            Complaints Against Licensed Contractors .................. 1
+                            Addressing Complaints Against Unlicensed
+                            Contractors .................................................................... 4
+
+                                Section II. Home Improvement
+     Chapter 2.             Home Improvement ....................................................... 7
+                            Home Improvement Contractor.................................... 7
+                            Home Improvement Contracts and Service
+                            and Repair Contracts .................................................... 7
+                            Home Warranties .......................................................... 9
+                            Home Improvement Salesperson
+                            Registration .................................................................... 9
+                            Home Improvement Contract Requirements............. 11
+                            Joint Control Agreements ........................................... 13
+
+                             Section III. Business Management
+     Chapter 3.             Managing a Business .................................................. 15
+                            The Contractor Manager ............................................. 15
+
+
+
+
+Previous                                                                                       Next Page
+
+=== PDF page 7 ===
+vi                              THE CALIFORNIA LICENSE LAW & REFERENCE BOOK
+
+                                                                                                     Page
+                       Principles of Management .......................................... 15
+                       Establishing Your Business ........................................ 16
+                       Financial Responsibility and Control......................... 27
+                       Financial Management ............................................... 38
+                       Equity Funds ............................................................... 39
+                       Debt .............................................................................. 39
+                       Operations Management............................................. 41
+                       Legal Considerations and Remedies .......................... 46
+                       California Mechanics Liens and Stop Notices ........... 50
+                       Glossary of Terms Associated with
+                       Mechanics Liens .......................................................... 55
+                       Expert Advisors ........................................................... 59
+                       Bidding on Government Contracts ............................. 59
+
+     Section IV. Construction Standards and Safety Regulations
+Chapter 4.             Regional Notification Centers: Underground
+                       Service Alert ................................................................ 61
+Chapter 5.             Preservation of Native American Remains................ 65
+                       Reporting Requirement ............................................... 65
+                       Penalties....................................................................... 66
+                       Additional Information ............................................... 66
+Chapter 6.             Construction of Wells .................................................. 67
+                       License Required for Water Wells .............................. 67
+                       Reporting Requirements ............................................. 67
+                       Well Standards ............................................................ 68
+
+Law Sections .......................................................................................... 69
+
+            Section V. The Department of Consumer Affairs
+Chapter 7.             Laws Governing the Department of
+                       Consumer Affairs......................................................... 71
+                       General Provisions ...................................................... 72
+                       The Department .......................................................... 90
+                       The Director of Consumer Affairs ............................ 130
+                       Funds of the Department .......................................... 140
+
+
+
+
+     Previous                                                                                               Next Page
+
+=== PDF page 8 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK                                         vii
+
+                                                                                             Page
+                  Consumer Affairs....................................................... 144
+                  Public Members ......................................................... 151
+                  Licensee ...................................................................... 153
+                  Dispute Resolution Programs ................................... 155
+                  Joint Committee on Boards, Commissions,
+                  and Consumer Protection.......................................... 163
+                  Review of Boards under the Department of
+                  Consumer Affairs....................................................... 163
+                  Denial, Suspension and Revocation of Licenses ...... 165
+                  General Provisions .................................................... 166
+                  Denial of Licenses ...................................................... 167
+                  Suspension and Revocation of Licenses ................... 176
+                  Public Reprovals ........................................................ 188
+                  Examination Security ............................................... 189
+
+           Section VI. The Contractors State License Board;
+               License Law, Rules and Regulations, and
+                            Related Laws
+     Chapter 8.   Contractors State License Law................................. 191
+                  Contractors ................................................................ 202
+                  Administration........................................................... 202
+                  Application of Chapter .............................................. 213
+                  Exemptions ................................................................ 240
+                  Classifications ............................................................ 247
+                  Licensing .................................................................... 256
+                  Records ....................................................................... 299
+                  Arbitration ................................................................. 301
+                  Solar Energy System Restitution Program ............. 309
+                  Disciplinary Proceedings........................................... 311
+                  Workers’ Compensation Insurance Reports ............ 342
+                  Revenue ...................................................................... 350
+                  The Construction Management Education
+                  Sponsorship Act of 1991 ............................................. 355
+                  Renewal of Licenses .................................................. 360
+                  Home Improvement Business ................................... 364
+
+
+
+
+Previous                                                                           Next Page
+
+=== PDF page 9 ===
+viii                             THE CALIFORNIA LICENSE LAW & REFERENCE BOOK
+
+                                                                                                     Page
+                    Asbestos Consultants ................................................ 409
+                    Prohibitions ................................................................ 415
+                    Home Inspectors ........................................................ 417
+                    Home Energy Rating System (HERS) Home
+                    Inspections ................................................................. 423
+Chapter 9.          Contractors State License Board Rules and
+                    Regulations ................................................................ 425
+                    List of Current Board Rules and Regulations ......... 425
+                    CA Code of Regulations: Title 16. Division 8 ........... 428
+                    Definitions .................................................................. 428
+                    Revenue ...................................................................... 428
+                    Application for License .............................................. 430
+                    Classification ............................................................. 436
+                    Examinations ............................................................. 452
+                    Renewal of License .................................................... 453
+                    Bonds .......................................................................... 453
+                    Special Provisions ...................................................... 467
+                    Disciplinary Guidelines ............................................. 480
+                    Citation ...................................................................... 515
+                    Arbitration ................................................................. 521
+                    History Notes for Current Board Rules and
+                    Regulations ................................................................ 521
+                    History Notes for Repealed Board Rules and
+                    Regulations ................................................................ 536
+Index.................................................................................................... 543
+
+
+
+
+    Previous                                                                                                Next Page
+
+=== PDF page 10 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK         ix
+
+
+
+
+                            Introduction
+
+
+
+        The Contractors State License Board is introducing
+           the 2026 law and reference book that includes
+       essential information for consumers, contractors, and
+        other stakeholders. Sections of law from state codes
+       that are not from the Business and Professions Code
+          that were included in editions before 2024 were
+           removed because the laws are all available at
+          www.leginfo.legislature.ca.gov. To provide your
+           feedback on the 2026 edition of the California
+         Contractors License Law & Reference Book please
+                     email cslbinfo@cslb.ca.gov.
+
+
+
+
+Previous                                                   Next Page
+
+=== PDF page 11 ===
+Previous   Next Page
+
+=== PDF page 12 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK         xi
+
+
+             SUMMARY OF RECENT CHANGES TO
+           CONSTRUCTION OR CONTRACTORS LAW
+
+                    Effective January 1, 2026
+                     Unless indicated otherwise
+
+
+                         AB 521 (Carrillo)
+       Amends Section 7071.4 of the Business and Professions
+                     Code, relating to CSLB.
+     This bill expressly provides that CSLB is not liable for
+     attorney fees in civil claims involving a contractor’s cash
+     deposit filed with CSLB in lieu of a license bond.
+
+     (Chapter 265, Statutes of 2025)
+
+                         AB 1002 (Gabriel)
+      Adds Section 7036 to the Business and Professions Code,
+                        relating to CSLB.
+     This bill authorizes the Attorney General (AG) to file a
+     civil action to suspend, revoke, or deny licensure of a
+     contractor for failure to pay workers or failure to comply
+     with a wage judgment or court order. This bill also requires
+     the AG to notify the Contractors State License Board
+     (CSLB) before bringing such action and authorizes CSLB
+     to intervene or collaborate with the AG in the
+     proceedings, as specified.
+     (Chapter 567, Statutes of 2025)
+
+
+
+
+Previous                                                   Next Page
+
+=== PDF page 13 ===
+xii         CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK
+
+
+                  AB 1327 (Aguiar-Curry)
+  Amends Sections 7159 and 17511.5 of the Business and
+  Professions Code, and amends Sections 1689.6, 1689.7,
+ 1689.20, and 1689.21 of the Civil Code relating to CSLB.
+This bill requires home improvement contracts (HIC) to
+include the contractor’s email address and allow for
+cancelation of the HIC by the buyer via email. The bill
+requires the HIC to include a telephone number to assist
+the buyer in locating and filling out the “Notice of
+Cancellation.” The bill also provides that if the “Notice of
+Cancellation” is not included in or attached to the HIC,
+the buyer may file a complaint with the Contractors State
+License Board (CSLB).
+(Chapter 348, Statutes of 2025)
+
+
+                      SB 291 (Grayson)
+Amends Sections 7017.3, 7099.2, 7125.4, and 7125.7 of the
+   Business and Professions Code, relating to CSLB.
+The bill significantly increases civil penalties for
+violations of workers’ compensation (WC) requirements
+and prohibits CSLB from renewing or reinstating a
+license in violation of WC requirements until the
+applicant or licensee provides a current and valid WC
+certificate. This bill also requires CSLB to determine an
+evidence-based process and procedure to verify eligibility
+for a workers’ compensation (WC) insurance exemption
+and to report its findings to the Legislature by January 1,
+2027. Additionally, this bill requires CSLB to report
+
+
+
+
+      Previous                                                Next Page
+
+=== PDF page 14 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK         xiii
+
+
+     enforcement data regarding WC violations annually to the
+     Legislature.
+     (Chapter 455, Statutes of 2025)
+
+                            SB 456 (Ashby)
+      Adds Section 7050 to the Business and Professions Code,
+                        relating to CSLB.
+     This bill exempts artists who draw, paint, apply, execute,
+     restore or conserve a mural pursuant to an agreement
+     with a person who can legally authorize the work from
+     licensure. This bill also defines a “mural” as a unique
+     work of fine art that is protected by copyright, trademark,
+     label, or patent and that is drawn or painted by hand
+     directly upon an interior or exterior wall or ceiling,
+     fixture, or other appurtenances of a building or structure.
+     Additionally, this bill provides that a mural does not
+     include painted wall signs.
+     (Chapter 758, Statutes of 2025)
+
+
+
+                            SB 517 (Niello)
+           Amends Section 7159 of the Business and Professions
+                        Code, relating to CSLB.
+     This bill requires the disclosure of the use of any
+     subcontractors in a home improvement contract upon
+     request by the consumer and for the subcontractor’s
+     name, contact information, license number, and
+     classification to be provided. This bill also specifies that
+
+
+
+
+Previous                                                   Next Page
+
+=== PDF page 15 ===
+xiv         CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK
+
+
+the prime or direct contractor is responsible for the
+construction project; however, it does not preclude
+administrative discipline against any subcontractor or
+home improvement salesperson for violations of
+Contractors State License Law.
+(Chapter 585, Statutes of 2025)
+
+
+                     SB 779 (Archuleta)
+  Amends Section 7138.1, and amends, repeals, and adds
+     Sections 7028.7 and 7099.2 of the Business and
+           Professions Code, relating to CSLB.
+This bill establishes and increases minimum fine amounts
+included with enforcement citations and allows CSLB to
+raise minimum fine amounts based on increases to the
+Consumer Price Index every five years. This bill,
+commencing July 1, 2026, would increase the minimum
+civil penalties for violations related to unlicensed persons
+to at least $1,500 and would impose minimum civil
+penalties of at least $500 or $1,500 for other specified
+violations, as provided. This bill also increases CSLB’s
+revenue fund cap from six to 12 months.
+(Chapter 233, Statutes of 2025)
+
+
+
+
+      Previous                                                Next Page
+
+=== PDF page 16 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK                                xv
+
+
+
+           SECTIONS AFFECTED BY 2025 LEGISLATION
+
+      Business & Professions Code
+      Section                                              Type of    Chapter
+      Affected                      Title                  Change     Number     Page
+                  Report on complaints and case aging
+       7017.3                                              Amended      455       210
+                                  statistics
+                   Issuance of citation [Effective until
+       7028.7     July 1, 2026; Repealed effective July    Amended      233       225
+                                   1, 2026]
+                  Unlicensed contracting; Citation and
+       7028.7     penalties [Effective January 1, 2026;    Amended      233       226
+                          Operative July 1, 2026]
+                   Attorney general action; Contractor
+           7036                                             Added       567       239
+                             license discipline
+                     Contracts aggregating less than
+           7048    specified amount; When exemption        Amended      67        245
+                               not applicable
+        7050       Mural work exemption; Definitions        Added       456       250
+       7071.4                 Licensee; Bond               Amended      265       269
+                        Inactive license certificate;
+       7076.5      Reinstatement; Holder not entitled      Amended      592       297
+                                 to practice
+                   Regulations for assessment of civil
+                       penalties; Factors; Maximum
+       7099.2                                              Amended      233       317
+                    amount; Letter of admonishment
+                     [Repealed effective July 1, 2026]
+                    Civil penalty assessment; Factors
+       7099.2     and inflation adjustments [Operative      Added       455       317
+                                July 1, 2026]
+                      Causes for disciplinary action;
+       7125.4                                              Amended      455       347
+                               Misdemeanor
+       7125.7            Exemptions; Verification          Amended      455       349
+        7137                    Fee schedule               Amended      592       351
+       7138.1               Reserve fund level             Amended      233       355
+        7152        “Home improvement salesperson”         Amended      592       366
+        7137                    Fee schedule               Amended      592       351
+       7138.1               Reserve fund level             Amended      233       355
+                          Requirements for home
+           7159                                            Amended      348       374
+                          improvement contracts
+                         Requirements for home             Amended      585       374
+           7159          improvement contracts
+
+       California Code of Regulations, Title 16
+       Section                                             Type of   Register
+       Affected                   Title                    Change    Number Page
+       831        Incidental and Supplemental Defined      Amended   2025-26    436
+
+
+
+
+Previous                                                                  Next Page
+
+=== PDF page 17 ===
+xvi              CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK
+
+      California Code of Regulations, Title 16
+
+      Section                                       Type of   Register
+      Affected                  Title               Change    Number Page
+                 Order of Correction—Extension of
+      883                 Time to Correct           Amended   2025-26   516
+
+
+
+
+      Previous                                                                Next Page
+
+=== PDF page 18 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK             xvii
+
+
+
+                CSLB HISTORY & BACKGROUND
+
+     The Contractors State License Board (CSLB) was established
+     in 1929 as the Contractors License Bureau under the
+     Department of Professional and Vocational Standards. Today,
+     CSLB is part of the Department of Consumer Affairs.
+     A 15-member board appoints CSLB’s executive officer, or
+     registrar of contractors, and directs administrative policy for
+     the board’s operations. CSLB’s board includes nine public
+     members (eight non-contractors and one local building official),
+     five contractors, and one labor representative. The governor
+     makes 11 appointments and four are made by the Legislature.
+     The board holds regularly scheduled public meetings at various
+     locations in the state. These meetings provide the public with
+     an opportunity for input on agenda items and other issues.
+     CSLB licenses and regulates contractors in 45 license
+     classifications that constitute the construction industry.
+     Currently, there are around 285,000 contractor licenses in the
+     state. The registrar oversees approximately 400 employees who
+     work at the headquarters office in Sacramento and field offices
+     throughout the state.
+     Headquarters staff receive and process applications for new
+     contractor licenses, additional classifications, changes of license
+     records, and license renewals. Staff also review and maintain
+     records of disciplinary actions initiated by the field offices,
+     provide verified certificates of licensure used in court or other
+     legal actions, and provide other support services.
+     Headquarters directs the activities of field offices and initiates
+     all disciplinary actions resulting from investigations. Field
+     office staff investigate consumer complaints against
+     contractors. The Statewide Investigative Fraud Team (SWIFT)
+     addresses unlicensed activity.
+     CSLB’s website, www.cslb.ca.gov or
+     www.CheckTheLicenseFirst.com, provides the ability to look
+
+
+
+
+Previous                                                     Next Page
+
+=== PDF page 19 ===
+xviii      CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK
+
+up a contractor by license number, name, or business name,
+and obtain the licensee’s contact information, license status,
+CSLB legal actions (if any), classifications held, business type,
+and bond and workers’ compensation insurance information.
+Home Improvement Salesperson registrations also are listed on
+the website’s license look-up page.
+Identical information is available through CSLB’s automated
+public information line, (800) 321-CSLB (2752), which operates
+24 hours per day. Also available is recorded information on
+licensing and examination procedures, complaint procedures
+and how to obtain information on a complaint that has been
+referred for legal action, the location and hours of CSLB offices,
+and current topics, such as recently passed laws or regulations.
+Callers also can order forms, applications, and other
+publications.
+The “Find A Licensed Contractor” feature on CSLB’s website
+allows users to search for licensed contractors in a specific
+classification by geographic area based on zip code or city. The
+randomly displayed results link to the license record and can
+be downloaded as either a PDF or a Word file.
+
+CSLB aims to protect those whose homes and property are
+directly affected by disasters, such as wildfires, floods,
+mudflows, earthquakes, and pipeline explosions. CSLB offers
+materials at Local Assistance and Disaster Recovery Centers
+as well as monitors a Disaster Hotline, (800) 962-1125, to aid
+those in need.
+CSLB offers a variety of publications and guides to help
+consumers make informed choices when contracting for home
+repairs and improvements. Speakers can be provided for
+groups interested in learning more about CSLB. Check the
+website for details or write to CSLB Public Affairs, P.O. Box
+26000, Sacramento, CA 95826.
+
+
+
+
+   Previous                                                        Next Page
+
+=== PDF page 20 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK           xix
+
+
+
+                           CSLB MISSION
+
+       The Contractors State License Board protects consumers
+       by regulating the construction industry through policies
+       that promote the health, safety, and general welfare of
+       the public in matters relating to construction, including
+       home improvement.
+       The Contractors State License Board accomplishes this by:
+           ●   Ensuring that construction, including home
+               improvement, is performed in a safe, competent,
+               and professional manner;
+           ●   Licensing contractors and enforcing licensing
+               laws;
+           ●   Requiring licensure for any person practicing or
+               offering to practice construction contracting;
+           ●   Enforcing the laws, regulations, and standards
+               governing construction contracting in a fair and
+               uniform manner;
+           ●   Providing resolution to disputes that arise from
+               construction activities; and
+           ●   Educating consumers so they can make informed
+               choices.
+
+
+
+
+Previous                                                   Next Page
+
+=== PDF page 21 ===
+Previous   Next Page
+
+=== PDF page 22 ===
+     CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK                                            xxi
+
+
+
+      CONTRACTORS STATE LICENSE BOARD OFFICES
+
+                                        Headquarters
+                                      9821 Business Park Drive
+                                       Sacramento, CA 95827
+                                        (800) 321-CSLB (2752)
+
+                                         Mailing Address
+                                           P.O. Box 26000,
+                                        Sacramento, CA 95826
+
+                                                 Website
+                                         www.cslb.ca.gov
+                                   www.CheckTheLicenseFirst.com
+
+            Northern Region                                Southern Region
+            9821 Business Park Drive                       12501 East Imperial Hwy, Suite 600
+            Sacramento, CA 95827                           Norwalk, CA 90650
+            Legal Action Disclosure (916) 255-4041         Legal Action Disclosure (562) 345-7656
+            Case Management (916) 255-4027                 Case Management (562) 345-7656
+            SWIFT (Unlicensed Activity)                    SWIFT (Unlicensed Activity)
+              (916) 255-2924                                 (562) 345-7600
+
+            Bakersfield Branch Office*                     Norwalk Intake & Mediation Center
+            5800 District Blvd., Suite 300                 12501 East Imperial Hwy, Suite 620
+            Bakersfield, CA 93313                          Norwalk, CA 90650
+            (800) 321-CSLB (2752)                          (562) 345-7530
+                                                           Fax (562) 466-6064
+
+            Fresno Investigative Center                    Norwalk Investigative Center
+            1277 East Alluvial Ave., Suite 106             12501 East Imperial Hwy, Suite 630
+            Fresno, CA 93720                               Norwalk, CA 90650
+            (559) 490-0580                                 (562) 345-7610
+
+            Sacramento Investigative Center                Orange County Investigative Center
+            P.O. Box 269115                                12501 East Imperial Hwy, Suite 640
+            Sacramento, CA 95826-9115                      Norwalk, CA 90650
+            (800) 321-CSLB (2752)                          (562) 345-7551
+
+            Sacramento Intake & Mediation Center           San Bernardino Investigative Center
+            P.O. Box 269116                                1845 Business Center Drive, Suite 206
+            Sacramento, CA 95826-9116                      San Bernardino, CA 92408-3467
+            (916) 843-6515                                 (909) 890-2205
+            Fax (916) 255-4449
+
+            San Francisco Investigative Center             San Diego Investigative Center
+            301 Junipero Serra Blvd, Suite 206             9246 Lightwave Ave., Suite 130
+            San Francisco, CA 94127                        San Diego, CA 92123
+            (415) 469-6204                                 (858) 300-5890
+
+
+
+
+Previous                                                                            Next Page
+
+=== PDF page 23 ===
+xxii        CALIFORNIA CONTRACTORS LICENSE LAW & REFERENCE BOOK
+
+       Santa Rosa Branch Office *    Valencia Investigative Center
+       50 D Street, Room 400         25360 Magic Mountain Parkway, Suite 200
+       Santa Rosa, CA 95404          Santa Clarita, CA 91355
+       (800) 321-CSLB (2752)         (661) 219-0066
+
+                                     West Covina Investigative Center
+                                     100 N. Barranca St., Suite 300
+                                     West Covina, CA 91791
+                                     (626) 332-1317
+
+                                     _____________
+                                     * Limited office hours
+
+
+
+
+   Previous                                                                Next Page
+
+=== PDF page 24 ===
+                                                                                  Section I
+                                     Section I.
+
+                  The California Contractor License
+     Chapter
+     1.      Enforcement Procedures: Complaints and Citations
+
+
+                                     Chapter 1.
+     Enforcement Procedures: Complaints and Citations
+     Complaints against contractors may be filed with CSLB by
+     homeowners, other contractors, subcontractors, material suppliers, or
+     employees. Any entity may also file complaints.
+     Common complaints made against contractors involve poor
+     workmanship; abandonment of a project; failure to pay
+     subcontractors, suppliers, or employees; building code violations; lack
+     of reasonable diligence in executing a construction project; use of
+     false, misleading, or deceptive advertising; asking for excessive down
+     payments or not including payment schedules in home improvement
+     contracts; failure to obtain workers’ compensation insurance; and
+     violations of the law governing home improvement contracts.
+
+           COMPLAINTS AGAINST LICENSED CONTRACTORS
+     When a complaint is made against a licensed contractor, CSLB
+     reviews it to determine if it falls within CSLB’s jurisdiction. CSLB
+     sends confirmation to the person who filed the complaint and sends a
+     notice to the licensed contractor to determine if the complaint can be
+     resolved without further board involvement.
+     If the complaint has not been resolved after the contractor has been
+     notified, a CSLB representative may contact the complainant and
+     respondent (the licensee) to request additional information and, if
+     necessary, documentation. If appropriate, CSLB will attempt
+     mediation. If mediation is unsuccessful, CSLB may recommend
+     settlement through its arbitration program, recommend that the
+     complainant contact the surety company that issued the contractor’s
+     bond, file a claim in small claims court, or file a civil suit in superior
+     court.
+
+
+
+
+                                            1
+
+
+
+
+Previous                                                            Next Page
+
+=== PDF page 25 ===
+2                      SECTION I. THE CALIFORNIA CONTRACTOR LICENSE
+
+If CSLB finds that it’s warranted, it may investigate to determine if
+there are violations of contractors state license law. An investigation
+may involve interviewing the complainant, the contractor, and any
+other parties who can furnish relevant information.
+What happens if a violation is established?
+If a violation is established but it is isolated or minor, CSLB may
+send the licensee an advisory notice. The advisory notice informs the
+licensee that CSLB is aware of the violation and that a future
+occurrence of the same violation may result in more stringent board
+actions.
+For some violations, CSLB may issue a letter of admonishment. This
+may require the licensee to submit a corrective action plan showing
+compliance with the law and is publicly disclosable on the license
+record for one or two years.
+If a more serious violation is established, the registrar of contractors
+may issue a citation, which can include an order to correct a project,
+make restitution to an injured party, and pay a civil penalty of up to
+$8,000 for most violations, and up to $30,000 for serious violations.
+(See Business & Professions Code §7099.2(b) regarding $30,000
+citations for violations of B&P §§ 7110, 7114, 7118, and 7125.4.)
+If the licensee complies with the citation orders, CSLB takes no
+further action. If the licensee contests all or any part of the citation,
+an informal citation conference may be held to resolve the citation. If
+the matter is not settled, a hearing can be set before an
+administrative law judge of the State of California. At the hearing,
+the licensee can argue against the citation orders. If the licensee
+prevails at this hearing, CSLB takes no further action. If, however,
+the licensee does not prevail and does not comply with a final citation
+order, the license may be suspended and then revoked.
+For flagrant violations of law, the registrar will take administrative
+action by filing an accusation with the state attorney general stating
+the board’s intent to suspend or revoke the license. The licensee may
+be provided with the opportunity to resolve the matter at an informal
+settlement conference. If the matter is not settled, the licensee is
+given an opportunity to defend themselves at a hearing before an
+administrative law judge.
+
+
+
+
+Previous                                                                   Next Page
+
+=== PDF page 26 ===
+     CHAPTER 1. ENFORCEMENT PROCEDURES: COMPLAINTS & CITATIONS                3
+
+
+
+
+                                                                                  Section I
+     The following procedures may be used to decide a case:
+       ●   The licensee may choose to have a hearing before an
+           administrative law judge. The recommendation of this judge is
+           used by the registrar in determining the appropriate action to
+           take.
+       ●   The licensee and the registrar may negotiate a settlement of
+           the case. This settlement is known as a “stipulation.”
+       ●   If a blatant violation of the law has occurred, CSLB may refer
+           the complaint to the local district attorney’s office for a possible
+           criminal filing.
+     The decision of the registrar may include various remedies:
+       ●   Revocation of the License
+           The licensee’s right to contract is taken away. The license shall
+           not be reinstated or reissued for one to five years from the
+           effective date of the decision.
+           None of the official personnel listed in CSLB records for a
+           revoked license and who have been found to have known about,
+           or participated in, the acts or omissions constituting grounds
+           for the revocation may apply for a license until the penalty
+           period is over. The licensee also must show that they have
+           complied with all provisions of the decision and settled any loss
+           caused by the act or omission that resulted in the revocation of
+           the license and must file a disciplinary bond in the amount set
+           by the registrar. (See B&P § 7071.8)
+       ●   Suspension of the License
+           The licensee is not entitled to operate during the period of
+           suspension. A disciplinary bond must be filed before the license
+           is reinstated or reissued.
+       ●   Stay of Suspension or Revocation (Probation)
+           The licensee must abide by certain terms and conditions to
+           keep the suspension or revocation from going into effect. They
+           also must file a disciplinary bond to remain in business during
+           this period. Suspension or revocation of the license will result if
+           any of the terms of the agreement are violated.
+       ●   Recovery of Investigation and Enforcement Costs
+           The licensee, to maintain good and clear standing or as a
+           condition for renewal and reinstatement of their license, must
+           pay the costs as ordered or as stipulated.
+
+
+
+
+Previous                                                          Next Page
+
+=== PDF page 27 ===
+4                      SECTION I. THE CALIFORNIA CONTRACTOR LICENSE
+
+    ●   Dismissal with No Penalties
+        Matters that have been dismissed are not disclosed to the
+        public.
+    ●   Injunction against Unlawful Activity
+        Upon establishing that a blatant violation of the law has
+        occurred, CSLB may go to court to request an injunction to
+        immediately stop the unlawful activity.
+    ●   Criminal Charges
+        If a blatant violation of the law has occurred, CSLB may refer
+        the complaint to the local district attorney for a possible
+        criminal filing.
+Complaint Disclosure
+Once CSLB has determined that a probable violation of law has
+occurred, which, if proven, would present a risk of harm to the
+public—and for which suspension or revocation of the contractor’s
+license would be appropriate—the date, nature, and status of the
+complaint will be disclosed to the public. A disclaimer stating that the
+complaint is, at this time, only an allegation will accompany this
+disclosure.
+Citations will be disclosed to the public from date of issuance and for
+five years from the date of compliance.
+Accusations that result in suspension or stayed revocation of the
+contractor license shall be disclosed from the date the accusation is
+filed and for seven years after the accusation has been settled,
+including the terms and conditions of probation. All revocations that
+are not stayed shall be disclosed indefinitely from the effective date of
+the revocation.
+
+              ADDRESSING COMPLAINTS AGAINST
+                 UNLICENSED CONTRACTORS
+In California, it is a misdemeanor to engage in the business or act in
+the capacity of a contractor without a contractor license unless the
+contractor meets the criteria for exemption specified in Business and
+Professions Code sections 7040 through 7054.5.
+When a complaint is filed against an unlicensed contractor, CSLB
+will verify that the accused individual or firm contracted without a
+license and will, with sufficient evidence, determine the amount of
+financial injury involved.
+
+
+
+
+    Previous                                                              Next Page
+
+=== PDF page 28 ===
+     CHAPTER 1. ENFORCEMENT PROCEDURES: COMPLAINTS & CITATIONS                5
+
+
+
+
+                                                                                  Section I
+     How does CSLB process complaints against unlicensed
+     contractors?
+     When the board receives a complaint against an unlicensed
+     contractor, it may issue an administrative citation or file a criminal
+     action with the local district attorney’s office. In some cases, it may
+     initiate injunction proceedings against the unlicensed person through
+     the Office of the Attorney General or the district attorney.
+       ●   Citation
+           The registrar may issue a citation to an unlicensed contractor
+           when there is probable cause to believe that the person is
+           acting in the capacity of a contractor or engaging in the
+           business of contracting without a license in good standing
+           (current and not under suspension) with CSLB. The citation
+           includes an order of abatement to cease and desist and a
+           civil penalty of up to $15,000. Unless the board receives a
+           written appeal within 15 working days after the citation is
+           served, the citation becomes a final order of the registrar. The
+           civil penalty is paid to CSLB.
+           If the citation is appealed, an informal settlement conference
+           may be held to resolve the citation. If the matter is not settled,
+           an administrative law judge will hear the appeal. The
+           administrative law judge submits a decision to uphold, modify,
+           or dismiss the citation. The decision is sent to the registrar for
+           adoption.
+           If the cited unlicensed contractor continues to contract without
+           a license, the registrar may refer the case to the local district
+           attorney for criminal action.
+       ●   Criminal Action
+           CSLB may refer investigations to the local prosecutor to file
+           criminal charges. If criminal charges are filed, the unlicensed
+           contractor appears in local court, which renders a final decision
+           on the case. The court may order a fine, probation, restitution,
+           a jail sentence, or all of these.
+       ●   Injunction
+           The registrar may apply for an injunction with the superior
+           court of either the county in which an alleged practice or
+           transaction took place, or the county in which the unlicensed
+           person maintains a business or residence. An injunction
+           restrains an unlicensed person from acting in the capacity or
+           engaging in the business of contracting without a license in
+           good standing with CSLB.
+
+
+
+
+Previous                                                         Next Page
+
+=== PDF page 29 ===
+6                    SECTION I. THE CALIFORNIA CONTRACTOR LICENSE
+
+How does CSLB process complaints against unregistered
+salespersons?
+The same citation process used for complaints against unlicensed
+contractors is used for complaints against unregistered home
+improvement salespersons. Disciplinary action also can be taken
+against the licensed contractor who employs the unregistered
+salesperson.
+Statewide Investigative Fraud Team
+In addition to the complaint process, CSLB established the Statewide
+Investigative Fraud Team (SWIFT), which is a part of the
+Enforcement Division that focuses on the underground economy and
+unlicensed contractors. SWIFT has the authority to visit any jobsite
+without cause or complaint, ask contractors to produce proof of
+licensure in good standing, and cite those who are not properly
+licensed. (See B&P Code §7011.4 and §7099.)
+
+
+
+
+    Previous                                                           Next Page
+
+=== PDF page 30 ===
+                             SECTION II.
+                  HOME IMPROVEMENT
+     Chapter 2.     Home Improvement
+
+
+
+
+                                                                               Section II
+                                 Chapter 2.
+                           Home Improvement
+     Home improvement is the repairing, remodeling, altering, converting,
+     or modernizing of, or adding to, residential property and includes, but
+     is not limited to, the construction, erection, replacement, or
+     improvement of driveways, swimming pools (including spas and hot
+     tubs), terraces, patios, awnings, storm windows, solar energy
+     systems, landscaping, fences, porches, garages, fallout shelters,
+     basements, and other improvements of the structures or land
+     adjacent to a dwelling. Home improvement is also the installation of
+     home improvement goods or the furnishing of home improvement
+     services.
+
+                  HOME IMPROVEMENT CONTRACTOR
+     A home improvement contractor, including a swimming pool
+     contractor, is a contractor licensed by the Contractors State License
+     Board (CSLB) who is engaged in the business of home improvement
+     either full-time or part-time.
+
+       HOME IMPROVEMENT CONTRACTS AND SERVICE AND
+                   REPAIR CONTRACTS
+     The home improvement business in California constitutes a large
+     portion of the state’s construction industry. Problems can occur
+     because of a misunderstanding of basic requirements and the
+     agreement between the owner and contractor. Special legal
+     requirements were enacted specifically for home improvement
+     contracts to eliminate as many of these problems as possible. See
+     Business and Professions Code sections 7150 - 7159.9 (specific
+     requirements are listed in Sections 7159 and 7159.5).
+     In 2004, through SB 30, and in 2005, through AB 316, the Legislature
+     made significant additions to the information contractors must
+     provide to the buyer of home improvements. The idea behind the
+     legislation is to use the contract itself to inform homeowners of the
+
+
+                                        7
+
+
+
+
+Previous                                                        Next Page
+
+=== PDF page 31 ===
+8                                        SECTION II. HOME IMPROVEMENT
+
+most important contract requirements to help them better
+understand the process. The availability of this consumer protection
+information is intended to reduce the number of disputes between
+contractors and homeowners and, therefore, the number of
+complaints that homeowners make to CSLB.
+The following rules are required for improvement contracts: any
+changes made to contracts must be in writing, be legible, be easy to
+understand, and inform a consumer of their right to cancel or rescind
+the contract; and a home improvement contract must contain various
+information, notices, and disclosures for the protection of the
+consumer.
+In addition, a “service and repair contract” must be used by
+licensed contractors for jobs of $750 or less, provided that the contract
+meets all four of the new requirements. There are various disclosure
+requirements applicable to the service and repair contract. In
+addition, a service and repair contract that does not meet specified
+requirements is subject to the requirements applicable to a home
+improvement contract regardless of the aggregate contract price. Any
+violation of the provisions of law applicable to home improvement and
+service and repair contracts subject the contractor to discipline.
+The legislature occasionally revisits the home improvement
+contract and service and repair contract requirements to
+address consumer protection concerns.
+SB 517, effective January 1, 2026, requires the disclosure of the use
+of any subcontractors in a home improvement contract upon request
+by the consumer and for the subcontractor’s name, contact
+information, license number, and classification to be provided. It also
+specifies that the prime or direct contractor is responsible for the
+construction project.
+In drawing up contracts, contractors should pay strict
+attention to the requirements for print typeface and point
+size of the notices and disclosures. For example, unless a larger
+print typeface is specified, text in any printed form shall be in at least
+10-point type and the headings shall be in at least 10-point boldface
+type.
+For more detailed information on home improvement
+contract requirements, visit www.cslb.ca.gov (search: home
+improvement contract). Contractors are encouraged to
+carefully review the free guide, “Contracting for Success,”
+located on the CSLB website under “Guides and
+Publications.”
+
+
+
+
+    Previous                                                              Next Page
+
+=== PDF page 32 ===
+     CHAPTER 2. HOME IMPROVEMENT                                              9
+
+                             HOME WARRANTIES
+     Home warranties generally are not transferable, except as provided
+     for home roof warranties.
+     For home roof warranties, the California Civil Code provides:
+
+
+
+
+                                                                                  Section II
+             For any contract subject to this chapter that is entered into on
+             or after January 1, 1994, the warranty obligations shall inure
+             to the benefit of, and shall be directly enforceable by, all
+             subsequent purchasers and transferees of the residential
+             structure, without limitation, unless the contract contains a
+             clear and conspicuous provision limiting transferability of the
+             warranty (Civil Code §1797.92).
+
+       HOME IMPROVEMENT SALESPERSON REGISTRATION
+     Anyone who solicits, sells, negotiates, or executes home improvement
+     contracts for a licensed contractor outside of the contractor’s normal
+     place of business, regardless of the dollar amount of these contracts,
+     must be registered with CSLB as a Home Improvement Salesperson
+     (HIS).
+     The law allows home improvement salespersons to file a single
+     registration with CSLB, while still permitting them to represent
+     multiple employers.
+     Licensees are required to notify CSLB in writing prior to employing
+     an already registered HIS and to notify CSLB in writing when
+     employment of a registered HIS ends. These notification forms are
+     available on CSLB’s website: www.cslb.ca.gov (search: HIS forms).
+     Who is exempt from the HIS registration requirement?
+     Salespersons who only sell goods or negotiate contracts at a fixed
+     business establishment where the goods or services are exhibited or
+     offered for sale are not considered home improvement salespeople.
+     The official personnel listed in CSLB’s records for the contractor
+     license also are exempt from registration requirements. This includes
+     individual contractors, qualifiers, partners, officers of the corporation,
+     and responsible managing officers, members, managers, or employees
+     of a limited liability company (LLC).
+     Other exemptions from the registration requirements include people
+     who contact prospective buyers for the exclusive purpose of
+     scheduling appointments for a registered home improvement
+     salesperson, and bona fide service or repair people who are employed
+     by a licensed contractor and whose repair or service calls are limited
+     to the service or repair initially requested by the buyer.
+
+
+
+
+Previous                                                           Next Page
+
+=== PDF page 33 ===
+10                                       SECTION II. HOME IMPROVEMENT
+
+What are the qualifications for a home improvement
+salesperson?
+A home improvement salesperson must be at least 18 years old. There
+are no educational, residency, or experience requirements. However,
+a home improvement salesperson must submit their fingerprints to
+CSLB as part of the application process.
+How do I apply for registration?
+Complete an online easy-fill “Application for Registration as a Home
+Improvement Salesperson” by visiting www.cslb.ca.gov or obtain a
+copy of the application by downloading it from www.cslb.ca.gov or by
+calling (800) 321-CSLB (2752).
+Then:
+     ●   Follow all instructions on the application.
+     ●   Submit the required nonrefundable, nontransferable
+         application fee of $200 and your application to the CSLB
+         headquarters office.
+May I begin working as an HIS as soon as I have submitted my
+registration application and fee to CSLB?
+No. CSLB must review your application and issue a registration
+number before you may legally work as a home improvement
+salesperson.
+How long will it take to become registered?
+CSLB’s processing times vary depending on its workload, staff
+vacancies, etc. CSLB’s website includes a processing time chart that
+lists the date of documents currently being processed, including HIS
+applications and renewals. The chart is updated weekly and helps
+keep applicants informed of current processing times. Visit
+www.cslb.ca.gov (search: processing times).
+When does my HIS registration expire?
+The HIS registration expires two years from the last day of the month
+in which it was issued. CSLB will mail a renewal application to your
+address of record several weeks before your registration expires.
+Upon verification of the renewal, a new registration certificate will be
+mailed showing the new expiration date.
+What if my address has changed since my registration was
+issued or last renewed?
+If your address has changed since your registration was issued or last
+renewed, it is your responsibility to notify CSLB in writing within 90
+days of the change.
+
+
+
+
+     Previous                                                            Next Page
+
+=== PDF page 34 ===
+     CHAPTER 2. HOME IMPROVEMENT                                               11
+
+     If you have not received an advance notification of renewal, notify
+     CSLB. This should be done no later than three weeks before your
+     registration expires.
+     What happens if a licensed contractor employs an
+
+
+
+
+                                                                                    Section II
+     unregistered salesperson?
+     According to B&P Code section 7154, a contractor who employs an
+     unregistered person to negotiate home improvement contracts is
+     subject to disciplinary action by the registrar. Furthermore, B&P
+     Code section 7153 states that it is a misdemeanor for a person to act
+     as a home improvement salesperson without being registered. In
+     addition to possible criminal action, the same section provides that an
+     administrative citation may be issued to any unregistered person who
+     engages in the HIS occupation.
+     For additional information, refer to B&P Code sections 7150 through
+     7170.
+           HOME IMPROVEMENT CONTRACT REQUIREMENTS
+                               B&P Code section 7159
+     This section provides basic information about some required elements
+     in a home improvement contract but is not complete. For the full text
+     of the home improvement contract requirements please see Chapter 8
+     of this book.
+     For free guides about home improvement contracts, consumers are
+     encouraged to review “Terms of Agreement” and contractors are
+     encouraged to review “Contracting for Success” on CSLB’s website
+     under “Guides and Publications.”
+     Basic Requirements
+           •   The contract and any changes to the contract must be in
+               writing and signed by all parties. The writing must be legible
+               and printed forms must be readable.
+           •   Before any work is started, the contractor must give the buyer
+               a copy of the contract signed and dated by both the contractor
+               and the buyer.
+           •   Unless a larger typeface is specified in the law referenced
+               above, text in any printed form shall be in at least 10-point
+               typeface and the headings shall be in at least 10-point
+               boldface type.
+           •   Except for a down payment, a contractor cannot demand or
+               accept payment for work or materials until the work is
+               completed or the materials are delivered. The down payment
+
+
+
+
+Previous                                                           Next Page
+
+=== PDF page 35 ===
+12                                      SECTION II. HOME IMPROVEMENT
+
+         may not exceed $1,000 or 10 percent of the contract price,
+         whichever is less.
+     •   If the contract includes a salesperson’s commission in the
+         contract price, the payment to the salesperson shall be made
+         on a pro rata basis in proportion to the schedule of payments
+         made to the contractor.
+     •   The contract must contain the name and registration number
+         of the salesperson.
+     •   The name, business address, and license number of the
+         contractor must be included.
+Contract must include full descriptions and information
+about the following:
+     •   Description of work
+     •   Description of materials and equipment
+     •   The contract price
+     •   Payment schedule
+     •   Start and completion of work (dates and descriptions)
+     •   Permits and tests
+     •   Permissible delays
+     •   Extra work
+     •   Required release of mechanics’ liens statements
+     •   Owner’s applicable right to cancellation
+Please review Chapter 8 of this book for the complete requirements.
+Required Notices and Disclosure Statements
+Home improvement and swimming pool contracts in California are
+required to have the full text of several notices and disclosures. Some
+must be in the main body of the contract; others may be attached
+separately. The full text of the required notices and disclosure
+statements are not included here. Please review Chapter 8 of this
+book for the complete requirements.
+     •   Extra Work and Change Orders
+     •   Commercial General Liability Insurance
+     •   Workers’ Compensation Insurance
+     •   Performance of Extra or Change-Order Work Notice
+
+
+
+
+     Previous                                                             Next Page
+
+=== PDF page 36 ===
+     CHAPTER 2. HOME IMPROVEMENT                                             13
+
+           •   Mechanics Lien Warning
+           •   Contractors Board Information
+           •   Applicable Right to Cancel and Notice of Cancellation
+               Instructions
+
+
+
+
+                                                                                  Section II
+     Common Problems with Home Improvement Contracts
+           •   Missing notices and/or disclosures
+           •   Excessive down payment requested or received
+           •   Equipment to be used or installed is not detailed, and
+               materials to be used not described specifically
+           •   Job start and completion information not clearly stated and
+               described including dates
+           •   Bid or price not carefully or completely established
+           •   Change orders not included
+           •   License number and home improvement salesperson
+               registration numbers missing
+           •   Failure to identify required building permits or indicate who
+               is paying for them
+           •   No payment schedule
+
+     JOINT CONTROL AGREEMENTS
+     The Business and Professions Code provides for the optional use of a
+     joint control agreement approved by the registrar of contractors
+     “covering full performance and payment.”
+     CSLB does not license joint control companies, nor does CSLB have
+     legal jurisdiction over joint control company activities, nor does it
+     maintain lists of approved joint control companies nor monitor their
+     activities.
+
+     Contractors who furnish a joint control as part of the terms of a home
+     improvement contract should be aware that the law prohibits them
+     from having any financial or other interest in the joint control
+     company. It is the contractor’s responsibility to determine whether to
+     use a joint control agreement, and responsibility for incorporating a
+     joint control addendum into any agreement rests solely with the joint
+     control company.
+     Contractors considering the use of a joint control agreement should
+     first contact an attorney.
+
+
+
+
+Previous                                                              Next Page
+
+=== PDF page 37 ===
+Previous   Next Page
+
+=== PDF page 38 ===
+                             SECTION III.
+                BUSINESS MANAGEMENT
+     Chapter
+     3.      Managing a Business
+
+                                   Chapter 3.
+                           Managing a Business
+
+
+
+
+                                                                             Section III
+     This chapter will show how good management and accounting
+     techniques can be applied to the construction industry. The numbers
+     used in the examples were chosen to illustrate the average successful
+     small contracting business.
+
+                       THE CONTRACTOR MANAGER
+     Statistics show that a significant percentage of bankruptcies and
+     business closures result from poor management. The specific reasons
+     include an inability to plan, manage, and control business affairs;
+     insufficient on-the-job supervisory experience or the inability to
+     manage employees; and lack of knowledge about business practices.
+     The main duties of the contractor, who is also a manager, are to plan
+     and direct the major activities of the business; coordinate employee
+     work and materials; and train, direct, and advise employees in
+     supervisory and non-supervisory positions.
+
+                      PRINCIPLES OF MANAGEMENT
+     The most difficult part of changing roles from employee to manager
+     may be in developing a clear understanding of what is important for
+     successful management. Management theory has been divided into
+     two different areas: functional and behavioral.
+     The Functional Areas of Management Include:
+       ● Planning
+          Good planning is one of the most important, but most
+          neglected, management duties. Large amounts of information
+          from within the business must be put together with
+          information from outside the business to schedule business
+          activities. Planning is essential to make sure that resources,
+          money, people, and equipment are available to the business in
+          the right amounts and at the right time.
+
+                                       15
+
+
+
+
+Previous                                                       Next Page
+
+=== PDF page 39 ===
+16                                    SECTION III. BUSINESS MANAGEMENT
+
+     ●   Decision-Making/Delegation
+         Employees should be trained and encouraged to assume
+         responsibility for routine decision-making. The manager’s
+         responsibility is to make sure that these decisions fit together
+         with the plans for the project and the business.
+     ●   Standardization
+         For the greatest efficiency, it is important to standardize
+         methods for routine, ongoing operations. After you determine
+         the best method, it should be adopted as the pattern for similar
+         operations in the future. Standardization also makes it easier
+         for decisions to be made at lower levels.
+     ●   Controls
+         Controls are established to inform the manager when the
+         actual business outcome is different from what was expected.
+         Controls should be designed to warn the manager before the
+         differences become too great. The manager can both check on
+         the progress of the business and evaluate overall performance
+         by comparing results with plans. Effective controls must be
+         established and rigidly enforced. The manager can then adapt
+         to change rather than resist it.
+
+                  ESTABLISHING YOUR BUSINESS
+Forms of Business
+The legal form of the business will determine the available sources of
+financing, the extent of personal liability, the extent of control, and
+the tax liabilities. The legal form may change as the business grows
+and should be reviewed as financing requirements change.
+     ●   Sole Ownership
+         Sole ownership (often called personal ownership or sole
+         proprietorship) is the simplest form of business organization
+         and relies primarily on the financial resources available to an
+         individual. The owner has sole responsibility and complete
+         control. They must obtain all the financing and are personally
+         liable for any claims against the business.
+         For tax purposes, business income is reported as personal
+         income.
+     ●   General Partnership
+         General partnerships use the financial and personal resources
+         of two or more individuals who share in the ownership and
+         operation of the business. A general partnership requires
+
+
+
+
+     Previous                                                               Next Page
+
+=== PDF page 40 ===
+     CHAPTER 3. MANAGING A BUSINESS                                        17
+
+           registration of the name of the business. Consult a lawyer to
+           formalize the rights and responsibilities of the partners
+           regarding management and profit-sharing.
+           Under most circumstances, a partnership agreement
+           terminates with the death or withdrawal of a partner or the
+           addition of a new partner. Some partnership agreements avoid
+           termination by entering into a prior written agreement
+           allowing the partnership to continue. However, when a
+           contractor’s license is issued to a general partnership and a
+
+
+
+
+                                                                                Section III
+           general partner leaves for any reason or the partnership wants
+           to add another general partner, the license is canceled.
+           The partnership is not an entity separate from the partners.
+           Each partner may be personally liable to the extent of their
+           personal assets and may be legally responsible for the
+           negligent acts of the other partner(s). For tax purposes, an
+           individual’s share of the partnership income is taxed as
+           personal income.
+       ●   Limited Partnership
+           The limited partnership allows investors to join in a
+           partnership without taking full responsibility for the business.
+           The limited partner risks only their original investment. In
+           this case, there must be at least one general partner who runs
+           the business and who remains fully responsible for the
+           liabilities of the business.
+       ●   Corporation
+           A corporation is a separate legal entity created by the
+           government. It can make contracts, be held legally liable, and
+           is taxed. The corporation may raise capital by selling stock to
+           private investors or to the public. Stockholders are usually not
+           liable for claims against the corporation beyond their original
+           investment. Creditors may claim only the corporate assets,
+           although corporate officers may be personally liable.
+           You can begin the process of incorporation by filing articles of
+           incorporation with the Secretary of State. The corporation has
+           no fixed life. The death of a stockholder or sale of one’s
+           personal investment will not disrupt the business.
+       ●   “S” Chapter Corporation
+           “S” corporations must meet certain restrictions and can report
+           the business income as individual income. This benefit is
+           designed to remove tax considerations from the decision
+           regarding the form of business organization for the small
+           business. The business can operate in corporate form to reduce
+
+
+
+
+Previous                                                        Next Page
+
+=== PDF page 41 ===
+18                                    SECTION III. BUSINESS MANAGEMENT
+
+         the owner’s liability but is taxed like a partnership. Since the
+         corporation is not taxed separately, only an information return
+         similar to the partnership tax return needs to be filed.
+     ●   Limited Liability Company
+         A California limited liability company (LLC) generally offers
+         liability protection similar to that of a corporation but is taxed
+         differently. Domestic LLCs may be managed by one or more
+         managers or one or more members. In addition to filing the
+         applicable documents with the Secretary of State, an operating
+         agreement among the members as to the affairs of the LLC and
+         the conduct of its business is required. The LLC does not file
+         the operating agreement with the Secretary of State but
+         maintains it at the office where the LLC’s records are kept.
+      To form an LLC in California, Articles of Organization (Form
+      LLC-1) must be filed with the California Secretary of State’s
+      office.
+Taxes and Permits
+The owner(s) of the business is required to pay taxes and fees at the
+federal, state, and local levels. If the business is a sole ownership or
+partnership, estimated federal and state income taxes must be
+prepaid or paid quarterly.
+A federal Employer Identification Number (EIN) must be requested
+from the Internal Revenue Service, and the federal income and Social
+Security taxes withheld from employee wages must be paid quarterly,
+monthly, or semimonthly, as required.
+The contractor must register with the Employment Development
+Department, obtain a state EIN, and pay state payroll and
+unemployment insurance taxes for employees who earn over $100 in
+a calendar quarter.
+California requires a Seller’s Permit for businesses that sell tangible
+personal property. The State Board of Equalization can require a
+deposit of the estimated sales tax for the first six months. The
+contractor must collect the required sales tax from the customer
+unless the tax on materials is already paid at the time of purchase.
+Before starting a job, determine if city or county permits are required.
+In addition, the contractor must be familiar with zoning laws and
+building codes.
+
+
+
+
+     Previous                                                               Next Page
+
+=== PDF page 42 ===
+     CHAPTER 3. MANAGING A BUSINESS                                        19
+
+     Bonds
+     A requirement for bonding is generally mandatory for large jobs
+     financed by institutional lenders, such as savings and loans,
+     insurance companies, or commercial banks. In addition, many owners
+     and lenders, as well as other contractors, impose bonding
+     requirements. Bonds can be obtained from bonding companies for a
+     percentage of the contract price, usually in the one to two percent
+     range. This requirement is the cost of doing business that should be
+     recognized when the bid is submitted. Bonds may be classified as
+     follows:
+
+
+
+
+                                                                                Section III
+       ●   Performance bonds guarantee the project’s completion
+           according to the building plans and specifications. If the job is
+           abandoned or the work is unacceptable, the bonding company
+           has the option of hiring another contractor to complete the
+           work or settle for damages.
+       ●   Payment bonds assure the property owner that no liens for
+           labor and materials will be filed against the property.
+       ●   Contract bonds guarantee both job completion and payment
+           of all labor and materials.
+     In general, unless the bonding company has taken responsibility for
+     completing the project, the bonding company will not have to pay
+     more than the face amount of the bond.
+     The new contractor should be aware that bonding requirements may
+     exclude the new business from bidding on desired jobs. Bonding
+     companies will not take risks without verifying the technical and
+     resource capabilities of the bonded contractor.
+     Contractor License Bonds
+     Contractor license bonds are different from performance, payment,
+     and contract bonds. Each licensed contractor is required to carry a
+     contractor bond. Unlike payment, performance, and contract bonds,
+     which are usually written to cover specific projects, a contractor
+     license bond is written to cover any project the contractor agrees to
+     perform. The contractor license bond amount is $25,000. The bond for
+     qualifying individuals is $25,000.
+     Limited Liability Company Surety Bond
+     A $100,000 surety bond (in addition to the $25,000 contractor bond) is
+     required for the issuance, reissuance, reinstatement, reactivation,
+     and renewal of an LLC license for the benefit of any employee or
+     worker damaged by the LLC’s failure to pay wages, interest on wages,
+     or fringe benefits, as well as other contributions. (See B&P Code
+     §7071.6.5.)
+
+
+
+
+Previous                                                         Next Page
+
+=== PDF page 43 ===
+20                                   SECTION III. BUSINESS MANAGEMENT
+
+Commercial General Liability Insurance
+Commercial general liability (CGL) insurance can shift the risk of
+liability for accidents and mistakes from the contractor to the
+insurance company. As the International Risk Management Institute
+explains in its Guide to Construction Insurance, commercial general
+liability insurance protects “the insured contractor from liability to
+members of the public (other than employees) for bodily injury,
+property damage, or personal injury caused by virtually any activity.”
+The insurance company:
+     ●   Provides a claim-handling process.
+     ●   Defends the contractor against insurance claims.
+     ●   Pays claims for covered damages.
+     ●   Pays for immediately necessary medical treatment, even when
+         the contractor is not ultimately found liable.
+Contractors State License Law does not require contractors to carry
+CGL insurance unless their business entity is a limited liability
+company (see below). Even though it is not universally required by
+licensing law, commercial property owners routinely require the
+contractors they hire to carry CGL insurance.
+On the other hand, when a homeowner hires a contractor to perform
+home improvement work, they rarely require the contractor to carry
+CGL insurance. Most homeowners assume that a contractor would
+not work on the house without being insured. To alert homeowners to
+the value of CGL insurance, the California Code of Regulations (CCR)
+section 872(a), requires home improvement contractors to:
+     ●   Disclose in writing if they do or do not carry commercial
+         general liability insurance.
+     ●   If they do carry CGL insurance, provide the homeowner with
+         the name and telephone number of the insurance company, in
+         writing, so the homeowner can verify coverage.
+$1 Million Liability Insurance Minimum
+Liability insurance with the aggregate limit of $1 million for licensees
+with five or fewer people listed as members of the personnel of record
+is required for a limited liability company; plus, an additional
+$100,000 in insurance is required for each additional member of the
+personnel of record, not to exceed $5 million total. (See B&P Code
+§7071.19).
+
+
+
+
+     Previous                                                            Next Page
+
+=== PDF page 44 ===
+     CHAPTER 3. MANAGING A BUSINESS                                        21
+
+     Workers’ Compensation Insurance
+     California workers’ compensation law establishes a no-fault
+     insurance plan purchased by the employer-contractor and
+     administered by the state to:
+       ●   Limit the employer-contractor’s liability and possibly avoid
+           costly lawsuits.
+       ●   Guarantee that an injured worker receives prompt and
+           complete medical treatment and specific benefits for job-related
+           injury or illness. Under some circumstances, an employer-
+
+
+
+
+                                                                                Section III
+           contractor can be sued for damages.
+           For example, the harmed parties may sue if an employee is
+           injured when the employer is illegally uninsured, or if the
+           employer conceals the existence of an employee’s injury and its
+           connection with employment. Check with the Department of
+           Industrial Relations, www.dir.ca.gov, for more information.
+     Employer Liability
+     For a work-incurred injury or illness, an employer-contractor is
+     required to provide weekly benefit payments (indemnity) and
+     necessary medical and hospital treatment. This liability of the
+     employer extends to employed relatives on the same basis as any
+     other employee.
+     If the employer has one or more employees, even part-time, they are
+     required to insure for workers’ compensation claims. An “owner-
+     operator” or “independent contractor” should pay particular attention
+     to Labor Code §2750.5.
+     Workers’ Compensation Insurance Coverage
+     The employer-contractor may provide insurance protection in one of
+     three ways:
+       ●   A standard approved policy of workers’ compensation
+           insurance available through any licensed carrier; or
+       ●   Securing a permit from the Director of the state Department of
+           Industrial Relations to become a self-insurer (Labor Code
+           §3700); or
+       ●   Participating in a collectively bargained alternative dispute
+           resolution program recognized by the Division of Workers’
+           Compensation (Labor Code §3201.5).
+
+
+
+
+Previous                                                        Next Page
+
+=== PDF page 45 ===
+22                                   SECTION III. BUSINESS MANAGEMENT
+
+In general, if a contractor carries workers’ compensation insurance,
+the workers’ compensation insurance company assumes the
+obligation of the contractor under the workers’ compensation laws.
+Some exceptions include penalties based on:
+     ●   The contractor’s serious and willful misconduct (Labor Code
+         §4553).
+     ●   Injury to an illegally employed person under 16 years of age
+         (Labor Code §4557).
+     ●   Instances where the employer discriminates against an
+         employee because an industrial injury claim was filed (Labor
+         Code §132a).
+Submission of Workers’ Compensation Certificate or
+Certificate of Exemption to CSLB
+B&P Code section 7125 provides that an applicant or licensee always
+has on file a current and valid Certificate of Workers’ Compensation
+Insurance or Certification of Self-Insurance in the licensee’s business
+name. The insurer can submit this information to CSLB electronically
+using the online submission system on CSLB’s website:
+www.cslb.ca.gov.
+Important note about workers’ compensation exemption
+certificates. If you don’t have employees, you must file an exemption
+from the workers’ compensation requirement unless you hold one of
+these classifications which requires you to carry workers’
+compensation insurance: C-8 Concrete; C-20 Warm-Air Heating,
+Ventilating and Air-Conditioning; C-22 Asbestos Abatement; C-39
+Roofing; C-61/D-49 Tree Service.
+The contractor can submit an exemption to CSLB electronically using
+the online submission system on CSLB’s website: www.cslb.ca.gov.
+Reporting Occupational Injury or Illness
+  ● An employer-contractor MUST file a complete report of every
+     employee occupational injury or occupational illness that
+     results in lost time beyond the date of injury or illness, or
+     which requires medical treatment beyond first aid, with the
+     Department of Industrial Relations through its Division of
+     Labor Statistics and Research or, if an insured employer, with
+     the insurer (Labor Code §6409.1).
+         The report filed shall be the original of the form required by
+         the Division of Labor Statistics and Research. A report shall be
+         filed concerning each injury and illness that has, or is alleged
+         to have, arisen out of and in the course of employment, within
+
+
+
+
+     Previous                                                               Next Page
+
+=== PDF page 46 ===
+     CHAPTER 3. MANAGING A BUSINESS                                            23
+
+           five days after the employer obtains knowledge of the injury or
+           illness. Each report of occupational injury or occupational
+           illness must indicate the Social Security number of the injured
+           employee (Labor Code §6409.1).
+           The insured employer must file with their insurer a complete
+           report of every injury or illness for each employee. If a report is
+           not filed with the insurance carrier, the Workers’
+           Compensation Appeals Board may issue an order directing the
+           insured employer to report the injury or illness within five
+
+
+
+
+                                                                                    Section III
+           days. Failure of the employer to comply with this order may be
+           punished as contempt (Labor Code §3760).
+       ●   In every case involving a serious injury or illness, or death, in
+           addition to the report described above, the employer must
+           report immediately by telephone or email to the Division of
+           Occupational Safety and Health (Labor Code §6409.1).
+     Employee Notification and Posting Requirements
+     Every employer-contractor subject to the provisions of the workers’
+     compensation laws MUST:
+       ●   Give every new employee, either at the time of hiring or by the
+           end of their first pay period, written notice of the employee’s
+           right to receive workers’ compensation benefits should they be
+           injured on the job while working for the employer. The content
+           of the notice must be approved by the Administrative Director
+           of the Division of Workers’ Compensation and must contain the
+           information listed in Section 9880 of CCR Title 8. The notice
+           shall be available in both English and Spanish when there are
+           Spanish-speaking employees (Labor Code §3551).
+       ●   Post conspicuously, in a location frequented by employees, a
+           Notice to Employees poster. The Notice to Employees must be
+           posted in English and Spanish where there are Spanish-
+           speaking employees. The Notice to Employees poster must
+           contain the information listed in Section 9881 of CCR Title 8 or
+           the employer may post the Administrative Director’s approved
+           Notice to Employees poster provided in Section 9881.1 of CCR
+           Title 8. Failure to keep such a notice conspicuously posted is
+           punishable as a misdemeanor (Labor Code §3550).
+       ●   Post information regarding protections and obligations of
+           employees under occupational safety and health laws, and
+           related citations (Labor Code §6408).
+
+
+
+
+Previous                                                          Next Page
