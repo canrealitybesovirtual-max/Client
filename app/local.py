@@ -3,6 +3,7 @@
     python -m app.local                 (or double-click TradeComply-local.command / .bat / tradecomply-local.sh)
 
 - Data lives in ~/.tradecomply (or --data-dir / DATA_DIR): the app database, the signing key and CSLB license data.
+  Always SQLite: DATABASE_URL (the hosted server's PostgreSQL setting) is ignored here.
 - Binds 127.0.0.1 on a free port (or --port / PORT), so nothing is reachable from the network.
 - First run: builds CSLB license data from the bundled snapshot in seed/, creates a local owner account, prints the
   login (also saved to LOCAL-LOGIN.txt in the data folder) and opens the browser already logged in.
@@ -35,6 +36,10 @@ def free_port(preferred: int = 8765) -> int:
 def prepare_env(data_dir: str) -> str:
     data_dir = os.path.abspath(os.path.expanduser(data_dir))
     os.makedirs(data_dir, mode=0o700, exist_ok=True)
+    if (os.environ.pop("DATABASE_URL", None) or "").strip():
+        # Offline mode keeps the company's data on this computer; a DATABASE_URL left in the shell (for another
+        # project, or the hosted server) must not send it to a remote database or stop the app starting offline.
+        print(f"Note: DATABASE_URL is ignored in local mode; data stays in {data_dir}.", flush=True)
     os.environ["DATA_DIR"] = data_dir
     os.environ.setdefault("LICENSE_DB", os.path.join(data_dir, "cslb.sqlite"))
     os.environ["TC_LOCAL"] = "1"
@@ -60,10 +65,9 @@ def ensure_owner(platform, company: str | None = None) -> tuple[dict, str | None
     """Create the local company and owner on first run. Returns (user, password if just created)."""
     from .auth import hash_password
     store = platform.store
-    with store.connect() as con:
-        row = con.execute("select * from users where role = 'owner' order by id limit 1").fetchone()
-    if row:
-        return dict(row), None
+    owner = store.first_owner()
+    if owner:
+        return owner, None
     password = secrets.token_urlsafe(12)
     tenant = store.create_tenant(company or "My Company", None, None, status="active", plan="local")
     user = store.create_user(tenant["id"], LOCAL_EMAIL, hash_password(password), "owner", name="Local owner")

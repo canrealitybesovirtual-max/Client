@@ -81,8 +81,9 @@ Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `DATA_DIR` | `./data` | App database and generated signing key. When set (and `LICENSE_DB` isn't), CSLB data goes here too |
-| `SECRET_KEY` | generated into `DATA_DIR/secret_key` | Signs session cookies, CSRF tokens, calendar links and tool results. At least 32 characters (shorter values are refused at startup). Set it on Render (or keep `DATA_DIR` on a persistent disk) so sessions survive deploys |
+| `DATABASE_URL` | unset (SQLite) | `postgres://` or `postgresql://` URL: keep customer data in PostgreSQL instead of SQLite. See [Durable storage (Postgres)](#durable-storage-postgres) |
+| `DATA_DIR` | `./data` | SQLite app database (when `DATABASE_URL` is unset) and generated signing key. When set (and `LICENSE_DB` isn't), CSLB data goes here too |
+| `SECRET_KEY` | generated: in the database with Postgres, else in `DATA_DIR/secret_key` | Signs session cookies, CSRF tokens, calendar links and tool results. At least 32 characters (shorter values are refused at startup). Set it on Render (render.yaml generates one), use Postgres, or keep `DATA_DIR` on a persistent disk so sessions survive deploys |
 | `MCP_REQUIRE_KEY` | off | `1`: `/mcp` needs `Authorization: Bearer <API key>` of an active or trialing account. Off: anonymous public demo, still audited and throttled (60 tool calls/min per IP, 300/min in total). Turn it on for production: off gives every tool away free |
 | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` | unset | Enable checkout and the billing portal. The price is the $1,000/month recurring price from the Stripe dashboard |
 | `STRIPE_WEBHOOK_SECRET` | unset | Verifies `/api/billing/webhook` (send `checkout.session.completed`, `customer.subscription.updated`/`deleted`, `invoice.payment_failed`, `invoice.paid`) |
@@ -90,10 +91,47 @@ Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<
 | `COOKIE_SECURE` | auto | `1` forces the Secure cookie flag (it is set automatically when the request is https / `X-Forwarded-Proto: https`) |
 | `CSLB_AUTO_DOWNLOAD` | off | `1`: build CSLB data from the bundled snapshot on boot and refresh it daily |
 | `LICENSE_DB` | `data/cslb.sqlite` | CSLB SQLite path |
+| `DATABASE_CONNECT_TIMEOUT`, `DATABASE_CONNECT_ATTEMPTS`, `DATABASE_POOL_MAX`, `DATABASE_POOL_IDLE` | 5 s, 3, 10, 4 | Postgres only: connect timeout per attempt, startup attempts, connections in use per instance, idle connections kept |
 
 Billing states: `trialing` (14 days) and `active` have full access; `past_due` keeps access with a banner while
 Stripe retries the card; an ended trial or `canceled` gets HTTP 402 on tool runs, the dashboard and the calendar
 (data stays readable). Without Stripe settings the billing endpoints return a clear 503 message.
+
+### Durable storage (Postgres)
+
+Without `DATABASE_URL`, accounts, projects, subs, documents, field logs and the audit log are in SQLite at
+`DATA_DIR/tradecomply.sqlite`. On a Render instance with no persistent disk (the free plan) that file is lost on
+every redeploy and spin-down: `/health` then reports `"storage": "sqlite", "storage_persistent": false` and the log
+warns at startup. Set `DATABASE_URL` (in render.yaml it is declared with `sync: false`, so you paste it in the
+dashboard) and the data lives in PostgreSQL; `/health` reports `"storage": "postgres", "storage_persistent": true`.
+
+- **Supabase.** In the project dashboard click **Connect** and copy the **Session pooler** string
+  (`postgres://postgres.<project-ref>:<password>@aws-<region>.pooler.supabase.com:5432/postgres`), which Supabase
+  recommends for persistent backends on IPv4-only networks, or the **Transaction pooler** string (same host, port
+  `6543`). Both pooler endpoints are IPv4 on every Supabase plan; the direct `db.<project-ref>.supabase.co`
+  endpoint is IPv6 unless the project has the IPv4 add-on, so from Render use a pooler (IPv4). The app works in either
+  pooler mode: prepared statements are off and nothing is kept in the session between transactions. Put in the real
+  password, percent-encoding any `@ : / % # ?` in it (`@` becomes `%40`). Pick the Supabase region closest to the
+  Render region; every query is a network round trip.
+- **Render Postgres.** Create a database in the same region as the web service and paste its `postgresql://`
+  connection URL from the database's page in the dashboard.
+- **TLS.** Connections use `sslmode=require` unless the URL (or `PGSSLMODE`) sets `sslmode`, e.g.
+  `?sslmode=verify-full` to also check the certificate, or `?sslmode=disable` for a local test server without TLS.
+
+What happens at startup: the schema is created or migrated in one transaction under a Postgres advisory lock
+(table `schema_version`; two instances starting together migrate once). If `DATABASE_URL` is set but the database
+can't be reached (3 attempts, 5-second connect timeout), the server logs a CRITICAL line naming
+`user@host:port/db` (never the password) and exits, so the deploy fails; it never falls back to a throwaway SQLite
+file. A connection the pooler or server dropped while idle is replaced on the next query. If `SECRET_KEY` is unset,
+a key is generated once and stored in the table `app_secrets`, so logins survive restarts and every instance
+shares it; anyone who can read that table can sign sessions, so set `SECRET_KEY` yourself if others can read the
+database. Local mode (`python -m app.local`) always uses SQLite and ignores `DATABASE_URL`. Existing SQLite data is
+not copied to Postgres automatically.
+
+Tests: `python -m pytest -q tests` runs everything on SQLite. With
+`TC_TEST_DATABASE_URL=postgresql://user:pw@host:5432/dbname` (a database the tests may write to; each test gets its
+own schema, dropped afterwards) `tests/test_platform.py` also runs on PostgreSQL and `tests/test_store_pg.py` tests
+the Postgres plumbing (pooler settings, advisory-lock migrations, reconnects, the shared key).
 
 ### Security notes
 
@@ -115,7 +153,9 @@ payroll CSV are stored as length + hash); anonymous `/mcp` rows are capped at th
 
 ### Known limits
 
-- Rate limits and the tool-list cache are in memory: run one instance (SQLite on one disk). Move to Postgres/Redis to scale out.
+- Rate limits and the tool-list cache are in memory: run one instance. Customer data can be in Postgres
+  (`DATABASE_URL`), but scaling out also needs shared rate limits (e.g. Redis). Request handlers call the database
+  synchronously, so keep Postgres in or near the service's region.
 - Per-IP limits use the first `X-Forwarded-For` entry, which a client can spoof; per-email and global limits back
   them up. Sessions are stateless signed cookies (revoked on logout); keys don't expire until revoked.
 - Team invites set "must change password", but the server doesn't force the change before other use.

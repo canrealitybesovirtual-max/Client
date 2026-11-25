@@ -1,0 +1,2447 @@
+{
+ "domain": "Worker and equipment certifications for California construction: DIR electrician certification (C-10 workers, trainees, renewals, CSLB enforcement), CDPH lead-related construction certification as required by Cal/OSHA 8 CCR 1532.1, EPA RRP renovator/firm certification details not already in the rulebook, Cal/OSHA crane operator evaluation and certification (8 CCR 5006.1/5006.2), DOSH elevator/conveyance permits and mechanic/company certification, construction personnel hoist permits, DOSH pressure vessel (air tank, LPG tank, boiler) permits, and DOSH blaster's licenses",
+ "source_doc": "Official sources fetched and read on 2026-11-25: DIR Title 8 pages 8 CCR 290.0-296.4 (Electrician Certification), 1532.1 (lead), 1604.4/1604.26/1604.29 (personnel hoists), 3000/3001 (Elevator Safety Orders), 344.1/344.2/344.20-344.22/344.30, 461/462/470/770/771/780, 5006.1/5006.2, 5238; DIR Labor Commissioner Electrician Certification Unit pages (program home, FAQ revised October 22, 2026, fees, enforcement, trainee pages, trainee guide PDF Rev 3/2015); CSLB California Contractors License Law & Reference Book 2022 edition appendix (Labor Code 108.2-108.3, PDF pp. 919-921) https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf; CSLB Board Meeting Packet September 2-3, 2026 (AB 1707 analysis); Cal/OSHA Lead in Construction fact sheet and Lead Laws and Regulations page; DOSH Elevator Unit FAQ (June 2026), Elevator Certification page and forms CCCM (DIR DOSH 003 Rev. 1/2025), CCCM Renewal (003 R), CQCC (002); DOSH Pressure Vessel Unit page and Notice/Proposed Text of emergency fee changes (October 15, 2026); eCFR 40 CFR Part 745 and 40 CFR 19.4 (versioner API, issue date 2026-11-20). Blocked or unreadable: leginfo.legislature.ca.gov and www.leginfo.ca.gov (Labor Code 108, 108.1, 108.4, 108.5, 7300-7324, 7311.2, 7620+ statute text; AB 1707 chaptered text), www.cdph.ca.gov (CDPH lead certification categories, fees, renewal, CDPH 8551 abatement notification and 8552 reporting, 17 CCR 35001-36100), govt.westlaw.com (official CCR Title 17), www.gov.ca.gov (2026 signing announcements), www.epa.gov, csun.edu, law.cornell.edu. Rules relying only on secondary official summaries are marked read_from_primary_text=false. Existing rulebook rules on asbestos registration/certification, EPA RRP basics (applicability, minor repair, pamphlet, firm certification, prohibited practices, 3-year records), Cal/OSHA lead PEL/notification, crane annual certification and crane-operator certification basics, and the C-10 $20 renewal fee were checked and not duplicated.",
+ "rules": [
+  {
+   "id": "cert-elec-c10-workers-must-be-certified",
+   "title": "Electricians working for a C-10 contractor must be DIR-certified",
+   "plain_english": "Anyone who does electrical work as an electrician for a C-10 electrical contractor must hold a state electrician certification (or be a registered apprentice or registered electrician trainee). Uncertified people may not do electrical work that requires certification. The rule follows the employer's license: it covers C-10 contractors only.",
+   "category": "license_classification",
+   "parameters": {
+    "employer_license_classes_covered": [
+     "C-10"
+    ],
+    "certification_required": true,
+    "alternatives_to_certification": [
+     "registered apprentice in approved program (LC 108.2(d))",
+     "registered electrician trainee under supervision (LC 108.4; 8 CCR 296.3)",
+     "C-10 qualifying person (LC 108.2(g))"
+    ],
+    "certifying_agency": "DIR Labor Commissioner's Office (DLSE) Electrician Certification Unit"
+   },
+   "applies_to": "Workers doing electrical work (connections of 100 volt-amperes or more) for a CSLB class C-10 electrical contractor, and the C-10 contractors who employ them",
+   "citation": "Labor Code 108.2(a), (b)(1)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (CSLB Law Book 2022, Appendix - Labor Code Ch. 4.5, PDF pages 919-920, printed pages 886-887)",
+   "verbatim_quote": "(b) (1) Certification is required only for those persons who perform work as electricians for contractors licensed as class C-10 electrical contractors under the Contractors' State License Board Rules and Regulations.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "Statute text read from CSLB's published Law Book appendix (2022 edition; history line 'Added Stats 2012 ch 46 § 79 (SB 1038), effective June 27, 2012', no later amendment shown). leginfo.legislature.ca.gov was not accessed. DIR's ECU FAQ (revised October 22, 2026) quotes the same subdivision. Subdivision (a): 'Persons who perform work as electricians shall become certified pursuant to Section 108. Uncertified persons shall not perform electrical work for which certification is required.'"
+  },
+  {
+   "id": "cert-elec-electrician-definition-100-va",
+   "title": "Who counts as an 'electrician': connections of 100 volt-amperes or more for a C-10",
+   "plain_english": "'Electrician' means anyone who connects electrical devices for a C-10 electrical contractor. Connections under 100 volt-amperes are not covered. Also excluded: utility work covered by B&P 7042.5, work normally done by stationary engineers, and temporary or portable equipment run by technicians in theater, film, TV, hotel, exhibition or trade-show work.",
+   "category": "definition",
+   "parameters": {
+    "covered_min_volt_amperes": 100,
+    "connections_below_volt_amperes_not_covered": 100,
+    "excluded_work": [
+     "public utility work to which B&P 7042.5 applies",
+     "electrical work ordinarily and customarily performed by stationary engineers",
+     "temporary or portable electrical equipment work by technicians in the theatrical, motion picture production, television, hotel, exhibition or trade show industries"
+    ],
+    "foremen_who_use_tools_must_be_certified": true
+   },
+   "applies_to": "Workers doing electrical work (connections of 100 volt-amperes or more) for a CSLB class C-10 electrical contractor, and the C-10 contractors who employ them",
+   "citation": "Labor Code 108(c) (as quoted by DIR); 8 CCR 290.0",
+   "source_location": "https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm ('Who is required to be certified?' - Labor Code section 108 (c)); also https://www.dir.ca.gov/t8/290_0.html",
+   "verbatim_quote": "As used in this section, \"electricians\" includes all persons who engage in the connection of electrical devices for electrical contractors licensed pursuant to Section 7058 of the Business and Professions Code, specifically, contractors classified as electrical contractors in the Contractors' State License Board Rules and Regulations. This section does not apply to electrical connections under 100 volt-amperes.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "Labor Code 108(c) text as reproduced on the official DIR ECU FAQ page (leginfo blocked). FAQ short answer: 'All electricians who make connections of greater than 100 volt amps who work for C-10 Contractors.' FAQ also says a foreman who sometimes works with the tools must be certified. A September 2026 CSLB board analysis paraphrases the threshold as 'over 100 volts'; the statute and 8 CCR 290.0 say volt-amperes. Only employees of C-10 licensed contractors are covered; electricians employed directly by a school district or plant are not (FAQ)."
+  },
+  {
+   "id": "cert-elec-exempt-c7-c45-scope-work",
+   "title": "No electrician certification needed for C-7 or C-45 scope work",
+   "plain_english": "Workers doing work for a C-7 (low voltage systems) or C-45 (electric sign) contractor do not need electrician certification as long as the work stays within the C-7 or C-45 license scope (including incidental and supplemental work), even if the same company also holds a C-10 license.",
+   "category": "license_classification",
+   "parameters": {
+    "exempt_license_classes_when_within_scope": [
+     "C-7",
+     "C-45"
+    ],
+    "includes_incidental_and_supplemental_work_per_bp": "7059",
+    "exemption_applies_even_if_contractor_also_holds_c10": true
+   },
+   "applies_to": "Workers of C-7 low voltage and C-45 electric sign contractors",
+   "citation": "Labor Code 108.2(b)(2)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 920, printed page 887)",
+   "verbatim_quote": "(2) Certification is not required for persons performing work for contractors licensed as class C-7 low voltage systems or class C-45 electric sign contractors as long as the work performed is within the scope of the class C-7 or class C-45 license, including incidental and supplemental work as defined in Section 7059 of the Business and Professions Code, and regardless of whether the same contractor is also licensed as a class C-10 contractor.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "Same text quoted on DIR ECU FAQ. Work outside the C-7/C-45 scope for a C-10 contractor still needs certification."
+  },
+  {
+   "id": "cert-elec-exempt-utility-high-voltage-workers",
+   "title": "Utility high-voltage transmission and distribution workers are exempt",
+   "plain_english": "Workers on high-voltage transmission or distribution systems owned by a utility do not need electrician certification when they are employed by the utility or by a licensed contractor that mainly installs or maintains transmission or distribution systems.",
+   "category": "license_classification",
+   "parameters": {
+    "exempt_system": "high-voltage electrical transmission or distribution system owned by a utility (PUC 224.3, 218, 205, 204)",
+    "exempt_employers": [
+     "the utility",
+     "licensed contractor principally engaged in installing or maintaining transmission or distribution systems"
+    ]
+   },
+   "applies_to": "Line and transmission/distribution contractors and their workers",
+   "citation": "Labor Code 108.2(b)(3)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 920, printed page 887)",
+   "verbatim_quote": "(3) Certification is not required for work performed by a worker on a high-voltage electrical transmission or distribution system owned by a local publicly owned electric utility, as defined in Section 224.3 of the Public Utilities Code;",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "The subdivision continues: 'an electrical corporation, as defined in Section 218 of the Public Utilities Code; a person, as defined in Section 205 ...; or a corporation, as defined in Section 204 ...; when the worker is employed by the utility or a licensed contractor principally engaged in installing or maintaining transmission or distribution systems.'"
+  },
+  {
+   "id": "cert-elec-exempt-registered-apprentices",
+   "title": "Registered electrical apprentices are exempt; may test in the last year",
+   "plain_english": "Registered apprentices doing electrical work in a state- or federally-approved apprenticeship program do not need certification. An apprentice within one year of finishing may take the certification exam and becomes certified as soon as the apprenticeship ends. The C-10 contractor must still supervise apprentices properly.",
+   "category": "license_classification",
+   "parameters": {
+    "apprentice_exempt": true,
+    "may_take_exam_within_months_of_completion": 12,
+    "certified_upon": "completion of apprenticeship term after passing exam",
+    "approved_programs": [
+     "Labor Code 3070 et seq. (California)",
+     "federal Office of Apprenticeship",
+     "state program authorized by federal Office of Apprenticeship"
+    ]
+   },
+   "applies_to": "Workers doing electrical work (connections of 100 volt-amperes or more) for a CSLB class C-10 electrical contractor, and the C-10 contractors who employ them",
+   "citation": "Labor Code 108.2(d); 8 CCR 291.2(f)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 920, printed page 887); https://www.dir.ca.gov/t8/291_2.html",
+   "verbatim_quote": "An apprentice who is within one year of completion of his or her term of apprenticeship shall be permitted to take the certification examination and, upon passing the examination, shall be certified immediately upon completion of the term of apprenticeship.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "Willful failure to supervise apprentices is a separate CSLB discipline ground (LC 108.2(h)(3)). Registered apprentices are not counted as uncertified persons for the trainee supervision ratio (8 CCR 296.3(a))."
+  },
+  {
+   "id": "cert-elec-c10-qualifier-exempt-others-not",
+   "title": "Only the C-10 qualifying person is exempt; partners, officers and C-10 holders working as employees are not",
+   "plain_english": "The person who qualifies the C-10 license (the one who passed the CSLB exam) may do electrical work for that company and supervise trainees without state electrician certification. Partners or officers who are not the qualifier must be certified, and a C-10 license holder working as an employee under another C-10 contractor's license must be certified.",
+   "category": "license_classification",
+   "parameters": {
+    "qualifying_person_exempt": true,
+    "non_qualifying_partners_officers_exempt": false,
+    "c10_licensee_working_as_employee_of_other_c10_exempt": false,
+    "sole_owner_licensed_in_own_name_exempt": true
+   },
+   "applies_to": "C-10 contractors, their qualifiers, officers, partners and employees",
+   "citation": "Labor Code 108.2(g); DIR ECU FAQ",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 921, printed page 888); https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "(g) Notwithstanding subdivision (a), the qualifying person for a class C-10 electrical contractor license issued by the Contractors' State License Board need not also be certified pursuant to Section 108 to perform electrical work for that licensed contractor or to supervise an uncertified person employed by that licensed contractor pursuant to Section 108.4.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "DIR FAQ: 'Only the qualifying person, (meaning the person who took the contractor's license examination), may perform electrical work under that license without a state electrician certificate. Partners and officers of the company who did not sit for the licensing exam, must obtain State Electrician Certification to perform work for which certification is required.' and 'Note that if you are a licensed C-10 contractor but working under another C-10 contractor's license as an employee you must be certified.'"
+  },
+  {
+   "id": "cert-elec-five-certification-types",
+   "title": "Five electrician certification types; General covers all",
+   "plain_english": "DIR issues five certifications: General Electrician, Residential Electrician, Voice Data Video Technician, Fire/Life Safety Technician and Nonresidential Lighting Technician. Each lets the holder do certified work within that category. A General Electrician certification covers work in all categories.",
+   "category": "license_classification",
+   "parameters": {
+    "types": [
+     "General Electrician",
+     "Residential Electrician",
+     "Voice Data Video Technician",
+     "Fire/Life Safety Technician",
+     "Nonresidential Lighting Technician"
+    ],
+    "general_covers_all_categories": true
+   },
+   "applies_to": "Workers doing electrical work (connections of 100 volt-amperes or more) for a CSLB class C-10 electrical contractor, and the C-10 contractors who employ them",
+   "citation": "Labor Code 108.2(c); 8 CCR 291.0",
+   "source_location": "https://www.dir.ca.gov/t8/291_0.html; https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 920)",
+   "verbatim_quote": "(a) An applicant may apply for certification as a General Electrician, a Residential Electrician, a Voice Data Video Technician, a Fire/Life Safety Technician or a Nonresidential Lighting Technician.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "8 CCR 291.0(b): 'Certification as a General Electrician allows one to lawfully perform work for which certification is required in all categories.' Labor Code 108.2(c) requires DIR to maintain these separate certifications. The gap list's 'Voltage Data Signal' label is DIR's 'Voice Data Video Technician'."
+  },
+  {
+   "id": "cert-elec-residential-electrician-scope",
+   "title": "Residential Electrician scope: dwellings served at 120/208 or 120/240 V",
+   "plain_english": "A Residential Electrician may work on homes and multifamily buildings (including hotels and motels) whose main use is residential and whose utility service is no more than 3-phase, 4-wire 120/208 or 120/240 volts. They may install panels and feeders for commercial tenant space only if under 50% of the first floor is commercial, may not do the tenant improvements, and may not work in NEC Article 517 (health care) occupancies.",
+   "category": "definition",
+   "parameters": {
+    "max_utility_service": "3 phase, 4 wire, 120/208 or 120/240 volts",
+    "max_first_floor_commercial_pct_lt": 50,
+    "tenant_improvements_allowed": false,
+    "excluded_nec_articles": [
+     "517"
+    ],
+    "occupancies": [
+     "single family homes",
+     "multi family units",
+     "hotels",
+     "motels"
+    ]
+   },
+   "applies_to": "Residential Electrician certificate holders and the C-10 contractors who assign them work",
+   "citation": "8 CCR 290.1 (Residential Electrician)",
+   "source_location": "https://www.dir.ca.gov/t8/290_1.html",
+   "verbatim_quote": "performs work for a C-10 electrical contractor installing, constructing, or maintaining any electrical system that is covered by the National Electrical Code in single family homes and multi family units, including hotels and motels, where the primary occupancy of the building is considered residential and the maximum voltage received from a utility company is a 3 phase, 4 wire, 120/208 or 120/240 volts.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "8 CCR 290.1 references the 1999 National Electrical Code for article numbers."
+  },
+  {
+   "id": "cert-elec-specialty-technician-scopes",
+   "title": "Scopes of Fire/Life Safety, Voice Data Video and Nonresidential Lighting technicians",
+   "plain_english": "Fire/Life Safety Technicians work on NEC Article 760 (fire alarm) systems. Voice Data Video Technicians work on systems under NEC Articles 725, 770 (non-composite cables), 800 (non-hybrid cables), 810 and 820. Nonresidential Lighting Technicians repair, service and maintain existing nonresidential lighting fixtures and install retrofit fixtures; they may not install or alter branch circuits, except reconnecting to existing power within 3 feet.",
+   "category": "definition",
+   "parameters": {
+    "fire_life_safety_nec_articles": [
+     "760"
+    ],
+    "voice_data_video_nec_articles": [
+     "725",
+     "770 (non-composite cables only)",
+     "800 (non-hybrid cables only)",
+     "810",
+     "820"
+    ],
+    "nonresidential_lighting_reconnect_max_ft": 3,
+    "nonresidential_lighting_branch_circuit_work_allowed": false
+   },
+   "applies_to": "Specialty electrician certificate holders and their C-10 employers",
+   "citation": "8 CCR 290.1",
+   "source_location": "https://www.dir.ca.gov/t8/290_1.html",
+   "verbatim_quote": "Such work does not include the installation of branch circuits or the alteration of existing branch circuits except a Nonresidential Lighting Technician may reconnect to existing power within 3 feet.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "Voice Data Video definition: 'performs work for a C-10 electrical contractor installing, constructing or maintaining any system that falls within the scope of National Electrical Code, Articles 725, 770 (non-composite cables only), 800 (non-hybrid cables only), 810 and 820.' Fire/Life Safety: 'installation, construction or maintenance of systems covered by Article 760 of the National Electrical Code.'"
+  },
+  {
+   "id": "cert-elec-experience-hours-by-type",
+   "title": "On-the-job hours needed to sit for each certification exam",
+   "plain_english": "To take the exam without an apprenticeship, you need documented work for a C-10 contractor: 8,000 hours (General), 4,800 (Residential), 4,000 (Voice Data Video), 4,000 (Fire/Life Safety) or 2,000 (Nonresidential Lighting). Completing a state- or federally-approved apprenticeship in that classification also qualifies.",
+   "category": "threshold",
+   "parameters": {
+    "required_hours": {
+     "General Electrician": 8000,
+     "Residential Electrician": 4800,
+     "Voice Data Video Technician": 4000,
+     "Fire/Life Safety Technician": 4000,
+     "Nonresidential Lighting Technician": 2000
+    },
+    "alternative": "completion of approved apprenticeship in the classification",
+    "hours_must_be_for": "C-10 electrical contractor"
+   },
+   "applies_to": "Applicants for electrician certification",
+   "citation": "8 CCR 291.1(a)",
+   "source_location": "https://www.dir.ca.gov/t8/291_1.html",
+   "verbatim_quote": "General Electrician: 8000 hours of work for a C-10 electrical contractor installing, constructing or maintaining electrical systems covered by the National Electrical Code.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "Residential: 'Residential Electrician: 4800 hours of work for a C-10 electrical contractor ...'. Nonresidential Lighting: '2,000 hours of work installing, repairing and maintaining nonresidential lighting while employed by a C-10 electrical contractor engaged in the business of nonresidential lighting maintenance and retrofit installations.' Same figures on DIR page https://www.dir.ca.gov/DLSE/ECU/EleCat.html."
+  },
+  {
+   "id": "cert-elec-experience-hours-area-caps",
+   "title": "Maximum hours per work area that count toward the experience total",
+   "plain_english": "Not all hours count equally. For General Electrician, the 8,000 hours must come from at least two work areas, with caps such as 300 hours stock room, 3,000 residential wiring, 6,000 commercial, 6,000 industrial, 1,500 voice/data/video, 750 underground conduit, 1,500 troubleshooting, 600 finish work and 600 fire/life safety. Other types have their own caps.",
+   "category": "threshold",
+   "parameters": {
+    "general_min_areas": 2,
+    "general_caps_hours": {
+     "stock_room_material_handling": 300,
+     "residential_wiring": 3000,
+     "commercial_wiring": 6000,
+     "industrial_wiring": 6000,
+     "voice_data_video": 1500,
+     "underground_conduit": 750,
+     "troubleshooting_maintenance": 1500,
+     "finish_work_fixtures": 600,
+     "fire_life_safety_nurse_call": 600
+    },
+    "residential_caps_hours": {
+     "stock_room_material_handling": 300,
+     "residential_wiring": 4800,
+     "voice_data_video": 150,
+     "underground_conduit": 300,
+     "troubleshooting_maintenance": 600,
+     "finish_work_fixture": 600,
+     "fire_life_safety": 300
+    },
+    "voice_data_video_caps_hours": {
+     "stock_room_material_handling": 300,
+     "installations": 4000,
+     "troubleshooting_maintenance": 750,
+     "trade_specific_training": 300
+    },
+    "fire_life_safety_caps_hours": {
+     "stock_room_material_handling": 300,
+     "installations": 4000,
+     "troubleshooting_maintenance": 750,
+     "nurse_call": 300,
+     "proprietary_systems_training": 300
+    },
+    "nonresidential_lighting_caps_hours": {
+     "stockroom_material_handling": 150,
+     "maintenance_of_fixtures": 1750,
+     "retrofit_installation": 1500,
+     "troubleshooting_repairing": 500
+    }
+   },
+   "applies_to": "Applicants documenting on-the-job experience",
+   "citation": "8 CCR 291.1(a)(2)",
+   "source_location": "https://www.dir.ca.gov/t8/291_1.html",
+   "verbatim_quote": "The 8000 hours must consist of work in two or more of the following areas, and the maximum number of hours in a particular area that may be counted toward the 8000 hour total are as follows:",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "Residential, VDV, FLS and NRLT hours may come from 'one or more' areas."
+  },
+  {
+   "id": "cert-elec-fls-nicet-level-ii-alternative",
+   "title": "NICET Fire Alarm Level II or higher satisfies Fire/Life Safety experience",
+   "plain_english": "For the Fire/Life Safety Technician certification, NICET certification in Fire Alarm Systems at Level II or above can be used instead of the 4,000 documented hours.",
+   "category": "threshold",
+   "parameters": {
+    "certification_type": "Fire/Life Safety Technician",
+    "alternative_credential": "NICET Fire Alarm Systems",
+    "min_nicet_level": 2
+   },
+   "applies_to": "Fire alarm installers working for C-10 contractors",
+   "citation": "8 CCR 291.1(a)(2)",
+   "source_location": "https://www.dir.ca.gov/t8/291_1.html",
+   "verbatim_quote": "The experience requirement for Fire/Life Safety Technician may also be satisfied by proof of NICET certification in Fire Alarm Systems at Level II or above.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "The exam must still be passed."
+  },
+  {
+   "id": "cert-elec-other-state-license-and-military-credit",
+   "title": "Out-of-state license, military or C-7 experience can count toward eligibility",
+   "plain_english": "DIR may treat an electrician license from another state as meeting the experience requirement if that state's requirements are comparable. Military experience or relevant work for a C-7 low voltage contractor can be credited toward some or all of the hours on request.",
+   "category": "process_step",
+   "parameters": {
+    "out_of_state_license_may_satisfy_experience": true,
+    "credit_sources": [
+     "military experience",
+     "C-7 low voltage contractor work",
+     "other comparable experience"
+    ],
+    "exam_still_required": true
+   },
+   "applies_to": "Applicants with out-of-state, military or C-7 experience",
+   "citation": "8 CCR 291.1(b)-(c)",
+   "source_location": "https://www.dir.ca.gov/t8/291_1.html",
+   "verbatim_quote": "(b) Where an applicant holds a license as an electrician in another state and it is determined by the Chief DAS that the requirements for experience to hold a license in that state are comparable to the requirements of Section 291.1(a)(1) or Section 291.1(a)(2), the Chief may deem the applicant to have the required experience for certification.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "DIR FAQ: 'Your electrician's license acquired from other states will make you eligible to sit for the test.' The regulation still names DAS; the program is now run by DLSE."
+  },
+  {
+   "id": "cert-elec-no-grace-period-out-of-state",
+   "title": "No grace period: out-of-state electricians must be certified before working",
+   "plain_english": "An electrician coming from another state must be California-certified before starting work for a C-10 contractor. There is no grace period, even for a short job.",
+   "category": "prohibition",
+   "parameters": {
+    "grace_period_days": 0,
+    "applies_regardless_of_project_length": true
+   },
+   "applies_to": "C-10 contractors bringing in out-of-state electricians",
+   "citation": "Labor Code 108.2(a) as applied by DIR ECU FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm ('Who is required to be certified?')",
+   "verbatim_quote": "Yes, out of state electricians need to be certified before they can start working in California, there is no grace period.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ also: 'All electricians working for C-10 licensed contractors should be certified regardless of the length of the project.'"
+  },
+  {
+   "id": "cert-elec-application-ssa-earnings-report",
+   "title": "Certification application must include a Social Security employment history report",
+   "plain_english": "When applying for electrician certification you must attach an employment history (earnings) report from the Social Security Administration as proof of experience. You may black out your Social Security number.",
+   "category": "required_document",
+   "parameters": {
+    "required_attachment": "Social Security Administration employment history report",
+    "ssa_form": "SSA-7050",
+    "ssn_may_be_redacted": true,
+    "applications_submitted_under_penalty_of_perjury": true
+   },
+   "applies_to": "Applicants for electrician certification",
+   "citation": "Labor Code 108.2(b)(4); 8 CCR 291.2(a)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 920, printed page 887); https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "(4) Individuals desiring to be certified shall submit an application for certification and examination that includes an employment history report from the Social Security Administration.",
+   "effective": "2012-01-01",
+   "read_from_primary_text": true,
+   "notes": "DIR FAQ: requirement effective 1/1/2012 (AB 1346); choose option #1 on SSA-7050 (detailed earnings with employer names). The FAQ says SSA charges a fee for the report; the dollar amount stated by DIR ($115) is SSA's fee and was not checked on ssa.gov (blocked)."
+  },
+  {
+   "id": "cert-elec-fee-application-and-exam-175",
+   "title": "Certification application and exam fee: $175 ($75 + $100)",
+   "plain_english": "Applying for electrician certification costs $75 plus $100 for the exam, $175 total, and it is not refundable. Each retake costs another $100.",
+   "category": "money_amount",
+   "parameters": {
+    "application_fee_usd": 75,
+    "exam_fee_usd": 100,
+    "total_initial_usd": 175,
+    "retake_exam_fee_usd": 100,
+    "refundable": false,
+    "payable_to": "DIR-Electrician Certification Fund"
+   },
+   "applies_to": "Applicants for electrician certification",
+   "citation": "8 CCR 292.0(a)-(b)",
+   "source_location": "https://www.dir.ca.gov/t8/292_0.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm; https://www.dir.ca.gov/DLSE/ECU/ElectricalTrade_Fees.html",
+   "verbatim_quote": "(a) The fee for initially applying for certification is $75.00.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "292.0(b): 'The fee for taking or retaking the examination is $100.00.' DIR FAQ: 'The fee is $175 ($100 exam fee and $75 administration fee - NOT REFUNDABLE).' A missed exam date forfeits fees; the applicant then pays both the $75 and $100 again (FAQ)."
+  },
+  {
+   "id": "cert-elec-fee-renewal-100",
+   "title": "Electrician certification renewal fee: $100 per certificate",
+   "plain_english": "Renewing an electrician certification costs $100 for each certificate renewed, paid by check or money order to the DIR Electrician Certification Fund.",
+   "category": "money_amount",
+   "parameters": {
+    "renewal_fee_usd": 100,
+    "per": "certificate",
+    "payable_to": "DIR - Electrician Certification Fund"
+   },
+   "applies_to": "Certified electricians",
+   "citation": "8 CCR 292.0(c)",
+   "source_location": "https://www.dir.ca.gov/t8/292_0.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "(c) The fee for renewal of certification is $100.00.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "FAQ: 'Submit application along with payment of $100 per Certificate being renewed.'"
+  },
+  {
+   "id": "cert-elec-fee-lapsed-renewal-200",
+   "title": "Lapsed (expired) certification: $200 and the exam must be retaken",
+   "plain_english": "If a certification expires, the electrician must retake and pass the exam; DIR charges $200 (the $100 exam fee plus the $100 renewal fee). The 32 hours of continuing education is not required in that case.",
+   "category": "money_amount",
+   "parameters": {
+    "lapsed_renewal_fee_usd": 200,
+    "components_usd": {
+     "exam": 100,
+     "renewal": 100
+    },
+    "ce_hours_required_if_lapsed": 0,
+    "exam_required": true
+   },
+   "applies_to": "Electricians whose certification expired",
+   "citation": "8 CCR 291.5(c), 292.0(b)-(c); DIR ECU fee schedule",
+   "source_location": "https://www.dir.ca.gov/DLSE/ECU/ElectricalTrade_Fees.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "The fee for renewal for lapsed/expired certification card is $200.00.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "DIR fees page revised January 24, 2019 (fee start date not stated). FAQ: 'If you are renewing after your card expired, you do not need to fulfill the 32 hours requirement for continuing education. You must retake the exam and pass or you will be illegally working.'"
+  },
+  {
+   "id": "cert-elec-fee-trainee-registration-25",
+   "title": "Electrician trainee registration: $25; annual renewal is free",
+   "plain_english": "Registering as an electrician trainee costs $25 (check or money order to the DIR Electrician Certification Fund). The yearly trainee renewal has no fee. Re-registering after withdrawing from school costs another $25.",
+   "category": "money_amount",
+   "parameters": {
+    "trainee_registration_fee_usd": 25,
+    "trainee_renewal_fee_usd": 0,
+    "reinstatement_fee_usd": 25
+   },
+   "applies_to": "Electrician trainees",
+   "citation": "8 CCR 292.0(d), 296.1(e)",
+   "source_location": "https://www.dir.ca.gov/t8/292_0.html; https://www.dir.ca.gov/t8/296_1.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "(d) The fee for registering as an Electrician Trainee Registrant is $25.00.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "296.1(e): renewal requirements are the same as registration 'except that no fee is required for renewal'. FAQ: re-applying after withdrawal requires a new registration form and a $25.00 fee with current proof of enrollment."
+  },
+  {
+   "id": "cert-elec-fee-replacement-card-30",
+   "title": "Replacement certification card: $30",
+   "plain_english": "A lost or damaged electrician certification card can be replaced for $30 (30% of the renewal fee) with a written request including current address and phone.",
+   "category": "money_amount",
+   "parameters": {
+    "replacement_fee_usd": 30,
+    "formula": "0.30 * renewal_fee_usd",
+    "renewal_fee_usd": 100
+   },
+   "applies_to": "Certified electricians",
+   "citation": "8 CCR 291.5(d)",
+   "source_location": "https://www.dir.ca.gov/t8/291_5.html; https://www.dir.ca.gov/DLSE/ECU/ElectricalTrade_Fees.html",
+   "verbatim_quote": "Such request shall be in writing and accompanied with a current address and phone number and replacement fee in the amount of 30% of the renewal fee specified in Section 292.0(c).",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": "DIR fee page: 'The fee for lost/stolen or replacement card is $30.00.'"
+  },
+  {
+   "id": "cert-elec-application-response-30-days",
+   "title": "DIR must answer a certification application within 30 days",
+   "plain_english": "Within 30 days after receiving an application, DIR must tell the applicant in writing whether they are eligible to take the exam or what is missing. A deficient application is returned with fees refunded.",
+   "category": "deadline",
+   "parameters": {
+    "agency_response_days": 30,
+    "trigger": "receipt of application",
+    "deficient_application": "returned with full fee refund"
+   },
+   "applies_to": "Applicants for electrician certification",
+   "citation": "8 CCR 291.2(e)",
+   "source_location": "https://www.dir.ca.gov/t8/291_2.html",
+   "verbatim_quote": "(e) Within 30 days of the receipt of an application, the DAS shall inform the applicant in writing whether the applicant is eligible to take the certification examination, or whether the application is deficient or the applicant has not submitted sufficient proof of experience to take the certification examination.",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": "FAQ: if no letter within 4-6 weeks, call (510) 286-3900. Applications can now be filed online (ECU page) except trainee registrations, which are still by mail."
+  },
+  {
+   "id": "cert-elec-exam-within-1-year-of-eligibility",
+   "title": "Take the exam within 1 year of the eligibility notice or reapply",
+   "plain_english": "After DIR says you are eligible, you have one year to take the exam. Retakes are allowed within that year but at least 60 days apart, paying the exam fee each time. After the year runs out, you must file a new application and pay the fees again.",
+   "category": "deadline",
+   "parameters": {
+    "eligibility_window_days": 365,
+    "min_days_between_attempts": 60,
+    "fee_per_attempt_usd": 100,
+    "after_window": "new application and fees ($175)"
+   },
+   "applies_to": "Applicants for electrician certification",
+   "citation": "8 CCR 291.2(e), 291.4",
+   "source_location": "https://www.dir.ca.gov/t8/291_4.html; https://www.dir.ca.gov/t8/291_2.html",
+   "verbatim_quote": "An applicant may take the test as many times as he or she wishes under one application for one year following the date of the notification of eligibility to take the examination so long as there is at least 60 days between each sitting.",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": "291.2(e): 'If the applicant does not take the examination within one year after being notified by DAS of eligibility to take the examination, the applicant must submit a new application to DAS and pay the required application and testing fee again.' Search results (not an official source) suggest AB 1707 (2026) shortens the retest wait; not verified, so the 60-day rule stays."
+  },
+  {
+   "id": "cert-elec-exam-passing-score-70",
+   "title": "Exam: multiple choice, open book, 70% to pass",
+   "plain_english": "The certification exam is a computer-based, open-book, multiple-choice test available in English and Spanish. You need at least 70% to pass. General: 100 questions in 4 hours; Residential: 80 questions in 3 hours; Fire/Life Safety, Voice Data Video and Nonresidential Lighting: 50 questions in 2 hours each. Bring valid state photo ID or you forfeit your fees.",
+   "category": "threshold",
+   "parameters": {
+    "passing_score_pct": 70,
+    "questions": {
+     "General Electrician": 100,
+     "Residential Electrician": 80,
+     "Fire/Life Safety Technician": 50,
+     "Voice Data Video Technician": 50,
+     "Nonresidential Lighting Technician": 50
+    },
+    "time_hours": {
+     "General Electrician": 4,
+     "Residential Electrician": 3,
+     "Fire/Life Safety Technician": 2,
+     "Voice Data Video Technician": 2,
+     "Nonresidential Lighting Technician": 2
+    },
+    "languages": [
+     "English",
+     "Spanish"
+    ],
+    "open_book": true,
+    "card_mailed_within_weeks_after_passing": 2
+   },
+   "applies_to": "Electrician certification exam candidates",
+   "citation": "8 CCR 291.3; DIR ECU FAQ (revised October 22, 2026)",
+   "source_location": "https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm ('I have questions about the test' and 'What if I fail the test?')",
+   "verbatim_quote": "A minimum score of 70% is required to pass the test.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ: exams are administered by CPS HR Consulting via Pearson VUE (new scheduling procedures for exams on or after June 1, 2026 per ECU page). The FAQ elsewhere still mentions PSI for lapsed-card retests, which looks out of date."
+  },
+  {
+   "id": "cert-elec-renewal-3-years-32-ce-2000-hours",
+   "title": "Renew every 3 years with 32 hours of education and 2,000 hours worked",
+   "plain_english": "Electrician certification lasts three years. To renew you must show 32 hours of continuing education from an approved provider relevant to your certification and swear you worked 2,000 hours in the industry in the past three years. The same education hours can count for more than one certification.",
+   "category": "deadline",
+   "parameters": {
+    "renewal_interval_years": 3,
+    "ce_hours_required": 32,
+    "industry_hours_required_in_prior_3_years": 2000,
+    "ce_must_be_from": "DIR-listed continuing education provider or approved apprenticeship program",
+    "same_ce_hours_count_for_multiple_categories": true,
+    "may_renew_up_to_days_before_expiration": 365
+   },
+   "applies_to": "Certified electricians",
+   "citation": "8 CCR 291.5(a)",
+   "source_location": "https://www.dir.ca.gov/t8/291_5.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "(a) Certification shall be renewed every three (3) years. To be eligible for renewal an applicant must provide proof under penalty of perjury of 32 hours further electrical education from an Educational Provider or from a state or federally approved apprenticeship program relevant to the type of certification, and must certify under penalty of perjury that he or she has worked in the industry 2000 hours within the previous three years.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "FAQ: renewals accepted up to one year before expiration; 'If we do not recognize the continuing education provider on the list, we cannot process your application.' Provider list: https://www.dir.ca.gov/dlse/ECU/continuingeducation.html."
+  },
+  {
+   "id": "cert-elec-renewal-filing-deadline",
+   "title": "File the renewal before the card expires (regulation says 30 days before)",
+   "plain_english": "To avoid a lapse, file the renewal early. The regulation says a successful renewal must be postmarked or received 30 days before the certification period ends; DIR's FAQ says it must be postmarked on or before the expiration date. Use the earlier date to be safe. DIR must answer a renewal within 30 days.",
+   "category": "deadline",
+   "parameters": {
+    "regulation_days_before_expiration": 30,
+    "dir_faq_deadline": "postmarked on or prior to expiration date",
+    "conservative_days_before_expiration": 30,
+    "agency_response_days": 30,
+    "renewal_reminder_guaranteed": false
+   },
+   "applies_to": "Certified electricians and their employers",
+   "citation": "8 CCR 291.5(b)-(c)",
+   "source_location": "https://www.dir.ca.gov/t8/291_5.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm ('Renewal Certification Questions')",
+   "verbatim_quote": "A successful renewal application must be postmarked or received at DAS 30 days before the end of the certification period in order for certification to be renewed without a lapse.",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": "FAQ: 'Your renewal application must be postmarked on or prior to the expiration date on your certification card.' and 'A reminder notice may not be issued, so please refer to your certification card for your expiration date.' The regulation and FAQ differ; a calculator should warn at 30+ days before expiration."
+  },
+  {
+   "id": "cert-elec-lapse-means-retest",
+   "title": "A lapsed certification must be re-earned by passing the exam",
+   "plain_english": "If an electrician lets certification lapse, they must retake the certification exam. Working for a C-10 contractor with an expired card is working uncertified.",
+   "category": "penalty",
+   "parameters": {
+    "lapse_consequence": "retake certification examination",
+    "working_while_lapsed_is_uncertified": true
+   },
+   "applies_to": "Certified electricians and their C-10 employers",
+   "citation": "8 CCR 291.5(c)",
+   "source_location": "https://www.dir.ca.gov/t8/291_5.html",
+   "verbatim_quote": "(c) An individual who allows certification to lapse shall be required to retake the certification examination.",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": "See cert-elec-fee-lapsed-renewal-200 for the $200 fee."
+  },
+  {
+   "id": "cert-elec-trainee-registration",
+   "title": "Uncertified workers can work only as registered electrician trainees enrolled in approved school",
+   "plain_english": "Someone without enough experience to test may still do electrical work for a C-10 contractor by registering with DIR as an electrician trainee. They must be enrolled in (or have completed) a state-approved electrician trainee curriculum and send proof of enrollment with the $25 registration. DIR sends a letter with a 'T' number.",
+   "category": "license_classification",
+   "parameters": {
+    "registration_required": true,
+    "school_enrollment_required": "enrolled in or completed DIR-approved curriculum",
+    "registration_fee_usd": 25,
+    "filing_method": "mail (online trainee registration not yet available per ECU page)",
+    "proof_document": "T-number confirmation letter and trainee card"
+   },
+   "applies_to": "Uncertified workers doing certified electrical work for C-10 contractors",
+   "citation": "Labor Code 108.4 (as described by DIR); 8 CCR 296.1(a)",
+   "source_location": "https://www.dir.ca.gov/t8/296_1.html; https://www.dir.ca.gov/dlse/ecu/electricaltrainee.htm; https://www.dir.ca.gov/dlse/ecu/guide_for_electricians_and_trainees_2-07.pdf",
+   "verbatim_quote": "(a) An individual who is enrolled in or has completed an Approved Curriculum may register with DAS as an Electrician Trainee Registrant by submitting an application as set forth herein.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "DIR trainee page (April 2020): 'An electrician trainee must be enrolled in a state approved school and under the supervision of a certified electrician that supervises only one electrician trainee.' Mailing address on the DIR page: DLSE-Electrician Certification Unit, P.O. Box 511286, Los Angeles, CA 90051-7841 (the regulation still shows an old DAS San Francisco P.O. box). Labor Code 108.4 itself was not readable (leginfo blocked)."
+  },
+  {
+   "id": "cert-elec-trainee-supervision-ratio-1-to-1",
+   "title": "Trainee supervision: one certified electrician per trainee, direct and on site",
+   "plain_english": "A C-10 contractor using an electrician trainee for certified work must keep the trainee under direct, on-site supervision of a certified electrician who supervises no more than one trainee. That electrician may also supervise registered apprentices, who do not count toward the 1:1 limit. By using a trainee, the employer is promising adequate supervision.",
+   "category": "threshold",
+   "parameters": {
+    "max_trainees_per_certified_electrician": 1,
+    "supervision_type": "direct, on-site",
+    "registered_apprentices_count_toward_limit": false,
+    "employer_attests_supervision_by_employing_trainee": true
+   },
+   "applies_to": "C-10 contractors employing electrician trainees",
+   "citation": "8 CCR 296.3(a); Labor Code 108.4 (as described by DIR)",
+   "source_location": "https://www.dir.ca.gov/t8/296_3.html",
+   "verbatim_quote": "(a) An employer who employs an Electrician Trainee to perform work for which certification would otherwise be required must ensure that the trainee is under the direct, on-site supervision of a Certified Electrician who is responsible for supervising no more than one trainee, but who also may be responsible for supervising registered apprentices.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "Willfully failing to provide the supervision required by LC 108.4(a)(3) is a CSLB discipline ground (LC 108.2(h)(2)). The C-10 qualifying person may also supervise an uncertified employee (LC 108.2(g))."
+  },
+  {
+   "id": "cert-elec-employer-barred-from-trainees",
+   "title": "Employers who fail to supervise trainees can be barred from using them",
+   "plain_english": "If an employer does not adequately supervise an electrician trainee, the state may bar it from employing trainees in the future. The employer gets written notice and has 30 days to request a hearing; the hearing is set within 90 days and a written ruling follows within 90 days after it.",
+   "category": "penalty",
+   "parameters": {
+    "sanction": "barred from employing electrician trainees",
+    "hearing_request_days": 30,
+    "hearing_scheduled_within_days": 90,
+    "ruling_within_days_after_hearing": 90,
+    "notice_served_to": "employer address on file with CSLB"
+   },
+   "applies_to": "C-10 contractors employing electrician trainees",
+   "citation": "8 CCR 296.3(b)-(c)",
+   "source_location": "https://www.dir.ca.gov/t8/296_3.html",
+   "verbatim_quote": "(b) An employer that fails to provide adequate supervision to an Electrician Trainee may be barred by the Chief DAS from employing trainees in the future.",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": "296.3(c): 'The employer may request a hearing with the Director within 30 days of service of the notice.'"
+  },
+  {
+   "id": "cert-elec-trainee-annual-renewal",
+   "title": "Electrician trainee registration must be renewed every year",
+   "plain_english": "Trainee registration lasts one year. Renew annually (no fee) with current proof of enrollment, transcripts of approved classwork completed in the past year, and a list of electrical employers and on-the-job experience for the year. Trainees who finished school renew yearly with a copy of the completion certificate until certified.",
+   "category": "deadline",
+   "parameters": {
+    "renewal_interval_years": 1,
+    "renewal_fee_usd": 0,
+    "renewal_attachments": [
+     "current proof of enrollment or certificate of completion",
+     "transcripts of prior-year approved classwork",
+     "list of electrical employers and prior-year on-the-job experience"
+    ],
+    "agency_response_days": 90
+   },
+   "applies_to": "Electrician trainees and their C-10 employers",
+   "citation": "8 CCR 296.1(e)-(f)",
+   "source_location": "https://www.dir.ca.gov/t8/296_1.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "(e) An Electrician Trainee Registrant must renew his or her registration with DAS on an annual basis, by submitting a renewal application.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "296.1(d) and (f): DIR informs the applicant within 90 days of receiving a registration or renewal application. FAQ: 'Trainee cards have to be renewed every year.' An expired/inactive trainee is not legal to work under a C-10 contractor."
+  },
+  {
+   "id": "cert-elec-trainee-150-classroom-hours-per-year",
+   "title": "Trainees must complete at least 150 classroom hours each year",
+   "plain_english": "To count as enrolled, a trainee must successfully complete at least 150 hours of approved classroom instruction each year (measured from the date classes start). In the first year the class schedule must be on track for 150 hours. Someone who has signed up but whose classes start later is treated as enrolled for up to 180 days before classes begin.",
+   "category": "threshold",
+   "parameters": {
+    "min_classroom_hours_per_year": 150,
+    "year_measured_from": "date individual begins classes",
+    "pre_class_grace_days": 180,
+    "first_year_examples_hours_per_term": {
+     "three_semesters_per_year": 50,
+     "two_semesters_per_year": 75
+    },
+    "final_year_rule": "fewer than 150 hours remaining: enrolled while attending remaining classes"
+   },
+   "applies_to": "Electrician trainees",
+   "citation": "8 CCR 296.2(a)-(b)",
+   "source_location": "https://www.dir.ca.gov/t8/296_2.html",
+   "verbatim_quote": "(1) the individual must be successfully completing at least 150 hours of classroom instruction from an approved Educational Provider each year, except that the individual who has fewer than 150 hours of classroom instruction remaining to complete the Approved Curriculum will be deemed enrolled during the final year while attending those classes to complete the Approved Curriculum;",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "DIR trainee guide (Rev 3/2015): credit is given only for hours actually attended. Approved schools list: https://www.dir.ca.gov/DLSE/ECU/ListOfApprovedSchools.html."
+  },
+  {
+   "id": "cert-elec-trainee-withdrawal-notice",
+   "title": "Trainee who leaves school must notify DIR; registration is cancelled",
+   "plain_english": "A trainee who stops attending the approved program without finishing must tell DIR. DIR then cancels the registration, and the person may no longer work as a trainee for a C-10 contractor until re-registered.",
+   "category": "required_notice",
+   "parameters": {
+    "notice_by": "electrician trainee registrant",
+    "notice_to": "DIR Electrician Certification Unit",
+    "trigger": "ceasing enrollment without completing approved curriculum",
+    "result": "registration cancelled; status inactive; not legal to work under C-10"
+   },
+   "applies_to": "Electrician trainees and their C-10 employers",
+   "citation": "8 CCR 296.2(d)-(e)",
+   "source_location": "https://www.dir.ca.gov/t8/296_2.html; https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm",
+   "verbatim_quote": "(d) An Electrician Trainee Registrant must notify DAS if the registrant ceases to be enrolled in an Approved Curriculum without completing it.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "FAQ: \"It means you are not active on the Electrician Trainee list and are not legal to work under a C10 Licensed Contractor.\" Schools may also report non-attendance."
+  },
+  {
+   "id": "cert-elec-trainee-path-to-exam",
+   "title": "Trainees can test after finishing the approved curriculum, but are certified only after the hours",
+   "plain_english": "An electrician trainee may take the certification exam once they complete the approved curriculum for that classification. They are not certified until they pass and also prove the required work hours; until then they must keep renewing their trainee registration.",
+   "category": "process_step",
+   "parameters": {
+    "exam_eligibility": "completion of approved curriculum",
+    "certification_requires": [
+     "passing exam",
+     "proof of required experience hours"
+    ],
+    "keep_renewing_trainee_registration_until_certified": true
+   },
+   "applies_to": "Electrician trainees",
+   "citation": "8 CCR 291.2(g)",
+   "source_location": "https://www.dir.ca.gov/t8/291_2.html",
+   "verbatim_quote": "(g) An Electrician Trainee is eligible to test for certification upon completing the Approved Curriculum for the classification for which certification is sought.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "FAQ: DIR holds the card until the experience is documented."
+  },
+  {
+   "id": "cert-elec-nonresidential-lighting-trainee",
+   "title": "Nonresidential lighting trainees in an approved OJT program are exempt",
+   "plain_english": "A nonresidential lighting trainee does not need certification if enrolled in a DAS-approved on-the-job training program and supervised on site by a certified Nonresidential Lighting Technician.",
+   "category": "license_classification",
+   "parameters": {
+    "conditions": [
+     "enrolled in DAS-approved on-the-job instructional training program (LC 3090)",
+     "onsite supervision by certified nonresidential lighting technician"
+    ],
+    "approved_program_listed_by_dir": "NALMCO Certified Apprentice Lighting Technician (CALT) program manuals"
+   },
+   "applies_to": "Lighting maintenance and retrofit C-10 contractors",
+   "citation": "Labor Code 108.2(f)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 920, printed page 887); https://www.dir.ca.gov/DLSE/ECU/NonresidentialLightingTech.html",
+   "verbatim_quote": "(f) Notwithstanding subdivision (a), certification is not required for a nonresidential lighting trainee (1) who is enrolled in an on-the-job instructional training program approved by the Chief of the Division of Apprenticeship Standards pursuant to Section 3090, and (2) who is under the onsite supervision of a nonresidential lighting technician certified pursuant to Section 108.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "DIR page (July 2011) lists the NALMCO CALT manuals as the approved OJT program."
+  },
+  {
+   "id": "cert-elec-cslb-discipline-grounds",
+   "title": "CSLB can suspend or revoke a C-10 license for willfully using uncertified electricians",
+   "plain_english": "It is grounds for CSLB discipline, up to suspension or revocation of the C-10 license, if the contractor willfully employs even one uncertified person as an electrician, willfully fails to supervise uncertified trainees as required, or willfully fails to supervise apprentices.",
+   "category": "penalty",
+   "parameters": {
+    "max_sanction": "suspension or revocation of C-10 license",
+    "threshold_uncertified_workers": 1,
+    "grounds": [
+     "willfully employs one or more uncertified persons as electricians",
+     "willfully fails to provide adequate supervision of uncertified workers (LC 108.4(a)(3))",
+     "willfully fails to provide adequate supervision of apprentices"
+    ],
+    "disciplinary_article": "B&P 7090 et seq."
+   },
+   "applies_to": "C-10 electrical contractors",
+   "citation": "Labor Code 108.2(h)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 921, printed page 888)",
+   "verbatim_quote": "(1) The contractor willfully employs one or more uncertified persons to perform work as electricians in violation of this section.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "Opening text of 108.2(h): 'The following shall constitute additional grounds for disciplinary proceedings, including suspension or revocation of the license of a class C-10 electrical contractor pursuant to Article 7 (commencing with Section 7090) of Chapter 9 of Division 3 of the Business and Professions Code:'. No per-worker dollar penalty was found in the readable statute or regulations; CSLB citation fines under B&P 7099.2 may apply (see rulebook). DIR FAQ also warns of possible civil suits."
+  },
+  {
+   "id": "cert-elec-cslb-60-day-action-and-presumption",
+   "title": "CSLB must act within 60 days of a Labor Commissioner referral; no proof of certification is presumed a violation",
+   "plain_english": "When the Labor Commissioner refers a likely violation, CSLB opens an investigation and must start any disciplinary action within 60 days of the referral. If the employer or worker cannot show proof of certification or trainee status, a violation is presumed (the contractor must then rebut it). Keep copies of every electrician's card or trainee letter on file and at the jobsite.",
+   "category": "deadline",
+   "parameters": {
+    "cslb_discipline_initiation_days_after_referral": 60,
+    "rebuttable_presumption_if_no_evidence": true,
+    "evidence_types": [
+     "electrician certification card/number",
+     "trainee T-number letter/card",
+     "apprentice registration"
+    ]
+   },
+   "applies_to": "C-10 electrical contractors",
+   "citation": "Labor Code 108.2(i)-(j)",
+   "source_location": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (PDF page 921, printed page 888)",
+   "verbatim_quote": "Failure of the employer or employee to provide evidence of certification or trainee status shall create a rebuttable presumption of violation of this provision.",
+   "effective": "2012-06-27",
+   "read_from_primary_text": true,
+   "notes": "108.2(j): 'Any disciplinary action against the licensee shall be initiated within 60 days of the receipt of the referral.' DIR status search tool: https://www.dir.ca.gov/DLSE/ECU/ElectCert/ElectCertSearch.asp. Recordkeeping practice is a recommendation, not a statutory duty."
+  },
+  {
+   "id": "cert-elec-complaint-referral-process",
+   "title": "Electrician certification complaints go to DLSE, which forwards verified ones to CSLB",
+   "plain_english": "Complaints about uncertified electricians are filed with the DIR Electrician Certification Unit on its referral form. DLSE checks them and forwards verified complaints to CSLB. Helpful evidence: the contract, scope, job address, project type, owner and contractor details including CSLB license number, and names and photos of uncertified workers.",
+   "category": "process_step",
+   "parameters": {
+    "filed_with": "DIR Electrician Certification Unit, Attn: ECU Supervisor, 1515 Clay Street, Suite 1902, Oakland, CA 94612",
+    "forwarded_to": "CSLB",
+    "joint_enforcement_since": "2009-07-01",
+    "evidence_items": [
+     "contract or documentation of scope",
+     "exact jobsite address",
+     "project type (public works/commercial/residential)",
+     "owner or awarding body information",
+     "contractor name, address, phone, prime or sub, CSLB license number",
+     "list of non-certified employees with names and photographs"
+    ]
+   },
+   "applies_to": "C-10 contractors (as respondents) and competitors/workers filing complaints",
+   "citation": "Labor Code 108.2(i); DIR ECU enforcement page",
+   "source_location": "https://www.dir.ca.gov/DLSE/ECU/ECP_complaint.htm (November 2024)",
+   "verbatim_quote": "As of July 1, 2009 the Department of Labor Standards Enforcement(DLSE) and the California Contractors State License Board (CSLB) are responsible for enforcing Labor Code 108.2.",
+   "effective": "2009-07-01",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-elec-false-claim-7-year-bar",
+   "title": "Falsely claiming to be certified: 7-year bar from testing or trainee registration",
+   "plain_english": "A person who shows a certificate or claims to be certified when they are not is barred for seven years from taking the certification exam or registering as a trainee.",
+   "category": "penalty",
+   "parameters": {
+    "bar_years": 7,
+    "barred_from": [
+     "certification examination",
+     "electrician trainee registration"
+    ]
+   },
+   "applies_to": "Individuals doing electrical work",
+   "citation": "8 CCR 294.0",
+   "source_location": "https://www.dir.ca.gov/t8/294_0.html",
+   "verbatim_quote": "Any person who displays a certificate, or otherwise claims to be certified, who is not certified shall be prohibited from taking the test for certification or from registering as an Electrician Trainee Registrant for a period of seven (7) years.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-elec-suspension-revocation-and-hearing",
+   "title": "Certification can be suspended or revoked; 30 days to request a hearing",
+   "plain_english": "DIR may suspend or revoke a certification for gross negligence, fraud, repeated negligence, or if it was obtained by mistake or fraud. The electrician has 30 days from service of the notice to request a hearing; otherwise the action takes effect on the 31st day.",
+   "category": "penalty",
+   "parameters": {
+    "grounds": [
+     "gross negligence",
+     "fraud",
+     "repeated acts of negligence",
+     "certification obtained through mistake, misrepresentation or fraud"
+    ],
+    "hearing_request_days": 30,
+    "effective_day_if_no_request": 31,
+    "hearing_scheduled_within_days": 90,
+    "ruling_within_days_after_hearing": 90
+   },
+   "applies_to": "Certified electricians",
+   "citation": "8 CCR 293.0(b), (e)",
+   "source_location": "https://www.dir.ca.gov/t8/293_0.html",
+   "verbatim_quote": "Where no timely request for hearing has been made, the effective date of the suspension or revocation is deemed the 31st day following service of the notice of intention.",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-elec-denial-appeal-30-days",
+   "title": "Appeal a denied certification or trainee registration within 30 days",
+   "plain_english": "An applicant denied certification, or a trainee denied or cancelled, may appeal in writing within 30 days of service of the denial. Any hearing must start within 90 days after the appeal is received, and the written ruling is due within 90 days of the appeal or the last hearing day, whichever is later.",
+   "category": "deadline",
+   "parameters": {
+    "appeal_days": 30,
+    "hearing_start_within_days": 90,
+    "ruling_within_days": 90,
+    "burden_of_proof": "applicant"
+   },
+   "applies_to": "Applicants and trainee registrants",
+   "citation": "8 CCR 293.0(d); 296.4(b)",
+   "source_location": "https://www.dir.ca.gov/t8/293_0.html; https://www.dir.ca.gov/t8/296_4.html",
+   "verbatim_quote": "(d) Any applicant may appeal the denial of certification to the Chief DAS. The appeal shall be in writing and made within 30 days of service of the denial.",
+   "effective": "2006-03-11",
+   "read_from_primary_text": true,
+   "notes": "296.4(b) sets the same 30-day appeal for trainee registration denial or cancellation."
+  },
+  {
+   "id": "cert-elec-address-change-notice",
+   "title": "Keep your mailing address current with the Electrician Certification Unit",
+   "plain_english": "Applicants, certified electricians and trainees must tell DIR when their mailing address changes (online, by form, or by letter). Notices of denial, suspension or revocation are sent to the address on file.",
+   "category": "required_notice",
+   "parameters": {
+    "notice_by": [
+     "applicants",
+     "certified electricians",
+     "electrician trainee registrants"
+    ],
+    "notice_to": "DIR Electrician Certification Unit",
+    "trigger": "change of mailing address",
+    "deadline_days": null
+   },
+   "applies_to": "Certified electricians, trainees and applicants",
+   "citation": "8 CCR 295.0(b)",
+   "source_location": "https://www.dir.ca.gov/t8/295_0.html",
+   "verbatim_quote": "(b) Applicants, Electrician Trainee Registrants, and Certified Electricians shall be responsible for notifying DAS of changes in mailing address.",
+   "effective": "2008-08-17",
+   "read_from_primary_text": true,
+   "notes": "No day count is set by the regulation. 295.0(a): DIR publishes a yearly list of certified electricians and trainees (now on data.ca.gov)."
+  },
+  {
+   "id": "cert-elec-ecu-transfer-to-cslb-ab1707",
+   "title": "AB 1707 (2026): electrician certification program moving to CSLB on July 1, 2028 (enactment not verified)",
+   "plain_english": "A 2026 bill, AB 1707, moves the electrician certification program from DIR's Labor Commissioner to CSLB effective July 1, 2028, subject to a budget appropriation. CSLB would enforce the existing DIR regulations until it adopts its own. The certification requirement itself does not change. CSLB's board analysis described the bill as pending on the Senate floor as of August 25, 2026; whether it was signed could not be confirmed from an official source.",
+   "category": "process_step",
+   "parameters": {
+    "transfer_effective": "2028-07-01",
+    "from_agency": "DIR Division of Labor Standards Enforcement",
+    "to_agency": "Contractors State License Board",
+    "cslb_fund_access_begins": "2027-07-01",
+    "dlse_transition_spending_through": "2029-06-30",
+    "contingent_on_appropriation": true,
+    "status_as_of_2026-08-25": "Pending the Senate Floor",
+    "enactment_verified": false
+   },
+   "applies_to": "C-10 contractors, certified electricians and trainees",
+   "citation": "AB 1707 (Davies, 2025-26) as summarized by CSLB",
+   "source_location": "https://cslb.ca.gov/Resources/BoardPackets/2026/Sept.2-3_BoardMeetingPacket.pdf (agenda item E1b, PDF page 154, printed pages 139-141)",
+   "verbatim_quote": "SUMMARY: AB 1707 transfers the administration of the electrician certification program (ECU) and existing requirements for electrician certification from the Department of Industrial Relations' (DIR) Division of Labor Standards Enforcement (DLSE) to the Contractors State License Board (CSLB), upon appropriation by Legislature, effective July 1, 2028.",
+   "effective": "2028-07-01",
+   "read_from_primary_text": false,
+   "notes": "UNVERIFIED ENACTMENT. Bill text (leginfo) and the Governor's signing announcement (gov.ca.gov) could not be fetched. Search snippets indicate a September 27, 2026 signing; treat as unconfirmed until the chaptered text is read. Read only the CSLB staff analysis."
+  },
+  {
+   "id": "cert-lead-cdph-certification-50-ugm3",
+   "title": "CDPH lead certification required for workers and supervisors exposed at 50 µg/m3 or more in homes and public buildings",
+   "plain_english": "On lead-related construction work in residential or public buildings, any worker or supervisor shown to be exposed to airborne lead at or above 50 micrograms per cubic meter (8-hour average) must be trained by a CDPH-accredited training provider and hold a California Department of Public Health (CDPH) lead certificate. This is on top of Cal/OSHA's regular lead training.",
+   "category": "threshold",
+   "parameters": {
+    "exposure_twa_8hr_ug_per_m3_gte": 50,
+    "buildings": [
+     "residential",
+     "public"
+    ],
+    "certifying_agency": "California Department of Public Health (CDPH)",
+    "training_provider": "CDPH-accredited (17 CCR Div. 1, Ch. 8)",
+    "who": [
+     "employees",
+     "supervisors"
+    ],
+    "related_values_ug_per_m3": {
+     "cal_osha_pel_8hr": 10,
+     "cal_osha_action_level_8hr": 2
+    }
+   },
+   "applies_to": "Construction employers doing lead-related construction work in residential or public buildings",
+   "citation": "8 CCR 1532.1(l)(3)",
+   "source_location": "https://www.dir.ca.gov/title8/1532_1.html (subsection (l)(3) 'Certification of training for residential and public buildings')",
+   "verbatim_quote": "The employer shall ensure that all employees and supervisors who are engaged in lead-related construction work as defined in Title 17, California Code of Regulations, section 35040, and have been shown to be exposed to lead at or above 50 µg/m3 as an 8-hour TWA, meet the training requirements of this section, are trained by an accredited training provider and are certified by the California Department of Public Health (CDPH).",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "CDPH's own pages and 17 CCR 35001 et seq. could not be fetched (cdph.ca.gov and govt.westlaw.com blocked), so the CDPH certificate categories (Inspector/Assessor, Project Monitor, Sampling Technician, Supervisor, Worker), fees, renewal terms and exam rules are not included; see sources_blocked. DOSH fact sheet (Lead in Construction) restates this rule. The (l)(3) certification duty predates the 2025 PEL/action-level amendments; its start date was not determined."
+  },
+  {
+   "id": "cert-lead-related-construction-definition",
+   "title": "'Lead-related construction work' and 'public building' defined",
+   "plain_english": "Lead-related construction work means any construction, alteration, painting, demolition, salvage, renovation, repair or maintenance of a residential or public building (including prep and cleanup) that disturbs lead-containing material or soil and may significantly expose adults or children. A 'public building' is any building generally open to the public that is not industrial or residential, such as schools, daycare, hospitals, stores, offices and government buildings.",
+   "category": "definition",
+   "parameters": {
+    "covered_activities": [
+     "construction",
+     "alteration",
+     "painting",
+     "demolition",
+     "salvage",
+     "renovation",
+     "repair",
+     "maintenance",
+     "preparation",
+     "cleanup"
+    ],
+    "covered_buildings": [
+     "residential",
+     "public"
+    ],
+    "excluded_buildings": [
+     "industrial"
+    ],
+    "public_building_examples": [
+     "schools",
+     "daycare centers",
+     "museums",
+     "airports",
+     "hospitals",
+     "stores",
+     "convention centers",
+     "government facilities",
+     "office buildings"
+    ],
+    "defining_regulation": "17 CCR 35040"
+   },
+   "applies_to": "Contractors disturbing lead paint or lead-containing soil in homes or public buildings",
+   "citation": "8 CCR 1532.1(l)(3) (restating 17 CCR 35040)",
+   "source_location": "https://www.dir.ca.gov/title8/1532_1.html (subsection (l)(3))",
+   "verbatim_quote": "Lead-related construction work is defined in Title 17 to be any construction, alteration, painting, demolition, salvage, renovation, repair, or maintenance of any residential or public building, including preparation and cleanup, that, by using or disturbing lead containing material or soil, may result in significant exposure of adults or children to lead.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Definition read from Cal/OSHA's restatement in 8 CCR 1532.1; 17 CCR 35040 itself was not readable. Note that California's definition covers public and commercial buildings, unlike EPA RRP (pre-1978 housing and child-occupied facilities only)."
+  },
+  {
+   "id": "cert-lead-training-by-cdph-accredited-provider",
+   "title": "Where CDPH certification is required, training must come from a CDPH-accredited provider",
+   "plain_english": "If a worker or supervisor needs CDPH lead certification, their training must be given by a training provider accredited by CDPH under Title 17. Training from an EPA-only provider does not satisfy this.",
+   "category": "required_document",
+   "parameters": {
+    "training_provider_accreditor": "California Department of Public Health",
+    "regulation": "17 CCR Div. 1, Ch. 8",
+    "applies_when": "8 CCR 1532.1(l)(3) certification required"
+   },
+   "applies_to": "Construction employers whose workers need CDPH lead certification",
+   "citation": "8 CCR 1532.1(l)(1)(F)",
+   "source_location": "https://www.dir.ca.gov/title8/1532_1.html (subsection (l)(1)(F))",
+   "verbatim_quote": "(F) Where the certification of employee and supervisor training is required, as described in subsection (l)(3), the training shall be conducted by a training provider accredited by the California Department of Public Health, in accordance with Title 17, California Code of Regulations, Division 1, Chapter 8.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The 'EPA-only provider' statement is an inference from the CDPH-accreditation requirement."
+  },
+  {
+   "id": "cert-lead-supervisor-must-be-certified",
+   "title": "Lead 'supervisor' defined; must be CDPH-certified when (l)(3) applies",
+   "plain_english": "Under Cal/OSHA's lead standard, a supervisor is someone who can spot existing and predictable lead hazards and has authority to fix them promptly. Supervisors must be trained and, when required by the 50 µg/m3 rule, CDPH-certified.",
+   "category": "definition",
+   "parameters": {
+    "supervisor_must": [
+     "identify existing and predictable lead hazards",
+     "have authorization to take prompt corrective measures"
+    ],
+    "certification_when": "8 CCR 1532.1(l)(3) applies"
+   },
+   "applies_to": "Construction employers doing lead work",
+   "citation": "8 CCR 1532.1(b) (definition of Supervisor)",
+   "source_location": "https://www.dir.ca.gov/title8/1532_1.html (subsection (b) Definitions)",
+   "verbatim_quote": "Supervisors shall be trained, as required by this section, and, when required, be certified consistent with subsection (l)(3).",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-lead-certification-records-on-request",
+   "title": "Give lead training and certification materials on request",
+   "plain_english": "On request, the employer must provide all materials about its lead training program and certification to affected employees, their representatives, Cal/OSHA and NIOSH.",
+   "category": "required_document",
+   "parameters": {
+    "provide_to": [
+     "affected employees",
+     "designated representatives",
+     "Cal/OSHA Chief",
+     "NIOSH"
+    ],
+    "trigger": "upon request"
+   },
+   "applies_to": "Construction employers doing lead work",
+   "citation": "8 CCR 1532.1(l)(4)(B)",
+   "source_location": "https://www.dir.ca.gov/title8/1532_1.html (subsection (l)(4)(B))",
+   "verbatim_quote": "(B) The employer shall provide, upon request, all materials relating to the employee information training program and certification to affected employees, their designated representatives, the Chief and NIOSH.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "No response deadline is stated in (l)(4)(B)."
+  },
+  {
+   "id": "cert-lead-objective-data-600-ppm",
+   "title": "Coatings at 0.06% (600 ppm) lead or more are treated as a lead hazard for construction work",
+   "plain_english": "If test data show a coating or material contains 0.06% lead by dry weight (600 ppm) or more, Cal/OSHA treats it as lead material that may be a health hazard to workers doing lead-related construction. Such objective data cannot replace air monitoring for trigger tasks.",
+   "category": "threshold",
+   "parameters": {
+    "lead_content_pct_dry_weight_gte": 0.06,
+    "lead_content_ppm_gte": 600,
+    "basis": "nonvolatile components of the coating",
+    "may_replace_exposure_assessment_for_trigger_tasks": false
+   },
+   "applies_to": "Construction employers evaluating coatings before lead work",
+   "citation": "8 CCR 1532.1(d)(4)(C)",
+   "source_location": "https://www.dir.ca.gov/title8/1532_1.html (subsection (d)(4)(C))",
+   "verbatim_quote": "(C) Objective data for an initial assessment that demonstrate surface coating or material that contain lead at concentrations equal to or exceeding 0.06% lead dry weight (600 ppm) demonstrate the presence of lead surface coatings or material that may constitute a health hazard to employees engaged in lead-related construction work.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Different from the EPA/RRP lead-based paint threshold (1.0 mg/cm2 or 0.5% by weight) and the Cal/OSHA pre-job notification exemption (under 0.5% / 5,000 ppm) already in the rulebook."
+  },
+  {
+   "id": "cert-lead-blood-lead-20-triggers-calosha",
+   "title": "Worker blood lead of 20 µg/dL or more is reported to Cal/OSHA and treated as a complaint",
+   "plain_english": "CDPH must notify Cal/OSHA when a worker's blood lead test is 20 micrograms per deciliter or higher. Cal/OSHA treats that report as an official complaint and may inspect the employer's workplace or jobsite.",
+   "category": "threshold",
+   "parameters": {
+    "blood_lead_ug_per_dl_gte": 20,
+    "reported_by": "CDPH",
+    "reported_to": "Cal/OSHA",
+    "treated_as": "official complaint from a government representative",
+    "statute": "H&SC 105185 (AB 35, 2019)"
+   },
+   "applies_to": "Employers of lead-exposed construction workers",
+   "citation": "Health and Safety Code 105185 (AB 35, 2019), as described by Cal/OSHA",
+   "source_location": "https://www.dir.ca.gov/dosh/Lead/Exposure-Prevention-Laws-and-Regs.html (April 2025)",
+   "verbatim_quote": "California's Department of Public Health (CDPH) must notify Cal/OSHA when a worker's blood lead level tests at or above 20 micrograms per deciliter (μg/dL).",
+   "effective": "",
+   "read_from_primary_text": false,
+   "notes": "Statute text not read (leginfo blocked); rule taken from Cal/OSHA's official summary page. Effective date of AB 35 not verified."
+  },
+  {
+   "id": "cert-rrp-renovator-refresher-5-or-3-years",
+   "title": "EPA certified renovator: refresher within 5 years (3 years if no hands-on)",
+   "plain_english": "A certified renovator becomes certified by passing an EPA-accredited renovator course; the course certificate is the proof. To stay certified, take a refresher within 5 years of the initial course. A refresher with hands-on training gives 5 years; one without hands-on gives only 3 years, and the next refresher must include hands-on. Miss the deadline and you must retake the full initial course.",
+   "category": "deadline",
+   "parameters": {
+    "refresher_due_years_after_initial": 5,
+    "certification_years_with_hands_on_refresher": 5,
+    "certification_years_without_hands_on_refresher": 3,
+    "next_refresher_must_be_hands_on_after_online_only": true,
+    "missed_deadline": "retake initial course",
+    "proof": "course completion certificate"
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.90(a)(1), (a)(4)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.90 (eCFR, current as of 2026-11-20)",
+   "verbatim_quote": "Individuals who take a renovator refresher course that does not include hands-on training will be certified for 3 years from the date they complete the training. Individuals who take a refresher training course that includes hands-on training will be certified for 5 years.",
+   "effective": "2010-04-22",
+   "read_from_primary_text": true,
+   "notes": "Applies where no EPA-authorized state RRP program exists; the rulebook's rrp-applicability note says California has none (not re-verified: the CFR does not list authorized states and epa.gov was blocked). The 3-year limit for refreshers without hands-on training was added in 2016 (81 FR 7995)."
+  },
+  {
+   "id": "cert-rrp-renovator-onsite-duties",
+   "title": "Certified renovator must be on site for signs, containment and cleaning, and reachable at all times",
+   "plain_english": "The assigned certified renovator must be physically at the job while warning signs are posted, while containment is set up, and while the work area is cleaned. At all other times during the work they must be available on site or by phone. They must carry copies of their initial and latest refresher course certificates at the job.",
+   "category": "process_step",
+   "parameters": {
+    "must_be_physically_present_during": [
+     "posting warning signs",
+     "establishing work area containment",
+     "work area cleaning"
+    ],
+    "availability_otherwise": "on-site or by telephone at all times renovation is conducted",
+    "documents_at_worksite": [
+     "initial renovator course completion certificate",
+     "most recent refresher course completion certificate"
+    ],
+    "must_perform_personally": "post-renovation cleaning verification (745.85(b))"
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.90(b)(1), (b)(3), (b)(5), (b)(7)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.90",
+   "verbatim_quote": "(3) Must be physically present at the work site when the signs required by § 745.85(a)(1) are posted, while the work area containment required by § 745.85(a)(2) is being established, and while the work area cleaning required by § 745.85(a)(5) is performed.",
+   "effective": "2010-04-22",
+   "read_from_primary_text": true,
+   "notes": "(b)(5): 'Must be available, either on-site or by telephone, at all times that renovations are being conducted.' (b)(7): 'Must have with them at the work site copies of their initial course completion certificate and their most recent refresher course completion certificate.'"
+  },
+  {
+   "id": "cert-rrp-workers-trained-by-certified-renovator",
+   "title": "Every RRP worker must be a certified renovator or trained on the job by one",
+   "plain_english": "Everyone doing renovation work for the firm must either be a certified renovator or have been trained by the certified renovator on the lead-safe work practices they will use. The firm must document that training (topics for each worker) in the job records.",
+   "category": "process_step",
+   "parameters": {
+    "worker_options": [
+     "certified renovator",
+     "trained by certified renovator per 745.90(b)(2)"
+    ],
+    "training_documentation_required": true,
+    "documentation_includes": "training topics for each worker, certified renovator's training certificate copy"
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.89(d)(1)-(2); 745.90(b)(2); 745.86(b)(6)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.89; https://www.ecfr.gov/current/title-40/section-745.86",
+   "verbatim_quote": "(1) All individuals performing renovation activities on behalf of the firm are either certified renovators or have been trained by a certified renovator in accordance with § 745.90.",
+   "effective": "2010-04-22",
+   "read_from_primary_text": true,
+   "notes": "745.86(b)(6)(i): certification by the renovator that 'Training was provided to workers (topics must be identified for each worker).'"
+  },
+  {
+   "id": "cert-rrp-firm-recertify-90-days-before-expiry",
+   "title": "RRP firm recertification every 5 years; apply at least 90 days before expiration",
+   "plain_english": "EPA firm certification must be renewed every 5 years. An application filed electronically 90 or more days before expiration is 'timely' and keeps the firm certified while EPA decides. If filed later and not approved in time, the certification expires and the firm may not do renovations until EPA approves it.",
+   "category": "deadline",
+   "parameters": {
+    "recertification_interval_years": 5,
+    "timely_if_days_before_expiration_gte": 90,
+    "agency_decision_days": 90,
+    "filing_method": "electronic (EPA CDX)",
+    "late_and_unapproved_result": "certification expires; no renovations until approved"
+   },
+   "applies_to": "EPA-certified renovation firms",
+   "citation": "40 CFR 745.89(b)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.89",
+   "verbatim_quote": "(i) An application for re-certification is timely if it is electronically submitted 90 days or more before the date the firm's current certification expires.",
+   "effective": "2010-04-22",
+   "read_from_primary_text": true,
+   "notes": "745.89(b): 'To maintain its certification, a firm must be re-certified by EPA every 5 years.' Electronic filing requirement added by 89 FR 89457 (Nov. 12, 2024). Existing rulebook rule rrp-firm-certification covers initial certification."
+  },
+  {
+   "id": "cert-rrp-firm-amend-within-90-days",
+   "title": "Amend RRP firm certification within 90 days of a change",
+   "plain_english": "If information in the firm's last EPA application changes (for example name, address or ownership details), the firm must file an amendment within 90 days. If it does not, it may not do renovations until the amendment is made. Amending does not change the expiration date.",
+   "category": "deadline",
+   "parameters": {
+    "amend_within_days_of_change": 90,
+    "consequence_if_late": "no renovations or dust sampling until amended",
+    "changes_expiration_date": false
+   },
+   "applies_to": "EPA-certified renovation firms",
+   "citation": "40 CFR 745.89(c)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.89",
+   "verbatim_quote": "(c) Amendment of certification. A firm must amend its certification within 90 days of the date a change occurs to information included in the firm's most recent application.",
+   "effective": "2010-04-22",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-rrp-firm-application-supplement-30-days",
+   "title": "Supplement an incomplete RRP firm application within 30 days",
+   "plain_english": "If EPA says the firm application is incomplete, the firm has 30 days from EPA's request to send the missing information or fees, or EPA will not approve it (and keeps the fee).",
+   "category": "deadline",
+   "parameters": {
+    "supplement_within_days": 30,
+    "fees_refunded_if_disapproved": false
+   },
+   "applies_to": "Firms applying for EPA RRP certification",
+   "citation": "40 CFR 745.89(a)(2)(ii)-(iii)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.89",
+   "verbatim_quote": "If EPA requests a firm to supplement its application, the firm must submit the requested information or pay the additional fees within 30 days of the date of the request.",
+   "effective": "2010-04-22",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-rrp-firm-fee-300",
+   "title": "EPA RRP firm certification fee: $300 (recertification $300)",
+   "plain_english": "EPA charges a renovation firm $300 for initial certification and $300 for each 5-year recertification. A combined renovation plus lead-based paint activities firm application is $550. Replacing a lost firm certificate costs $15.",
+   "category": "money_amount",
+   "parameters": {
+    "firm_certification_usd": 300,
+    "firm_recertification_usd": 300,
+    "combined_renovation_and_lbp_activities_firm_usd": 550,
+    "tribal_firm_usd": 20,
+    "replacement_certificate_usd": 15,
+    "recertification_interval_years": 5
+   },
+   "applies_to": "Renovation firms applying to EPA",
+   "citation": "40 CFR 745.92(b)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.92 (fee table)",
+   "verbatim_quote": "(2) Lost certificate. A $15 fee will be charged for the replacement of a firm certificate.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The fee table is rendered as a grid in eCFR (Firm: Certification $300, Re-certification (every 5 years) $300), so the verbatim quote is the replacement-fee sentence; the $300 figures were read from the same table. Training course fees for renovators are set by the private training provider, not EPA."
+  },
+  {
+   "id": "cert-rrp-interior-containment-6-feet",
+   "title": "RRP interior containment: cover floor 6 feet beyond the work surfaces",
+   "plain_english": "Inside, before work starts, remove or cover all objects, close and cover all ducts, close and cover doors, and cover the floor (including carpet) with taped-down plastic at least 6 feet beyond the surfaces being worked on, or farther if needed to contain the dust.",
+   "category": "threshold",
+   "parameters": {
+    "floor_cover_beyond_work_surfaces_ft": 6,
+    "rule": "6 ft or sufficient distance to contain dust, whichever is greater",
+    "other_steps": [
+     "remove or cover objects with sealed plastic",
+     "close and cover HVAC ducts",
+     "close windows and doors; cover doors with plastic",
+     "keep emergency egress clear"
+    ]
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.85(a)(2)(i)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.85",
+   "verbatim_quote": "(D) Cover the floor surface, including installed carpet, with taped-down plastic sheeting or other impermeable material in the work area 6 feet beyond the perimeter of surfaces undergoing renovation or a sufficient distance to contain the dust, whichever is greater.",
+   "effective": "2010-07-06",
+   "read_from_primary_text": true,
+   "notes": "Work practices effective July 6, 2010 per 745.81(a)(4)."
+  },
+  {
+   "id": "cert-rrp-exterior-containment-10-and-20-feet",
+   "title": "RRP exterior containment: close openings within 20 feet; ground cover 10 feet",
+   "plain_english": "Outside, close all doors and windows within 20 feet of the work (on multi-story buildings, also those on floors below at the same horizontal distance). Cover the ground with plastic at least 10 feet beyond the surfaces being worked on, unless the property line prevents it. If work is within 10 feet of the property line, put up vertical containment or equal precautions.",
+   "category": "threshold",
+   "parameters": {
+    "close_doors_windows_within_ft": 20,
+    "ground_cover_beyond_work_surfaces_ft": 10,
+    "vertical_containment_if_within_property_line_ft": 10
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.85(a)(2)(ii)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.85",
+   "verbatim_quote": "(C) Cover the ground with plastic sheeting or other disposable impermeable material extending 10 feet beyond the perimeter of surfaces undergoing renovation or a sufficient distance to collect falling paint debris, whichever is greater, unless the property line prevents 10 feet of such ground covering.",
+   "effective": "2010-07-06",
+   "read_from_primary_text": true,
+   "notes": "(A): 'Close all doors and windows within 20 feet of the renovation.' (D): 'If the renovation will affect surfaces within 10 feet of the property line, the renovation firm must erect vertical containment or equivalent extra precautions'."
+  },
+  {
+   "id": "cert-rrp-cleaning-verification-procedure",
+   "title": "RRP cleaning: clean 2 feet beyond the work area; verify with cloths in sections under 40 sq ft",
+   "plain_english": "After interior work, clean all surfaces in and within 2 feet of the work area (HEPA vacuum, wet wipe, mop). Then the certified renovator checks each window sill and wipes floors and countertops with wet cleaning cloths, in sections under 40 square feet each, comparing each cloth to the EPA verification card. If a section fails twice, wait 1 hour (or until dry) and wipe with a dry cloth. Remove warning signs only after verification passes.",
+   "category": "process_step",
+   "parameters": {
+    "clean_beyond_work_area_ft": 2,
+    "max_section_sqft_lt": 40,
+    "wait_after_second_failure_hours": 1,
+    "performed_by": "certified renovator",
+    "tool": "EPA cleaning verification card",
+    "remove_signs_after": "passing cleaning verification"
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.85(a)(5)(ii), (b)(1)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.85",
+   "verbatim_quote": "If the surface within the work area is greater than 40 square feet, the surface within the work area must be divided into roughly equal sections that are each less than 40 square feet.",
+   "effective": "2010-07-06",
+   "read_from_primary_text": true,
+   "notes": "(a)(5)(ii): 'The firm must clean all objects and surfaces in the work area and within 2 feet of the work area in the following manner, cleaning from higher to lower'. Exterior jobs require a visual inspection only (745.85(b)(2))."
+  },
+  {
+   "id": "cert-rrp-dust-clearance-action-levels-2026",
+   "title": "Optional dust clearance testing: new lower dust-lead action levels from January 12, 2026",
+   "plain_english": "A firm may skip cleaning verification only if the contract or another law requires dust clearance sampling by a certified inspector, risk assessor or dust sampling technician, with re-cleaning until results are below the action levels. From January 12, 2026 those levels are 5 µg/ft² for floors, 40 µg/ft² for window sills and 100 µg/ft² for window troughs (before: 10, 100 and 400).",
+   "category": "threshold",
+   "parameters": {
+    "action_levels_ug_per_sqft_from_2026_01_12": {
+     "floors": 5,
+     "interior_window_sills": 40,
+     "window_troughs": 100
+    },
+    "action_levels_ug_per_sqft_before_2026_01_12": {
+     "floors": 10,
+     "interior_window_sills": 100,
+     "window_troughs": 400
+    },
+    "change_date": "2026-01-12",
+    "samplers_allowed": [
+     "certified inspector",
+     "certified risk assessor",
+     "certified dust sampling technician"
+    ],
+    "report_to_owner_and_occupant_within_days": 30
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities that use dust clearance testing instead of cleaning verification",
+   "citation": "40 CFR 745.85(c); 745.227(e)(8)(viii); 745.86(d)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.227 (paragraph (e)(8)(viii)); https://www.ecfr.gov/current/title-40/section-745.85",
+   "verbatim_quote": "On or after January 12, 2026, the action levels for lead in dust are 5 µg/ft2 for floors, 40 µg/ft2 for interior window sills, and 100 µg/ft2 for window troughs.",
+   "effective": "2026-01-12",
+   "read_from_primary_text": true,
+   "notes": "Amended by 89 FR 89457 (Nov. 12, 2024). Sampling under 745.85(c) must follow 745.227(e)(8). A stricter State, local or Tribal standard can apply (745.85(c)(3)). California CDPH clearance standards for abatement (17 CCR 35036/36000) were not readable."
+  },
+  {
+   "id": "cert-rrp-post-job-records-to-owner-30-days",
+   "title": "Give the owner the RRP compliance record with the final invoice or within 30 days",
+   "plain_english": "When the final invoice is delivered or within 30 days after the renovation is finished, whichever is first, the firm must give the building owner (and an adult occupant or child-care representative, if different) the lead-safe compliance information, such as EPA's 'Sample Renovation Recordkeeping Checklist'. For common areas, post it or post how to get it.",
+   "category": "deadline",
+   "parameters": {
+    "deadline": "earlier of final invoice delivery or 30 days after completion",
+    "days_after_completion_max": 30,
+    "recipients": [
+     "building owner",
+     "adult occupant (dwelling) or adult representative (child-occupied facility) if different"
+    ],
+    "acceptable_form": "Sample Renovation Recordkeeping Checklist or similar"
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.86(c)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.86",
+   "verbatim_quote": "(c)(1) When the final invoice for the renovation is delivered or within 30 days of the completion of the renovation, whichever is earlier, the renovation firm must provide information pertaining to compliance with this subpart to the following persons:",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Rulebook rule rrp-records-3-years covers the 3-year retention; this is the separate hand-over deadline."
+  },
+  {
+   "id": "cert-rrp-emergency-renovation-exemption",
+   "title": "Emergency renovations: limited RRP exemption, but cleaning and verification still required",
+   "plain_english": "Unplanned emergency work (for example a sudden equipment failure that threatens safety or property) is exempt from the pamphlet rule, and from signs, containment, waste handling and certification only as far as needed to handle the emergency. Cleaning, cleaning verification by a certified renovator, and the records describing the emergency are still required.",
+   "category": "process_step",
+   "parameters": {
+    "exempt_from": [
+     "pamphlet distribution (745.84)",
+     "warning signs",
+     "containment",
+     "waste handling",
+     "training and certification (to extent necessary)"
+    ],
+    "not_exempt_from": [
+     "cleaning (745.85(a)(5))",
+     "cleaning verification by certified renovator (745.85(b))",
+     "recordkeeping (745.86(b)(6)-(7))"
+    ],
+    "also_emergency": "interim controls in response to a resident child's elevated blood lead level"
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.82(b)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.82",
+   "verbatim_quote": "Emergency renovations are not exempt from the cleaning requirements of § 745.85(a)(5), which must be performed by certified renovators or individuals trained in accordance with § 745.90(b)(2), the cleaning verification requirements of § 745.85(b), which must be performed by certified renovators, and the recordkeeping requirements of § 745.86(b)(6) and (b)(7).",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-rrp-child-occupied-facility-definition",
+   "title": "Child-occupied facility: pre-1978 space a child under 6 uses 2+ days a week, 3+ hours a day, 6+ hours a week, 60+ hours a year",
+   "plain_english": "RRP also covers 'child-occupied facilities': pre-1978 buildings (or parts) regularly visited by the same child under 6 on at least two days in a week, at least 3 hours each day, at least 6 hours per week and at least 60 hours per year, such as daycares, preschools and kindergarten rooms, even inside commercial buildings.",
+   "category": "definition",
+   "parameters": {
+    "built_before_year": 1978,
+    "child_age_lt": 6,
+    "min_days_per_week": 2,
+    "min_hours_per_visit_day": 3,
+    "min_hours_per_week": 6,
+    "min_hours_per_year": 60
+   },
+   "applies_to": "Contractors renovating daycares, preschools, schools and commercial buildings that house child care",
+   "citation": "40 CFR 745.83 (Child-occupied facility)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.83",
+   "verbatim_quote": "Child-occupied facility means a building, or portion of a building, constructed prior to 1978, visited regularly by the same child, under 6 years of age, on at least two different days within any week (Sunday through Saturday period), provided that each day's visit lasts at least 3 hours and the combined weekly visits last at least 6 hours, and the combined annual visits last at least 60 hours.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "In public/commercial buildings, only common areas routinely used by children under 6 (restrooms, cafeterias) and the adjacent exterior sides are included; hallways, stairways and garages they only pass through are not."
+  },
+  {
+   "id": "cert-rrp-child-occupied-facility-notice",
+   "title": "Child-occupied facility jobs: pamphlet to owner and notice to parents within 60 days before work",
+   "plain_english": "No more than 60 days before starting work in a child-occupied facility, give the building owner the Renovate Right pamphlet (signed receipt, or certificate of mailing at least 7 days before), give it to an adult representative of the facility if not the owner, and inform parents and guardians by mail/hand delivery or posted signs describing the work and completion date. Sign and date a statement of the steps taken.",
+   "category": "required_notice",
+   "parameters": {
+    "max_days_before_start": 60,
+    "certificate_of_mailing_min_days_before": 7,
+    "recipients": [
+     "building owner",
+     "adult representative of facility (if not owner)",
+     "parents and guardians of children using the facility"
+    ],
+    "parent_notice_methods": [
+     "mail or hand-deliver pamphlet and renovation info",
+     "post informational signs with pamphlet or how to get it"
+    ],
+    "firm_statement_required": true
+   },
+   "applies_to": "Firms renovating child-occupied facilities",
+   "citation": "40 CFR 745.84(c)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.84",
+   "verbatim_quote": "(c) Renovations in child-occupied facilities. No more than 60 days before beginning renovation activities in any child-occupied facility, the firm performing the renovation must:",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Rulebook rule rrp-renovate-right-pamphlet-60-days covers dwelling units and common areas; this adds the child-occupied facility steps."
+  },
+  {
+   "id": "cert-rrp-acknowledgment-in-contract",
+   "title": "Pamphlet acknowledgment may be in the renovation contract, in the contract's language",
+   "plain_english": "The signed pamphlet acknowledgment must state the owner's or occupant's name, acknowledge receiving the pamphlet before work, give the unit address, and be signed and dated. It can be a separate sheet or part of the written contract, and must be in the same language as the contract (or the lease/pamphlet for rentals).",
+   "category": "required_contract_clause",
+   "parameters": {
+    "required_elements": [
+     "owner/occupant name",
+     "statement acknowledging receipt before renovation",
+     "address of unit",
+     "signature",
+     "date of signature"
+    ],
+    "may_be_part_of_contract": true,
+    "language": "same as contract (or lease/pamphlet for non-owner-occupied housing)"
+   },
+   "applies_to": "Firms renovating target housing and child-occupied facilities",
+   "citation": "40 CFR 745.84(d)",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.84",
+   "verbatim_quote": "(2) Be either a separate sheet or part of any written contract or service agreement for the renovation.",
+   "effective": "1999-06-01",
+   "read_from_primary_text": true,
+   "notes": "Pre-Renovation Education Rule provisions in effect since June 1999 (745.81(c))."
+  },
+  {
+   "id": "cert-rrp-penalty-tsca-49772",
+   "title": "RRP violations: federal civil penalty up to $49,772 per violation",
+   "plain_english": "Breaking any RRP rule (certification, work practices, pamphlet, records) violates the Toxic Substances Control Act. EPA can assess civil penalties of up to $49,772 per violation (for penalties assessed on or after January 8, 2025), plus possible criminal sanctions. EPA assumes lead paint is present on covered jobs.",
+   "category": "penalty",
+   "parameters": {
+    "max_civil_penalty_usd_per_violation": 49772,
+    "applies_to_penalties_assessed_on_or_after": "2025-01-08",
+    "prior_max_usd": 48512,
+    "statutory_base_usd": 37500,
+    "statute": "TSCA section 16 (15 U.S.C. 2615(a)(1))",
+    "lead_presumed_present": true
+   },
+   "applies_to": "Firms and renovators doing paid renovation, repair or painting in pre-1978 target housing and child-occupied facilities",
+   "citation": "40 CFR 745.87(a), (d); 40 CFR 19.4 Table 1",
+   "source_location": "https://www.ecfr.gov/current/title-40/section-745.87; https://www.ecfr.gov/current/title-40/section-19.4 (Table 1, row 15 U.S.C. 2615(a)(1))",
+   "verbatim_quote": "(d) Violators may be subject to civil and criminal sanctions pursuant to TSCA section 16 (15 U.S.C. 2615) for each violation.",
+   "effective": "2025-01-08",
+   "read_from_primary_text": true,
+   "notes": "40 CFR 19.4 Table 1 lists 15 U.S.C. 2615(a)(1) TSCA: $49,772 (assessed on/after Jan 8, 2025), $48,512 (Dec 27, 2023 to Jan 8, 2025), $37,500 as enacted. EPA adjusts annually; recheck each January. Whether each day counts as a separate violation is set by the TSCA statute, which was not read."
+  },
+  {
+   "id": "cert-crane-operator-employer-evaluation",
+   "title": "Crane operators: employer must also evaluate and document each operator",
+   "plain_english": "Certification alone is not enough. The employer must evaluate each crane operator (skills, ability to recognize and avoid risk, the specific equipment size and configuration, and assigned lifts like blind or multi-crane lifts) using a qualified evaluator who is its employee or agent. The written record (operator name, evaluator name and signature, date, make/model/configuration) must be available at the worksite while the operator is employed. Re-evaluate after any retraining.",
+   "category": "required_document",
+   "parameters": {
+    "evaluation_required": true,
+    "evaluator": "employee or agent of employer with knowledge, training and experience to assess operators",
+    "record_contents": [
+     "operator name",
+     "evaluator name and signature",
+     "date",
+     "make, model and configuration of equipment"
+    ],
+    "record_location": "worksite while operator is employed",
+    "reevaluate_after_retraining": true,
+    "grandfather_date_for_prior_assessments": "2020-04-06"
+   },
+   "applies_to": "Construction employers whose employees operate cranes and derricks (Group 13)",
+   "citation": "8 CCR 5006.2(f)",
+   "source_location": "https://www.dir.ca.gov/title8/5006_2.html (subsection (f) Evaluation)",
+   "verbatim_quote": "(5) The employer shall document the completion of the evaluation. This document shall provide: The operator's name; the evaluator's name and signature; the date; and the make, model, and configuration of equipment used in the evaluation.",
+   "effective": "2022-07-26",
+   "read_from_primary_text": true,
+   "notes": "Rulebook rule crane-operator-certification-5-years covers certification validity, 1,000-hour hands-on waiver and exemptions. (f)(2): for operators employed before April 6, 2020 the employer may rely on its previous assessments."
+  },
+  {
+   "id": "cert-crane-certification-exam-components",
+   "title": "Crane operator certificate requires physical exam, drug test, written and hands-on exams",
+   "plain_english": "An accredited certifying entity may certify a crane operator only after the operator passes a physical exam (ASME B30.5 criteria or DOT 49 CFR 391.41-391.49), a substance abuse test by a recognized lab, a written exam (controls, emergency response, load charts and calculations, power line procedures, ground conditions, Group 13 rules), and a hands-on exam. The certificate must state the equipment type.",
+   "category": "license_classification",
+   "parameters": {
+    "required_components": [
+     "physical examination",
+     "substance abuse test",
+     "written examination",
+     "hands-on examination"
+    ],
+    "physical_exam_standards": [
+     "ASME B30.5-2000 Chapter 5-3.1.2(a)(1-5, 7, 8)",
+     "49 CFR 391.41-391.49"
+    ],
+    "certificate_states_equipment_type": true,
+    "valid_for_type_or_type_and_capacity_or_higher_capacity_of_type": true,
+    "certifier_accreditation_review_years": 3
+   },
+   "applies_to": "Construction crane operators and their employers",
+   "citation": "8 CCR 5006.2(d)(1)(A), (d)(2), (g)",
+   "source_location": "https://www.dir.ca.gov/title8/5006_2.html (subsections (d) and (g))",
+   "verbatim_quote": "(1) Pass a physical examination conducted by a physician or other licensed health care professional (e.g. physician's assistant or nurse practitioner) which at a minimum shall include the examination criteria specified in the American Society of Mechanical Engineers (ASME) B30.5-2000 standard, Chapter 5-3.1.2(a)(1-5, 7, 8) or the U.S. Department of Transportation (US DOT) physical examination requirements contained in 49 CFR Sections 391.41 through 391.49.",
+   "effective": "2022-07-26",
+   "read_from_primary_text": true,
+   "notes": "(d)(1)(A): an operator is qualified for the certified type, or type and capacity, or higher-capacity equipment of that type. Recertification every 5 years also requires the physical, substance abuse and written exams."
+  },
+  {
+   "id": "cert-crane-government-license-option",
+   "title": "Government-issued crane operator license is valid only in that jurisdiction, max 5 years",
+   "plain_english": "Instead of an accredited certification, a crane operator may hold a license from a government licensing office that meets the Cal/OSHA criteria. That license counts only within the issuing government's jurisdiction and for no more than 5 years. Accredited certifications (Option 1) are portable.",
+   "category": "license_classification",
+   "parameters": {
+    "option": "Option 2: licensing by a government entity",
+    "max_validity_years": 5,
+    "valid_only_within_issuing_jurisdiction": true,
+    "option1_accredited_certification_portable": true
+   },
+   "applies_to": "Construction crane operators and their employers",
+   "citation": "8 CCR 5006.2(e)(3); (d)(1)(B)",
+   "source_location": "https://www.dir.ca.gov/title8/5006_2.html (subsection (e))",
+   "verbatim_quote": "(A) Meets the operator qualification requirements of this section for operation of equipment only within the jurisdiction of the government entity.",
+   "effective": "2022-07-26",
+   "read_from_primary_text": true,
+   "notes": "(e)(3)(B): 'Is valid for the period of time stipulated by the licensing department/office, but no longer than 5 years.'"
+  },
+  {
+   "id": "cert-crane-operator-in-training-supervision",
+   "title": "Crane operator-in-training: continuous monitoring by a certified trainer with no other duties",
+   "plain_english": "An uncertified operator may run a crane only as an operator-in-training after formal and practical instruction, continuously monitored on site by a trainer who is the employer's employee or agent, holds a valid certificate for that crane type, stays in the immediate area within sight and communication, and has no other duties while observing.",
+   "category": "process_step",
+   "parameters": {
+    "trainer_must_hold_valid_certificate_for_crane_type": true,
+    "trainer_is_employee_or_agent": true,
+    "trainer_other_duties_allowed": false,
+    "monitoring": "continuous, on site",
+    "communication": "direct line of sight plus verbal or hand signals (direct communication for tower cranes)"
+   },
+   "applies_to": "Construction employers training crane operators",
+   "citation": "8 CCR 5006.2(b)(2), (b)(4)",
+   "source_location": "https://www.dir.ca.gov/title8/5006_2.html (subsection (b) Operator training)",
+   "verbatim_quote": "When performing direct supervision, the supervising operator shall have no other duties other than to observe the operation of the crane by the trainee.",
+   "effective": "2022-07-26",
+   "read_from_primary_text": true,
+   "notes": "Trainee task restrictions (power line distances, personnel hoisting, multi-crane lifts) are already in rulebook rule crane-operator-certification-5-years. Employer must also retrain when performance shows a need (b)(5)."
+  },
+  {
+   "id": "cert-crane-general-industry-5006-1",
+   "title": "Mobile and tower cranes outside construction: certified operators too (5006.1)",
+   "plain_english": "Outside construction (for example yard, shop or plant lifts), mobile and tower crane operators must also hold a certificate of competency from an accredited certifying entity, valid up to 5 years. Exempt: mobile cranes with booms under 25 feet or rated capacity under 15,000 pounds, digger derrick line trucks, and marine terminal work. An operator certified and evaluated under the construction rule (5006.2) is qualified for both construction and general industry.",
+   "category": "license_classification",
+   "parameters": {
+    "certificate_max_validity_years": 5,
+    "recertify_every_years": 5,
+    "hands_on_waiver_hours": 1000,
+    "exempt_mobile_crane_if_boom_ft_lt": 25,
+    "exempt_mobile_crane_if_capacity_lb_lt": 15000,
+    "construction_certification_reciprocity": true
+   },
+   "applies_to": "Contractors operating mobile or tower cranes in general industry settings (yards, shops, plants)",
+   "citation": "8 CCR 5006.1; 5006.2(h)",
+   "source_location": "https://www.dir.ca.gov/title8/5006_1.html; https://www.dir.ca.gov/title8/5006_2.html (subsection (h) Reciprocity)",
+   "verbatim_quote": "(a) Qualifications. The employer shall only permit operators who have a valid certificate of competency (certificate) issued in accordance with this section by an Accredited Certifying Entity for the type of crane to be used to operate a crane covered by this section.",
+   "effective": "2022-07-26",
+   "read_from_primary_text": true,
+   "notes": "Exceptions to Section 5006.1: '(1) Mobile cranes having a boom length of less than 25 feet or a maximum rated load capacity of less than 15,000 pounds.' 5006.2(h): 'Operators trained, certified under Option 1, evaluated, and certified under this Section 5006.2, are qualified to work on projects in construction and in general industry.'"
+  },
+  {
+   "id": "cert-elev-permit-to-operate-required",
+   "title": "No elevator may run without a current DOSH permit to operate; post it in the car",
+   "plain_english": "Every elevator, escalator, lift or dumbwaiter covered by the Elevator Safety Orders needs a valid, current permit to operate from Cal/OSHA's Elevator Unit. For passenger, freight and incline elevators the permit (or a copy) must be posted in the car; for other devices it must be on the premises. Permits last up to 1 year (up to 2 years with a qualifying C-11 maintenance contract). A new building normally cannot open its elevators to use without it.",
+   "category": "license_classification",
+   "parameters": {
+    "permit_required": true,
+    "issuer": "Cal/OSHA (DOSH) Elevator Unit",
+    "max_permit_years_standard": 1,
+    "max_permit_years_with_full_maintenance_contract": 2,
+    "posting": {
+     "passenger_freight_incline_elevators": "conspicuously and securely in the car",
+     "other_devices": "available on premises"
+    },
+    "responsible_party": "owner or owner-designated responsible party"
+   },
+   "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters",
+   "citation": "8 CCR 3001(c)(1)-(2); Labor Code 7300 et seq. (not read)",
+   "source_location": "https://www.dir.ca.gov/title8/3001.html (subsection (c))",
+   "verbatim_quote": "(c) Permit to Operate Required. No elevator shall be operated without a valid, current permit issued by the Division.",
+   "effective": "2008-05-01",
+   "read_from_primary_text": true,
+   "notes": "Effective date is the operative date of the latest amendment to 8 CCR 3001 (5-1-2008). Elevator Unit FAQ (June 2026): 'The owner/responsible party for any location are responsible for maintaining a current Safety permit for a conveyance.' The certificate-of-occupancy linkage is a practical point from the gap list, not stated in the regulation."
+  },
+  {
+   "id": "cert-elev-two-year-permit-full-maintenance",
+   "title": "Two-year elevator permit: needs a C-11 full maintenance contract with at least monthly service",
+   "plain_english": "DOSH may issue a 2-year permit if the elevator is safe and covered for the whole term by a full maintenance contract with a C-11 licensed elevator service company. Within 60 days of DOSH's notice, the service company must send its C-11 license and the contract. The contract must cover all repairs and maintenance needed for compliance and require service at least monthly. The company must notify DOSH within 30 days if the contract is ended or changed.",
+   "category": "deadline",
+   "parameters": {
+    "permit_years": 2,
+    "required_contractor_license": "C-11",
+    "submit_documents_within_days_of_notice": 60,
+    "min_service_frequency": "monthly",
+    "notify_termination_or_change_within_days": 30,
+    "documents": [
+     "C-11 license copy",
+     "full maintenance service contract copy"
+    ]
+   },
+   "applies_to": "C-11 elevator contractors and their mechanics (conveyance companies) and building owners",
+   "citation": "8 CCR 3001(c)(3)-(6)",
+   "source_location": "https://www.dir.ca.gov/title8/3001.html (subsection (c)(3)-(6))",
+   "verbatim_quote": "(6) The elevator service company shall notify the Division within 30 days if a full maintenance service contract is terminated or altered during the period the two-year permit is in effect.",
+   "effective": "2008-05-01",
+   "read_from_primary_text": true,
+   "notes": "(c)(5)(B): contract must 'Require the elevator service company to service the elevator as frequently as necessary to effect safe operation but not less often than monthly.'"
+  },
+  {
+   "id": "cert-elev-new-installation-plans-and-acceptance-inspection",
+   "title": "New or altered elevators: file plans or notice of intent, then pass DOSH inspection before use",
+   "plain_english": "Whoever installs a new elevator, escalator, moving walk, dumbwaiter or manlift must submit erection plans to DOSH (or, for a recognized elevator company, a notice of intent to install and a later notice that it is ready for inspection). Each new or altered device must be inspected by DOSH and get a permit to operate before it is put into service, although the inspector may let a safe device run while the permit is processed. The inspection request for new or altered equipment must come from the installing certified company.",
+   "category": "process_step",
+   "parameters": {
+    "submit_before_install": [
+     "erection plans",
+     "or notice of intent from recognized elevator company"
+    ],
+    "notify_when": "installation complete and ready for inspection",
+    "inspection_before_service": true,
+    "alterations_treated_as_new": true,
+    "replacement_components_needing_inspection": [
+     "door locking devices",
+     "safety devices",
+     "governors",
+     "oil buffers",
+     "counterweights",
+     "car enclosures, doors and gates",
+     "terminal stopping devices",
+     "operating devices and control equipment",
+     "controllers",
+     "emergency and signaling devices"
+    ],
+    "inspection_request_by": "certified installing company (CQCC)"
+   },
+   "applies_to": "C-11 elevator contractors and their mechanics (conveyance companies); general contractors scheduling elevator acceptance",
+   "citation": "8 CCR 3001(a)(1), (a)(4), (b)(1)-(3)",
+   "source_location": "https://www.dir.ca.gov/title8/3001.html; https://www.dir.ca.gov/dosh/elevatorfaq.html",
+   "verbatim_quote": "(1) Each new device shall be inspected by an authorized representative of the Division and a permit to operate issued before the device is placed in service.",
+   "effective": "2008-05-01",
+   "read_from_primary_text": true,
+   "notes": "FAQ: 'If the conveyance is new or altered, the request must be generated by the certified installing company.' All elevator- and building-related life safety items and tests must be complete before DOSH grants an inspection date."
+  },
+  {
+   "id": "cert-elev-annual-reinspection",
+   "title": "Elevators must be reinspected at least once a year (up to 2 years with full maintenance contract)",
+   "plain_english": "Every elevator must be reinspected at least yearly, or up to every two years if it is safe and under a full maintenance contract. Owners can request the inspection 30 days before the current permit expires. Reinspections may be done by DOSH safety engineers or Certified Competent Conveyance Inspectors.",
+   "category": "deadline",
+   "parameters": {
+    "reinspection_interval_years_max": 1,
+    "reinspection_interval_years_max_with_full_maintenance": 2,
+    "request_inspection_days_before_permit_expiration": 30,
+    "authorized_inspectors": [
+     "DOSH safety engineers",
+     "Certified Competent Conveyance Inspectors (CCCI)"
+    ]
+   },
+   "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters",
+   "citation": "8 CCR 3001(b)(4); Labor Code 7304 (as cited in the regulation)",
+   "source_location": "https://www.dir.ca.gov/title8/3001.html; https://www.dir.ca.gov/dosh/elevatorfaq.html",
+   "verbatim_quote": "(4) Reinspections of the devices covered by these regulations shall be as prescribed in Labor Code section 7304 which requires all elevators to be inspected at least once each year, but permits up to a two-year period if an elevator is in a safe condition for operation and is subject to a full maintenance service contract.",
+   "effective": "2008-05-01",
+   "read_from_primary_text": true,
+   "notes": "FAQ: 'You can request an inspection 30 days prior to the expiration of the current permit.'"
+  },
+  {
+   "id": "cert-elev-permit-renewal-processing-times",
+   "title": "Elevator permit renewal: DOSH answers in 15 days, inspects within 30, issues within 15",
+   "plain_english": "After receiving a renewal application, DOSH has 15 calendar days to say if it is complete, 30 calendar days from filing to inspect, and 15 calendar days after compliance and fee payment to issue the permit. DOSH's historical processing times were 30 days minimum, 60 days median, up to 1 year.",
+   "category": "deadline",
+   "parameters": {
+    "completeness_notice_days": 15,
+    "inspection_within_days_of_complete_filing": 30,
+    "permit_issued_within_days_after_compliance_and_fee": 15,
+    "historical_processing_days": {
+     "minimum": 30,
+     "median": 60,
+     "maximum": 365
+    },
+    "permit_not_issued_until_fee_paid": true
+   },
+   "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters",
+   "citation": "8 CCR 3001(d)-(e)",
+   "source_location": "https://www.dir.ca.gov/title8/3001.html (subsections (d)-(e))",
+   "verbatim_quote": "(3) After satisfactory compliance with the preliminary order, if one has been issued, and upon notification to the Division's elevator unit that the inspection fee has been paid, the Division shall issue the permit within 15 calendar days.",
+   "effective": "2008-05-01",
+   "read_from_primary_text": true,
+   "notes": "Schedule the reinspection early: the 1-year maximum time is a realistic risk on a project schedule."
+  },
+  {
+   "id": "cert-elev-fees-new-installation-permit",
+   "title": "Elevator installation permit fees: $225/story (hydraulic), $350/story (traction), escalator $900",
+   "plain_english": "DOSH's erection/installation permit fee (including plan approval) is $225 per story for the first hydraulic elevator in a building and $350 per story for the first cable, screw or rack-and-pinion elevator, then $225 or $350 per additional similar unit. Escalators and moving walks: $900 for the first, $225 each additional. Dumbwaiters, material lifts, VRCs and sidewalk elevators: $550 each. Wheelchair and stair lifts: $450 each.",
+   "category": "money_amount",
+   "parameters": {
+    "first_hydraulic_usd_per_story": 225,
+    "additional_similar_hydraulic_usd_per_unit": 225,
+    "first_cable_screw_rack_pinion_usd_per_story": 350,
+    "additional_similar_cable_usd_per_unit": 350,
+    "dumbwaiter_material_lift_vrc_sidewalk_usd_per_unit": 550,
+    "wheelchair_stair_lift_hand_elevator_usd_per_unit": 450,
+    "first_escalator_moving_walk_usd": 900,
+    "additional_escalator_moving_walk_usd": 225,
+    "automatic_guided_vehicle_usd_per_unit": 1800,
+    "all_other_conveyances_usd_per_hour": 225,
+    "formula_example": "first traction elevator in 10-story building = 350 * 10"
+   },
+   "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters; C-11 elevator contractors and their mechanics (conveyance companies)",
+   "citation": "8 CCR 344.30(i)",
+   "source_location": "https://www.dir.ca.gov/title8/344_30.html (subsection (i))",
+   "verbatim_quote": "(i) The fee for an erection, construction, or installation permit, including the plan approval, is as follows:",
+   "effective": "2011-04-18",
+   "read_from_primary_text": true,
+   "notes": "Amounts from the table under 344.30(i), current as last amended (Certificate of Compliance filed 4-18-2011; 2017 emergency amendment was reinstated to the prior text)."
+  },
+  {
+   "id": "cert-elev-fees-inspection-hourly",
+   "title": "Elevator inspection of new installations and alterations: $225 per hour",
+   "plain_english": "DOSH charges $225 per hour (or fraction) to inspect a new installation, an alteration or a required component replacement, and for re-inspections when safety orders were not complied with. Field consultations are $450 per hour, with travel time added if the site is more than 50 miles from the district office.",
+   "category": "money_amount",
+   "parameters": {
+    "new_installation_inspection_usd_per_hour": 225,
+    "alteration_inspection_usd_per_hour": 225,
+    "replacement_inspection_usd_per_hour": 225,
+    "noncompliance_reinspection_usd_per_hour": 225,
+    "field_consultation_usd_per_hour": 450,
+    "travel_added_if_miles_gt": 50,
+    "billing_unit": "hour or any fraction thereof"
+   },
+   "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters; C-11 elevator contractors and their mechanics (conveyance companies)",
+   "citation": "8 CCR 344.30(b)-(f)",
+   "source_location": "https://www.dir.ca.gov/title8/344_30.html",
+   "verbatim_quote": "(b) The fee for the inspection of a new installation of any type of conveyance will be $225.00 per hour or any fraction thereof.",
+   "effective": "2011-04-18",
+   "read_from_primary_text": true,
+   "notes": "Permit processing and mailing fee: actual cost up to $15.00 (344.30(g))."
+  },
+  {
+   "id": "cert-elev-fees-periodic-reinspection",
+   "title": "Annual elevator reinspection fees by device type ($120 to $1,800 per unit)",
+   "plain_english": "Periodic reinspection fees per unit include: hydraulic elevators $225; cable elevators $225 (up to 3 stories), $350 (4-10), $450 (11-20), $550 (21+); escalators and moving walks $675; wheelchair and stairway lifts $125; construction personnel hoists $225; witnessing periodic tests $225.",
+   "category": "money_amount",
+   "parameters": {
+    "usd_per_unit": {
+     "hand_dumbwaiter": 120,
+     "power_dumbwaiter_material_lift": 225,
+     "hand_elevator": 125,
+     "power_sidewalk_elevator": 225,
+     "escalator_moving_walk": 675,
+     "manlift": 225,
+     "hydraulic_elevator": 225,
+     "cabled_up_to_3_stories": 225,
+     "cabled_4_to_10_stories": 350,
+     "cabled_11_to_20_stories": 450,
+     "cabled_21_plus_stories": 550,
+     "special_access_elevator": 225,
+     "wheelchair_lift": 125,
+     "stairway_chair_lift": 125,
+     "incline_elevator": 350,
+     "construction_personnel_hoist": 225,
+     "rack_and_pinion_elevator": 225,
+     "vrc": 225,
+     "witnessing_periodic_tests": 225,
+     "automatic_guided_vehicle": 1800
+    },
+    "max_charged_inspections_per_permit_year": 1
+   },
+   "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters",
+   "citation": "8 CCR 344.30(a), (f)",
+   "source_location": "https://www.dir.ca.gov/title8/344_30.html (subsection (a))",
+   "verbatim_quote": "(a) Reinspection (periodic inspection) and witnessing of periodic tests of an existing installation shall be:",
+   "effective": "2011-04-18",
+   "read_from_primary_text": true,
+   "notes": "(f): no more than one charged inspection per permit year except for non-compliance follow-ups, periodic testing or alterations."
+  },
+  {
+   "id": "cert-elev-fees-alteration-permit",
+   "title": "Elevator alteration permit fees: $450 (1-2 alterations) or $900 (3+ alterations)",
+   "plain_english": "An alteration permit (including plan review) costs $450 for one or two alterations to a single unit, or $900 for three or more alterations to a single conveyance, plus $225 per additional similar unit in the same building. Change-order plan review is $225 per hour.",
+   "category": "money_amount",
+   "parameters": {
+    "one_or_two_alterations_single_unit_usd": 450,
+    "three_or_more_alterations_single_unit_usd": 900,
+    "additional_similar_unit_same_building_usd": 225,
+    "change_order_review_usd_per_hour": 225
+   },
+   "applies_to": "C-11 elevator contractors and their mechanics (conveyance companies); owners modernizing elevators",
+   "citation": "8 CCR 344.30(j)-(k)",
+   "source_location": "https://www.dir.ca.gov/title8/344_30.html (subsections (j)-(k))",
+   "verbatim_quote": "(k) The fee for any change order review of plans shall be $225.00 per hour.",
+   "effective": "2011-04-18",
+   "read_from_primary_text": true,
+   "notes": "Alteration amounts read from the 344.30(j) table."
+  },
+  {
+   "id": "cert-elev-late-fee-100-percent-and-opu",
+   "title": "Unpaid elevator fees after 60 days: 100% penalty; Order Prohibiting Use adds $675",
+   "plain_english": "Elevator fees not paid within 60 days after notice are doubled (a penalty equal to 100% of the fee). Failure to pay can lead to an Order Prohibiting Use and the elevator being shut down; an inspection that results in an Order Prohibiting Use costs an extra $675.",
+   "category": "penalty",
+   "parameters": {
+    "payment_due_days": 60,
+    "late_penalty_pct_of_fee": 100,
+    "order_prohibiting_use_fee_usd": 675,
+    "nonpayment_consequence": "Order Prohibiting Use; conveyance secured"
+   },
+   "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters",
+   "citation": "8 CCR 344.30(l)-(m)",
+   "source_location": "https://www.dir.ca.gov/title8/344_30.html; https://www.dir.ca.gov/dosh/elevatorfaq.html (Payments)",
+   "verbatim_quote": "(l) Whenever a person owning or having the custody, management or operation of an elevator fails to pay the fees required under this section within 60 days after notification, he or she shall pay in addition to the fees required by this section, a penalty fee equal to 100 percent of the fee.",
+   "effective": "2011-04-18",
+   "read_from_primary_text": true,
+   "notes": "FAQ: 'Invoices not paid within 60 days are charged a 100% penalty payment.' and 'Failure to pay either the original fee and/or the penalty can result in an Order Prohibiting Use (OPU) and the State may shut down the conveyance.' Missing Preliminary Order correction deadlines can also lead to shutdown."
+  },
+  {
+   "id": "cert-elev-only-cccm-of-cqcc-may-work",
+   "title": "Only a certified conveyance mechanic working for a certified conveyance company may work on elevators",
+   "plain_english": "Maintenance, repairs, alterations or replacements on any elevator or other conveyance covered by the Elevator Safety Orders may be done only by a Certified Competent Conveyance Mechanic (CCCM) employed by a Certified Qualified Conveyance Company (CQCC). Other trades (electricians, GC staff) may not work on conveyance equipment.",
+   "category": "prohibition",
+   "parameters": {
+    "authorized_worker": "Certified Competent Conveyance Mechanic (CCCM)",
+    "authorized_employer": "Certified Qualified Conveyance Company (CQCC)",
+    "covered_work": [
+     "maintenance",
+     "repairs",
+     "alterations",
+     "replacements"
+    ],
+    "also_requires_cslb_license": "C-11 where required by B&P"
+   },
+   "applies_to": "General contractors, C-11 contractors and any trade working near or on conveyances",
+   "citation": "Labor Code 7311.2 (as described by DOSH)",
+   "source_location": "https://www.dir.ca.gov/dosh/elevatorfaq.html ('Who is authorized to perform work on my conveyance?')",
+   "verbatim_quote": "In accordance with the California Labor Code, only a Certified Competent Conveyance Mechanic working for a Certified Qualified Conveyance Company is authorized to perform any maintenance, repairs, alterations, or replacements on any conveyance subject to those orders.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Statute (Labor Code 7311.2) not read; DOSH's official FAQ stated the rule. The CCCM application states the certification 'is NOT a license to perform work for which a contractor's license is required'."
+  },
+  {
+   "id": "cert-elev-cccm-requirements-and-fee",
+   "title": "Certified Competent Conveyance Mechanic: 3 years experience plus exam, $210, valid 2 years",
+   "plain_english": "To be certified as a conveyance (elevator) mechanic you need 3 years of conveyance work experience verified by your current CQCC employer, plus one of: passing the DOSH exam ($100 extra), a NEIEP/CET/CAT certificate, or completion of a registered apprenticeship. You must be employed by a CQCC. The fee is $210 (non-refundable) and the certificate is valid for 2 years. General and limited (device-specific) certifications exist.",
+   "category": "license_classification",
+   "parameters": {
+    "min_experience_years": 3,
+    "qualifying_routes": [
+     "DOSH qualifying exam",
+     "NEIEP / CET / CAT certificate",
+     "registered apprenticeship completion"
+    ],
+    "application_fee_usd": 210,
+    "exam_fee_usd": 100,
+    "validity_years": 2,
+    "must_be_employed_by": "CQCC",
+    "certification_types": [
+     "general",
+     "limited"
+    ],
+    "photos_required": 2,
+    "cannot_also_hold": "CCCI certification"
+   },
+   "applies_to": "Elevator/conveyance mechanics and C-11 employers",
+   "citation": "Labor Code 7311.2, 7311.4 (as cited by DOSH); 8 CCR 344.30(h)(3), (h)(9)",
+   "source_location": "https://www.dir.ca.gov/dosh/Elevator/CCCM_App.pdf (DIR DOSH 003 Rev. 1/2025, page 1); https://www.dir.ca.gov/dosh/ElevatorCertification.html",
+   "verbatim_quote": "This certification will be valid for 2 years and must be renewed with an application available from the Division.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Form: 'In order to be considered for certification, a person must have at least three (3) years work experience in construction, maintenance, service or repair of conveyances'. Fee confirmed in 8 CCR 344.30(h)(3) ($210.00) and (h)(9) exam $100. Form revised 1/2025; the exam/credential requirement applies to applicants after December 31, 2003."
+  },
+  {
+   "id": "cert-elev-cccm-renewal-8-hours-ce",
+   "title": "CCCM renewal every 2 years: $140 and 8 hours of continuing education in the prior year",
+   "plain_english": "Conveyance mechanic certification is renewed every two years for $140. The renewal must include proof of at least 8 hours of approved continuing education taken within the year before renewal, work history for the past two years, and the current CQCC employer's signed verification.",
+   "category": "deadline",
+   "parameters": {
+    "renewal_interval_years": 2,
+    "renewal_fee_usd": 140,
+    "ce_hours_required": 8,
+    "ce_window_days_before_renewal": 365,
+    "attachments": [
+     "8-hour CE certificate",
+     "work experience since last renewal",
+     "current employer verification signature"
+    ]
+   },
+   "applies_to": "Certified Competent Conveyance Mechanics",
+   "citation": "8 CCR 344.30(h)(7); Labor Code 7311.5 (as cited on the DOSH form)",
+   "source_location": "https://www.dir.ca.gov/dosh/elevator/CCCM_Renewal.pdf (DIR DOSH 003 R Rev. 1/2025, pages 2-3)",
+   "verbatim_quote": "A minimum of 8 hours of instruction from an approved continuing education course provider, covering new and existing provisions of the regulations of the board is required. Continuing education shall occur within one year immediately preceding certificate renewal.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Renewal fee stated on the form as $140.00 per 8 CCR 344.30, matching 344.30(h)(7). Rack-and-pinion marine terminal mechanics are exempt from the CE requirement (LC 7311.5(b) per form)."
+  },
+  {
+   "id": "cert-elev-cqcc-company-certification",
+   "title": "Certified Qualified Conveyance Company: $700, qualifying person, C-11 license and insurance",
+   "plain_english": "A company that installs, alters, services or repairs conveyances must be a Certified Qualified Conveyance Company (CQCC). It needs a qualifying individual with 5+ years of journey-level experience (or 2-4 years plus a DOSH exam, $100), a current C-11 license, workers' comp, and general liability insurance of at least $1,000,000 per occurrence for injury/death and $500,000 for property damage. The initial biennial fee is $700; renewal is $140.",
+   "category": "license_classification",
+   "parameters": {
+    "initial_fee_usd": 700,
+    "renewal_fee_usd": 140,
+    "certification_term_years": 2,
+    "exam_fee_usd": 100,
+    "qualifying_individual_experience_years": {
+     "without_exam_min": 5,
+     "with_exam_min": 2,
+     "with_exam_max": 4
+    },
+    "min_general_liability_bodily_injury_per_occurrence_usd": 1000000,
+    "min_property_damage_per_occurrence_usd": 500000,
+    "required_documents": [
+     "C-11 license copy",
+     "workers' compensation insurance certificate",
+     "general liability insurance certificate",
+     "8-hour CE certificate for qualifying individual",
+     "list of California branch offices"
+    ],
+    "cannot_also_hold": "CQCIC certification"
+   },
+   "applies_to": "C-11 elevator contractors and their mechanics (conveyance companies)",
+   "citation": "8 CCR 344.30(h)(1), (h)(7); Labor Code Part 3, Ch. 2 (as cited by DOSH)",
+   "source_location": "https://www.dir.ca.gov/dosh/elevator/CQCC.pdf (DIR DOSH 002 Rev. 1/2025, pages 2 and 7); https://www.dir.ca.gov/dosh/ElevatorCertification.html",
+   "verbatim_quote": "Policy or certificate of insurance for general liability coverage of not less than one million dollars ($1,000,000) for injury or death of any one person or persons in any one occurrence, and with coverage of not less than five hundred thousand dollars ($500,000) for property damage in any one occurrence.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Form page 7: 'The application fee for the initial biennial Certification shall be seven hundred dollars ($700.00) per California Code of Regulations, Title 8, Section 344.30.' Sole owners with no employees must qualify as a mechanic but pay only the company fee."
+  },
+  {
+   "id": "cert-elev-temporary-mechanic-tcccm",
+   "title": "Temporary conveyance mechanic (TCCCM): $35, 6 months initially, then monthly",
+   "plain_english": "When an employer cannot find enough certified mechanics, it may apply for a Temporary Certified Competent Conveyance Mechanic. The candidate needs 1 year of experience as a second-year apprentice, 2 years while enrolled in an approved apprenticeship, or 3 years with proof of competency. The fee is $35; the first certification can be for 6 months, and later ones require a new application and $35 monthly.",
+   "category": "license_classification",
+   "parameters": {
+    "fee_usd": 35,
+    "initial_term_months": 6,
+    "subsequent_term": "monthly (new application and $35 each)",
+    "qualifying_methods": [
+     {
+      "experience_years": 1,
+      "plus": "second year apprentice in approved program"
+     },
+     {
+      "experience_years": 2,
+      "plus": "enrolled in approved apprenticeship"
+     },
+     {
+      "experience_years": 3,
+      "plus": "proof of competency determined by DOSH"
+     }
+    ],
+    "precondition": "employer personnel needs cannot be met by available CCCM pool",
+    "ce_certificate_required": true
+   },
+   "applies_to": "C-11 elevator contractors and their mechanics (conveyance companies)",
+   "citation": "Labor Code 7301.5(c) (as cited by DOSH); 8 CCR 344.30(h)(4)",
+   "source_location": "https://www.dir.ca.gov/dosh/ElevatorCertification.html ('Temporary Conveyance Mechanics')",
+   "verbatim_quote": "Initial TCCCM certification may be granted for six months Subsequent certifications require the submittal of a new TCCCM application and $35.00 fee monthly.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "DOSH page also notes TCCCM assignments are subject to IUEC Local 8 or Local 18 approval for IUEC members. 344.30(h)(4) and (h)(5) also set $35 per application for TCCCM and Emergency Certified Competent Elevator Mechanic."
+  },
+  {
+   "id": "cert-elev-certification-address-change-30-days",
+   "title": "Elevator mechanic and company certificate holders: report address changes within 30 days",
+   "plain_english": "CCCMs and CQCCs must report a change of mailing address or other key information to the DOSH Elevator Unit Certification Section within 30 days, using the Address Change Form.",
+   "category": "required_notice",
+   "parameters": {
+    "deadline_days": 30,
+    "notice_to": "DOSH Elevator Unit, Certification Section (ElevatorCert@dir.ca.gov)",
+    "trigger": "change of mailing address or other pertinent information"
+   },
+   "applies_to": "C-11 elevator contractors and their mechanics (conveyance companies)",
+   "citation": "DOSH CCCM and CQCC application forms (DIR DOSH 002, 003, 003 R)",
+   "source_location": "https://www.dir.ca.gov/dosh/elevator/CCCM_Renewal.pdf (page 3); https://www.dir.ca.gov/dosh/elevator/CQCC.pdf (page 7)",
+   "verbatim_quote": "If you change your mailing address or other pertinent information, please see our website for the Address Change Form and submit that within 30 days of any change.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Requirement appears on the official DOSH forms; the underlying regulation was not located."
+  },
+  {
+   "id": "cert-elev-eso-exclusions-private-homes-construction-elevators",
+   "title": "Elevator Safety Orders do not cover private single-family home elevators or construction elevators",
+   "plain_english": "The Elevator Safety Orders (and their permits) do not apply to elevators in a single-unit private home not open to the public, or to construction elevators (covered instead by the Construction Safety Orders personnel hoist rules). Elevators in a building with no more than two dwelling units, not open to the public, need only a DOSH inspection when installed or altered, before use.",
+   "category": "definition",
+   "parameters": {
+    "excluded": [
+     "federal government elevators",
+     "single-unit private home elevators not accessible to public",
+     "construction elevators (Labor Code 7200)",
+     "material hoists with unguided hooks",
+     "stage and orchestra lifts",
+     "freight platform hoists with travel <= 5 ft"
+    ],
+    "two_unit_residential_rule": "inspect at installation/alteration only (3001(b)(5))",
+    "max_dwelling_units_for_limited_rule": 2,
+    "freight_platform_hoist_max_travel_ft": 5
+   },
+   "applies_to": "Residential builders and contractors installing lifts",
+   "citation": "8 CCR 3000(a), (d)",
+   "source_location": "https://www.dir.ca.gov/title8/3000.html",
+   "verbatim_quote": "(2) Elevators located in a single-unit private home and not accessible to the public.",
+   "effective": "2008-05-01",
+   "read_from_primary_text": true,
+   "notes": "3000(d)(11): 'Construction elevators as defined in section 7200 of the Labor Code.' Elevator FAQ: two-unit residential elevators 'shall be inspected by the Division upon completion of installation prior to being placed in service, or after alterations prior to being returned to service.'"
+  },
+  {
+   "id": "cert-hoist-personnel-hoist-permit-to-operate",
+   "title": "Construction personnel hoist: DOSH permit to operate before use, posted in the car",
+   "plain_english": "A new construction personnel hoist must be inspected by DOSH and get a permit to operate before carrying workers (DOSH may let a safe hoist run while the permit is processed). Post the permit in the car. It lasts one year or as long as the hoist stays at the same location, and can be revoked if periodic inspections show it is unsafe. Operating without a valid permit is prohibited.",
+   "category": "license_classification",
+   "parameters": {
+    "permit_required_before_service": true,
+    "posting": "conspicuous location in the car",
+    "permit_validity": "1 year or while at same location",
+    "max_permit_years": 1,
+    "reinspection_fee_usd_per_unit": 225,
+    "new_installation_inspection_fee_usd_per_hour": 225
+   },
+   "applies_to": "General contractors and hoist subcontractors using personnel hoists on construction sites",
+   "citation": "8 CCR 1604.29; 8 CCR 344.30(a)(22), (b)",
+   "source_location": "https://www.dir.ca.gov/title8/1604_29.html; https://www.dir.ca.gov/title8/344_30.html",
+   "verbatim_quote": "No personnel hoist shall be operated without a valid permit except as permitted by Section 1604.29(a).",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "1604.29(b) still lists old inspection fees ($25-$40 by number of landings); the current fee schedule in 8 CCR 344.30 lists 'Construction personnel hoist $ 225.00 per unit' for periodic reinspection and $225/hour for new installations. Use 344.30."
+  },
+  {
+   "id": "cert-hoist-acceptance-and-periodic-inspections",
+   "title": "Personnel hoists: DOSH acceptance inspection, then inspections at least every 3 months",
+   "plain_english": "A new personnel hoist, one that has had a major alteration, or one moved to a new location must pass a DOSH acceptance inspection and tests before use (tower jumps are not major alterations). After that, a qualified person designated by the employer must inspect and test it at least every 3 months (weekly for bridge construction elevators, and after winds over 35 mph on bridges). Keep a signed certification record of the latest inspection at the jobsite.",
+   "category": "deadline",
+   "parameters": {
+    "periodic_inspection_interval_months_max": 3,
+    "bridge_construction_elevator_interval_days_max": 7,
+    "bridge_wind_reinspection_mph_gt": 35,
+    "acceptance_inspection_triggers": [
+     "new installation",
+     "major alteration",
+     "moved to new location"
+    ],
+    "tower_jump_is_major_alteration": false,
+    "record_contents": [
+     "date of inspection and test",
+     "signature of inspector",
+     "hoist serial number or identifier"
+    ],
+    "record_location": "job site"
+   },
+   "applies_to": "General contractors and hoist subcontractors using personnel hoists",
+   "citation": "8 CCR 1604.26(a)-(b)",
+   "source_location": "https://www.dir.ca.gov/title8/1604_26.html",
+   "verbatim_quote": "All existing installations, and all new installations after being placed in service, shall be subjected to periodic inspections and tests at regular intervals of not more than 3 months for construction hoists and not more than one week for bridge construction elevators to determine that the equipment is in safe operating condition and has not been altered.",
+   "effective": "1990-05-19",
+   "read_from_primary_text": true,
+   "notes": "1604.26(c): hoists may be operated only by a competent authorized operator in the car or adjacent to the driving machine under stated conditions."
+  },
+  {
+   "id": "cert-hoist-permanent-elevator-construction-use",
+   "title": "Using a building's permanent elevator during construction requires a permit to operate",
+   "plain_english": "A building's permanent passenger or freight elevator may be used as a construction hoist only if it is set up to meet the personnel hoist rules, and may run on automatic operation on a construction site only after DOSH issues a permit to operate.",
+   "category": "license_classification",
+   "parameters": {
+    "permit_required_for_automatic_operation": true,
+    "must_meet": "CSO Article 14 personnel hoist requirements when used as construction hoist"
+   },
+   "applies_to": "General contractors using permanent elevators before building completion",
+   "citation": "8 CCR 1604.4",
+   "source_location": "https://www.dir.ca.gov/title8/1604_4.html",
+   "verbatim_quote": "(b) Permanent passenger or freight elevators may be used on construction sites on automatic operation after a permit to operate has been issued by the Division.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-pv-air-tank-permit-required",
+   "title": "Air tanks (compressor receivers) need a DOSH permit to operate; each day without one is a separate misdemeanor",
+   "plain_english": "No air tank that requires a permit may be operated without a DOSH permit to operate (except while a permit request is pending). Operating one without a permit is a misdemeanor, and each day is a separate offense. Small tanks (1.5 cubic feet or less with safety valve set at 150 psi or less) are exempt.",
+   "category": "penalty",
+   "parameters": {
+    "permit_required": true,
+    "offense_class": "misdemeanor",
+    "separate_offense_per_day": true,
+    "exempt_tank_volume_cuft_lte": 1.5,
+    "exempt_safety_valve_psi_lte": 150,
+    "inspectors": [
+     "DOSH Pressure Vessel Unit",
+     "qualified insurance company inspector"
+    ]
+   },
+   "applies_to": "Contractors and equipment owners operating air compressors with receivers over 1.5 cubic feet",
+   "citation": "8 CCR 461(a)-(b)",
+   "source_location": "https://www.dir.ca.gov/title8/461.html",
+   "verbatim_quote": "Operating an air tank without a permit constitutes a separate offense for each day that it is so operated.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "461(a): 'Except during the time that a request for a permit remains unacted upon or as permitted in Section 461(f), no air tank shall be operated unless a permit to operate has been issued.' DOSH Pressure Vessel page: permits required for 'Air tanks* (over 1.5 Cu. Ft. / 11.2-gallon water capacity)'."
+  },
+  {
+   "id": "cert-pv-air-tank-small-exemption",
+   "title": "Air tank permit exemption: 1.5 cubic feet or less with safety valve at 150 psi or less",
+   "plain_english": "Air tanks with a volume of 1.5 cubic feet (about 11.2 gallons) or less whose safety valves open at no more than 150 psi do not need a permit to operate, but must still meet construction and other rules. SCBA breathing-air tanks of 1 cubic foot or less built and maintained to DOT rules are also exempt.",
+   "category": "threshold",
+   "parameters": {
+    "exempt_volume_cuft_lte": 1.5,
+    "exempt_volume_gallons_water_capacity_approx": 11.2,
+    "exempt_safety_valve_set_psi_lte": 150,
+    "scba_exempt_volume_cuft_lte": 1.0,
+    "scba_must_meet": "DOT regulations",
+    "other_orders_still_apply": true
+   },
+   "applies_to": "Contractors with portable or stationary air compressors",
+   "citation": "8 CCR 461(f)",
+   "source_location": "https://www.dir.ca.gov/title8/461.html; https://www.dir.ca.gov/dosh/pressure.html",
+   "verbatim_quote": "(f) Air tanks having a volume of 1 1/2 cubic feet or less which have safety valves set to open at not more than 150 psi do not require permits to operate, but shall comply with all other provisions of these Orders, including construction.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The 11.2-gallon equivalent is stated on the DOSH Pressure Vessel page."
+  },
+  {
+   "id": "cert-pv-air-tank-permit-term",
+   "title": "Air tank permits: portable tanks up to 3 years, others up to 5 years",
+   "plain_english": "An air tank permit expires no more than 3 years after inspection for portable tanks and 5 years for other tanks, or earlier if the tank or installation is altered or damaged, or (for non-portable tanks) when both ownership and location change. A temporary permit of up to 30 days may be issued to allow repairs.",
+   "category": "deadline",
+   "parameters": {
+    "portable_max_years": 3,
+    "other_max_years": 5,
+    "expires_early_on": [
+     "alteration",
+     "damage",
+     "change of ownership and location (not for portable tanks)"
+    ],
+    "temporary_permit_max_days": 30,
+    "inspection_interval_years": {
+     "portable": 3,
+     "other": 5
+    }
+   },
+   "applies_to": "Owners of permitted air tanks",
+   "citation": "8 CCR 461(d)-(e); 462(a)",
+   "source_location": "https://www.dir.ca.gov/title8/461.html; https://www.dir.ca.gov/title8/462.html",
+   "verbatim_quote": "(d) Except as provided in Subsection 461(h), the permit for portable air tanks shall expire not more than three years from the date of inspection and for all other air tanks not more than 5 years from the date of inspection or upon the alteration of, or damage to, the air tank or installation, or upon change of ownership and location, whichever occurs first.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "462(a): internal and external inspections 'at least once every 3 years for portable tanks and once every 5 years for all other tanks by a qualified inspector'. The owner may get an inspection postponed up to 30 days for good cause (462(b)(3))."
+  },
+  {
+   "id": "cert-pv-air-tank-indefinite-permit",
+   "title": "ASME air tanks up to 25 cubic feet at 150 psi or less: inspected once, indefinite permit",
+   "plain_english": "An ASME-stamped air tank with a maximum allowable working pressure of 150 psi or less and a volume of 25 cubic feet or less is inspected when placed into service and then gets an indefinite permit. A new inspection and permit are needed if ownership and permanent location change, or the tank is altered in a way that affects safety.",
+   "category": "threshold",
+   "parameters": {
+    "max_mawp_psi_lte": 150,
+    "max_volume_cuft_lte": 25,
+    "permit_term": "indefinite",
+    "requires": "ASME Code stamp or DOSH-accepted equivalent",
+    "reinspection_triggers": [
+     "change of ownership and permanent location",
+     "safety-affecting alteration"
+    ]
+   },
+   "applies_to": "Owners of small and mid-size air receivers",
+   "citation": "8 CCR 461(h)",
+   "source_location": "https://www.dir.ca.gov/title8/461.html",
+   "verbatim_quote": "(h) Air tanks subject to a maximum allowable working pressure not exceeding 150 psi., as shown by the required code marking, and having a volume of 25 cubic feet or less shall be inspected when placed into service.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-pv-air-tank-rental-and-posting",
+   "title": "Rented air tanks must already have a permit; post permits under glass at the tank",
+   "plain_english": "No one may rent out an air tank that needs a permit for use at a workplace unless the permit has been issued. The permit must be posted under glass in a conspicuous place on or near the tank, or kept in a weatherproof container on the unit, and shown to inspectors on request.",
+   "category": "prohibition",
+   "parameters": {
+    "rental_requires_existing_permit": true,
+    "posting": [
+     "under glass in conspicuous place on or near tank",
+     "weatherproof container secured to unit"
+    ],
+    "available_to_inspector": true
+   },
+   "applies_to": "Equipment rental companies and contractors renting compressors",
+   "citation": "8 CCR 461(c), (g)",
+   "source_location": "https://www.dir.ca.gov/title8/461.html",
+   "verbatim_quote": "(g) No person, firm, or company shall rent or offer for rent for use in a place of employment any air tank requiring a permit to operate unless the required permit has been issued by or in behalf of the Division.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "461(c): 'The permit shall be posted under glass in a conspicuous place on or near the air tank or in a weatherproof container secured to the unit, and shall be available at all times to any qualified inspector.'"
+  },
+  {
+   "id": "cert-pv-lpg-tank-permit-125-gallons",
+   "title": "LP-Gas (propane) tanks over 125 gallons need a DOSH permit to operate",
+   "plain_english": "An LP-Gas tank larger than 125 gallons used for storage or transport at a workplace (for example jobsite propane for heaters or kettles) needs a DOSH permit to operate. DOT cylinders are exempt. Permits for dispensing units, trap tanks and skid tanks last up to 3 years; transportation, mobile fuel and storage tanks up to 5 years. No one may fill a tank that needs a permit unless the permit is issued and posted.",
+   "category": "license_classification",
+   "parameters": {
+    "permit_required_if_capacity_gallons_gt": 125,
+    "dot_cylinders_exempt": true,
+    "permit_max_years": {
+     "dispensing_units_trap_tanks_skid_tanks": 3,
+     "transportation_mobile_fuel_storage_tanks": 5
+    },
+    "no_filling_without_posted_permit": true,
+    "expires_on": [
+     "change of both ownership and location",
+     "safety-affecting alterations",
+     "mechanical or fire damage"
+    ]
+   },
+   "applies_to": "Contractors and suppliers using LP-Gas tanks over 125 gallons at a place of employment",
+   "citation": "8 CCR 470",
+   "source_location": "https://www.dir.ca.gov/title8/470.html; https://www.dir.ca.gov/dosh/pressure.html",
+   "verbatim_quote": "Exception: No permit to operate shall be required for pressure vessels of 125 gallons capacity or less or for cylinders used, inspected, and maintained in accordance with DOT regulations.",
+   "effective": "1997-01-03",
+   "read_from_primary_text": true,
+   "notes": "470(e): 'No person shall charge LP-Gas into any tank requiring a permit to operate unless the permit to operate has been issued and posted, except where a request for a permit remains unacted upon.'"
+  },
+  {
+   "id": "cert-pv-boiler-permit-and-annual-inspection",
+   "title": "Power boilers: annual inspection and a posted permit to operate before use",
+   "plain_english": "Boilers subject to the Boiler Safety Orders (DOSH lists power boilers above 15 psig steam pressure) must be inspected internally and externally every year and may not be operated until a permit to operate is issued and posted under glass on or near the boiler. The permit expires when the boiler changes both ownership and location. Temporary permits up to 30 days may be issued for repairs.",
+   "category": "license_classification",
+   "parameters": {
+    "inspection_interval_years": 1,
+    "permit_required_before_operation": true,
+    "dosh_listed_threshold_steam_psig_gt": 15,
+    "temporary_permit_max_days": 30,
+    "permit_expires_on": "change of both ownership and location"
+   },
+   "applies_to": "Contractors installing, commissioning or operating steam boilers (e.g. C-4 boiler contractors, owners)",
+   "citation": "8 CCR 770(a), 780",
+   "source_location": "https://www.dir.ca.gov/title8/780.html; https://www.dir.ca.gov/title8/770.html; https://www.dir.ca.gov/dosh/pressure.html",
+   "verbatim_quote": "(a) Except during the time that a request for a permit remains unacted upon, no boiler subject to annual inspection by these orders shall be placed in operation until a permit to operate has been issued and posted on or near the boiler.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "DOSH page lists 'Power boilers operating at steam pressures exceeding 15 psig*' with the caveat that 'Permit exemptions depend on vessel capacity and operating pressures.' Turboelectric and special-program boilers have longer intervals under 770(b)."
+  },
+  {
+   "id": "cert-pv-boiler-small-exemption",
+   "title": "Small, low-pressure and miniature boilers: no annual inspection or permit",
+   "plain_english": "Low-pressure boilers, miniature boilers, high-temperature water boilers, and boilers that stay within all of these limits do not need annual inspection or a permit: 100 sq ft of heating surface, 16-inch steam drum, 100 psi working pressure, 35 gallons water, and 400,000 BTU/hr burner input. They must still meet construction, installation and control rules.",
+   "category": "threshold",
+   "parameters": {
+    "exempt_types": [
+     "low-pressure boilers",
+     "miniature boilers",
+     "high-temperature water boilers"
+    ],
+    "exempt_if_all_lte": {
+     "heating_surface_sqft": 100,
+     "steam_drum_inside_diameter_in": 16,
+     "mawp_psi": 100,
+     "water_capacity_gallons": 35,
+     "burner_input_btu_per_hr": 400000
+    },
+    "still_required": [
+     "construction and installation provisions",
+     "automatic controls per 763(d) for automatically fired boilers",
+     "controls maintained"
+    ]
+   },
+   "applies_to": "Mechanical and boiler contractors installing small boilers",
+   "citation": "8 CCR 771",
+   "source_location": "https://www.dir.ca.gov/title8/771.html",
+   "verbatim_quote": "(a) The following boilers are not subject to annual inspection and do not require a permit to operate providing they comply with all of the provisions of subsection (b):",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Limits from 771(a)(4)(A)-(E). DOSH may still require inspection (771(c)). Section last amended 1966."
+  },
+  {
+   "id": "cert-pv-permit-and-inspection-fees",
+   "title": "Pressure vessel permit fee $45 and DOSH inspections $150/hour (increase to $55 and $180 proposed Oct 2026)",
+   "plain_english": "DOSH charges $45 to process each permit to operate for an air tank, LPG tank or boiler, and $150 per hour (including travel, billed in quarter hours) for DOSH field, resale and alteration permit inspections. Fees unpaid after 60 days double. In October 2026 DOSH proposed emergency increases to $55 per permit and $180 per hour, effective on filing with the Secretary of State; whether they have been filed was not confirmed.",
+   "category": "money_amount",
+   "parameters": {
+    "permit_processing_fee_usd": 45,
+    "dosh_inspection_usd_per_hour": 150,
+    "billing_increment_hours": 0.25,
+    "late_penalty_pct_after_60_days": 100,
+    "proposed_2026": {
+     "permit_processing_fee_usd": 55,
+     "dosh_inspection_usd_per_hour": 180,
+     "shop_field_resale_usd_per_hour": 180,
+     "notice_date": "2026-10-15",
+     "effective": "upon filing with Secretary of State (filing not confirmed)"
+    },
+    "insurance_inspector_alternative": true
+   },
+   "applies_to": "Owners and users of permitted air tanks, LPG tanks and boilers",
+   "citation": "8 CCR 344.1(a), (d); 344.2(b)-(c)",
+   "source_location": "https://www.dir.ca.gov/title8/344_2.html; https://www.dir.ca.gov/title8/344_1.html; https://www.dir.ca.gov/dosh/doshreg/Emergency-Pressure-Vessel-and-Boiler-Permit-Fees/Notice-2026.10.15.pdf",
+   "verbatim_quote": "(b) A fee of $45.00 shall be charged to cover the cost of processing each permit to operate.",
+   "effective": "2021-02-09",
+   "read_from_primary_text": true,
+   "notes": "Notice of Proposed Emergency Action (October 15, 2026): 'Under section 344.2, the Division proposes to increase the fees related to the issuance of a Permit to Operate from $45.00 to $55.00.' Recheck https://www.dir.ca.gov/title8/344_2.html for the filed version. Permit inspections may also be done by a qualified insurance-company inspector."
+  },
+  {
+   "id": "cert-pv-follow-up-inspection-15-days",
+   "title": "Fix pressure vessel orders within 15 days of the compliance date to avoid follow-up fees",
+   "plain_english": "If you correct the items on a DOSH preliminary order and notify DOSH within 15 days of the compliance date, there is no charge for the follow-up inspection. Otherwise the follow-up inspection is billed hourly ($150/hour now).",
+   "category": "deadline",
+   "parameters": {
+    "grace_days_after_compliance_date": 15,
+    "follow_up_fee_if_late_usd_per_hour": 150,
+    "proposed_follow_up_fee_usd_per_hour": 180
+   },
+   "applies_to": "Owners and users of permitted air tanks, LPG tanks and boilers",
+   "citation": "8 CCR 344.1(b)-(c)",
+   "source_location": "https://www.dir.ca.gov/title8/344_1.html",
+   "verbatim_quote": "(c) No additional fees shall be assessed for follow-up inspections when safety order requirements have been complied with, and the division is notified of such compliance, within 15 days of the compliance date shown on the preliminary order.",
+   "effective": "2021-02-09",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "cert-pv-los-angeles-city-permits",
+   "title": "Inside the City of Los Angeles, pressure vessel permits come from LADBS",
+   "plain_english": "For air tanks, LPG tanks and boilers located within the City of Los Angeles, permits to operate are obtained from the LA Department of Building and Safety (Pressure Vessel Code desk), not the state.",
+   "category": "process_step",
+   "parameters": {
+    "jurisdiction": "City of Los Angeles",
+    "issuer": "Los Angeles Department of Building and Safety",
+    "phone": "(213) 202-9852",
+    "website": "https://dbs.lacity.gov/"
+   },
+   "applies_to": "Contractors with compressors, LPG tanks or boilers at sites in the City of Los Angeles",
+   "citation": "DOSH Pressure Vessel Unit page",
+   "source_location": "https://www.dir.ca.gov/dosh/pressure.html",
+   "verbatim_quote": "To obtain permits to operate for items within the City of Los Angeles, please visit https://dbs.lacity.gov/ then click on \"Obtain Permit\", or contact the City of Los Angeles, Department of Building & Safety, Pressure Vessel Code and Information Desk at phone number (213) 202-9852.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "LADBS fees and rules were not researched."
+  },
+  {
+   "id": "cert-blaster-licensed-blaster-on-site",
+   "title": "Blasting requires a DOSH-licensed blaster physically on site",
+   "plain_english": "An employer may not allow any blasting unless a blaster holding a current California Blaster's License from Cal/OSHA is physically on site doing or directing the blasting. The blaster must show the license to Cal/OSHA or the local authority on request. Others may work under the blaster's direct supervision to gain experience.",
+   "category": "license_classification",
+   "parameters": {
+    "licensed_blaster_physically_present": true,
+    "license_issuer": "Cal/OSHA (DOSH)",
+    "show_license_on_request": true,
+    "unlicensed_may_work_under_direct_supervision": true,
+    "license_transferable": false
+   },
+   "applies_to": "Contractors doing blasting, demolition with explosives, quarry or tunnel work",
+   "citation": "8 CCR 5238(a), (c), (e); 344.20(f)",
+   "source_location": "https://www.dir.ca.gov/title8/5238.html; https://www.dir.ca.gov/title8/344_20.html",
+   "verbatim_quote": "An employer shall not permit a blasting operation, unless a blaster having a current, valid California \"Blaster's License\" issued by the Division is physically present on the site to accomplish the blasting operation and/or direct and supervise others in such operation.",
+   "effective": "2003-08-10",
+   "read_from_primary_text": true,
+   "notes": "Local explosives permits (fire authority, H&SC 12000 et seq.) were not researched."
+  },
+  {
+   "id": "cert-blaster-license-qualifications-and-classes",
+   "title": "Blaster's License: age 21, 3 years experience, exam; classes A-E",
+   "plain_english": "To get a Blaster's License you must be at least 21, have 3 years of experience in the blasting category you apply for, be physically able, understand and give written and oral orders, and pass DOSH's written or oral exam (field tests may be required). Classes: A Unlimited, B General Above Ground, C General Underground, D Demolition, E Limited.",
+   "category": "license_classification",
+   "parameters": {
+    "min_age_years": 21,
+    "min_experience_years_in_category": 3,
+    "classes": {
+     "A": "Unlimited",
+     "B": "General Above Ground",
+     "C": "General Underground",
+     "D": "Demolition",
+     "E": "Limited"
+    },
+    "exam": "written or oral; field tests possible"
+   },
+   "applies_to": "Blasters and contractors employing them",
+   "citation": "8 CCR 5238(f); 344.20(c)-(d)",
+   "source_location": "https://www.dir.ca.gov/title8/5238.html; https://www.dir.ca.gov/title8/344_20.html",
+   "verbatim_quote": "(1) Shall be at least 21 years of age;",
+   "effective": "2003-08-10",
+   "read_from_primary_text": true,
+   "notes": "5238(f)(2): 'Shall have at least three years experience in the blasting category being applied for'. Application fee not found in 344.20-344.22."
+  },
+  {
+   "id": "cert-blaster-license-5-year-renewal",
+   "title": "Blaster's License valid 5 years; exam required at each renewal",
+   "plain_english": "A Blaster's License is good for five years. Renewal is handled like a new application, and the exam must be taken again every five years. A suspended or revoked blaster must wait 6 months before applying for a new license.",
+   "category": "deadline",
+   "parameters": {
+    "validity_years": 5,
+    "exam_every_years": 5,
+    "reapply_wait_after_suspension_or_revocation_months": 6
+   },
+   "applies_to": "Licensed blasters",
+   "citation": "8 CCR 344.21, 344.22(c)",
+   "source_location": "https://www.dir.ca.gov/title8/344_21.html; https://www.dir.ca.gov/title8/344_22.html",
+   "verbatim_quote": "(a) Each Blaster's License issued under this Article shall be valid for a period of five years with renewal privileges.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "344.22(c): 'In the event of suspension or revocation of a blaster's license, the person may not apply for a new license for a period of 6 months'. Grounds: doubt about competency or noncompliance with safety orders (344.22(a)), after notice and hearing."
+  }
+ ]
+}

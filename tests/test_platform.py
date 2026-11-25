@@ -1,15 +1,24 @@
 """Hosted platform: accounts, sessions, CSRF, tenant isolation, API keys, /mcp gate, billing, tools, dashboard,
-offline field-log sync, CSV import. Uses the demo license fixtures (conftest sets LICENSE_DB to a missing file)."""
+offline field-log sync, CSV import. Uses the demo license fixtures (conftest sets LICENSE_DB to a missing file).
+
+Every test runs twice: on SQLite, and on PostgreSQL when TC_TEST_DATABASE_URL points at a database the tests may
+use (each test gets its own new schema, dropped afterwards); without it the Postgres variant is skipped. E.g.
+    TC_TEST_DATABASE_URL=postgresql://user:pw@127.0.0.1:5432/tc_test python -m pytest -q tests/test_platform.py
+"""
 import json
 import re
 import os
+import secrets
 import tempfile
 import time
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 import pytest
 
 os.environ.setdefault("DATA_DIR", tempfile.mkdtemp(prefix="tc-test-"))   # module-level app in app.main
+os.environ.pop("DATABASE_URL", None)       # never a real database: Postgres only through TC_TEST_DATABASE_URL
+PG_TEST_URL = (os.getenv("TC_TEST_DATABASE_URL") or "").strip() or None
 
 from fastapi.testclient import TestClient  # noqa: E402
 
@@ -24,8 +33,45 @@ INIT = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
         "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "test", "version": "1"}}}
 
 
+_db = {"backend": "sqlite", "url": None, "apps": []}
+
+
+def with_search_path(url: str, schema: str) -> str:
+    """The same database URL, with every connection using `schema` (libpq `options=-c search_path=...`)."""
+    return url + ("&" if "?" in url else "?") + "options=" + quote(f"-csearch_path={schema}", safe="")
+
+
+@pytest.fixture(params=["sqlite", "postgres"], autouse=True)
+def backend(request):
+    """Run the test on SQLite, then on PostgreSQL in a fresh schema (skipped unless TC_TEST_DATABASE_URL is set)."""
+    schema = None
+    if request.param == "postgres":
+        if not PG_TEST_URL:
+            pytest.skip("set TC_TEST_DATABASE_URL to run the PostgreSQL variant")
+        import psycopg
+        schema = "tc_t_" + secrets.token_hex(6)
+        with psycopg.connect(PG_TEST_URL, autocommit=True) as con:
+            con.execute(f'create schema "{schema}"')
+        _db.update(backend="postgres", url=with_search_path(PG_TEST_URL, schema), apps=[])
+    else:
+        _db.update(backend="sqlite", url=None, apps=[])
+    try:
+        yield request.param
+    finally:
+        for a in _db["apps"]:
+            a.state.platform.store.close()
+        _db.update(backend="sqlite", url=None, apps=[])
+        if schema:
+            import psycopg
+            with psycopg.connect(PG_TEST_URL, autocommit=True) as con:
+                con.execute(f'drop schema "{schema}" cascade')
+
+
 def make_app(tmp_path, **overrides):
-    return create_app(Settings.from_env(data_dir=str(tmp_path), **overrides))
+    overrides.setdefault("database_url", _db["url"])
+    a = create_app(Settings.from_env(data_dir=str(tmp_path), **overrides))
+    _db["apps"].append(a)
+    return a
 
 
 @pytest.fixture
@@ -86,10 +132,44 @@ def test_anonymous_mcp_tool_call_is_audited_but_not_visible_to_tenants(client, a
     assert sse_json(r.text)["result"]["structuredContent"]["business_name"] == "Example Plumbing Inc."
     store = app.state.platform.store
     with store.connect() as con:
-        rows = con.execute("select tenant_id, user, tool, verified, source from audit").fetchall()
+        rows = con.execute('select tenant_id, "user", tool, verified, source from audit').fetchall()
     assert [tuple(r) for r in rows] == [(None, "anonymous (MCP)", "verify_contractor_license", 0, "mcp")]
     signup(client)
     assert client.get("/api/audit").json() == []
+
+
+def test_health_reports_storage(tmp_path, backend, monkeypatch):
+    monkeypatch.delenv("RENDER", raising=False)
+    with TestClient(make_app(tmp_path / "laptop")) as c:
+        h = c.get("/health").json()
+        assert h["ok"] is True and h["schema"] >= 3 and "license_data" in h
+        assert h["storage"] == backend and h["storage_persistent"] is True
+    # on Render, SQLite is only kept if DATA_DIR is on a mounted persistent disk; Postgres always is
+    import app.store as store_mod
+    monkeypatch.setenv("RENDER", "true")
+    for on_disk in (False, True):
+        monkeypatch.setattr(store_mod, "disk_is_persistent", lambda path, v=on_disk: v)
+        with TestClient(make_app(tmp_path / f"render-{on_disk}")) as c:
+            h = c.get("/health").json()
+            assert h["storage"] == backend and h["storage_persistent"] is (backend == "postgres" or on_disk)
+
+
+def test_generated_signing_key_survives_restarts(tmp_path, backend, monkeypatch):
+    """Without SECRET_KEY, sessions must survive a restart. On Postgres the key lives in the database, so a second
+    instance with its own (empty) disk accepts the same cookie; on SQLite it lives next to the database file."""
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    first = make_app(tmp_path / "a")
+    with TestClient(first) as c:
+        signup(c)
+        cookie = c.cookies.get("tc_session")
+    second = make_app(tmp_path / ("b" if backend == "postgres" else "a"))
+    assert second.state.platform.signer.mac("x", "y") == first.state.platform.signer.mac("x", "y")
+    with TestClient(second) as c2:
+        c2.cookies.set("tc_session", cookie)
+        assert c2.get("/api/me").json()["user"]["email"] == "owner@acme.test"
+    if backend == "postgres":
+        assert not os.path.exists(tmp_path / "b" / "secret_key") and not os.path.exists(tmp_path / "b" /
+                                                                                        "tradecomply.sqlite")
 
 
 # ---------------------------------------------------------------------------- accounts and sessions
@@ -519,14 +599,17 @@ def _login_temp(app, owner, email, role):
     return c, inv
 
 
-def test_deleted_users_cookie_does_not_become_the_next_user(app):
+def test_deleted_users_cookie_does_not_become_the_next_user(app, backend):
     """SQLite reuses the highest rowid after a delete; a fired worker's cookie must not log in as the new hire."""
     with TestClient(app) as owner:
         signup(owner)
         fired, inv = _login_temp(app, owner, "fired@acme.test", "field")
         assert owner.delete(f"/api/users/{inv['id']}").status_code == 200
         hire = owner.post("/api/users", json={"email": "office@acme.test", "role": "office"}).json()
-        assert hire["id"] == inv["id"]            # the id really is reused
+        if backend == "sqlite":
+            assert hire["id"] == inv["id"]        # the id really is reused
+        else:
+            assert hire["id"] != inv["id"]        # Postgres identity columns never reuse an id
         assert fired.get("/api/me").status_code == 401
         assert fired.get("/api/keys").status_code == 401
 

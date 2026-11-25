@@ -1,6 +1,11 @@
 # Render Blueprint for the hosted TradeComply CA platform (web app + API + MCP at /mcp).
-# The persistent disk keeps the app database, the CSLB license data and the signing key across deploys
-# (disks need a paid instance type and limit the service to one instance, which this app expects).
+# Customer data: set DATABASE_URL to a PostgreSQL database (Supabase pooler or Render Postgres; see README,
+# "Durable storage (Postgres)") and it lives there, safe across deploys and restarts. Without DATABASE_URL the app
+# uses SQLite in DATA_DIR, which only survives on the persistent disk below. /health reports "storage" and
+# "storage_persistent". The disk also keeps the CSLB license data (rebuilt from seed/ at boot if missing) and, when
+# SECRET_KEY is not set, the signing key (with Postgres that key is kept in the database instead).
+# Disks need a paid instance type and limit the service to one instance, which this app expects (rate limits and
+# the tool-list cache are in memory). With DATABASE_URL set, the disk block can be removed.
 services:
   - type: web
     name: tradecomply-ca
@@ -18,6 +23,8 @@ services:
         value: "3.13.1"
       - key: DATA_DIR
         value: /var/data
+      - key: DATABASE_URL
+        sync: false           # postgresql://... (Supabase Session/Transaction pooler, IPv4) or Render Postgres; blank = SQLite
       - key: CSLB_AUTO_DOWNLOAD
         value: "1"
       - key: SECRET_KEY

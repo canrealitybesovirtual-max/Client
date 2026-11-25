@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass, field
 
 from .auth import RateLimiter, Signer, load_secret_key
-from .store import Store, default_data_dir
+from .store import Store, database_url_from_env, default_data_dir
 
 
 def _flag(name: str) -> bool:
@@ -13,6 +13,7 @@ def _flag(name: str) -> bool:
 @dataclass
 class Settings:
     data_dir: str = field(default_factory=default_data_dir)
+    database_url: str | None = None       # postgres:// or postgresql:// selects PostgreSQL; unset = SQLite in data_dir
     mcp_require_key: bool = False
     stripe_secret_key: str | None = None
     stripe_price_id: str | None = None
@@ -28,6 +29,7 @@ class Settings:
     def from_env(cls, **overrides) -> "Settings":
         s = cls(
             data_dir=default_data_dir(),
+            database_url=database_url_from_env(),
             mcp_require_key=_flag("MCP_REQUIRE_KEY"),
             stripe_secret_key=os.getenv("STRIPE_SECRET_KEY") or None,
             stripe_price_id=os.getenv("STRIPE_PRICE_ID") or None,
@@ -46,13 +48,22 @@ class Settings:
         return bool(self.stripe_secret_key and self.stripe_price_id)
 
 
+def signing_key(store: Store) -> bytes:
+    """SECRET_KEY if set (validated by load_secret_key). Otherwise a generated key that outlives the process: on
+    PostgreSQL it is kept in the database (table app_secrets), so it survives redeploys of a server with no
+    persistent disk and every instance shares it; on SQLite it is kept in DATA_DIR/secret_key, next to the database."""
+    if os.getenv("SECRET_KEY") or store.backend == "sqlite":
+        return load_secret_key(store.data_dir)
+    return store.shared_secret("secret_key").encode()
+
+
 class Platform:
     """Everything a request handler needs: settings, the database, the signing key, rate limiters, the MCP server."""
 
     def __init__(self, settings: Settings, mcp):
         self.settings = settings
-        self.store = Store(settings.data_dir)
-        self.signer = Signer(load_secret_key(self.store.data_dir))
+        self.store = Store(settings.data_dir, database_url=settings.database_url)
+        self.signer = Signer(signing_key(self.store))
         self.mcp = mcp
         self.login_limiter = RateLimiter(limit=5, window_s=15 * 60)       # failures per IP + email
         self.email_limiter = RateLimiter(limit=20, window_s=15 * 60)      # failures per email, any IP

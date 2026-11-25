@@ -14,6 +14,7 @@ import os
 import re
 from contextlib import AsyncExitStack, asynccontextmanager
 
+import anyio
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
@@ -146,9 +147,18 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
 
     @asynccontextmanager
     async def api_lifespan(_app):
-        log.info("TradeComply platform ready (data dir %s, MCP key required: %s, Stripe: %s)",
-                 platform.store.data_dir, settings.mcp_require_key, settings.stripe_enabled)
-        yield
+        store = platform.store
+        log.info("TradeComply platform ready (storage %s, data dir %s, MCP key required: %s, Stripe: %s)",
+                 store.describe(), store.data_dir, settings.mcp_require_key, settings.stripe_enabled)
+        if not store.persistent:
+            log.warning("STORAGE IS NOT PERSISTENT: SQLite at %s is on this instance's own filesystem, which Render "
+                        "replaces on every deploy and restart, so accounts, projects and logs will be lost. Set "
+                        "DATABASE_URL to a PostgreSQL database (README: Durable storage) or mount a persistent disk "
+                        "at DATA_DIR.", store.path)
+        try:
+            yield
+        finally:
+            store.close()
 
     app = FastAPI(title="TradeComply CA", version="1.0", lifespan=combine_lifespans(api_lifespan, mcp_app.lifespan),
                   docs_url=None, openapi_url="/api/openapi.json", redoc_url=None)
@@ -164,8 +174,11 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
 
     @app.get("/health", include_in_schema=False)
     async def health():
-        return JSONResponse({"ok": True, "server": "TradeComply CA", "schema": platform.store.schema_version(),
-                             "license_data": cslb.snapshot_date() or "demo fixtures"})
+        store = platform.store
+        schema = await anyio.to_thread.run_sync(store.schema_version)     # a database round trip on Postgres
+        return JSONResponse({"ok": True, "server": "TradeComply CA", "schema": schema,
+                             "license_data": cslb.snapshot_date() or "demo fixtures",
+                             "storage": store.backend, "storage_persistent": store.persistent})
 
     # API reference: a same-origin page (FastAPI's Swagger UI loads scripts from a CDN, which the CSP blocks, and
     # third-party script on this origin could read the CSRF cookie anyway).

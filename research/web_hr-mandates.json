@@ -1,0 +1,2638 @@
+{
+ "domain": "California employer HR and benefit mandates beyond the core wage-and-hour rules: 2027 state minimum wage and exempt salary, posting details, Labor Code 2802 expense reimbursement, wage deductions and employer-paid costs, statutory leaves and accommodations (jury, school, crime victim, emergency responder, rehab, literacy, organ donor, lactation), applicant and employee privacy protections, pay transparency, retaliation deadlines and penalties, the federal ACA employer mandate and Forms 1094-C/1095-C, COBRA, federal FMLA, and City of San Diego local wage laws (minimum wage 2026/2027, earned sick leave, traffic control worker wage, living wage)",
+ "source_doc": "Official sources fetched and read on 2026-11-25. DIR: News Release 2026-66 (2027 minimum wage, Aug. 13, 2026), Workplace Postings page and postings FAQ, DLSE Enforcement Policies and Interpretations Manual PDF (chapters 13, 17, 26 and 29), DLSE Opinion Letter 1998.11.05, DLSE FAQs on deductions, retaliation, lactation and the Equal Pay Act/pay transparency (dated Aug. 24, 2026), and the minimum wage FAQ. eCFR (versioner API, version of 2026-11-20): 26 CFR 54.4980H-1 through -5, 301.6056-1, 301.6056-2, 301.6011-2, 301.6721-1, 301.6722-1, 301.7503-1, 54.9815-2708, 54.4980B-2, -6, -7, -8; 29 CFR 2590.606-1, -2, -4, 825.104, 825.110, 825.111, 825.200, 825.300. City of San Diego OLSE: Earned Sick Leave and Minimum Wage page, FAQs (Jan. 2026), 2027 minimum wage notice (Sept. 2026), historical rates, SB 616 notice, enforcement fee fact sheet, Traffic Control Worker page, notice (Rev. 11/3/26), historical rates and fee sheet, Living Wage page and FY2027 rates. BLOCKED (proxy refused or DNS-blocked from this session; nothing was taken from them): calsavers.com and treasurer.ca.gov (CalSavers), ftb.ca.gov (CalSavers penalties; California individual-mandate reporting), edd.ca.gov (2026 SDI/PFL rate and wage base; DE 34 is already in the rulebook), irs.gov, federalregister.gov and govinfo.gov (2026/2027 4980H payment amounts, affordability percentage, inflation-adjusted 6721/6722 penalties, IRS mileage rate, 1094-C/1095-C instructions), calcivilrights.ca.gov (pay data report, harassment training, CFRA, PDL, bereavement and reproductive-loss leave, Fair Chance Act), leginfo.legislature.ca.gov (bot protection; not bypassed), uscode.house.gov, dol.gov, dof.ca.gov, and the official sites of Los Angeles city (wagesla.lacity.gov, lacity.gov), Los Angeles County (dcba.lacounty.gov), San Francisco (sf.gov, sfgov.org), San Jose, Oakland, Long Beach, Santa Monica, Pasadena, West Hollywood, Berkeley, Emeryville, Mountain View, Sunnyvale, Palo Alto, Santa Clara and Fremont, and docs.sandiego.gov (ordinance text). Rules for those topics and cities are not in this pack. The DIR MW-2027 poster returned 404.",
+ "rules": [
+  {
+   "id": "hr-state-minimum-wage-2027",
+   "title": "State minimum wage rises to $17.40/hour on January 1, 2027",
+   "plain_english": "From January 1, 2027, every California employer must pay at least $17.40 an hour for all hours worked, up from $16.90 in 2026. If the city or county where the work is done has a higher minimum wage, pay the higher rate.",
+   "category": "money_amount",
+   "parameters": {
+    "hourly_usd": 17.4,
+    "effective": "2027-01-01",
+    "prior_rate_usd": {
+     "2026-01-01": 16.9
+    },
+    "increase_usd_derived": 0.5,
+    "certified_by": "California Department of Finance",
+    "certified_on": "2026-07-31",
+    "applies_regardless_of_employee_count": true,
+    "includes_piece_rate_workers": true,
+    "derived_8_hour_day_usd": 139.2,
+    "derived_40_hour_week_usd": 696.0,
+    "derived_2x_minimum_wage_hourly_usd": 34.8,
+    "rule": "required_rate = max(state_rate, city_or_county_rate_for_work_location)"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1182.12 (annual inflation adjustment); DIR News Release No. 2026-66 (Aug. 13, 2026)",
+   "source_location": "https://www.dir.ca.gov/DIRNews/2026/2026-66.html (News Release No. 2026-66, dated August 13, 2026, first paragraph)",
+   "verbatim_quote": "Beginning January 1, 2027, California\u2019s statewide minimum wage will increase to $17.40 per hour, helping wages keep pace with inflation and providing greater economic support to workers across the state.",
+   "effective": "2027-01-01",
+   "read_from_primary_text": true,
+   "notes": "The release says DOF certified the increase on July 31, 2026. The DOF certification letter is on dof.ca.gov, which this session cannot reach. The MW-2027 poster (https://www.dir.ca.gov/iwc/MW-2027.pdf) returned 404 on 2026-11-25, so the 2027 posting text and the 2027 meal and lodging credits are not yet published. The increase, day, week and 2x figures are arithmetic, not quotes. The 2x figure is the 2027 test in the existing rule tools-equipment-employer-provides."
+  },
+  {
+   "id": "hr-exempt-salary-threshold-2027",
+   "title": "Exempt (white-collar) employees must earn at least $72,384 a year from January 1, 2027",
+   "plain_english": "To treat an office manager, estimator or other salaried employee as exempt from overtime in 2027, you must pay at least $72,384 a year ($1,392 a week), and the job must also pass the duties test.",
+   "category": "threshold",
+   "parameters": {
+    "annual_usd": 72384,
+    "effective": "2027-01-01",
+    "formula": "2 * 17.40 * 40 * 52",
+    "derived_monthly_usd": 6032.0,
+    "derived_weekly_usd": 1392.0,
+    "prior_annual_usd": {
+     "2026-01-01": 70304
+    },
+    "also_required": "duties and other requirements of the specific exemption"
+   },
+   "applies_to": "Employers classifying employees as exempt executive, administrative or professional employees",
+   "citation": "DIR News Release No. 2026-66 (Aug. 13, 2026); Labor Code 515; IWC Order 16-2001 \u00a71(A) (as cited in the existing rule exempt-salary-threshold-2026)",
+   "source_location": "https://www.dir.ca.gov/DIRNews/2026/2026-66.html (section 'Minimum salary requirement for exempt employees')",
+   "verbatim_quote": "Beginning January 1, 2027, an employee must earn an annual salary of at least $72,384 to meet the salary threshold for exemption. Employees must also satisfy the duties and other requirements applicable to the specific exemption.",
+   "effective": "2027-01-01",
+   "read_from_primary_text": true,
+   "notes": "The release shows the formula: $17.40 x 2 x 40 hours per week x 52 weeks per year = $72,384. The monthly and weekly figures are arithmetic. This rule updates exempt-salary-threshold-2026 for 2027."
+  },
+  {
+   "id": "hr-posting-wage-order-4-for-office-staff",
+   "title": "Construction companies with office staff must also post Wage Order 4",
+   "plain_english": "Wage Order 16 covers your field crews. If you also employ office staff such as bookkeepers or estimators, post Wage Order 4 as well.",
+   "category": "required_notice",
+   "parameters": {
+    "wage_orders_to_post": [
+     "IWC Order 16 (on-site construction, drilling, logging and mining occupations)",
+     "IWC Order 4 (professional, technical, clerical, mechanical and similar occupations)"
+    ],
+    "trigger": "a construction employer that also employs office help"
+   },
+   "applies_to": "Construction employers with office or clerical employees",
+   "citation": "Labor Code 1183(d); IWC Orders 4-2001 and 16-2001",
+   "source_location": "https://www.dir.ca.gov/FAQworkplacepostings3.htm (Question 1)",
+   "verbatim_quote": "A construction company (Wage Order 16) employing office help also needs Wage Order 4.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "This extends the existing rules wage-order-16-posting and required-workplace-postings."
+  },
+  {
+   "id": "hr-posting-binder-jobsite-trailer",
+   "title": "Postings may be kept in a binder at a jobsite that has only a trailer",
+   "plain_english": "If a jobsite has no wall to post on, for example only an on-site trailer, you may keep the required postings in a binder. Tell workers where it is and keep it easy to reach without asking.",
+   "category": "process_step",
+   "parameters": {
+    "binder_allowed_only_when": "no room to post (examples: construction site with only an on-site trailer; outdoor agricultural site)",
+    "conditions": [
+     "tell employees where the binder is located",
+     "binder available to employees",
+     "employees have easy access",
+     "employees do not have to walk a long distance",
+     "employees do not have to ask to see the material"
+    ]
+   },
+   "applies_to": "Employers posting required notices at construction jobsites",
+   "citation": "DIR workplace postings FAQ",
+   "source_location": "https://www.dir.ca.gov/FAQworkplacepostings3.htm (Question 5)",
+   "verbatim_quote": "Some situations where this could be acceptable are a construction site where there is only an on-site trailer, or an agricultural site where the workplace is outdoors. If employers put postings in a binder, they must tell employees where the binder is located, have the binder available for employees, ensure employees have easy access to postings and don't have to walk a long distance or ask to see the material.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The FAQ answer starts: 'Yes, but only under special circumstances.'"
+  },
+  {
+   "id": "hr-posting-spanish-minimum-wage-notice",
+   "title": "Post the minimum wage notice in Spanish when workers read only Spanish",
+   "plain_english": "The wage orders exist only in English. If any of your workers speak and read only Spanish, also post the state minimum wage notice in Spanish.",
+   "category": "required_notice",
+   "parameters": {
+    "trigger": "employees who speak and read only Spanish",
+    "posting": "state minimum wage notice (MW-YYYY), Spanish version",
+    "english_reading_workforce": "the posted IWC order covers minimum wage; separate MW notice not needed"
+   },
+   "applies_to": "Employers with Spanish-only-reading employees",
+   "citation": "DIR workplace postings FAQ",
+   "source_location": "https://www.dir.ca.gov/FAQworkplacepostings3.htm (Question 2)",
+   "verbatim_quote": "Employers with workers who speak and read only Spanish must post the minimum wage notice in Spanish because the IWC orders are only available in English.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "On 2026-11-25 the DIR postings page (https://www.dir.ca.gov/wpnodb.html) listed the Spanish minimum wage notice as '(Spanish Coming Soon)'."
+  },
+  {
+   "id": "hr-posting-replace-when-content-changes",
+   "title": "Replace a posting only when its content changes; downloaded posters are valid",
+   "plain_english": "You do not need new posters every year unless the content changes. The wage orders and the minimum wage notice change every year. Free posters downloaded from the agency meet the legal requirement.",
+   "category": "process_step",
+   "parameters": {
+    "replace_when": "content changes",
+    "changes_annually": [
+     "IWC wage orders (computer professional exemption rate)",
+     "state minimum wage notice (rate changes each January 1)"
+    ],
+    "downloaded_posters_valid": true
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "DIR workplace postings FAQ; DIR Workplace Postings page",
+   "source_location": "https://www.dir.ca.gov/FAQworkplacepostings3.htm (Questions 3 and 4); https://www.dir.ca.gov/wpnodb.html",
+   "verbatim_quote": "You only need to replace a posting when its content changes. Once established, the language of almost every required posting stays the same. The exception is the IWC wage orders, which are updated annually with an adjustment to the hourly wage required for computer professionals to be exempt",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The DIR Workplace Postings page says: 'Downloaded posters meet an employer's legal obligation.' The yearly change to the minimum wage notice follows from the yearly rate change and is not quoted."
+  },
+  {
+   "id": "hr-2802-reimburse-necessary-expenses",
+   "title": "Reimburse all necessary work expenses and losses (Labor Code 2802)",
+   "plain_english": "If a worker spends their own money or loses property because they did the job or followed your instructions, you must pay them back. Examples include required insurance, bank fees for required direct deposit, required uniforms and business use of a personal vehicle.",
+   "category": "process_step",
+   "parameters": {
+    "reimburse": "all necessary expenditures or losses incurred in direct consequence of the discharge of duties or obedience to the employer's directions",
+    "test": "expense or loss incurred within the course and scope of employment (respondeat superior)",
+    "examples_per_dlse": [
+     "employer-required insurance (O.L. 1993.02.22-3)",
+     "cost of opening or operating a bank account required for direct deposit (O.L. 1997.03.21-2)",
+     "required uniforms (Labor Code 2802; IWC Orders)",
+     "business use of the employee's car (mileage)",
+     "legal costs of defending a third-party action based on job-related conduct",
+     "employee-owned tools stolen from the employer's premises when trade custom required the employee to supply them and they were too heavy to carry home"
+    ]
+   },
+   "applies_to": "All California employers",
+   "citation": "Labor Code 2802(a); DLSE Enforcement Manual \u00a7\u00a729.2-29.2.3.3",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (Chapter 29, \u00a729.2 and \u00a729.2.1, manual page 29-1)",
+   "verbatim_quote": "An employer shall indemnify his or her employee for all necessary expenditures of losses incurred by the employee in direct consequence of the discharge of his or her duties, or of his or her obedience to the directions of the employer, even though unlawful, unless the employee, at the time of obeying the directions, believed them to be unlawful.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from July 2017 to December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The manual's wording 'expenditures of losses' is copied as printed. The DLSE Deductions FAQ (https://www.dir.ca.gov/dlse/FAQ_Deductions.htm) says the same in plain terms: 'An employee is entitled to be reimbursed by his or her employer for all expenses or losses incurred in the direct consequence of the discharge of the employee's work duties.'"
+  },
+  {
+   "id": "hr-2802-mileage-irs-rate",
+   "title": "Mileage: the IRS rate is presumed reasonable, but higher actual costs must be covered",
+   "plain_english": "When workers drive their own vehicles for work, paying the IRS mileage rate normally satisfies the law. If a worker proves their real costs were higher, for example because you require extra insurance, you must pay the difference. Paying less than the IRS rate is presumed not to comply unless you prove actual costs were lower.",
+   "category": "money_amount",
+   "parameters": {
+    "presumed_reasonable_rate": "IRS business standard mileage rate for the period driven",
+    "irs_rate_usd_per_mile": null,
+    "below_irs_rate": "rebuttably presumed not to comply; employer may show actual costs were lower",
+    "at_irs_rate": "no irrebuttable presumption; employee may prove higher actual costs",
+    "employer_required_extra_auto_insurance": "reimbursable; employer may not dictate the insurance company (Labor Code 450)"
+   },
+   "applies_to": "Employers whose employees use personal vehicles for work (travel between jobsites, supply runs)",
+   "citation": "Labor Code 2802; DLSE Enforcement Manual \u00a729.2.4; DLSE Opinion Letter 1998.11.05",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a729.2.4, manual page 29-3); https://www.dir.ca.gov/dlse/opinions/1998-11-05.pdf (pages 2-3)",
+   "verbatim_quote": "DLSE has opined that use of the IRS mileage allowance will satisfy the expenses incurred in use of an employee\u2019s car in the absence of evidence to the contrary.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The 1998 opinion letter adds: 'Thus while the Division generally finds the IRS mileage rate as reimbursement to be reasonable, no overall exemption from liability under Section 2802 can be given.' It also says payments below the IRS rate were 'rebuttably presumed not to comply with Section 2802.' The 2026 and 2027 IRS mileage rates were not read because irs.gov is blocked here, so a calculator must take the rate as an input."
+  },
+  {
+   "id": "hr-2802-reimbursement-inside-wages-formula",
+   "title": "Expenses can be built into pay only with a stated formula",
+   "plain_english": "You may cover expenses with a higher wage or commission rate only if you show how much of each payment is expense reimbursement, so the worker can check that wages and expenses were both fully paid.",
+   "category": "required_document",
+   "parameters": {
+    "allowed_method": "increase base salary or commission rates to cover expenses",
+    "condition": "employer provides a method or formula identifying the reimbursement portion of the combined payment",
+    "authority": "Gattuso v. Harte-Hanks Shoppers, Inc. (2007) 42 Cal.4th 554, 573"
+   },
+   "applies_to": "All California employers",
+   "citation": "Labor Code 2802; DLSE Enforcement Manual \u00a729.2.3",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a729.2.3, manual page 29-2)",
+   "verbatim_quote": "The California Supreme Court held an employer could satisfy the reimbursement obligation by increasing base salary or commission rates to meet its reimbursement obligation under Labor Code \u00a72802 only where the employer provides some method or formula to identify the amount of the combined employee compensation payment that is intended to provide for expense reimbursement",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from July 2017. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-2802-hand-tools-definition",
+   "title": "'Hand tools' that workers may be required to supply exclude power tools and vehicles",
+   "plain_english": "Under the wage order, workers who earn at least twice the minimum wage can be required to bring the hand tools customary in their trade. That covers hand tools and tool belts or boxes only. It does not cover power tools or a car, which you must supply or reimburse.",
+   "category": "definition",
+   "parameters": {
+    "hand_tools_and_equipment_includes": [
+     "hand (as opposed to power) tools",
+     "personal equipment such as tool belts or tool boxes needed to secure the hand tools"
+    ],
+    "must_be": "customarily required in a recognized trade or craft",
+    "not_included": [
+     "power tools",
+     "automobile"
+    ],
+    "related_rule": "tools-equipment-employer-provides (2x minimum wage condition; 2027: $34.80/hour)"
+   },
+   "applies_to": "Construction employers requiring workers to supply tools",
+   "citation": "IWC Order 16-2001 \u00a78(B); Labor Code 2802; DLSE Enforcement Manual \u00a7\u00a729.2.3.2-29.2.3.3",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a729.2.3.2 and \u00a729.2.3.3, manual pages 29-2 to 29-3)",
+   "verbatim_quote": "The DLSE has concluded that in the phrase \u201chand tools and equipment\u201d, the word \u201chand\u201d is an adjective which modifies both the word \u201ctools\u201d and the word \u201cequipment\u201d. As the Labor Commissioner opined in 1984, an automobile is not the type of equipment contemplated in the IWC Orders.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from July 2017. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. \u00a729.2.3.3 quotes the IWC's Statement as to the Basis: hand tools and equipment are limited to 'hand (as opposed to power) tools and personal equipment, such as tool belts or tool boxes'. That quotation runs across a page break, so it is summarized here."
+  },
+  {
+   "id": "hr-2802-direct-deposit-bank-costs",
+   "title": "Pay any bank costs when you require direct deposit",
+   "plain_english": "If you make workers open a bank account so they can be paid by direct deposit, you must cover the cost of opening and running that account.",
+   "category": "money_amount",
+   "parameters": {
+    "employer_pays": "any cost of opening or operating a bank account the employer requires for direct deposit",
+    "opinion_letter": "O.L. 1997.03.21-2"
+   },
+   "applies_to": "Employers requiring direct deposit",
+   "citation": "Labor Code 2802; DLSE Enforcement Manual \u00a729.2.3.1",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a729.2.3.1, manual page 29-2)",
+   "verbatim_quote": "For instance, if an employer requires that an employee open a bank account in order to receive his or her pay by direct deposit, the employer must pay the employee for any cost involved in opening or operating that bank account.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from July 2017. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The same section says: 'Costs of insurance required by an employer are recoverable under the provisions of Section 2802. (O.L. 1993.02.22-3)'."
+  },
+  {
+   "id": "hr-2802-licensure-training-costs",
+   "title": "Training needed for a state-required license is usually not the employer's cost",
+   "plain_english": "Under Labor Commissioner policy, an employer usually does not have to pay for training a worker takes to earn a license that the law requires.",
+   "category": "definition",
+   "parameters": {
+    "employer_pays_licensure_training": false,
+    "qualifier": "usually",
+    "opinion_letter": "O.L. 1994.11.17",
+    "scope": "training leading to licensure pursuant to a statute"
+   },
+   "applies_to": "All California employers",
+   "citation": "Labor Code 2802; DLSE Enforcement Manual \u00a729.2.3.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a729.2.3.4, manual page 29-3)",
+   "verbatim_quote": "Costs which are incurred in training leading to licensure pursuant to a statute (real estate, etc.) are not, usually, the responsibility of the employer. (O.L. 1994.11.17)",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from July 2017. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. Training the employer itself requires is a different case and falls under the general 2802 duty. \u00a729.2.7 covers Labor Code 2802.1, which bars charging for employer-required training only for direct-patient-care employees of general acute care hospitals and does not reach construction."
+  },
+  {
+   "id": "hr-2802-fees-interest-no-waiver",
+   "title": "2802 claims: employee recovers interest and attorney's fees; the right cannot be waived",
+   "plain_english": "A worker who wins an expense-reimbursement claim also gets interest and attorney's fees. An agreement in which a worker gives up reimbursement is not valid.",
+   "category": "penalty",
+   "parameters": {
+    "recoverable_by_prevailing_employee": [
+     "interest",
+     "attorney's fees"
+    ],
+    "awarded_by": [
+     "courts",
+     "Labor Commissioner"
+    ],
+    "waivable_by_private_agreement": false,
+    "non_waiver_authority": "Labor Code 2804"
+   },
+   "applies_to": "All California employers",
+   "citation": "Labor Code 2802(c), 2804; DLSE Enforcement Manual \u00a7\u00a729.2.5-29.2.6",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a729.2.5 and \u00a729.2.6, manual page 29-3)",
+   "verbatim_quote": "Both interest and attorney\u2019s fees incurred in claims and actions to enforce 2802 are recoverable and may be awarded by either the courts or the Labor Commissioner to an employee (but not the DLSE or employer) who prevails in such an enforcement claim or action. (Labor Code \u00a7 2802(c))",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from July 2017. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. \u00a729.2.6: 'Note: The provisions of Labor Code \u00a7 2800 and 2802 may not be altered or waived by private agreement. (Labor Code \u00a7 2804)'."
+  },
+  {
+   "id": "hr-wage-deductions-only-three-kinds",
+   "title": "Only three kinds of paycheck deductions are allowed",
+   "plain_english": "You may take money out of a paycheck only when the law requires it (taxes, garnishments), when the worker agreed in writing to pay for things like insurance or benefit plans, or when a union or wage agreement authorizes health, welfare or pension contributions.",
+   "category": "prohibition",
+   "parameters": {
+    "allowed_deductions": [
+     "required or empowered by state or federal law (e.g., income taxes, garnishments)",
+     "expressly authorized in writing by the employee for insurance premiums, benefit plan contributions or other deductions not amounting to a rebate on wages",
+     "health, welfare or pension contributions expressly authorized by a wage or collective bargaining agreement"
+    ],
+    "authority": [
+     "Labor Code 221",
+     "Labor Code 224"
+    ]
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 221, 224; DLSE Deductions FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Deductions.htm (introduction)",
+   "verbatim_quote": "An employer can lawfully withhold amounts from an employee's wages only: (1) when required or empowered to do so by state or federal law, or (2) when a deduction is expressly authorized in writing by the employee to cover insurance premiums, benefit plan contributions or other deductions not amounting to a rebate on the employee's wages, or (3) when a deduction to cover health, welfare, or pension contributions is expressly authorized by a wage or collective bargaining agreement",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-no-deduction-breakage-shortage",
+   "title": "No paycheck deductions for accidents, breakage or lost equipment",
+   "plain_english": "You cannot dock pay for damaged tools, broken equipment or cash shortages caused by an accident or simple carelessness. The only exception is a loss you can prove came from dishonesty, a willful act or gross negligence, and even then the deduction is at your own risk.",
+   "category": "prohibition",
+   "parameters": {
+    "deduction_allowed_only_if": "employer proves the loss was caused by a dishonest or willful act or gross negligence",
+    "simple_negligence_or_accident": "employer bears the loss as a cost of doing business",
+    "if_deduction_later_found_wrongful": [
+     "employee recovers the amount withheld",
+     "former employee may also recover Labor Code 203 waiting time penalty"
+    ]
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 224; IWC Orders (cash shortage, breakage, loss of equipment section); DLSE Deductions FAQ Q2",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Deductions.htm (Question 2)",
+   "verbatim_quote": "No, your employer cannot legally make such a deduction from your wages if, by reason of mistake or accident a cash shortage, breakage, or loss of company property/equipment occurs.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "DLSE warns that the wage-order exception for dishonest, willful or grossly negligent losses 'may, in fact, not comply with the provisions of the California Labor Code and various California Court decisions.'"
+  },
+  {
+   "id": "hr-final-pay-loan-one-installment",
+   "title": "Final paycheck: deduct only one loan installment, not the whole balance",
+   "plain_english": "If a worker is repaying a loan from you through payroll, you may take only one regular installment from the final paycheck, even if the worker signed an agreement allowing more.",
+   "category": "prohibition",
+   "parameters": {
+    "periodic_installments_with_written_authorization": "permitted",
+    "balloon_deduction_at_separation": "not permitted even with written consent",
+    "max_from_final_paycheck": "one installment"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 221, 224; Barnhill v. Sanders (1981) 125 Cal.App.3d 1; DLSE Deductions FAQ Q4",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Deductions.htm (Question 4)",
+   "verbatim_quote": "When the employment relationship ends, your employer can only deduct the amount of one installment payment from your final paycheck.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-tardiness-deduction-limit",
+   "title": "Docking pay for lateness: up to the time lost, or a half hour if late under 30 minutes",
+   "plain_english": "You may dock pay for lateness, but no more than the pay for the time actually missed. If the worker is less than 30 minutes late, you may dock up to a half hour.",
+   "category": "money_amount",
+   "parameters": {
+    "max_deduction": "proportionate wage for the time actually lost",
+    "short_lateness_minutes_below": 30,
+    "short_lateness_max_deduction_hours": 0.5,
+    "authority": "Labor Code 2928",
+    "dlse_examples": [
+     {
+      "hourly_usd": 12.0,
+      "late_minutes": 40,
+      "max_deduction_usd": 8.0
+     },
+     {
+      "hourly_usd": 12.0,
+      "late_minutes": 5,
+      "max_deduction_usd": 6.0
+     }
+    ]
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 2928; DLSE Deductions FAQ Q5",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Deductions.htm (Question 5)",
+   "verbatim_quote": "The deduction shall not, however, exceed the proportionate wage that would have been earned during the time actually lost, but for a loss of time less than 30 minutes, a half hour's wage may be deducted.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-employer-pays-required-bond-photo",
+   "title": "Employer pays for any bond or photograph it requires",
+   "plain_english": "If you require an applicant or worker to be bonded or to provide a photo, you must pay for it.",
+   "category": "money_amount",
+   "parameters": {
+    "employer_pays": [
+     "bond required of an applicant or employee",
+     "photograph required of an applicant or employee"
+    ],
+    "authority": "Labor Code 401"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 401; DLSE Deductions FAQ (items b and c)",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Deductions.htm (list of unlawful deductions, items b and c)",
+   "verbatim_quote": "If an employer requires a bond of an applicant or employee, the employer must pay the cost of the bond.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Item b on the same page says: 'If an employer requires a photograph of an applicant or employee, the employer must pay the cost of the photograph.'"
+  },
+  {
+   "id": "hr-garnishment-no-discharge",
+   "title": "No firing because wages are garnished for one judgment",
+   "plain_english": "You must process a wage garnishment. You cannot fire a worker because a garnishment was threatened or because their wages are being garnished for one judgment.",
+   "category": "prohibition",
+   "parameters": {
+    "protected": [
+     "threatened garnishment",
+     "garnishment for payment of one judgment"
+    ],
+    "authority": "Labor Code 2929",
+    "employee_notice_of_intent_to_claim_days_after_discharge": 30,
+    "wage_claim_filing_days_after_discharge": 60
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 224, 2929; DLSE Deductions FAQ; DLSE Enforcement Manual ch. 17",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Deductions.htm (introduction); https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (ch. 17, Labor Code section 2929(b) and (c), manual page 17-12)",
+   "verbatim_quote": "Although a wage garnishment is a lawful deduction from wages under Labor Code section 224, an employer cannot discharge an employee because a garnishment of wages has been threatened or if the employee's wages have been subjected to a garnishment for the payment of one judgment.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The DLSE manual (page dated December 2020) says: 'The employee shall give notice to his or her employer of his or her intention to make a wage claim within 30 days after being discharged, and file a wage claim with the Labor Commissioner within 60 days after being discharged.'"
+  },
+  {
+   "id": "hr-medical-exam-costs-employer-pays",
+   "title": "Employer pays for medical exams it requires, and for exams the law requires of current employees",
+   "plain_english": "You cannot charge an applicant for a pre-employment physical you require. You also cannot charge a current worker, or deduct from pay, for any medical exam the law requires. An applicant may be asked to pay only for a pre-employment exam that the law itself requires.",
+   "category": "prohibition",
+   "parameters": {
+    "employer_required_preemployment_exam": "employer pays; applicant cannot be charged",
+    "exam_required_by_law_for_current_employee": "employer pays; no deduction",
+    "exam_required_by_law_preemployment": "applicant may be required to pay",
+    "authority": "Labor Code 222.5"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 222.5; DLSE Deductions FAQ (item f); DLSE Enforcement Manual \u00a713.1",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Deductions.htm (list of unlawful deductions, item f); https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a7\u00a713.1-13.1.2)",
+   "verbatim_quote": "An employer may not withhold or deduct from the wages of any employee or require any prospective employee or applicant for employment to pay for any pre-employment medical or physical examination taken as a condition of employment, nor may an employer withhold or deduct from the wages of any employee, or require any employee to pay for any medical or physical examination required by any federal or state law or regulation, or local ordinance.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Manual \u00a713.1.2: 'an employer may require that an applicant or prospective employee pay the costs of any pre-employment medical or physical examination if the examination is required by law as a condition of employment.'"
+  },
+  {
+   "id": "hr-driver-license-physical-employer-pays",
+   "title": "If a job requires a driver's license, the employer pays for the license physical",
+   "plain_english": "If the job requires a driver's license, for example a commercial license to drive a dump truck, you pay for any physical exam needed to get the license. The exception is an exam taken before the worker applied to you.",
+   "category": "money_amount",
+   "parameters": {
+    "trigger": "driver's license required as a condition of employment",
+    "employer_pays": "physical examination required for issuance of the license",
+    "exception": "physical taken before the employee applied for the job",
+    "authority": "Labor Code 231"
+   },
+   "applies_to": "Employers requiring employees to hold a driver's license, including commercial licenses",
+   "citation": "Labor Code 231; DLSE Enforcement Manual \u00a713.1.3",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a713.1.3, chapter 13)",
+   "verbatim_quote": "Any employer who requires, as a condition of employment, that an employee have a driver's license shall pay the cost of any physical examination of the employee which may be required for issuance of such license, except where the physical examination was taken prior to the time the employee applied for such employment with the employer.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from the 2019-2020 update. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-jury-duty-time-off",
+   "title": "Allow time off for jury duty (any size employer)",
+   "plain_english": "You must let a worker take time off to serve on a jury if they give reasonable notice, and you cannot punish them for it.",
+   "category": "prohibition",
+   "parameters": {
+    "min_employees": 1,
+    "employee_must_give": "reasonable notice that jury service is required",
+    "pay_required": "not stated in source",
+    "authority": "Labor Code 230(a)",
+    "complaint_deadline_years": 1
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 230(a); DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230(a), manual page 17-2)",
+   "verbatim_quote": "Prohibits an employer from discharging or in any manner retaliating against an employee for taking time off to serve on a jury provided the employee gives reasonable notice that he or she is required to serve.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The one-year complaint deadline is the general rule in the DLSE Retaliation FAQ."
+  },
+  {
+   "id": "hr-crime-victim-court-time-off",
+   "title": "Crime victims and family members may take time off for court proceedings",
+   "plain_english": "A worker who is a crime victim, or an immediate family member or registered domestic partner of a victim, may take time off to attend court proceedings about the crime. A worker subpoenaed as a witness is also protected.",
+   "category": "prohibition",
+   "parameters": {
+    "min_employees": 1,
+    "covered": [
+     "victim of a crime",
+     "immediate family member of a victim",
+     "registered domestic partner of a victim",
+     "child of a registered domestic partner of a victim"
+    ],
+    "related": {
+     "230(b)": "time off to appear in court as a witness under subpoena or court order",
+     "230.5": "victims may appear at listed criminal proceedings (release, plea, sentencing and others)"
+    },
+    "complaint_deadline_years": 1
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 230(b), 230.2(b), 230.5; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code sections 230(b), 230.2(b), 230.5, manual pages 17-2 to 17-4)",
+   "verbatim_quote": "Requires an employer to allow an employee who is a victim of a crime, an immediate family member of a victim, a registered domestic partner of a victim, or the child of a registered domestic partner of a victim to take time off from work to attend judicial proceedings related to that crime.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-crime-victim-leave-25-employees",
+   "title": "Employers with 25+ employees: time off for crime victims to get medical care, counseling or safety planning",
+   "plain_english": "If you have 25 or more employees, a worker who is a victim of domestic violence, sexual assault, stalking or certain other crimes may take time off for medical care, victim services, counseling or safety planning.",
+   "category": "threshold",
+   "parameters": {
+    "min_employees": 25,
+    "purposes": [
+     "seek medical attention",
+     "obtain services from a domestic violence program",
+     "psychological counseling",
+     "safety planning"
+    ],
+    "covered_victims": [
+     "domestic violence",
+     "sexual assault",
+     "stalking",
+     "crime causing physical or mental injury or threat of physical injury (AB 2992)",
+     "person whose immediate family member died as a direct result of a crime (AB 2992)"
+    ],
+    "authority": "Labor Code 230.1",
+    "complaint_deadline_years": 1
+   },
+   "applies_to": "California employers with 25 or more employees",
+   "citation": "Labor Code 230.1; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230.1, manual page 17-4)",
+   "verbatim_quote": "Protects an employee who is a victim of domestic violence, sexual assault, and/or stalking and works for an employer with 25 or more employees who takes time off to seek medical attention, to obtain services from a domestic violence program or psychological counseling, or to participate in safety planning.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The Civil Rights Department pages on victim leave could not be read either (calcivilrights.ca.gov is blocked)."
+  },
+  {
+   "id": "hr-crime-victim-accommodation-any-size",
+   "title": "Any size employer: reasonable safety accommodations for victims",
+   "plain_english": "Whatever your size, if a worker who is a victim of domestic violence, sexual assault, stalking or another covered crime asks for a safety accommodation at work, you must provide a reasonable one.",
+   "category": "process_step",
+   "parameters": {
+    "min_employees": 1,
+    "accommodation_examples_per_dlse": [
+     "assistance in documenting the crime that occurs at work",
+     "another work adjustment in response to the crime"
+    ],
+    "authority": "Labor Code 230(f)",
+    "complaint_deadline_years": 1
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 230(f); DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230(f), manual page 17-4)",
+   "verbatim_quote": "An employer of any size shall provide reasonable accommodations for a victim of domestic violence, sexual assault, and/or stalking who requests an accommodation for the safety of the victim while at work.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-crime-victim-absence-self-certification",
+   "title": "Victim absences: a signed statement from the worker is enough proof",
+   "plain_english": "If a crime victim misses work without notice, you cannot act against them if they give proof within a reasonable time afterward. A signed written statement from the worker counts as proof.",
+   "category": "required_document",
+   "parameters": {
+    "unscheduled_absence_protected_if": "certification provided within a reasonable time after the absence",
+    "accepted_certification": [
+     "police report",
+     "court order",
+     "documentation from a licensed medical professional, domestic violence counselor, sexual assault counselor, licensed health care provider, victim advocate or counselor",
+     "signed written statement by the employee or someone acting for the employee"
+    ],
+    "authority": "Labor Code 230(d)(2), 230.1(b)(2)"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 230(d)(2), 230.1(b)(2); DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230(d), manual page 17-3)",
+   "verbatim_quote": "Significantly, an employee may now self-certify that an absence was for an authorized purpose by providing a signed written statement.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-school-appearance-teacher-request",
+   "title": "Parents may take time off when a teacher asks them to come to school",
+   "plain_english": "If a worker's child's teacher asks the parent or guardian to come to school, you must let them go if they give you reasonable notice first.",
+   "category": "prohibition",
+   "parameters": {
+    "min_employees": 1,
+    "trigger": "request of the pupil's teacher (Education Code 48900.1)",
+    "employee_must_give": "reasonable notice before taking the time off",
+    "authority": "Labor Code 230.7"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 230.7; Education Code 48900.1; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230.7, manual page 17-5)",
+   "verbatim_quote": "Protects an employee who is the parent or guardian of a pupil for taking time off from work to appear in the pupil\u2019s school at the request of the pupil\u2019s teacher, if the employee, prior to taking the time off, gives reasonable notice to the employer that he or she is requested to appear at the school.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-school-activities-leave-25-employees",
+   "title": "Employers with 25+ employees: up to 40 hours a year for school activities (8 hours a month)",
+   "plain_english": "If you have 25 or more employees, parents, guardians and grandparents may take up to 40 hours a year, and no more than 8 hours in a month, for their child's school or child care activities. The monthly limit does not apply to school emergencies.",
+   "category": "threshold",
+   "parameters": {
+    "min_employees": 25,
+    "max_hours_per_year": 40,
+    "max_hours_per_calendar_month": 8,
+    "monthly_cap_applies_to_school_emergencies": false,
+    "eligible_relationships": [
+     "parent",
+     "stepparent",
+     "foster parent",
+     "person in loco parentis",
+     "guardian",
+     "grandparent"
+    ],
+    "purposes": [
+     "participate in activities of the child's school",
+     "locate or enroll the child in school or with a child care provider",
+     "school emergencies"
+    ],
+    "authority": "Labor Code 230.8"
+   },
+   "applies_to": "California employers with 25 or more employees",
+   "citation": "Labor Code 230.8; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230.8, manual page 17-5)",
+   "verbatim_quote": "Protects an employee who is a parent (including stepparent, foster parent, or person who stands in loco parentis to the child), guardian, or grandparent, and who is employed by an employer who employs 25 or more employees, for taking time off from work (up to 40 hours each year, not exceeding eight hours in any calendar month) to participate in activities of the child\u2019s school, or to locate or enroll the child in school or with a child care provider or for school emergencies (no eight hour restriction for school emergencies.)",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. Notice and pay rules (for example, use of vacation) are in the statute, which was not read."
+  },
+  {
+   "id": "hr-emergency-responder-duty-time-off",
+   "title": "Volunteer firefighters and reserve officers may take time off for emergency duty",
+   "plain_english": "Workers who are volunteer firefighters, reserve peace officers or members of a state disaster medical team are protected when they take time off for emergency duty.",
+   "category": "prohibition",
+   "parameters": {
+    "covered": [
+     "volunteer firefighter",
+     "reserve peace officer",
+     "officer, employee or member of a state-sponsored disaster medical response entity"
+    ],
+    "min_employees": null,
+    "health_care_provider_notice": "notify employer when designated as emergency response personnel and when notified of deployment",
+    "authority": "Labor Code 230.3"
+   },
+   "applies_to": "California employers (the source does not state a size threshold)",
+   "citation": "Labor Code 230.3; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230.3, manual page 17-4)",
+   "verbatim_quote": "Protects an employee who takes time off to perform emergency duty as a volunteer firefighter, a reserve peace officer, or an officer, employee, or member of a disaster medical response entity sponsored or requested by the State.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-emergency-responder-training-50-employees-14-days",
+   "title": "Employers with 50+ employees: up to 14 days a year for firefighter or reserve officer training",
+   "plain_english": "If you have 50 or more employees, volunteer firefighters, reserve peace officers and emergency rescue workers may take up to 14 days a year for fire or law enforcement training.",
+   "category": "threshold",
+   "parameters": {
+    "min_employees": 50,
+    "max_days_per_calendar_year": 14,
+    "covered": [
+     "volunteer firefighter",
+     "reserve peace officer",
+     "emergency rescue personnel"
+    ],
+    "purpose": "fire or law enforcement training",
+    "authority": "Labor Code 230.4"
+   },
+   "applies_to": "California employers with 50 or more employees",
+   "citation": "Labor Code 230.4; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 230.4, manual page 17-4)",
+   "verbatim_quote": "Protects an employee who is a volunteer firefighter, a reserve peace officer, or emergency rescue personnel, and works for an employer employing 50 or more employees, from being discriminated or retaliated against because he or she has taken time off to engage in fire or law enforcement training. The employee is permitted to take up to an aggregate of 14 days per calendar year for such training.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-alcohol-drug-rehab-accommodation-25",
+   "title": "Employers with 25+ employees: accommodate workers entering alcohol or drug rehab",
+   "plain_english": "If you regularly employ 25 or more people, you must reasonably accommodate a worker who voluntarily enters an alcohol or drug rehabilitation program, usually with time off, unless it causes undue hardship. The time off can be unpaid, but the worker may use sick leave, and you must keep it private.",
+   "category": "threshold",
+   "parameters": {
+    "min_employees": 25,
+    "employee_count_basis": "regularly employing",
+    "accommodation": "reasonable accommodation (time off) to voluntarily enter and participate in a rehabilitation program",
+    "undue_hardship_defense": true,
+    "time_off_paid": false,
+    "may_use_accrued_sick_leave": true,
+    "privacy_required": true,
+    "authority": "Labor Code 1025-1028"
+   },
+   "applies_to": "Private California employers regularly employing 25 or more employees",
+   "citation": "Labor Code 1025-1028; DLSE Enforcement Manual \u00a717.1.4 and \u00a726.3",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code sections 1025-1028, manual page 17-8; \u00a7\u00a726.3-26.3.4, manual page 26-1)",
+   "verbatim_quote": "Every private employer regularly employing 25 or more employees shall provide reasonable accommodations for an employee to participate in an alcohol or drug rehabilitation program.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The manual is inconsistent on the headcount: \u00a717.1.4 says '25 or more', while \u00a726.3 says 'more than 25'. The parameters use 25 or more. \u00a726.3.3 says the employer is not responsible for paying for these absences but the employee may use sick leave. \u00a726.3.2 requires reasonable efforts to keep enrollment private."
+  },
+  {
+   "id": "hr-adult-literacy-accommodation-25",
+   "title": "Employers with 25+ employees: help workers who ask to enroll in adult literacy classes",
+   "plain_english": "If you regularly employ 25 or more people and a worker tells you they have trouble reading and asks for help enrolling in an adult literacy program, you must reasonably accommodate them and keep it private. You do not have to pay for the time off.",
+   "category": "threshold",
+   "parameters": {
+    "min_employees": 25,
+    "employee_count_basis": "regularly employing",
+    "trigger": "employee reveals a problem of illiteracy and requests assistance",
+    "undue_hardship_defense": true,
+    "time_off_paid": false,
+    "privacy_required": true,
+    "no_discharge_solely_for_revealing_if_performance_satisfactory": true,
+    "authority": "Labor Code 1041-1044"
+   },
+   "applies_to": "Private California employers regularly employing 25 or more employees",
+   "citation": "Labor Code 1041-1044; DLSE Enforcement Manual \u00a717.1.4 and \u00a726.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code sections 1041-1044, manual page 17-9; \u00a7\u00a726.4-26.4.2)",
+   "verbatim_quote": "Every private employer regularly employing 25 or more employees shall reasonably accommodate and assist any employee who reveals a problem of illiteracy and requests the employer\u2019s assistance in enrolling in an adult literacy education program.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. \u00a726.4 says 'more than 25 employees', while \u00a717.1.4 says '25 or more'."
+  },
+  {
+   "id": "hr-organ-bone-marrow-donor-paid-leave",
+   "title": "Organ and bone marrow donors are entitled to paid leave; no retaliation",
+   "plain_english": "Workers have a right to a paid leave of absence to donate an organ or bone marrow, and you cannot retaliate against them for taking it.",
+   "category": "prohibition",
+   "parameters": {
+    "leave_is_paid": true,
+    "min_employees": null,
+    "max_days": null,
+    "authority": "Labor Code 1508-1513 (1512 anti-retaliation)"
+   },
+   "applies_to": "California employers (size threshold and day limits are in the statute, which was not read)",
+   "citation": "Labor Code 1512; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 1512, manual page 17-11)",
+   "verbatim_quote": "Prohibits retaliation against an employee who exercises the right to take a paid leave of absence for the purpose of donating his or her organ or bone marrow to another person",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The employer-size threshold, the number of days and the rules on using other leave are in Labor Code 1508-1511, which this pass could not read. They are left as null."
+  },
+  {
+   "id": "hr-lactation-written-policy",
+   "title": "Have a written lactation accommodation policy and hand it out",
+   "plain_english": "You need a written lactation policy in your handbook. Give it to new hires and to anyone who asks about or requests parental leave. It must state four things listed in the parameters.",
+   "category": "required_document",
+   "parameters": {
+    "distribute": [
+     "upon hire",
+     "when an employee inquires about or requests parental leave",
+     "include in employee handbook or set of policies made available to employees"
+    ],
+    "required_contents": [
+     "employee's right to request a lactation accommodation",
+     "process for making a request",
+     "employer must respond in writing if it cannot provide compliant break time or location",
+     "employee's right to file a complaint with the Labor Commissioner"
+    ],
+    "authority": "Labor Code 1034"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1034; DLSE Enforcement Manual \u00a717.1.4 (Labor Code 1030-1034)",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code sections 1030-1034, manual page 17-9)",
+   "verbatim_quote": "Employers are required to develop and implement a policy regarding lactation accommodation. The policy must be provided to employees upon hire, when an employee makes an inquiry about or requests parental leave and the policy must be included in an employee handbook or set of policies that the employer makes available to employees.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from April 2021. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. This extends the existing rule lactation-accommodation, which covers break time and the $100/day citation."
+  },
+  {
+   "id": "hr-lactation-room-requirements",
+   "title": "Lactation space: private, not a bathroom, with a seat, surface, power, and nearby sink and fridge",
+   "plain_english": "The lactation space must not be a bathroom. It must be near the work area, private and free from intrusion, safe, clean and free of hazardous materials, with a place to sit, a surface for a pump and power. A sink with running water and a refrigerator must be nearby.",
+   "category": "definition",
+   "parameters": {
+    "not_a_bathroom": true,
+    "close_proximity_to_work_area": true,
+    "shielded_from_view": true,
+    "free_from_intrusion": true,
+    "safe_clean_free_of_hazardous_materials": true,
+    "must_contain": [
+     "surface for breast pump and personal items",
+     "place to sit",
+     "electricity or alternative devices (extension cords, charging stations)"
+    ],
+    "nearby": [
+     "sink with running water",
+     "refrigerator suitable for storing milk"
+    ],
+    "may_be_employees_normal_work_area_if_compliant": true,
+    "temporary_location_allowed_if": "operational, financial or space limitations prevent a permanent location (still not a bathroom and otherwise compliant)",
+    "authority": "Labor Code 1031"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1031; DLSE Lactation Accommodation FAQ Q4; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/Lactation_Accommodation.htm (Question 4); https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (manual pages 17-8 to 17-9)",
+   "verbatim_quote": "The lactation room or location must be safe, clean, and free from hazardous materials, as defined in Labor Code section 6382, contain a surface to place a breast pump and personal items, contain a place to sit and have access to electricity or alternative devices, including but not limited to, extension cords or charging stations needed to operate an electric or battery-powered breast pump.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The FAQ page is dated April 2021. The temporary-location rule is from manual page 17-9."
+  },
+  {
+   "id": "hr-lactation-multiemployer-worksite-2-business-days",
+   "title": "General contractors: provide lactation space for a subcontractor within 2 business days of a written request",
+   "plain_english": "On a multi-employer jobsite, the general contractor or coordinating employer must provide a lactation space, or a safe and secure spot where the subcontractor can set one up, within 2 business days after the subcontractor asks in writing.",
+   "category": "deadline",
+   "parameters": {
+    "deadline_business_days": 2,
+    "trigger": "written request of a subcontractor employer",
+    "obligated": "employers or general contractors coordinating a multiemployer worksite",
+    "must_provide": "lactation accommodations, or a safe and secure location for the subcontractor to provide them on the worksite",
+    "shared_space_allowed": "multitenant or multiemployer worksite may share space if employer cannot provide one in its own workspace",
+    "authority": "Labor Code 1031"
+   },
+   "applies_to": "General contractors and other employers coordinating multiemployer construction worksites",
+   "citation": "Labor Code 1031; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code sections 1030-1034, manual page 17-8)",
+   "verbatim_quote": "Employers or general contractors coordinating a multiemployer worksite must provide lactations accommodations or a safe and secure location for a subcontractor employer to provide the lactation accommodations on the worksite within two business days upon written request of a subcontractor employer.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from April 2021. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. 'lactations' is copied as printed."
+  },
+  {
+   "id": "hr-lactation-under-50-undue-hardship",
+   "title": "Employers under 50 employees may claim undue hardship for lactation breaks or space",
+   "plain_english": "An employer with fewer than 50 employees does not have to give lactation break time if it would cause significant difficulty or expense. If a compliant room would be an undue hardship, it must still make reasonable efforts to provide a private place that is not a toilet stall.",
+   "category": "threshold",
+   "parameters": {
+    "employee_count_below": 50,
+    "break_time_exemption": "if undue hardship (significant difficulty or expense relative to size, financial resources, nature or structure)",
+    "room_fallback": "reasonable efforts to provide a room or other location other than a toilet stall",
+    "authority": "Labor Code 1030-1031"
+   },
+   "applies_to": "California employers with fewer than 50 employees",
+   "citation": "Labor Code 1030, 1031; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, 'Exception for Employer with less than 50 employees', manual page 17-9)",
+   "verbatim_quote": "An employer with less than 50 employees is not required to provide an employee break time for purposes of expressing milk if to do so would impose an undue hardship by causing the employer significant difficulty or expense, when considered in relation to size, financial resources, nature, or structure of the employer\u2019s business.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from April 2021. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-lactation-no-documentation",
+   "title": "Do not require a doctor's note for lactation breaks",
+   "plain_english": "You cannot require a worker to give a doctor's note or any other paperwork to prove they need to express breast milk.",
+   "category": "prohibition",
+   "parameters": {
+    "documentation_may_be_required": false
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1030; DLSE Lactation Accommodation FAQ Q3",
+   "source_location": "https://www.dir.ca.gov/dlse/Lactation_Accommodation.htm (Question 3)",
+   "verbatim_quote": "No. Your employer cannot require you to submit any documentation regarding your need to express breast milk.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated April 2021."
+  },
+  {
+   "id": "hr-wage-discussion-protected",
+   "title": "Workers may discuss and disclose wages; no gag rules or waivers",
+   "plain_english": "You cannot forbid workers from talking about their own pay or asking about co-workers' pay, and you cannot make them sign anything giving up that right.",
+   "category": "prohibition",
+   "parameters": {
+    "protected_acts": [
+     "disclosing own wages",
+     "discussing wages of others",
+     "inquiring about another employee's wages",
+     "aiding or encouraging others to exercise Equal Pay Act rights"
+    ],
+    "waiver_or_policy_allowed": false,
+    "employer_must_disclose_others_pay": false,
+    "authority": [
+     "Labor Code 232(a)-(b)",
+     "Labor Code 1102.5(a)",
+     "Labor Code 1197.5(k)(1)"
+    ]
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 232, 1102.5(a), 1197.5(k)(1); DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQ 'Can an employer prohibit an employee from talking about wages...')",
+   "verbatim_quote": "No, an employer cannot prohibit an employee from disclosing the employee\u2019s own wages, discussing the wages of others, inquiring about another employee\u2019s wages, or aiding or encouraging any other employee to exercise their Equal Pay Act rights.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026. The same page says no law requires an employer to tell an employee what others are paid."
+  },
+  {
+   "id": "hr-working-conditions-disclosure-protected",
+   "title": "Workers may discuss working conditions; NDAs cannot waive this",
+   "plain_english": "You cannot require workers to keep quiet about working conditions or to sign a waiver of that right. Confidentiality and non-disclosure agreements cannot override it.",
+   "category": "prohibition",
+   "parameters": {
+    "waiver_allowed": false,
+    "applies_to_confidentiality_nda_noncompete": true,
+    "authority": [
+     "Labor Code 232.5",
+     "Labor Code 1102.5(a)",
+     "Labor Code 6310"
+    ]
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 232.5; DLSE Enforcement Manual \u00a717.1.4 and \u00a726.1",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 232.5, manual page 17-5; \u00a726.1)",
+   "verbatim_quote": "Prohibits an employer from requiring that an employee refrain from disclosing or discussing information about the employer\u2019s working conditions, and from requiring an employee to sign a waiver or other document that restricts or denies the employee the right to disclose or discuss information about the employer\u2019s working conditions.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. \u00a726.1: 'Any confidentiality, non-compete, or non-disclosure agreement, which limits or restricts what information an employee may discuss or disclose, may not waive or infringe on these statutory protections.'"
+  },
+  {
+   "id": "hr-arrest-record-inquiry-ban",
+   "title": "Do not ask about or use arrests without conviction, diversion, or dismissed or sealed convictions",
+   "plain_english": "When hiring or making job decisions, you cannot ask about or use arrests that did not lead to a conviction, diversion programs, or convictions that were dismissed or sealed. Applicants also do not have to disclose juvenile records.",
+   "category": "prohibition",
+   "parameters": {
+    "may_not_seek_or_use": [
+     "arrest or detention not resulting in conviction",
+     "referral to or participation in pretrial or posttrial diversion",
+     "conviction judicially dismissed or ordered sealed",
+     "juvenile court criminal history (applicants)"
+    ],
+    "conviction_questions_only_when": [
+     "employer required by law to obtain conviction information",
+     "position requires possessing a firearm",
+     "law bars a person with the conviction from the position",
+     "employer prohibited by law from hiring a person with the conviction"
+    ],
+    "authority": "Labor Code 432.7"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 432.7; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 432.7, manual pages 17-6 to 17-7)",
+   "verbatim_quote": "Prohibits an employer from seeking or using as a factor in an employment decision, any record of an arrest or detention that did not result in a conviction or any information regarding referral to, and participation in, any pretrial or posttrial diversion program or concerning a conviction that has been judicially dismissed or ordered sealed.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The Fair Chance Act (Gov. Code 12952, enforced by the Civil Rights Department) adds rules on when and how employers may consider convictions. Its text and the CRD guidance could not be read (leginfo and calcivilrights.ca.gov are blocked), so it is not encoded here."
+  },
+  {
+   "id": "hr-marijuana-conviction-over-2-years",
+   "title": "Do not ask about marijuana possession convictions more than 2 years old",
+   "plain_english": "Applicants and workers do not have to disclose a marijuana possession conviction that is more than two years old.",
+   "category": "prohibition",
+   "parameters": {
+    "conviction_age_years_more_than": 2,
+    "offense": "possession of marijuana",
+    "authority": "Labor Code 432.8"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 432.8; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 432.8, manual page 17-7)",
+   "verbatim_quote": "Protects the rights of an applicant for employment or employee from disclosing information regarding a conviction related to the possession of marijuana where the conviction is more than two years old.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-credit-report-ban",
+   "title": "No consumer credit reports for hiring, except listed positions",
+   "plain_english": "You cannot pull a credit report on an applicant or worker unless the job is an exempt managerial position under Wage Order 4 or falls into another category the statute lists.",
+   "category": "prohibition",
+   "parameters": {
+    "allowed_only_for": [
+     "position exempt under the Wage Order 4 executive exemption",
+     "other categories enumerated in Labor Code 1024.5 (not read)"
+    ],
+    "authority": "Labor Code 1024.5"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1024.5; DLSE Enforcement Manual \u00a726.2",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a726.2, manual page 26-1)",
+   "verbatim_quote": "Labor Code section 1024.5 prohibits use of a consumer credit report for employment purposes unless the position of the person for whom the report is sought is exempt under the executive exemption as set forth in Wage Order 4 or meets one of the other enumerated categories contained in the statute.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-name-ssn-update-no-retaliation",
+   "title": "No retaliation when a worker updates their name, SSN or work authorization",
+   "plain_english": "You cannot punish a worker for updating their personal records after a lawful change of name, Social Security number or federal work authorization document.",
+   "category": "prohibition",
+   "parameters": {
+    "protected_updates": [
+     "lawful change of name",
+     "social security number",
+     "federal employment authorization document"
+    ],
+    "authority": "Labor Code 1024.6"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1024.6; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 1024.6, manual page 17-8)",
+   "verbatim_quote": "An employer may not discharge an employee or in any manner discriminate, retaliate, or take any adverse action against an employee because the employee updates or attempts to update his or her personal information based on a lawful change of name, social security number, or federal employment authorization document.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out."
+  },
+  {
+   "id": "hr-e-verify-misuse-penalty-10000",
+   "title": "Misusing E-Verify: civil penalty up to $10,000 per unlawful use",
+   "plain_english": "Use E-Verify only when federal law requires or allows it, and only after a job offer. Each unlawful use can cost up to $10,000. Give the worker any no-match notice you receive about their case.",
+   "category": "penalty",
+   "parameters": {
+    "penalty_max_usd_per_unlawful_use": 10000,
+    "lawful_timing": "after an offer of employment, or as required by federal law, authorized by a federal agency, or as a condition of receiving federal funds",
+    "must_furnish_to_employee": "any SSA or DHS no-match notification specific to the employee's E-Verify case",
+    "related_penalty": {
+     "unfair_immigration_document_practices_max_usd_per_violation": 10000,
+     "authority": "Labor Code 1019.1-1019.4"
+    },
+    "authority": "Labor Code 2814"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 2814, 1019.1; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code sections 2814 and 1019.1-1019.4, manual pages 17-8 and 17-12)",
+   "verbatim_quote": "In addition to other remedies that might be available, each unlawful use of the E-Verify system carries a civil penalty not to exceed $10,000.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. For 1019.1-1019.4 the manual says: 'In addition to other remedies that might be available, a penalty of up to $10,000 may be awarded for each violation.' This adds penalty amounts to the existing rule unfair-immigration-related-practices."
+  },
+  {
+   "id": "hr-political-activity-protected",
+   "title": "No policies controlling workers' political activity",
+   "plain_english": "You cannot have rules that stop workers from taking part in politics or running for office, and you cannot threaten their jobs to influence how they act politically. Job applicants are covered too.",
+   "category": "prohibition",
+   "parameters": {
+    "prohibited": [
+     "rule or policy forbidding or controlling employees' political activities or affiliations",
+     "coercing or influencing political action by threat of discharge"
+    ],
+    "applicants_protected": true,
+    "authority": [
+     "Labor Code 1101",
+     "Labor Code 1102"
+    ]
+   },
+   "applies_to": "Private California employers",
+   "citation": "Labor Code 1101, 1102; DLSE Enforcement Manual \u00a717.1.4 and \u00a7\u00a726.6-26.6.2",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 1101, manual page 17-10; \u00a726.6)",
+   "verbatim_quote": "An employer may not make, adopt, or enforce any rule, regulation or policy that forbids, controls, directs or tends to direct the political activities or affiliations of employees.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2017 to December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. \u00a726.6.1: these sections do not apply to public entity employees."
+  },
+  {
+   "id": "hr-no-blacklisting-truthful-reference",
+   "title": "No blacklisting: give only truthful statements about a former worker, and only on specific request",
+   "plain_english": "You cannot try to stop a former worker from getting hired elsewhere. Giving a truthful reason for termination is allowed when someone specifically asks about that person. Untruthful statements can cost triple damages.",
+   "category": "prohibition",
+   "parameters": {
+    "prohibited": "preventing re-employment of a former employee by misrepresentation",
+    "allowed": "truthful statement of reasons for termination upon special (specific) request",
+    "damages": "treble damages for untruthful statements (Labor Code 1054)",
+    "prima_facie_evidence": [
+     "special mark or signal in references",
+     "information given without a special request"
+    ],
+    "authority": "Labor Code 1050-1054"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1050-1054; DLSE Enforcement Manual \u00a7\u00a726.5-26.5.1.1",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a726.5 and \u00a726.5.1, manual page 26-2)",
+   "verbatim_quote": "It is not illegal, however, for an employer to furnish, upon special request (i.e., a specific request for information regarding that employee), a truthful statement concerning the reasons for termination. (Labor Code \u00a7 1053)",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. \u00a726.5: 'An employee who is damaged by an employer\u2019s untruthful statements may recover treble damages. (Labor Code \u00a7 1054)'."
+  },
+  {
+   "id": "hr-retaliation-complaint-deadlines",
+   "title": "Retaliation complaints: generally 1 year to file with the Labor Commissioner",
+   "plain_english": "A worker generally has one year after a firing, demotion or other retaliation to file with the Labor Commissioner. A federal OSHA complaint must be filed within 30 days. If the state dismisses a safety-retaliation complaint, the worker has 15 days to appeal. An employer found in violation has 30 days to comply.",
+   "category": "deadline",
+   "parameters": {
+    "default_filing_deadline_years": 1,
+    "federal_osha_complaint_deadline_days": 30,
+    "worker_appeal_of_dismissal_days_labor_code_6310_6311": 15,
+    "employer_appeal_right_6310_6311": false,
+    "employer_days_to_comply_after_violation_finding": 30,
+    "health_and_safety_code_1596_881_deadline_days": 90,
+    "no_exhaustion_requirement": "employee may sue directly in court (Labor Code 98.7(g), 244)"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 98.7; DLSE Retaliation FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/FAQ_Retaliation.htm (FAQ answers on filing time limits and appeals)",
+   "verbatim_quote": "The majority of the Labor Code Statutes and IWC Orders allow one year from the occurrence of the adverse action to file a complaint with the Labor Commissioner.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated May 2021. The same FAQ says: 'Employees must, however, file with federal OSHA within thirty days of the adverse action occurring', 'The Complainant ... must file their appeal within 15 days from the date of the receipt of the Determination', and 'the Respondent has 30 days to comply with the order.' It also gives two years for Labor Code 1197.5 complaints. That figure is out of date: the August 2026 Equal Pay Act FAQ requires EPA retaliation claims within one year, and wage-recovery limits changed under SB 642 (see the existing rule equal-pay-act-3-year-sol-6-year-lookback). The no-exhaustion rule is from DLSE Manual \u00a717.1.4."
+  },
+  {
+   "id": "hr-retaliation-98-6-civil-penalty-10000",
+   "title": "Retaliating against a worker for asserting Labor Code rights: up to $10,000 per violation",
+   "plain_english": "Punishing a worker for complaining about unpaid wages, filing a claim, or using any Labor Code right can cost up to $10,000 per violation, paid to the worker, on top of back pay and reinstatement.",
+   "category": "penalty",
+   "parameters": {
+    "civil_penalty_max_usd_per_violation": 10000,
+    "paid_to": "employee",
+    "protected": [
+     "filing or threatening a claim with the Labor Commissioner",
+     "oral or written complaint about unpaid wages",
+     "testifying",
+     "exercising any Labor Code or IWC order right",
+     "family member of a person who engaged in protected conduct"
+    ],
+    "remedies_also_available": [
+     "reinstatement",
+     "back wages",
+     "reinstated benefits",
+     "purging adverse records",
+     "cease and desist",
+     "posting of notice"
+    ],
+    "authority": "Labor Code 98.6"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 98.6; DLSE Enforcement Manual \u00a717.1.4; DLSE Retaliation FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 98.6, manual pages 17-1 to 17-2); https://www.dir.ca.gov/dlse/FAQ_Retaliation.htm",
+   "verbatim_quote": "In addition to other remedies that might be available, a civil penalty of up to $10,000 may be awarded to an employee for each violation of Labor Code section 98.6.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The remedies list is from the DLSE Retaliation FAQ ('make whole' remedy)."
+  },
+  {
+   "id": "hr-whistleblower-1102-5-civil-penalty-10000",
+   "title": "Whistleblower retaliation: civil penalty up to $10,000 per violation plus attorney's fees",
+   "plain_english": "Retaliating against a worker who reports, or refuses to take part in, a suspected violation of law can cost up to $10,000 per violation, plus the worker's attorney's fees.",
+   "category": "penalty",
+   "parameters": {
+    "civil_penalty_max_usd_per_violation": 10000,
+    "attorney_fees_to_successful_plaintiff": true,
+    "protected": [
+     "disclosing a suspected violation to a government or law enforcement agency, a supervisor or a person with authority to investigate",
+     "refusing to participate in a violation",
+     "rights exercised in former employment",
+     "family member of a person who engaged in protected conduct"
+    ],
+    "authority": "Labor Code 1102.5"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1102.5; DLSE Enforcement Manual \u00a717.1.4",
+   "source_location": "https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf (\u00a717.1.4, Labor Code section 1102.5, manual page 17-10)",
+   "verbatim_quote": "In addition to other remedies that might be available, a civil penalty of up to $10,000 may be awarded for each violation and reasonable attorney\u2019s fees may be awarded to a plaintiff who brings a successful action",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2017. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The whistleblower poster requirement is in the existing rule required-workplace-postings."
+  },
+  {
+   "id": "hr-pay-transparency-civil-penalty",
+   "title": "Pay transparency violations: $100 to $10,000 per violation",
+   "plain_english": "Leaving the pay range out of a job posting, refusing a pay-scale request, asking about salary history or not keeping wage-history records can cost $100 to $10,000 per violation.",
+   "category": "penalty",
+   "parameters": {
+    "civil_penalty_min_usd_per_violation": 100,
+    "civil_penalty_max_usd_per_violation": 10000,
+    "authority": "Labor Code 432.3(d)(4)",
+    "enforcement": "Labor Commissioner citation under Labor Code 98.74"
+   },
+   "applies_to": "California employers (job posting duty applies at 15+ employees)",
+   "citation": "Labor Code 432.3(d)(4); DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQ 'What are the remedies for a pay transparency law violation?')",
+   "verbatim_quote": "An employer who violates the pay transparency law may be liable for civil penalties between $100 and $10,000 per violation.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026. This adds the penalty to the existing rule pay-scale-in-job-postings."
+  },
+  {
+   "id": "hr-pay-transparency-complaint-1-year",
+   "title": "Pay transparency complaints: 1 year from when the person learned of the violation",
+   "plain_english": "Someone harmed by a pay transparency violation can file with the Labor Commissioner within one year after learning of it, or sue in court.",
+   "category": "deadline",
+   "parameters": {
+    "filing_deadline_years": 1,
+    "clock_starts": "date the person learned of the violation",
+    "court_action_available": true,
+    "authority": "Labor Code 432.3(d)(1)-(3)"
+   },
+   "applies_to": "California employers subject to Labor Code 432.3",
+   "citation": "Labor Code 432.3(d); DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQ 'Where and when can a person file a claim if they are aggrieved by a pay transparency law violation?')",
+   "verbatim_quote": "A person who claims to be aggrieved by a pay transparency law violation may file a complaint with the Labor Commissioner\u2019s Office within one year after the date the person learned of the violation.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026."
+  },
+  {
+   "id": "hr-pay-scale-on-request",
+   "title": "Give an employee their position's pay scale on request, and an applicant on reasonable request",
+   "plain_english": "If a current worker asks for the pay range for their job, you must give it. If a job applicant reasonably asks for the range of the job they applied for, you must give it too.",
+   "category": "required_notice",
+   "parameters": {
+    "employee_request": "pay scale for the employee's current position, upon request",
+    "applicant_request": "pay scale for the position applied for, upon reasonable request",
+    "applicant_definition": "person seeking employment who is not currently employed by the employer in any position",
+    "authority": "Labor Code 432.3(c)(1)-(2), (m)(2)"
+   },
+   "applies_to": "California employers",
+   "citation": "Labor Code 432.3(c)(1)-(2); DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQs 'Must an employer provide an employee the pay scale for their position?' and the applicant FAQ)",
+   "verbatim_quote": "Yes, upon request, an employer must provide an employee the pay scale for their position.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026. The FAQ does not attach the 15-employee threshold to the on-request duties; it attaches it only to job postings."
+  },
+  {
+   "id": "hr-salary-history-ban",
+   "title": "Do not ask applicants about salary history or rely on it",
+   "plain_english": "You cannot ask an applicant, yourself or through a recruiter, what they were paid before, and you cannot use it to decide whether to hire them or what to offer. You may ask what pay they expect. If they volunteer their history without being asked, you may consider it, but it never justifies a pay gap by sex, race or ethnicity.",
+   "category": "prohibition",
+   "parameters": {
+    "may_not_seek": "salary history including compensation and benefits (orally, in writing, personally or through an agent)",
+    "may_not_rely_on": "salary history as a factor in offering employment or setting salary",
+    "allowed": [
+     "ask about salary expectations",
+     "consider salary history the applicant volunteers without prompting"
+    ],
+    "exception": "salary history disclosable to the public under state or federal law",
+    "authority": "Labor Code 432.3(a), (b), (f), (i), (j), (k)"
+   },
+   "applies_to": "California employers hiring applicants",
+   "citation": "Labor Code 432.3; DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQ 'Can an employer ask an applicant for employment about their salary history information?')",
+   "verbatim_quote": "Generally, no, an employer cannot, orally or in writing, personally or through an agent, seek salary history information, including compensation and benefits, about an applicant for employment.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026."
+  },
+  {
+   "id": "hr-pay-equity-records-retention",
+   "title": "Keep job title and wage-rate history for each employee during employment plus 3 years",
+   "plain_english": "Keep each worker's job titles and pay rates for as long as they work for you plus three years. Keep wage-rate and job-classification records three years. The Labor Commissioner may inspect them.",
+   "category": "required_document",
+   "parameters": {
+    "retention": [
+     {
+      "record": "itemized wage statements",
+      "years": 3,
+      "authority": "Labor Code 226(a)"
+     },
+     {
+      "record": "job title and wage rate history for each employee",
+      "rule": "duration of employment plus 3 years",
+      "years_after_employment": 3,
+      "authority": "Labor Code 432.3(c)(4)"
+     },
+     {
+      "record": "names and addresses of all employees",
+      "authority": "Labor Code 1174(c)"
+     },
+     {
+      "record": "hours worked daily, wages paid, piece-rate units and rates",
+      "years": 3,
+      "authority": "Labor Code 1174(d)"
+     },
+     {
+      "record": "wages and wage rates, job classifications and other terms and conditions of employment",
+      "years": 3,
+      "authority": "Labor Code 1197.5(e)"
+     },
+     {
+      "record": "personnel records on performance or grievances",
+      "years_after_termination": 3,
+      "authority": "Labor Code 1198.5(c)(1)"
+     }
+    ],
+    "labor_commissioner_may_inspect_pay_transparency_records": true
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 226, 432.3(c)(4), 1174, 1197.5(e), 1198.5; DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQ 'How long must an employer keep Equal Pay Act-related records?')",
+   "verbatim_quote": "Records \"of a job title and wage rate history for each employee\" (Id., at \u00a7 432.3, subd. (c)(4) [duration of employment plus 3 years])",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026. The existing rule pay-scale-in-job-postings gave this retention period from a secondary source; this rule states it from the DLSE page."
+  },
+  {
+   "id": "hr-pay-scale-definition-good-faith-range",
+   "title": "Pay scale means a good-faith hourly or salary range, including piece-rate or commission ranges",
+   "plain_english": "The pay scale in a posting is your honest estimate of the hourly or salary range you expect to pay at hire. If the job pays by piece rate or commission, give that range too. Bonuses and benefits are optional.",
+   "category": "definition",
+   "parameters": {
+    "pay_scale": "good faith estimate of the salary or hourly wage range the employer reasonably expects to pay upon hire",
+    "include_piece_rate_or_commission_range_if_applicable": true,
+    "bonuses_tips_benefits_required": false,
+    "must_appear_in_posting_itself": true,
+    "authority": "Labor Code 432.3(m)(1)"
+   },
+   "applies_to": "California employers posting jobs (15+ employees)",
+   "citation": "Labor Code 432.3(m)(1); DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQs 'What does \"pay scale\" mean?' and 'Must the pay scale for a position include piece rate or commission wages?')",
+   "verbatim_quote": "The \"pay scale\" for pay transparency law purposes means a good faith estimate of the salary or hourly wage range that an employer reasonably expects to pay for a position upon hire.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026."
+  },
+  {
+   "id": "hr-pay-scale-third-party-postings-and-count",
+   "title": "Recruiters and job boards must carry the pay scale; the 15-employee count needs at least one California employee",
+   "plain_english": "If a staffing agency, recruiter or job board posts your opening, give them the pay scale; they must include it. The Labor Commissioner applies the rule to any job that may be filled in California, in person or remotely. At least one of the 15 counted employees must be in California.",
+   "category": "threshold",
+   "parameters": {
+    "min_employees": 15,
+    "at_least_one_employee_located_in_california": true,
+    "applies_to_positions": "any position that may ever be filled in California, in person or remotely",
+    "third_party_posting": "employer gives the pay scale to the third party; third party must include it",
+    "authority": "Labor Code 432.3(c)(3), (c)(5)"
+   },
+   "applies_to": "California employers with 15 or more employees, and third parties posting their jobs",
+   "citation": "Labor Code 432.3(c)(3), (c)(5); DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQs 'Must an employer include the pay scale for a position in any job posting?' and 'Who is counted as an employee...')",
+   "verbatim_quote": "If such an employer engages a third party to announce, post, publish, or otherwise make known a job posting, it must provide the pay scale to the third party and the third party must include the pay scale in the job posting.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026. The count follows the method in the Labor Commissioner's 2022 COVID-19 Supplemental Paid Sick Leave FAQs, which were not read in this pass."
+  },
+  {
+   "id": "hr-equal-pay-retaliation-presumption-90-days",
+   "title": "Equal Pay Act: adverse action within 90 days of protected activity is presumed retaliatory",
+   "plain_english": "If you take action against a worker within 90 days after they asked about pay, discussed wages or complained about unequal pay, the law presumes it was retaliation. The worker has one year to file.",
+   "category": "deadline",
+   "parameters": {
+    "presumption_window_days": 90,
+    "filing_deadline_years": 1,
+    "remedies": [
+     "reinstatement",
+     "lost wages and work benefits with interest",
+     "equitable relief",
+     "civil penalties under Labor Code 98.6, 98.7, 98.74, 1102.5"
+    ],
+    "authority": "Labor Code 1197.5(k); 98.6(b)(1)"
+   },
+   "applies_to": "All California employers (any size) and their employees, including construction contractors",
+   "citation": "Labor Code 1197.5(k), 98.6(b)(1); DLSE Equal Pay Act FAQ",
+   "source_location": "https://www.dir.ca.gov/dlse/California_Equal_Pay_Act.htm (FAQs on retaliation for exercising Equal Pay Act rights)",
+   "verbatim_quote": "There is a rebuttable presumption of unlawful retaliation if an employer engages in any action prohibited by the Equal Pay Act within 90 days of an employee engaging in protected activity specified in the statute.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "FAQ page dated August 24, 2026: 'A claim must be filed no later than one year after the cause of action occurs.'"
+  },
+  {
+   "id": "hr-aca-ale-definition-50-ftes",
+   "title": "ACA employer mandate applies at 50 or more full-time employees, counting FTEs, averaged over the prior year",
+   "plain_english": "You are an 'applicable large employer' for a year if last year you averaged at least 50 full-time employees, counting part-timers' hours as full-time equivalents. For 2026 the test uses your 2025 workforce; for 2027 it uses your 2026 workforce. Related companies under common control are counted together.",
+   "category": "threshold",
+   "parameters": {
+    "min_full_time_employees_including_ftes": 50,
+    "measurement": "preceding calendar year",
+    "formula": "floor(sum over 12 months of (full-time employees + FTEs, seasonal workers included) / 12) >= 50",
+    "rounding": "round the average down to a whole number",
+    "aggregation": "members of a controlled or affiliated service group under IRC 414(b), (c), (m), (o) counted together",
+    "status_for_2026_based_on": "calendar year 2025",
+    "status_for_2027_based_on": "calendar year 2026"
+   },
+   "applies_to": "All employers with workers in California (federal law)",
+   "citation": "IRC 4980H; 26 CFR 54.4980H-1(a)(4), 54.4980H-2(b)(1)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-1 \u00b6(a)(4) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-1); https://www.ecfr.gov/current/title-26/section-54.4980H-2 \u00b6(b)(1) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-2)",
+   "verbatim_quote": "The term applicable large employer means, with respect to a calendar year, an employer that employed an average of at least 50 full-time employees (including full-time equivalent employees) on business days during the preceding calendar year.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "The year mapping (2025 workforce for 2026 status) follows from 'preceding calendar year'. Aggregation is from the 54.4980H-2(d) examples, which refer to section 414(b), (c), (m), and (o)."
+  },
+  {
+   "id": "hr-aca-fte-calculation-120-hours",
+   "title": "Count FTEs as part-timers' monthly hours (max 120 each) divided by 120",
+   "plain_english": "To turn part-timers into full-time equivalents for each month, add their hours (counting no more than 120 per person) and divide by 120.",
+   "category": "definition",
+   "parameters": {
+    "max_hours_counted_per_non_full_time_employee_per_month": 120,
+    "divisor": 120,
+    "monthly_rounding": "fractions counted; may round to nearest 0.01",
+    "formula": "monthly_FTEs = sum(min(hours_i, 120) for non-full-time employees) / 120"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-2(c)(2)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-2 \u00b6(c)(2) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-2)",
+   "verbatim_quote": "The number of FTEs for each calendar month in the preceding calendar year is determined by calculating the aggregate number of hours of service for that calendar month for employees who were not full-time employees (but not more than 120 hours of service for any employee) and dividing that number by 120.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "The regulation's example: 40 part-timers at 90 hours = 3,600 hours / 120 = 30 FTEs."
+  },
+  {
+   "id": "hr-aca-seasonal-worker-exception-120-days",
+   "title": "Seasonal exception: over 50 for 120 days or less because of seasonal workers does not make you an ALE",
+   "plain_english": "If you went over 50 full-time employees and FTEs for 120 days or less last year, and the extra workers were seasonal, you are not an applicable large employer. Four calendar months may be counted as 120 days, and they do not have to be consecutive.",
+   "category": "threshold",
+   "parameters": {
+    "max_days_over_50": 120,
+    "alternative_months": 4,
+    "days_need_not_be_consecutive": true,
+    "excess_must_be": "seasonal workers"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-2(b)(2)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-2 \u00b6(b)(2) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-2)",
+   "verbatim_quote": "If the sum of an employer's full-time employees and FTEs exceeds 50 for 120 days or less during the preceding calendar year, and the employees in excess of 50 who were employed during that period of no more than 120 days are seasonal workers, the employer is not considered to employ more than 50 full-time employees (including FTEs) and the employer is not an applicable large employer for the current calendar year.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "54.4980H-1(a)(39) lets employers use a reasonable, good-faith interpretation of 'seasonal worker'."
+  },
+  {
+   "id": "hr-aca-new-employer-ale-status",
+   "title": "A new business is an ALE in its first year if it expects and actually averages 50+",
+   "plain_english": "A company that did not exist last year is an applicable large employer this year if it reasonably expects to average 50 or more full-time employees and FTEs this year and actually does.",
+   "category": "threshold",
+   "parameters": {
+    "min_full_time_employees_including_ftes": 50,
+    "conditions": [
+     "reasonably expected to average 50+ during current year",
+     "actually averages 50+ during current year"
+    ],
+    "not_in_existence_means": "not in existence on any business day of the prior calendar year"
+   },
+   "applies_to": "Employers not in existence during the preceding calendar year",
+   "citation": "26 CFR 54.4980H-2(b)(3)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-2 \u00b6(b)(3) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-2)",
+   "verbatim_quote": "An employer not in existence throughout the preceding calendar year is an applicable large employer for the current calendar year if the employer is reasonably expected to employ an average of at least 50 full-time employees (taking into account FTEs) on business days during the current calendar year and it actually employs an average of at least 50 full-time employees (taking into account FTEs) on business days during the calendar year.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-aca-full-time-employee-30-hours-130-monthly",
+   "title": "ACA full-time employee: 30 hours a week on average, or 130 hours in a month",
+   "plain_english": "For the ACA, a full-time employee averages at least 30 hours of service a week. A month with 130 or more hours counts as full-time. Under the optional weekly rule, the test is 120 hours in a four-week month or 150 hours in a five-week month.",
+   "category": "definition",
+   "parameters": {
+    "weekly_hours_threshold": 30,
+    "monthly_hours_equivalent": 130,
+    "weekly_rule_option": {
+     "four_week_month_hours": 120,
+     "five_week_month_hours": 150
+    },
+    "applies_to": [
+     "look-back measurement method",
+     "monthly measurement method"
+    ]
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-1(a)(21)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-1 \u00b6(a)(21)(i)-(iii) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-1)",
+   "verbatim_quote": "130 hours of service in a calendar month is treated as the monthly equivalent of at least 30 hours of service per week, and this 130 hours of service monthly equivalency applies for both the look-back measurement method and the monthly measurement method for determining full-time employee status.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "\u00b6(a)(21)(i): 'The term full-time employee means, with respect to a calendar month, an employee who is employed an average of at least 30 hours of service per week with an employer.'"
+  },
+  {
+   "id": "hr-aca-hours-of-service-definition",
+   "title": "ACA hours of service include paid leave hours (vacation, holiday, sick, jury duty, layoff)",
+   "plain_english": "When counting ACA hours, include every hour paid for work and every hour paid while not working, such as vacation, holiday, illness, disability, layoff, jury duty, military duty or leave. Leave out bona fide volunteer hours and work-study hours.",
+   "category": "definition",
+   "parameters": {
+    "includes": [
+     "hours paid or entitled to payment for performance of duties",
+     "paid hours with no duties: vacation, holiday, illness, incapacity (including disability), layoff, jury duty, military duty, leave of absence"
+    ],
+    "excludes": [
+     "bona fide volunteer hours",
+     "federal or similar work-study program hours",
+     "services with compensation from sources outside the United States"
+    ],
+    "cross_member_rule": "hours for one ALE member count for all members of the same ALE"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-1(a)(24)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-1 \u00b6(a)(24) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-1)",
+   "verbatim_quote": "The term hour of service means each hour for which an employee is paid, or entitled to payment, for the performance of duties for the employer; and each hour for which an employee is paid, or entitled to payment by the employer for a period of time during which no duties are performed due to vacation, holiday, illness, incapacity (including disability), layoff, jury duty, military duty or leave of absence (as defined in 29 CFR 2530.200b-2(a)).",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-aca-4980h-a-no-offer-penalty",
+   "title": "4980H(a) penalty for not offering coverage: 1/12 of $2,000 (inflation-indexed) per full-time employee, minus 30",
+   "plain_english": "If you do not offer health coverage to at least 95% of full-time employees and their children, and even one full-time employee gets a subsidized Marketplace plan, you owe a monthly payment for all full-time employees after subtracting 30. The base is $2,000 a year per employee, adjusted for inflation.",
+   "category": "penalty",
+   "parameters": {
+    "annual_base_usd_per_employee_before_indexing": 2000,
+    "monthly_fraction": "1/12",
+    "employee_reduction": 30,
+    "reduction_allocation": "30 allocated ratably among ALE members by full-time count, each share rounded up",
+    "trigger": "failure to offer minimum essential coverage (all but 5%, or 5 if greater) AND at least one full-time employee with a Section 1411 Certification (premium tax credit)",
+    "inflation_indexed_amount_2026_usd": null,
+    "inflation_indexed_amount_2027_usd": null,
+    "formula": "monthly_payment = (indexed_annual_amount / 12) * max(0, full_time_employees - allocated_share_of_30)",
+    "not_both": "for a month a member owes 4980H(a) or 4980H(b), not both"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "IRC 4980H(a), (c)(5); 26 CFR 54.4980H-1(a)(41), 54.4980H-4(a), (e)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-1 \u00b6(a)(41) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-1); https://www.ecfr.gov/current/title-26/section-54.4980H-4 \u00b6(a), (d), (e) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-4)",
+   "verbatim_quote": "The term section 4980H(a) applicable payment amount means, with respect to any calendar month, 1/12 of $2,000, adjusted for inflation in accordance with section 4980H(c)(5) and any applicable guidance thereunder.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "The 2026 and 2027 inflation-adjusted amounts are published by the IRS, and irs.gov and federalregister.gov are blocked here, so the dollar amounts are null and must be supplied before computing. The regulation's example uses the unindexed $2,000: 24 x $2,000 = $48,000."
+  },
+  {
+   "id": "hr-aca-95-percent-offer-rule",
+   "title": "Offer coverage to all but 5% (or 5, if greater) of full-time employees, and to their dependents",
+   "plain_english": "To avoid the larger ACA penalty, offer health coverage every month to all but 5% of your full-time employees, or all but 5 if that is more. An offer counts only if it also covers the employee's children.",
+   "category": "threshold",
+   "parameters": {
+    "max_not_offered_fraction": 0.05,
+    "max_not_offered_min_count": 5,
+    "rule": "not_offered <= max(5, 0.05 * full_time_employees)",
+    "dependents_must_be_offered": true,
+    "employees_in_limited_non_assessment_period": "excluded from the calculation"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-4(a)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-4 \u00b6(a) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-4)",
+   "verbatim_quote": "an applicable large employer member is treated as offering such coverage to its full-time employees (and their dependents) for a calendar month if, for that month, it offers such coverage to all but five percent (or, if greater, five) of its full-time employees (provided that an employee is treated as having been offered coverage only if the employer also offers coverage to that employee's dependents).",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-aca-4980h-b-unaffordable-coverage-penalty",
+   "title": "4980H(b) penalty for unaffordable or low-value coverage: 1/12 of $3,000 (indexed) per subsidized employee, capped",
+   "plain_english": "If you offer coverage but it is unaffordable or not minimum value, you owe a monthly payment for each full-time employee who gets a Marketplace subsidy. The base is $3,000 a year per employee, adjusted for inflation, and the total can never exceed what the no-offer penalty would have been.",
+   "category": "penalty",
+   "parameters": {
+    "annual_base_usd_per_subsidized_employee_before_indexing": 3000,
+    "monthly_fraction": "1/12",
+    "counted_employees": "full-time employees with a Section 1411 Certification, excluding those offered affordable minimum-value coverage under a safe harbor and those in a limited non-assessment period",
+    "cap": "4980H(a) amount for the month: (indexed $2,000 / 12) * (full-time employees - allocated share of 30)",
+    "inflation_indexed_amount_2026_usd": null,
+    "inflation_indexed_amount_2027_usd": null
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "IRC 4980H(b), (c)(5); 26 CFR 54.4980H-1(a)(42), 54.4980H-5(a)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-1 \u00b6(a)(42) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-1); https://www.ecfr.gov/current/title-26/section-54.4980H-5 \u00b6(a) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-5)",
+   "verbatim_quote": "The term section 4980H(b) applicable payment amount means, with respect to any calendar month, 1/12 of $3,000, adjusted for inflation in accordance with section 4980H(c)(5) and any applicable guidance thereunder.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "The 2026 and 2027 indexed amounts are not available because irs.gov is blocked."
+  },
+  {
+   "id": "hr-aca-affordability-safe-harbors",
+   "title": "Affordability safe harbors: Form W-2, rate of pay (130 hours x hourly rate), or federal poverty line",
+   "plain_english": "Coverage is treated as affordable if the employee's cost for the cheapest self-only minimum-value plan stays under a set percentage of one of three measures: the employee's W-2 wages, 130 hours times their hourly rate, or the federal poverty line. The regulation says 9.5 percent. Check the IRS percentage for the plan year.",
+   "category": "threshold",
+   "parameters": {
+    "safe_harbors": {
+     "form_w2": "annual required contribution <= pct * Box 1 W-2 wages (prorated for partial-year offers)",
+     "rate_of_pay_hourly": "monthly contribution <= pct * 130 * min(hourly rate on first day of coverage period, lowest hourly rate in month)",
+     "rate_of_pay_salaried": "monthly contribution <= pct * monthly salary (not available if salary reduced)",
+     "federal_poverty_line": "monthly contribution <= pct * (single-person FPL for the state of employment / 12)"
+    },
+    "regulatory_text_percent": 9.5,
+    "plan_year_2026_percent": null,
+    "plan_year_2027_percent": null,
+    "coverage_tested": "lowest-cost self-only coverage providing minimum value",
+    "categories": "may use different safe harbors for reasonable categories applied uniformly"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-5(e)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-5 \u00b6(e)(2)(i)-(iv) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-5)",
+   "verbatim_quote": "An applicable large employer member satisfies the rate of pay safe harbor with respect to an hourly employee for a calendar month if the employee's required contribution for the calendar month for the applicable large employer member's lowest cost self-only coverage that provides minimum value does not exceed 9.5 percent of an amount equal to 130 hours multiplied by the lower of the employee's hourly rate of pay as of the first day of the coverage period (generally the first day of the plan year) or the employee's lowest hourly rate of pay during the calendar month.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "The regulation text says 9.5 percent. Paragraph (e)(1) ties affordability to IRC 36B(c)(2)(C)(i), and 54.4980H-5(f) lets the IRS issue further guidance. This pass did not read any IRS-published percentage for 2026 or 2027 (irs.gov is blocked), so the plan-year percentages are null and should be confirmed before relying on 9.5."
+  },
+  {
+   "id": "hr-aca-first-year-ale-april-1-offer",
+   "title": "First year as an ALE: offer coverage by April 1 to avoid January-March penalties",
+   "plain_english": "In the first year you become an applicable large employer, offering coverage by April 1 protects you from penalties for January through March for employees you had not covered the year before. The coverage must provide minimum value to avoid the 4980H(b) penalty for those months.",
+   "category": "deadline",
+   "parameters": {
+    "offer_deadline": "April 1 of the first calendar year as an ALE",
+    "relief_months": [
+     "January",
+     "February",
+     "March"
+    ],
+    "applies_to": "employees not offered coverage at any point in the prior calendar year",
+    "minimum_value_needed_for_4980H_b_relief": true,
+    "one_time_only": true
+   },
+   "applies_to": "Employers in their first year as an applicable large employer",
+   "citation": "26 CFR 54.4980H-2(b)(5)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-2 \u00b6(b)(5) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-2)",
+   "verbatim_quote": "if the applicable large employer offers coverage to the employee on or before April 1 of the first calendar year for which the employer is an applicable large employer, the employer will not be subject to an assessable payment under section 4980H by reason of its failure to offer coverage to the employee for January through March of that year",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "The relief applies only in the first year as an ALE. It does not come back if the employer drops below 50 and later becomes an ALE again."
+  },
+  {
+   "id": "hr-aca-partial-month-rule",
+   "title": "Missing even one day of coverage makes the whole month 'not offered'",
+   "plain_english": "If a full-time employee is not offered coverage for any day of a month, the whole month counts as not offered. There is no penalty for the month a new hire starts if they start after the 1st. The month an employee leaves counts as offered if coverage would have run the full month.",
+   "category": "process_step",
+   "parameters": {
+    "any_day_not_offered": "entire month treated as not offered",
+    "start_month_if_start_date_not_first_of_month": "no assessable payment for that employee for that month",
+    "termination_month": "treated as offered if coverage would have been offered for the entire month"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-4(c), 54.4980H-5(c)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-4 \u00b6(c) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-4)",
+   "verbatim_quote": "If an applicable large employer member fails to offer coverage to a full-time employee for any day of a calendar month, that employee is treated as not offered coverage during that entire month, regardless of whether the employer uses the payroll period rule set forth in \u00a7 54.4980H-3(d)(1)(ii) or the weekly rule set forth in \u00a7 54.4980H-3(c)(3) to determine full-time employee status for the calendar month.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-aca-look-back-measurement-periods",
+   "title": "Look-back method: 3-12 month measurement, stability of at least 6 months, administrative period up to 90 days",
+   "plain_english": "For variable-hour crews you may decide full-time status by looking back over a 3 to 12 month measurement period. Anyone who averaged 30 or more hours must be treated as full-time for a following stability period of at least 6 months, and no shorter than the measurement period. An optional setup period between them can last up to 90 days.",
+   "category": "definition",
+   "parameters": {
+    "standard_measurement_period_months": {
+     "min": 3,
+     "max": 12
+    },
+    "stability_period_if_full_time": "at least 6 consecutive calendar months and not shorter than the measurement period",
+    "stability_period_if_not_full_time": "not longer than the measurement period",
+    "administrative_period_max_days": 90,
+    "new_variable_hour_initial_measurement_period_months": {
+     "min": 3,
+     "max": 12
+    },
+    "new_hire_combined_limit": "initial measurement period + administrative period may not extend beyond the last day of the first calendar month beginning on or after the first anniversary of the start date",
+    "uniformity": "same rules for all employees in a permissible category"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-1(a)(46), 54.4980H-3(d)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-1 \u00b6(a)(46) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-1); https://www.ecfr.gov/current/title-26/section-54.4980H-3 \u00b6(d)(1), (d)(3) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-3)",
+   "verbatim_quote": "The term standard measurement period means a period of at least three but not more than 12 consecutive months that is used by an applicable large employer member as part of the look-back measurement method in \u00a7 54.4980H-3(d).",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "54.4980H-3(d)(1)(iii): 'The stability period must be at least six consecutive calendar months but no shorter in duration than the standard measurement period.' (d)(1)(vi): 'The administrative period following the standard measurement period may last up to 90 days.'"
+  },
+  {
+   "id": "hr-aca-rehire-13-week-break",
+   "title": "A rehired worker counts as a new employee only after 13 straight weeks with no hours",
+   "plain_english": "When a laid-off worker comes back, you may treat them as a new hire for ACA purposes only if they had no hours of service for at least 13 consecutive weeks. Otherwise they keep their prior status. Under the optional parity rule you may use a shorter break of at least 4 weeks if it is longer than their prior period of work.",
+   "category": "threshold",
+   "parameters": {
+    "break_weeks_required": 13,
+    "parity_rule_option": "break of at least 4 consecutive weeks that exceeds the employee's immediately preceding period of employment",
+    "educational_organization_break_weeks": 26
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-3(c)(4)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-3 \u00b6(c)(4)(i), (v) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-3)",
+   "verbatim_quote": "may be treated as a new employee upon the resumption of services only if the employee did not have an hour of service for the applicable large employer for a period of at least 13 consecutive weeks immediately preceding the resumption of services.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "This matters for construction crews laid off between projects and recalled."
+  },
+  {
+   "id": "hr-aca-dependent-children-under-26",
+   "title": "ACA 'dependents' are children under 26; spouses are not required",
+   "plain_english": "The required offer to dependents means the employee's children until the month they turn 26. Stepchildren and foster children are excluded, and spouses do not have to be offered coverage under this rule.",
+   "category": "definition",
+   "parameters": {
+    "dependent": "child (IRC 152(f)(1)) under age 26",
+    "excluded": [
+     "stepchildren",
+     "eligible foster children",
+     "spouse"
+    ],
+    "age_26_month": "child is a dependent for the entire month in which they turn 26",
+    "may_rely_on_employee_representation": true
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "26 CFR 54.4980H-1(a)(12)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980H-1 \u00b6(a)(12) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980H-1)",
+   "verbatim_quote": "The term dependent does not include the spouse of an employee.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-aca-1094c-1095c-filing-deadline",
+   "title": "File Forms 1094-C/1095-C with the IRS by February 28 (paper) or March 31 (electronic)",
+   "plain_english": "Applicable large employers file Forms 1094-C and 1095-C with the IRS by February 28 on paper, or by March 31 if filed electronically. For tax year 2026, February 28, 2027 is a Sunday, so a paper filing is due Monday, March 1, 2027. The electronic deadline is Wednesday, March 31, 2027.",
+   "category": "deadline",
+   "parameters": {
+    "paper_due": "February 28 of the following year",
+    "electronic_due": "March 31 of the following year",
+    "tax_year_2026": {
+     "paper_due_after_weekend_rule": "2027-03-01",
+     "electronic_due": "2027-03-31"
+    },
+    "weekend_holiday_rule": "next day that is not a Saturday, Sunday or legal holiday (26 CFR 301.7503-1)",
+    "forms": [
+     "Form 1094-C (transmittal)",
+     "Form 1095-C (one per full-time employee)"
+    ],
+    "extensions": "26 CFR 1.6081-1 and 1.6081-8 (not read)"
+   },
+   "applies_to": "Applicable large employers (50+ full-time employees including FTEs in the prior calendar year), including California construction contractors",
+   "citation": "IRC 6056; 26 CFR 301.6056-1(c), (e); 26 CFR 301.7503-1",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-301.6056-1 \u00b6(c)(1), (e) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=301.6056-1); https://www.ecfr.gov/current/title-26/section-301.7503-1 \u00b6(a) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=301.7503-1)",
+   "verbatim_quote": "An applicable large employer member must file the return and transmittal form required under paragraph (d)(2) of this section on or before February 28 (March 31 if filed electronically) of the year succeeding the calendar year to which it relates in accordance with any applicable guidance and the instructions to the form.",
+   "effective": "2015-01-01",
+   "read_from_primary_text": true,
+   "notes": "The tax year 2026 dates come from applying 301.7503-1 to a calendar; February 28, 2027 is a Sunday. Most ALEs must file electronically because they file 10 or more information returns (see hr-aca-efile-10-return-threshold). The 2026 Form 1094-C/1095-C instructions on irs.gov were not read."
+  },
+  {
+   "id": "hr-aca-1095c-furnish-deadline",
+   "title": "Furnish Form 1095-C to full-time employees by January 31, with an automatic 30-day extension",
+   "plain_english": "Give each full-time employee a Form 1095-C by January 31 of the next year. The rules grant an automatic 30-day extension, which for tax year 2026 runs to Tuesday, March 2, 2027. Mail it to the employee's last known permanent address, or deliver it electronically only with the employee's consent.",
+   "category": "deadline",
+   "parameters": {
+    "base_due": "January 31 of the following year",
+    "automatic_extension_days": 30,
+    "tax_year_2026": {
+     "base_due": "2027-01-31",
+     "base_due_weekday": "Sunday",
+     "due_with_automatic_extension_derived": "2027-03-02"
+    },
+    "mailing": "first-class mail to last known permanent address (or temporary address) satisfies the requirement",
+    "electronic_delivery": "only with affirmative consent (26 CFR 301.6056-2)"
+   },
+   "applies_to": "Applicable large employers (to each full-time employee)",
+   "citation": "IRC 6056; 26 CFR 301.6056-1(g)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-301.6056-1 \u00b6(g)(1)-(2), (m) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=301.6056-1)",
+   "verbatim_quote": "Except as otherwise provided in this paragraph (g)(1), each statement required by this section for a calendar year must be furnished to a full-time employee on or before January 31 of the year succeeding the calendar year in accordance with applicable Internal Revenue Service procedures and instructions. Applicable large employers are granted an automatic, 30-day extension of time in which to furnish these statements.",
+   "effective": "2022-01-01",
+   "read_from_primary_text": true,
+   "notes": "Under \u00b6(m), the automatic extension in (g)(1) applies to calendar years beginning after December 31, 2021. March 2, 2027 is January 31, 2027 plus 30 days and is computed, not quoted. Any later change to section 6056 furnishing in the statute or IRS notices was not checked because uscode.house.gov and irs.gov are blocked."
+  },
+  {
+   "id": "hr-aca-efile-10-return-threshold",
+   "title": "E-file information returns, including 1095-C, if you file 10 or more of any kind in a year",
+   "plain_english": "If you must file 10 or more information returns in a calendar year, counting W-2s, 1099s and 1095-Cs together, all of them must be filed electronically.",
+   "category": "threshold",
+   "parameters": {
+    "min_returns_triggering_efile": 10,
+    "counted_together": [
+     "Form W-2 series",
+     "Form 1099 series",
+     "Form 1094 series",
+     "Form 1095-B",
+     "Form 1095-C",
+     "Form 1042-S",
+     "Form 1098 series",
+     "Form 5498 series",
+     "Form 3921/3922",
+     "Form 8027",
+     "Form W-2G"
+    ],
+    "excluded_from_count": [
+     "corrected returns"
+    ],
+    "partnerships_over_100_partners": "must e-file regardless",
+    "hardship_waiver": "may be requested from the IRS"
+   },
+   "applies_to": "Employers filing federal information returns (including ALEs filing Forms 1094-C/1095-C)",
+   "citation": "IRC 6011(e); 26 CFR 301.6011-2(b), (c)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-301.6011-2 \u00b6(b)(1)-(2), (c)(1), (c)(4), (g) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=301.6011-2)",
+   "verbatim_quote": "No person is required to file information returns electronically in a calendar year unless the person is required to file at least 10 returns during that calendar year.",
+   "effective": "2024-01-01",
+   "read_from_primary_text": true,
+   "notes": "Applies to information returns filed in calendar years beginning after December 31, 2023 (\u00b6(g))."
+  },
+  {
+   "id": "hr-aca-1095c-electronic-delivery-consent",
+   "title": "Electronic 1095-C delivery requires the employee's affirmative consent",
+   "plain_english": "You may send Form 1095-C electronically only if the employee has affirmatively agreed to receive it that way, in a manner that shows they can open it. Otherwise send it on paper.",
+   "category": "required_document",
+   "parameters": {
+    "consent_required": true,
+    "consent_form": "electronic, reasonably demonstrating access; or paper confirmed electronically",
+    "withdrawal": "consent withdrawn before furnishing defeats electronic delivery",
+    "authority": "26 CFR 301.6056-2(a)(2)"
+   },
+   "applies_to": "Applicable large employers furnishing Form 1095-C",
+   "citation": "26 CFR 301.6056-2(a)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-301.6056-2 \u00b6(a)(1)-(2) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=301.6056-2)",
+   "verbatim_quote": "The recipient must have affirmatively consented to receive the statement in an electronic format.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-info-return-late-filing-penalty-base",
+   "title": "Late or incorrect information returns (W-2, 1099, 1095-C): $250 per return before inflation adjustment",
+   "plain_english": "Each information return filed late or wrong can cost $250, or $50 if fixed within 30 days, or $100 if fixed by August 1. Annual caps apply, with lower caps for businesses with gross receipts of $5 million or less. These are base amounts that the IRS adjusts for inflation.",
+   "category": "penalty",
+   "parameters": {
+    "per_return_usd_base": 250,
+    "annual_cap_usd_base": 3000000,
+    "corrected_within_30_days": {
+     "per_return_usd_base": 50,
+     "annual_cap_usd_base": 500000
+    },
+    "corrected_after_30_days_by_august_1": {
+     "per_return_usd_base": 100,
+     "annual_cap_usd_base": 1500000
+    },
+    "small_business_gross_receipts_max_usd": 5000000,
+    "small_business_caps_usd_base": {
+     "total": 1000000,
+     "corrected_within_30_days": 175000,
+     "corrected_by_august_1": 500000
+    },
+    "inflation_adjusted": true,
+    "inflation_adjusted_amounts_2026_usd": null,
+    "reasonable_cause_waiver": "26 CFR 301.6724-1",
+    "authority": "IRC 6721; 26 CFR 301.6721-1"
+   },
+   "applies_to": "Employers filing W-2, 1099, 1094-C/1095-C and other information returns",
+   "citation": "IRC 6721; 26 CFR 301.6721-1(a), (b), (f), (i)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-301.6721-1 \u00b6(a)(1), (b)(1)-(2), (f)(1), (i) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=301.6721-1)",
+   "verbatim_quote": "A penalty of $250 is imposed for each information return (as defined in section 6724(d)(1) and paragraph (h) of this section) with respect to which a failure (as defined in section 6721(a)(2) and paragraph (a)(2) of this section) occurs.",
+   "effective": "2024-01-01",
+   "read_from_primary_text": true,
+   "notes": "\u00b6(i) requires inflation adjustment of these dollar amounts under section 6721(f). The IRS-published 2026 and 2027 amounts were not read (irs.gov is blocked). Intentional disregard carries higher penalties under \u00b6(g)."
+  },
+  {
+   "id": "hr-payee-statement-penalty-base",
+   "title": "Late or incorrect employee statements (W-2, 1095-C): $250 per statement before inflation adjustment",
+   "plain_english": "Each employee copy (W-2, 1095-C and similar) furnished late or wrong can cost $250 before inflation adjustment, with a $3,000,000 annual cap. Intentional disregard costs more.",
+   "category": "penalty",
+   "parameters": {
+    "per_statement_usd_base": 250,
+    "annual_cap_usd_base": 3000000,
+    "inflation_adjusted": true,
+    "inflation_adjusted_amounts_2026_usd": null,
+    "authority": "IRC 6722; 26 CFR 301.6722-1"
+   },
+   "applies_to": "Employers furnishing W-2, 1095-C and other payee statements",
+   "citation": "IRC 6722; 26 CFR 301.6722-1(a), (f)",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-301.6722-1 \u00b6(a)(1), (f) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=301.6722-1)",
+   "verbatim_quote": "A penalty of $250 is imposed for each payee statement (as defined in section 6724(d)(2) and paragraph (e)(2) of this section) with respect to which a failure (as defined in section 6722(a) and paragraph (a)(2) of this section) occurs.",
+   "effective": "2024-01-01",
+   "read_from_primary_text": true,
+   "notes": "The section applies to payee statements due on or after January 1, 2024. The inflation-adjusted amounts were not read."
+  },
+  {
+   "id": "hr-group-health-90-day-waiting-period",
+   "title": "Group health plan coverage must start within 90 days of eligibility",
+   "plain_english": "If you offer a group health plan, coverage for an eligible employee must be able to begin no later than 90 days after they become eligible. A bona fide orientation period may not exceed one month.",
+   "category": "deadline",
+   "parameters": {
+    "max_waiting_period_days": 90,
+    "orientation_period_max": "one month (add one calendar month, subtract one day, from the start date)",
+    "orientation_example": {
+     "start_date": "May 3",
+     "last_orientation_day": "June 2"
+    },
+    "late_or_special_enrollment_time": "not a waiting period"
+   },
+   "applies_to": "Employers sponsoring group health plans (and their insurers)",
+   "citation": "PHS Act 2708; 26 CFR 54.9815-2708",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.9815-2708 \u00b6(a), (c)(3)(iii) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.9815-2708)",
+   "verbatim_quote": "A group health plan, and a health insurance issuer offering group health insurance coverage, must not apply any waiting period that exceeds 90 days, in accordance with the rules of this section.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "\u00b6(c)(3)(iii): 'an orientation period is permitted only if it does not exceed one month.' The parallel DOL and HHS regulations were not read."
+  },
+  {
+   "id": "hr-cobra-small-employer-exception-20",
+   "title": "Federal COBRA applies once you normally employ 20 or more employees",
+   "plain_english": "Your group health plan is exempt from federal COBRA if last year you had fewer than 20 employees on at least half of your typical business days. Part-timers count as fractions, while owners, independent contractors and directors are not counted.",
+   "category": "threshold",
+   "parameters": {
+    "exempt_if_fewer_than_employees": 20,
+    "test": "fewer than 20 employees on at least 50% of typical business days in the preceding calendar year",
+    "part_time_counting": "fraction = hours worked / hours required to be full-time (daily or pay-period basis, applied consistently for the year)",
+    "not_counted": [
+     "self-employed individuals",
+     "independent contractors and their workers",
+     "directors (corporations)"
+    ],
+    "controlled_group": "employees of the controlled group counted together"
+   },
+   "applies_to": "Employers sponsoring group health plans",
+   "citation": "IRC 4980B(d)(1); 26 CFR 54.4980B-2 Q&A-5",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-2 Q&A-5(a)-(e) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-2)",
+   "verbatim_quote": "An employer is considered to have normally employed fewer than 20 employees during a particular calendar year if, and only if, it had fewer than 20 employees on at least 50 percent of its typical business days during that year.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Smaller California employers may be covered by Cal-COBRA instead. Its rules (Insurance Code and Health and Safety Code, DMHC and CDI pages) could not be read."
+  },
+  {
+   "id": "hr-cobra-employer-notice-to-administrator-30-days",
+   "title": "Notify the plan administrator of a COBRA qualifying event within 30 days",
+   "plain_english": "When an employee covered by the health plan is terminated, has hours cut, dies or becomes entitled to Medicare, notify the plan administrator within 30 days.",
+   "category": "deadline",
+   "parameters": {
+    "deadline_days": 30,
+    "clock_starts": "date of the qualifying event (or date coverage is lost, if the plan measures from loss of coverage)",
+    "employer_reported_events": [
+     "death",
+     "termination of employment (other than gross misconduct)",
+     "reduction in hours",
+     "Medicare entitlement",
+     "employer bankruptcy (retirees)"
+    ],
+    "notice_contents": "enough to identify the plan, covered employee, qualifying event and its date"
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "ERISA 606(a)(2); 29 CFR 2590.606-2",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-2590.606-2 \u00b6(a)-(c) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=2590.606-2)",
+   "verbatim_quote": "In all other cases, not later than 30 days after the date on which the qualifying event occurred.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-cobra-election-notice-14-or-44-days",
+   "title": "COBRA election notice: 14 days after the administrator is notified, or 44 days if the employer is the administrator",
+   "plain_english": "The plan administrator must send the COBRA election notice within 14 days of learning of the qualifying event. If you, the employer, are also the plan administrator, you have 44 days from the event or the loss of coverage.",
+   "category": "deadline",
+   "parameters": {
+    "administrator_deadline_days_after_notice": 14,
+    "employer_is_administrator_deadline_days": 44,
+    "employer_is_administrator_clock_starts": "qualifying event date (or loss of coverage date if the plan so provides)"
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "ERISA 606(a)(4); 29 CFR 2590.606-4(b)",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-2590.606-4 \u00b6(b)(1)-(2) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=2590.606-4)",
+   "verbatim_quote": "Except as provided in paragraph (b)(2) or (3) of this section, upon receipt of a notice of qualifying event furnished in accordance with \u00a7 2590.606-2 or \u00a7 2590.606-3, the administrator shall furnish to each qualified beneficiary, not later than 14 days after receipt of the notice of qualifying event, a notice meeting the requirements of paragraph (b)(4) of this section.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-cobra-general-notice-90-days",
+   "title": "COBRA general rights notice: within 90 days after plan coverage begins",
+   "plain_english": "Give each newly covered employee and spouse a written COBRA general notice within 90 days after their health coverage starts.",
+   "category": "deadline",
+   "parameters": {
+    "deadline_days_after_coverage_begins": 90,
+    "recipients": [
+     "covered employee",
+     "covered spouse"
+    ],
+    "earlier_if": "an election notice is due sooner (2590.606-4(b))"
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "ERISA 606(a)(1); 29 CFR 2590.606-1(b)",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-2590.606-1 \u00b6(b)(1) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=2590.606-1)",
+   "verbatim_quote": "The date that is 90 days after the date on which such individual's coverage under the plan commences, or, if later, the date that is 90 days after the date on which the plan first becomes subject to the continuation coverage requirements; or",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-cobra-election-period-60-days",
+   "title": "COBRA election window: at least 60 days",
+   "plain_english": "A former employee or family member gets at least 60 days to elect COBRA, counted from the later of the date coverage would end or the date the election notice is provided.",
+   "category": "deadline",
+   "parameters": {
+    "min_election_days": 60,
+    "clock_starts": "later of loss of coverage date or date election notice is provided"
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "IRC 4980B(f)(5); 26 CFR 54.4980B-6 Q&A-1",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-6 Q&A-1(a) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-6)",
+   "verbatim_quote": "The election period must not end before the date that is 60 days after the later of",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-cobra-maximum-coverage-18-29-36-months",
+   "title": "COBRA lasts 18 months after termination or hours cut (29 with disability, 36 for other events)",
+   "plain_english": "COBRA after a termination or reduction in hours lasts up to 18 months, or 29 months with a disability extension. A second qualifying event, such as death or divorce, during that time can extend it to 36 months.",
+   "category": "deadline",
+   "parameters": {
+    "termination_or_hours_reduction_months": 18,
+    "with_disability_extension_months": 29,
+    "other_events_or_second_qualifying_event_months": 36,
+    "measured_from": "date of qualifying event (or loss of coverage if plan so provides)"
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "IRC 4980B(f)(2)(B); 26 CFR 54.4980B-7 Q&A-4",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-7 Q&A-4(a)-(c), Q&A-6(b) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-7)",
+   "verbatim_quote": "In the case of a qualifying event that is a termination of employment or reduction of hours of employment, the maximum coverage period ends 18 months after the qualifying event if there is no disability extension, and 29 months after the qualifying event if there is a disability extension.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-cobra-premium-102-percent",
+   "title": "COBRA premium may not exceed 102% of the plan cost (150% during a disability extension)",
+   "plain_english": "You may charge COBRA participants up to 102% of the plan's cost, or up to 150% during months 19 to 29 of a disability extension.",
+   "category": "money_amount",
+   "parameters": {
+    "max_percent_of_applicable_premium": 102,
+    "disability_extension_max_percent": 150
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "IRC 4980B(f)(2)(C); 26 CFR 54.4980B-8 Q&A-1",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-8 Q&A-1(a)-(b) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-8)",
+   "verbatim_quote": "For any period of COBRA continuation coverage, a group health plan can require the payment of an amount that does not exceed 102 percent of the applicable premium for that period.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-cobra-payment-grace-30-45-days",
+   "title": "COBRA payments: 30-day grace period; first payment not due before 45 days after election",
+   "plain_english": "Each COBRA payment is on time if paid within 30 days after the start of the coverage period. The first payment cannot be required earlier than 45 days after the person elects COBRA.",
+   "category": "deadline",
+   "parameters": {
+    "grace_period_days": 30,
+    "first_payment_min_days_after_election": 45
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "IRC 4980B(f)(2)(B)(iii); 26 CFR 54.4980B-8 Q&A-5",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-8 Q&A-5(a)-(b) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-8)",
+   "verbatim_quote": "Except as provided in this paragraph (a) or in paragraph (b) or (d) of this Q&A-5, timely payment for a period of COBRA continuation coverage under a group health plan means payment that is made to the plan by the date that is 30 days after the first day of that period.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Q&A-5(b): 'a plan cannot require payment for any period of COBRA continuation coverage for a qualified beneficiary earlier than 45 days after the date on which the election of COBRA continuation coverage is made for that qualified beneficiary.'"
+  },
+  {
+   "id": "hr-fmla-covered-employer-50",
+   "title": "Federal FMLA covers employers with 50+ employees in 20+ workweeks this year or last",
+   "plain_english": "The federal Family and Medical Leave Act applies to you if you had 50 or more employees on each working day of at least 20 calendar weeks in this year or last year.",
+   "category": "threshold",
+   "parameters": {
+    "min_employees": 50,
+    "min_workweeks": 20,
+    "lookback": "current or preceding calendar year",
+    "integrated_employer_test": [
+     "common management",
+     "interrelation between operations",
+     "centralized control of labor relations",
+     "degree of common ownership or financial control"
+    ]
+   },
+   "applies_to": "Private employers (federal law)",
+   "citation": "29 U.S.C. 2611(4); 29 CFR 825.104",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-825.104 \u00b6(a), (c) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=825.104)",
+   "verbatim_quote": "An employer covered by FMLA is any person engaged in commerce or in any industry or activity affecting commerce, who employs 50 or more employees for each working day during each of 20 or more calendar workweeks in the current or preceding calendar year.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "The California Family Rights Act (CFRA) has its own, different coverage rules. CRD pages and Gov. Code 12945.2 could not be read, so CFRA is not encoded here."
+  },
+  {
+   "id": "hr-fmla-eligible-employee-12-months-1250-hours-75-miles",
+   "title": "FMLA eligibility: 12 months of employment, 1,250 hours in the past year, 50 employees within 75 miles",
+   "plain_english": "A worker can take FMLA leave once they have worked for you at least 12 months (not necessarily in a row), worked at least 1,250 hours in the 12 months before the leave, and work at a site where you have 50 or more employees within 75 miles.",
+   "category": "threshold",
+   "parameters": {
+    "min_months_employed": 12,
+    "months_need_not_be_consecutive": true,
+    "min_hours_prior_12_months": 1250,
+    "min_employees_within_75_miles": 50,
+    "radius_miles": 75,
+    "break_in_service_years_disregard": "employment before a break of 7 years or more need not be counted (with USERRA and written-agreement exceptions)"
+   },
+   "applies_to": "Private employers with 50 or more employees in 20 or more workweeks (federal FMLA)",
+   "citation": "29 U.S.C. 2611(2); 29 CFR 825.110",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-825.110 \u00b6(a)-(b) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=825.110)",
+   "verbatim_quote": "Has been employed for at least 1,250 hours of service during the 12-month period immediately preceding the commencement of the leave",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-fmla-construction-worksite-home-base",
+   "title": "FMLA 50-in-75-miles test for construction workers uses their home base or reporting site",
+   "plain_english": "Construction workers have no fixed worksite, so the 50-employees-within-75-miles test uses the place they are assigned to as home base, get assignments from, or report to. A jobsite trailer office can be the worksite for workers hired locally. Measure the 75 miles by road.",
+   "category": "definition",
+   "parameters": {
+    "no_fixed_worksite_rule": "worksite = site assigned as home base, from which work is assigned, or to which they report",
+    "jobsite_trailer_example": "locally hired workers who report daily to an on-site trailer office: the construction site is their worksite; staff sent from headquarters keep headquarters as worksite",
+    "distance_measure": "surface miles over public roads by the shortest route",
+    "count_basis": "employees maintained on the payroll"
+   },
+   "applies_to": "Private employers with 50 or more employees in 20 or more workweeks (federal FMLA)",
+   "citation": "29 CFR 825.111",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-825.111 \u00b6(a)(2), (b), (c) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=825.111)",
+   "verbatim_quote": "For employees with no fixed worksite, e.g., construction workers, transportation workers (e.g., truck drivers, seamen, pilots), salespersons, etc., the worksite is the site to which they are assigned as their home base, from which their work is assigned, or to which they report.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-fmla-12-workweeks",
+   "title": "FMLA leave: up to 12 workweeks in a 12-month period",
+   "plain_english": "An eligible worker may take up to 12 workweeks of job-protected leave in a 12-month period for a new child, a serious health condition of their own or of a family member, or a qualifying military exigency.",
+   "category": "threshold",
+   "parameters": {
+    "max_workweeks": 12,
+    "period": "12-month period chosen by employer (calendar year, fixed year, forward or rolling backward)",
+    "reasons": [
+     "birth and care of newborn",
+     "adoption or foster placement",
+     "care for spouse, child or parent with serious health condition",
+     "own serious health condition",
+     "qualifying exigency (military family)"
+    ]
+   },
+   "applies_to": "Private employers with 50 or more employees in 20 or more workweeks (federal FMLA)",
+   "citation": "29 U.S.C. 2612(a); 29 CFR 825.200(a)-(b)",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-825.200 \u00b6(a)-(b) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=825.200)",
+   "verbatim_quote": "Except in the case of leave to care for a covered servicemember with a serious injury or illness, an eligible employee's FMLA leave entitlement is limited to a total of 12 workweeks of leave during any 12-month period for any one, or more, of the following reasons:",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-fmla-26-workweeks-military-caregiver",
+   "title": "FMLA military caregiver leave: up to 26 workweeks in a single 12-month period",
+   "plain_english": "To care for a covered servicemember with a serious injury or illness, an eligible worker may take up to 26 workweeks in a single 12-month period that starts with the first day of that leave. All FMLA leave combined in that period is capped at 26 weeks.",
+   "category": "threshold",
+   "parameters": {
+    "max_workweeks": 26,
+    "period": "single 12-month period measured forward from first day of caregiver leave",
+    "combined_cap_workweeks": 26
+   },
+   "applies_to": "Private employers with 50 or more employees in 20 or more workweeks (federal FMLA)",
+   "citation": "29 U.S.C. 2612(a)(3); 29 CFR 825.200(f)-(g)",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-825.200 \u00b6(f)-(g) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=825.200)",
+   "verbatim_quote": "An eligible employee's FMLA leave entitlement is limited to a total of 26 workweeks of leave during a single 12-month period to care for a covered servicemember with a serious injury or illness.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-fmla-notices-5-business-days",
+   "title": "FMLA notices: eligibility, rights and designation notices within 5 business days",
+   "plain_english": "When a worker asks for leave, or you learn that leave may qualify, tell them within 5 business days whether they are eligible. Once you have enough information, tell them within 5 business days whether the leave is designated as FMLA.",
+   "category": "deadline",
+   "parameters": {
+    "eligibility_notice_business_days": 5,
+    "rights_and_responsibilities_notice": "with eligibility notice",
+    "designation_notice_business_days": 5,
+    "change_notice_business_days": 5,
+    "trigger": "employee requests leave or employer learns leave may be FMLA-qualifying",
+    "excuse": "extenuating circumstances"
+   },
+   "applies_to": "Private employers with 50 or more employees in 20 or more workweeks (federal FMLA)",
+   "citation": "29 CFR 825.300(b)-(d)",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-825.300 \u00b6(b)(1), (c), (d)(1) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=825.300)",
+   "verbatim_quote": "When an employee requests FMLA leave, or when the employer acquires knowledge that an employee's leave may be for an FMLA-qualifying reason, the employer must notify the employee of the employee's eligibility to take FMLA leave within five business days, absent extenuating circumstances.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-fmla-poster-penalty-216",
+   "title": "FMLA poster: required even with no eligible employees; willful failure up to $216 per offense",
+   "plain_english": "Every FMLA-covered employer must display the FMLA poster where employees and applicants can see it, even if no one is eligible yet. Electronic posting is allowed. A willful failure can cost up to $216 per offense.",
+   "category": "penalty",
+   "parameters": {
+    "civil_money_penalty_max_usd_per_offense": 216,
+    "willful_only": true,
+    "post_even_if_no_eligible_employees": true,
+    "electronic_posting_allowed": true,
+    "general_notice_distribution_if_any_eligible_employees": "include in employee handbooks or other written benefit/leave guidance if they exist, otherwise give a copy to each new employee upon hiring (825.300(a)(3))"
+   },
+   "applies_to": "Private employers with 50 or more employees in 20 or more workweeks (federal FMLA)",
+   "citation": "29 U.S.C. 2619; 29 CFR 825.300(a)",
+   "source_location": "https://www.ecfr.gov/current/title-29/section-825.300 \u00b6(a)(1)-(2) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-29.xml?section=825.300)",
+   "verbatim_quote": "An employer that willfully violates the posting requirement may be assessed a civil money penalty by the Wage and Hour Division not to exceed $216 for each separate offense.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "$216 is the amount in the eCFR text of 2026-11-20. DOL adjusts it for inflation. The poster (WH 1420) is listed in the existing rule required-workplace-postings."
+  },
+  {
+   "id": "hr-local-mw-san-diego-2026",
+   "title": "City of San Diego minimum wage: $17.75/hour (2026)",
+   "plain_english": "For hours worked inside San Diego city limits in 2026, pay at least $17.75 an hour. This applies to any employee who works 2 or more hours in a week in the city, including crews from out-of-town companies. Small businesses are not exempt, and tips do not count toward the minimum.",
+   "category": "money_amount",
+   "parameters": {
+    "jurisdiction": "City of San Diego",
+    "hourly_usd": 17.75,
+    "effective": "2026-01-01",
+    "coverage_min_hours_in_city_per_week": 2,
+    "applies_to_hours_worked_within_city": true,
+    "small_business_exemption": false,
+    "tip_credit_allowed": false,
+    "unincorporated_or_other_cities_in_san_diego_county": "state minimum wage applies",
+    "history_usd": {
+     "2016-07-11": 10.5,
+     "2017-01-01": 11.5,
+     "2019-01-01": 12.0,
+     "2020-01-01": 13.0,
+     "2021-01-01": 14.0,
+     "2022-01-01": 15.0,
+     "2023-01-01": 16.3,
+     "2024-01-01": 16.85,
+     "2025-01-01": 17.25,
+     "2026-01-01": 17.75,
+     "2027-01-01": 18.35
+    },
+    "ordinance": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1"
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code Chapter 3, Article 9, Division 1 (Earned Sick Leave and Minimum Wage Ordinance)",
+   "source_location": "https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 3, updated January 2026); https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Minimum Wage table); https://www.sandiego.gov/sites/default/files/2026-09/minimum-wage-rates_historical_09.2026.pdf",
+   "verbatim_quote": "As of January 1, 2026, the minimum wage is $17.75 per hour.",
+   "effective": "2026-01-01",
+   "read_from_primary_text": true,
+   "notes": "Coverage per the OLSE page: 'It is applicable to employees who perform at least two (2) hours of work in one or more calendar weeks of the year within the geographic boundaries of San Diego.' The rate history is from the OLSE historical rates PDF (September 2026)."
+  },
+  {
+   "id": "hr-local-mw-san-diego-2027",
+   "title": "City of San Diego minimum wage: $18.35/hour from January 1, 2027",
+   "plain_english": "From January 1, 2027, pay at least $18.35 an hour for hours worked inside San Diego city limits by anyone who works 2 or more hours in a week in the city.",
+   "category": "money_amount",
+   "parameters": {
+    "jurisdiction": "City of San Diego",
+    "hourly_usd": 18.35,
+    "effective": "2027-01-01",
+    "prior_rate_usd": 17.75,
+    "coverage_min_hours_in_city_per_week": 2,
+    "applies_to_adult_and_minor_employees": true,
+    "tip_credit_allowed": false,
+    "state_rate_2027_usd": 17.4
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code Chapter 3, Article 9, Division 1",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (Official Notice, English section, published September 2026)",
+   "verbatim_quote": "Beginning January 1, 2027, employees who perform at least two (2) hours of work in one work week within the geographic boundaries of the City of San Diego must be paid wages of not less than $18.35 per hour for all hours worked within the City's geographic boundaries.",
+   "effective": "2027-01-01",
+   "read_from_primary_text": true,
+   "notes": "Employers must post this notice. The $18.35 rate is also in the OLSE page table and the historical rates PDF."
+  },
+  {
+   "id": "hr-sd-earned-sick-leave-accrual",
+   "title": "San Diego earned sick leave: 1 hour per 30 hours worked in the city; 80-hour accrual cap; 40-hour use cap",
+   "plain_english": "Workers earn at least 1 hour of paid sick leave for every 30 hours worked inside San Diego city limits, and unused hours carry over. You may cap total accrual at 80 hours and yearly use at 40 hours, or front-load 40 hours at the start of each benefit year instead.",
+   "category": "money_amount",
+   "parameters": {
+    "accrual_hours_per_hours_worked": {
+     "earned": 1,
+     "per_hours_worked_in_city": 30
+    },
+    "accrual_cap_hours": 80,
+    "annual_use_cap_hours": 40,
+    "carryover_required": true,
+    "front_load_alternative_hours_per_benefit_year": 40,
+    "front_load_prorating_allowed": false,
+    "accrual_starts": "first day of employment",
+    "pay_rate_when_used": "employee's regular rate at time of use",
+    "state_law_preemption_guidance": "follow state law where more generous (e.g., reinstate balance if rehired within 1 year; payment by next regular payday)"
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1 (\u00a739.0105); OLSE SB 616 notice (Dec. 2023)",
+   "source_location": "https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Earned Sick Leave section); https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQs 9-18); https://www.sandiego.gov/sites/default/files/2023-12/sb-616-olse-notice.pdf",
+   "verbatim_quote": "Employees must accrue no less than one (1) hour of earned sick leave for every thirty (30) hours worked within the geographic boundaries of the City; employers may cap the total accrual of sick leave at eighty (80) hours.",
+   "effective": "2016-07-11",
+   "read_from_primary_text": true,
+   "notes": "The OLSE page also says: 'Employers may satisfy the accrual and carry-over requirements if no less than forty (40) hours of earned sick leave are awarded to an employee at the beginning of each benefit year. Employers may limit an employee's use of earned sick leave to forty (40) hours in a benefit year.' FAQ 18 says front-loaded hours may not be prorated. The OLSE SB 616 notice tells employers to follow the more generous state rules. The state paid sick leave rules are in the existing paid-sick-leave-* rules."
+  },
+  {
+   "id": "hr-sd-esl-use-after-90-days",
+   "title": "San Diego sick leave: use may be delayed until the 91st day of employment",
+   "plain_english": "Workers start earning San Diego sick leave on day one, but you may make them wait until their 91st day of employment to use it.",
+   "category": "deadline",
+   "parameters": {
+    "accrual_begins": "start date",
+    "use_may_be_limited_until_day": 91
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1; OLSE FAQ 9",
+   "source_location": "https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 9)",
+   "verbatim_quote": "Employers may limit use of accrued earned sick leave until the employee\u2019s 91st day of employment with the employer.",
+   "effective": "2016-07-11",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-sd-esl-advance-notice-max-7-days",
+   "title": "San Diego sick leave: do not require more than 7 days' advance notice",
+   "plain_english": "For foreseeable sick leave you may ask for advance notice, but no more than 7 days ahead. For unforeseeable needs, notice is due as soon as practicable.",
+   "category": "process_step",
+   "parameters": {
+    "max_advance_notice_days_foreseeable": 7,
+    "unforeseeable": "as soon as practicable",
+    "authority": "SDMC 39.0106(b)"
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code \u00a739.0106(b); OLSE SB 616 notice (Dec. 2023)",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2023-12/sb-616-olse-notice.pdf (table row for Labor Code 246(m) / SDMC 39.0106(b))",
+   "verbatim_quote": "Section 39.0106(b): Employers may require advance notice of the need to use paid sick leave, not to exceed 7 days.",
+   "effective": "2016-07-11",
+   "read_from_primary_text": true,
+   "notes": "The OLSE guidance column says employers may follow state law on reasonable advance notice, together with the local limit of no more than 7 days."
+  },
+  {
+   "id": "hr-sd-esl-safe-time",
+   "title": "San Diego sick leave may be used as 'safe time' for domestic violence, sexual assault or stalking",
+   "plain_english": "Workers may use San Diego sick leave for themselves or a family member to deal with domestic violence, sexual assault or stalking, for example medical care, counseling, relocation or legal proceedings.",
+   "category": "definition",
+   "parameters": {
+    "safe_time_purposes": [
+     "medical attention for injury caused by domestic violence, sexual assault or stalking",
+     "victim services organization assistance",
+     "psychological or other counseling",
+     "relocation",
+     "legal services and legal proceedings"
+    ],
+    "family_members": [
+     "child",
+     "spouse",
+     "domestic partner",
+     "parent",
+     "grandparent",
+     "grandchild",
+     "sibling",
+     "child or parent of spouse or domestic partner"
+    ]
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code \u00a739.0106(a)",
+   "source_location": "https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Safe Time section)",
+   "verbatim_quote": "Safe Time means necessary time away from work due to domestic violence, sexual assault, or stalking.",
+   "effective": "2016-07-11",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-sd-mw-esl-posting-and-hire-notice",
+   "title": "San Diego: post the yearly City notices at every jobsite, and give a written notice at hire",
+   "plain_english": "Post the City's yearly minimum wage and sick leave notices where workers can see them at every workplace or jobsite in the city. At hire, give each worker a written notice with your legal and business names, address, phone, the ordinance requirements and how you provide sick leave. Electronic delivery is allowed.",
+   "category": "required_notice",
+   "parameters": {
+    "posting_locations": "conspicuous place at any workplace or job site where any employee works",
+    "posting_frequency": "notices published each year by the City",
+    "hire_notice_contents": [
+     "employer legal name",
+     "any fictitious business name",
+     "address",
+     "telephone number",
+     "employer requirements under the Ordinance",
+     "how the employer satisfies them, including sick leave accrual method"
+    ],
+    "hire_notice_electronic_ok": true,
+    "languages_available": [
+     "English",
+     "Spanish",
+     "Chinese",
+     "Vietnamese",
+     "Tagalog"
+    ]
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1",
+   "source_location": "https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Notice and Posting section)",
+   "verbatim_quote": "Employers must post in a conspicuous place at any workplace or job site where any employee works, the notices published each year by the City.",
+   "effective": "2016-07-11",
+   "read_from_primary_text": true,
+   "notes": "The City offers an Employer to Employee Notice Template for the hire notice."
+  },
+  {
+   "id": "hr-sd-esl-records-3-years",
+   "title": "San Diego: keep wage and sick leave records for at least 3 years",
+   "plain_english": "Keep records made at the time of wages paid and sick leave earned and used for at least 3 years, give them to workers regularly, and let the City see them during an investigation.",
+   "category": "required_document",
+   "parameters": {
+    "retention_years": 3,
+    "contemporaneous": true,
+    "contents": [
+     "wages paid",
+     "earned sick leave accrual",
+     "earned sick leave use"
+    ],
+    "provide_to_employees": "on a regular basis",
+    "enforcement_access": true
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code \u00a739.0109; OLSE FAQ 19",
+   "source_location": "https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 19)",
+   "verbatim_quote": "All employers must maintain contemporaneous written or electronic records documenting employees\u2019 wages paid and accrual and use of earned sick leave. These records must be retained for at least three (3) years.",
+   "effective": "2016-07-11",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-sd-mw-penalty-1000",
+   "title": "San Diego ordinance violations: penalties up to $1,000 per violation plus back wages and liquidated damages",
+   "plain_english": "The City can award penalties of up to $1,000 per violation, plus back wages, liquidated damages and reinstatement. Workers can also sue in court.",
+   "category": "penalty",
+   "parameters": {
+    "penalty_max_usd_per_violation": 1000,
+    "other_remedies": [
+     "back wages",
+     "liquidated damages",
+     "reinstatement",
+     "injunctive relief"
+    ],
+    "private_right_of_action": true,
+    "retaliation_prohibited": true
+   },
+   "applies_to": "Employers of any size with employees who work at least 2 hours in a week within the City of San Diego",
+   "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (Official Notice, English section)",
+   "verbatim_quote": "The City is entitled to all legal and equitable relief to remedy any violation of the Ordinance, including the ability to award penalties of up to $1,000 per violation, back wages, liquidated damages, reinstatement and other injunctive relief.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-sd-minimum-wage-enforcement-fee",
+   "title": "San Diego minimum wage enforcement fee: $1.47 per employee per year (proposed $2.82)",
+   "plain_english": "Any employer with workers inside San Diego city limits, including companies based elsewhere, pays an annual enforcement fee per employee when renewing its City Business Tax Certificate. It has been $1.47 since July 1, 2025. The City proposed $2.82 starting November 1, 2026, subject to City Council approval.",
+   "category": "money_amount",
+   "parameters": {
+    "fee_usd_per_employee_per_year": 1.47,
+    "effective": "2025-07-01",
+    "proposed_fee_usd_per_employee_per_year": 2.82,
+    "proposed_effective": "2026-11-01",
+    "proposed_status": "subject to City Council approval (approval not verified)",
+    "collected_with": "City Business Tax Certificate renewal",
+    "employee_count_basis": "average employees over 12 months; paid corporate officers counted; independent contractors and owners not counted",
+    "exempt": "sole proprietors with no employees (must report zero employees)",
+    "applies_to_employers_located_outside_city": true
+   },
+   "applies_to": "Employers with one or more employees working within the City of San Diego",
+   "citation": "San Diego Citywide Minimum Wage and Labor Standards Enforcement Fee (City Attorney fact sheet)",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-09/citywide-minimum-wage-and-labor-standards-enforcement-fee_fact-sheet.pdf",
+   "verbatim_quote": "Effective July 1, 2025, the City of San Diego implemented an annual Minimum Wage Enforcement fee of $1.47 per employee working within the geographic boundaries of the City of San Diego.",
+   "effective": "2025-07-01",
+   "read_from_primary_text": true,
+   "notes": "The fact sheet was posted in September 2026. Whether the Council adopted the $2.82 rate was not verified."
+  },
+  {
+   "id": "hr-sd-traffic-control-worker-wage",
+   "title": "San Diego traffic control (flagger) wage under City permits: $76.87/hour total ($49.20 base + $27.67 benefits)",
+   "plain_english": "Flaggers and other traffic control workers on a City of San Diego traffic control permit must be paid at least the County prevailing wage for Laborer Group 1. From October 9, 2026 to June 30, 2027 that is $49.20 base plus $27.67 in benefits per hour, $101.47 for overtime and Saturdays, and $126.07 for Sundays and holidays. The rate in effect when the permit is issued applies for the life of the permit.",
+   "category": "money_amount",
+   "parameters": {
+    "jurisdiction": "City of San Diego",
+    "rates_effective": {
+     "start": "2026-10-09",
+     "end": "2027-06-30"
+    },
+    "basic_hourly_usd": 49.2,
+    "employer_payments_usd": 27.67,
+    "total_hourly_usd": 76.87,
+    "overtime_saturday_usd": 101.47,
+    "sunday_holiday_usd": 126.07,
+    "predetermined_increase": {
+     "effective": "2027-07-01",
+     "usd_per_hour": 3.66,
+     "allocation": "wages and/or fringes"
+    },
+    "rate_locked_at": "date the City issues the traffic control permit, for the permit's duration",
+    "basis": "DIR prevailing wage, Laborer: Building Construction Group 1, San Diego County",
+    "holidays": [
+     "New Year's Day",
+     "Presidents Day",
+     "Memorial Day",
+     "Independence Day",
+     "Labor Day",
+     "Veterans Day",
+     "Thanksgiving Day",
+     "Day after Thanksgiving",
+     "Christmas Day"
+    ],
+    "history": [
+     {
+      "period": "2024-09-01/2025-06-30",
+      "basic": 42.71,
+      "employer_payments": 26.97,
+      "total": 69.68
+     },
+     {
+      "period": "2025-07-01/2026-10-08",
+      "basic": 45.54,
+      "employer_payments": 27.77,
+      "total": 73.31
+     },
+     {
+      "period": "2026-10-09/2027-06-30",
+      "basic": 49.2,
+      "employer_payments": 27.67,
+      "total": 76.87
+     }
+    ]
+   },
+   "applies_to": "Employers performing traffic control work under a City of San Diego traffic control permit (SDMC 129.0742)",
+   "citation": "San Diego Municipal Code Chapter 3, Article 10, Division 1 (Traffic Control Worker Minimum Wage Ordinance), as amended by O-21876",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-11/traffic-control-worker-ordinance-notice.pdf (Official Notice, Rev. 11/3/26); https://www.sandiego.gov/olse/minimum-wage/traffic-control-worker; https://www.sandiego.gov/sites/default/files/2025-06/traffic-control-worker-wage-rates-historical.pdf",
+   "verbatim_quote": "The applicable wage rate, including any predetermined increase, is determined as of the date the City issues a traffic control permit and remains in effect for the duration of the permit.",
+   "effective": "2026-10-09",
+   "read_from_primary_text": true,
+   "notes": "The rates come from the OLSE page and the November 2026 notice. The holiday list on the OLSE page includes Labor Day, but the historical-rates PDF omits it; the parameters follow the OLSE page. The notice says: 'Effective July 1, 2027, there will be an increase of $3.66 to be allocated to wages and/or fringes.' The ordinance took effect October 18, 2023."
+  },
+  {
+   "id": "hr-sd-traffic-control-worker-coverage-exceptions",
+   "title": "San Diego traffic control wage: who is covered and the exceptions ($1,000 projects, single-family/duplex, others)",
+   "plain_english": "The flagger wage applies to traffic control work required by a City traffic control permit: setting up, stopping or slowing traffic, monitoring and restoring the roadway. It does not apply to single-family home or duplex work, projects of $1,000 or less, utility crews doing 1 hour or less a shift, public works projects that require a higher rate, or work where funding rules forbid it.",
+   "category": "threshold",
+   "parameters": {
+    "covered_duties": [
+     "stopping, slowing, guiding, directing or controlling traffic",
+     "setting up traffic control",
+     "guiding and monitoring vehicles",
+     "restoring the roadway per the traffic control plan"
+    ],
+    "exceptions": [
+     {
+      "type": "single-family home or duplex construction, renovation or repair"
+     },
+     {
+      "type": "project cost",
+      "max_project_cost_usd": 1000
+     },
+     {
+      "type": "gas or utility company",
+      "max_traffic_control_hours_per_workday_or_shift": 1
+     },
+     {
+      "type": "public works project for any public agency where a higher pay rate is required"
+     },
+     {
+      "type": "state or federal funding source legally or contractually prohibits the rate"
+     }
+    ]
+   },
+   "applies_to": "Employers performing traffic control work under a City of San Diego traffic control permit",
+   "citation": "San Diego Municipal Code Chapter 3, Article 10, Division 1; SDMC 129.0742",
+   "source_location": "https://www.sandiego.gov/olse/minimum-wage/traffic-control-worker ('Applicability of the Ordinance' and 'Exceptions to the Ordinance')",
+   "verbatim_quote": "The Ordinance applies to any traffic control worker engaged in duties required by a City of San Diego traffic control permit under SDMC \u00a7129.0742.",
+   "effective": "2023-10-18",
+   "read_from_primary_text": true,
+   "notes": "The ordinance text (docs.sandiego.gov) could not be fetched (host blocked). The exceptions are as the OLSE page lists them."
+  },
+  {
+   "id": "hr-sd-traffic-control-worker-notice",
+   "title": "San Diego traffic control wage: post rates at each jobsite or give written notice",
+   "plain_english": "Post the required flagger wage rates at each jobsite, or give each affected worker a written notice, including the effective dates and any scheduled increase.",
+   "category": "required_notice",
+   "parameters": {
+    "method": [
+     "post at each job site",
+     "written notice to all affected employees"
+    ],
+    "contents": [
+     "applicable wage rates",
+     "effective dates",
+     "predetermined increases"
+    ],
+    "retaliation_prohibited": true
+   },
+   "applies_to": "Employers performing traffic control work under a City of San Diego traffic control permit",
+   "citation": "San Diego Municipal Code Chapter 3, Article 10, Division 1",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-11/traffic-control-worker-ordinance-notice.pdf (Notice Requirement)",
+   "verbatim_quote": "Employers must post at each job site or provide written notice to all affected employees detailing the applicable wage rates, including effective dates and any predetermined increases.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": ""
+  },
+  {
+   "id": "hr-sd-traffic-control-permit-enforcement-fee-proposed",
+   "title": "Proposed San Diego fee: $38.85 per traffic control permit",
+   "plain_english": "San Diego proposed a $38.85 enforcement fee, paid by the permittee on each approved traffic control permit, starting November 1, 2026 if the City Council approves it. Exempt work would not pay the fee.",
+   "category": "money_amount",
+   "parameters": {
+    "proposed_fee_usd_per_permit": 38.85,
+    "proposed_effective": "2026-11-01",
+    "status": "proposed; subject to City Council approval (approval not verified)",
+    "paid_by": "permittee",
+    "collected": "through the City permitting system upon permit approval",
+    "not_charged_when": "permitted work is exempt from the ordinance"
+   },
+   "applies_to": "Permittees obtaining City of San Diego traffic control permits",
+   "citation": "Proposed Traffic Control Worker Minimum Wage Enforcement Fee (City Attorney fact sheet)",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-09/traffic-control-fee_fact-sheet.pdf",
+   "verbatim_quote": "The City of San Diego is proposing a Traffic Control Worker Minimum Wage Enforcement Fee of $38.85 per approved Traffic Control Permit.",
+   "effective": "2026-11-01",
+   "read_from_primary_text": true,
+   "notes": "Status is proposed. Confirm adoption before charging it in an estimate."
+  },
+  {
+   "id": "hr-sd-living-wage-fy2027",
+   "title": "San Diego Living Wage (City contracts) FY2027: $21.95/hour in the city, $21.70 outside",
+   "plain_english": "Workers on City of San Diego service contracts and covered agreements, including building maintenance, landscaping and right-of-way maintenance, must be paid the living wage. From July 1, 2026 to June 30, 2027 it is $18.43 plus $3.52 in health benefits ($21.95 cash if no benefits) for work in the city, and $18.18 plus $3.52 ($21.70) for work outside the city. The rate adjusts each July 1.",
+   "category": "money_amount",
+   "parameters": {
+    "period": {
+     "start": "2026-07-01",
+     "end": "2027-06-30"
+    },
+    "increase_percent": 3.85,
+    "within_city": {
+     "cash_wage_usd": 18.43,
+     "health_benefit_usd": 3.52,
+     "full_cash_wage_usd": 21.95
+    },
+    "outside_city": {
+     "cash_wage_usd": 18.18,
+     "health_benefit_usd": 3.52,
+     "full_cash_wage_usd": 21.7
+    },
+    "annual_adjustment": "July 1, by CPI-U San Diego-Carlsbad for the 12 months ending December 31 (SDMC 22.4220(b))",
+    "floor": "cash wage after health benefits may not fall below the higher of City or State minimum wage",
+    "covered_agreements": [
+     "City service contracts (including subcontracts)",
+     "financial assistance agreements: economic development or job creation of $500,000+ over 5 years; tourism/arts/culture of $750,000+ per year",
+     "facility agreements"
+    ]
+   },
+   "applies_to": "Contractors and subcontractors on City of San Diego service contracts, financial assistance and facility agreements",
+   "citation": "San Diego Municipal Code Chapter 2, Article 2, Division 42 (\u00a722.4220)",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-06/living-wage-rates.pdf; https://www.sandiego.gov/olse/living-wage",
+   "verbatim_quote": "Service, facility, and financial assistance agreements subject to the City of San Diego's Living Wage Ordinance (LWO) require covered employers to pay covered employees the required living wage rate for all hours worked:",
+   "effective": "2026-07-01",
+   "read_from_primary_text": true,
+   "notes": "The covered services listed on the OLSE page include facility and building maintenance, landscaping, right-of-way maintenance, and water and wastewater maintenance. Construction is not among the listed covered services. Prevailing wage on public works is covered in the separate web_public-works pack."
+  },
+  {
+   "id": "hr-sd-living-wage-leave-notice-records",
+   "title": "San Diego Living Wage: 80 hours of paid leave a year, notices with first July paycheck, records 3-7 years",
+   "plain_english": "On covered City contracts, give at least 80 hours a year of paid leave, plus 80 more unpaid hours for illness once paid leave runs out. Post the notice at the worksite and hand it out with the first paycheck after July 1. Certify compliance at award, and have subcontractors certify within 30 days. Firms with 12 or fewer employees can apply for an exemption.",
+   "category": "required_document",
+   "parameters": {
+    "paid_leave_hours_per_year": 80,
+    "additional_unpaid_leave_hours": 80,
+    "notice": "post at work site(s) and distribute annually with first paycheck after July 1, with ACA and EITC information",
+    "certification": "LWO Certification of Compliance at award; subcontractors within 30 days",
+    "subcontractor_certification_days": 30,
+    "records_retention_years_after_final_payment": {
+     "min": 3,
+     "max": 7
+    },
+    "exemption_application_grounds": [
+     "12 or fewer employees (including parent and subsidiaries)",
+     "sole proprietor with no employees or subcontractors",
+     "501(c)(3) with highest salary under 8x lowest hourly rate",
+     "collective bargaining agreement expressly superseding the LWO"
+    ]
+   },
+   "applies_to": "Contractors and subcontractors on covered City of San Diego contracts and agreements",
+   "citation": "San Diego Municipal Code Chapter 2, Article 2, Division 42",
+   "source_location": "https://www.sandiego.gov/olse/living-wage (Employer Requirements and Application for Exemption sections)",
+   "verbatim_quote": "Provide minimum of 80 hours per year of compensated leave for vacation, illness, or personal need at employee's request and, when accrued compensated leave has exhausted , provide 80 hours of additional uncompensated leave for personal or immediate family illness.",
+   "effective": "2026-07-01",
+   "read_from_primary_text": true,
+   "notes": "The OLSE page also says the companion Service Worker Retention Ordinance covers City service contracts over $25,000 lasting more than 90 days and does not include construction."
+  }
+ ]
+}
