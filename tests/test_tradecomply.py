@@ -194,9 +194,9 @@ def test_cslb_import_and_lookup(tmp_path, monkeypatch):
             _row("1000002", status="Work Comp Susp", secondary="WC Susp Pending", wc="License does not have current W/C"),
             _row("1000003", wc="Workers' Compensation Insurance", wc_exp="01/01/2020", cb_cancel="02/02/2025")]
     rows += [_row(str(2000000 + i)) for i in range(1000)]
-    text = CSLB_HEADER + "\n" + "\n".join(rows) + "\n2999999,11/2"      # truncated last line is skipped
+    text = CSLB_HEADER + "\n" + "\n".join(rows) + "\n"
     db = tmp_path / "c.sqlite"
-    assert cslb.build(io.StringIO(text), str(db)) == 1003
+    assert cslb.build(io.StringIO(text), str(db)) == 1003 and cslb.is_complete(str(db))
     monkeypatch.setenv("LICENSE_DB", str(db))
     a = logic.verify_license("1000001")
     assert a.found and a.verified and a.status == "active" and a.classifications == ["B", "C10"]
@@ -209,3 +209,34 @@ def test_cslb_import_and_lookup(tmp_path, monkeypatch):
                                      liability_insurance_expiry="2099-01-01").classification_match is True
     miss = logic.verify_license("123456")                       # demo fixture must NOT be used once real data exists
     assert not miss.found and "master file" in miss.notes[0]
+
+
+def test_partial_cslb_copy_never_says_unlicensed(tmp_path, monkeypatch):
+    import io
+    from tradecomply import cslb
+    import csv, json, sqlite3
+    rows = [_row("3000000")]
+    db = tmp_path / "p.sqlite"         # a partial copy, written directly (real ones need 100k+ rows)
+    con = sqlite3.connect(db)
+    con.execute("create table licenses (license_number text primary key, rec text not null)")
+    con.execute("create table meta (k text primary key, v text)")
+    rec = cslb.to_record(next(csv.DictReader(io.StringIO(CSLB_HEADER + "\n" + rows[0]))))
+    con.execute("insert into licenses values (?,?)", (rec["license_number"], json.dumps(rec)))
+    con.executemany("insert into meta values (?,?)", [("rows", "1"), ("complete", "0")])
+    con.commit()
+    monkeypatch.setenv("LICENSE_DB", str(db))
+    miss = logic.verify_license("4000000")
+    assert not miss.found and "does NOT mean" in miss.notes[0]
+    r = logic.check_subcontractor("4000000", liability_insurance_expiry="2099-01-01")
+    assert r.overall_risk == "high" and "confirm" in r.recommended_action.lower()
+
+
+def test_truncated_file_flagged_incomplete(tmp_path):
+    import io
+    from tradecomply import cslb
+    rows = [_row(str(5000000 + i)) for i in range(1200)]
+    db = tmp_path / "t.sqlite"
+    with pytest.raises(RuntimeError):       # a truncated file this small is refused outright
+        cslb.build(io.StringIO(CSLB_HEADER + "\n" + "\n".join(rows) + "\n5999999,1"), str(db))
+    cslb.build(io.StringIO(CSLB_HEADER + "\n" + "\n".join(rows) + "\n"), str(db))
+    assert cslb.is_complete(str(db))

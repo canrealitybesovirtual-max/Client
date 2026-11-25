@@ -73,7 +73,7 @@ def find(license_number: str) -> tuple[dict | None, str]:
         return rec, f"CSLB master file (as of {rec.get('cslb_last_update')})"
     if cslb.meta():
         # Real data is loaded but this number isn't in it: don't fall back to demo records.
-        return None, "CSLB master file"
+        return None, "CSLB master file" if cslb.is_complete() else "CSLB master file (partial copy)"
     path = os.getenv("LICENSE_CSV")
     if path and os.path.exists(path):
         rec = _csv_records(path).get(num)

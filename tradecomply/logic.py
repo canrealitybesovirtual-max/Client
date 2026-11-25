@@ -73,6 +73,9 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
     if not rec and source == "CSLB master file":
         notes.append("Not in CSLB's current master file, which leaves out cancelled, revoked and long-expired "
                      "licenses. Treat as not licensed until confirmed on the CSLB site.")
+    elif not rec and source == "CSLB master file (partial copy)":
+        notes.append("Not in our copy of CSLB data, which is incomplete (CSLB's download cuts off partway). This does "
+                     "NOT mean the contractor is unlicensed: check the number on the CSLB site.")
     if not rec:
         notes.append("No record found. Check the number on the CSLB site. In California a license is required for "
                      "work of $1,000 or more (labor + materials), any work needing a permit, or any work with employees.")
@@ -326,7 +329,10 @@ def check_subcontractor(license_number: str, required_classification: Optional[s
                         will_have_employees_on_site: bool = True) -> SubComplianceResult:
     lic = verify_license(license_number)
     problems, blocking = [], False
-    if not lic.found:
+    partial_miss = not lic.found and lic.data_source == "CSLB master file (partial copy)"
+    if partial_miss:
+        problems.append("License not in our partial copy of CSLB data; confirm it on the CSLB site")
+    elif not lic.found:
         problems.append("No license record found")
         blocking = True
     elif lic.status != "active":
@@ -363,6 +369,8 @@ def check_subcontractor(license_number: str, required_classification: Optional[s
 
     if blocking:
         risk, action = "do_not_use", "Do not use. The license is missing, inactive, or wrong for this work."
+    elif partial_miss:
+        risk, action = "high", "Hold. Confirm the license on the CSLB site before award."
     elif not wc_ok:
         risk, action = "high", "Hold. Get a workers' comp certificate before they start."
     elif len(problems) >= 2:

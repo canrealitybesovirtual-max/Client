@@ -8,6 +8,7 @@ It already includes workers' comp and bond data. Source page: https://www.cslb.c
 """
 import argparse
 import csv
+import http.client
 import io
 import json
 import logging
@@ -98,7 +99,7 @@ def to_record(row: dict, today: date | None = None) -> dict | None:
     }
 
 
-def build(csv_text_stream, db: str | None = None) -> int:
+def build(csv_text_stream, db: str | None = None, truncated: bool = False) -> int:
     """Stream rows into a new SQLite file, then swap it in atomically. Skips a truncated last line."""
     db_path_ = db_path(db)
     os.makedirs(os.path.dirname(db_path_) or ".", exist_ok=True)
@@ -112,6 +113,7 @@ def build(csv_text_stream, db: str | None = None) -> int:
     batch = []
     for row in csv.DictReader(csv_text_stream):
         if None in row or any(v is None for v in row.values()):     # truncated or malformed line
+            truncated = True
             continue
         rec = to_record(row, today)
         if rec:
@@ -123,9 +125,12 @@ def build(csv_text_stream, db: str | None = None) -> int:
     con.executemany("insert or replace into licenses values (?,?)", batch)
     con.execute("insert into meta values ('built_at', ?)", (datetime.now().isoformat(timespec="seconds"),))
     con.execute("insert into meta values ('rows', ?)", (str(n),))
+    # CSLB's server ends the master-file download after ~150 s, so the file is often cut short. Record it, so a
+    # missing license is reported as "not in our copy" instead of "not licensed".
+    con.execute("insert into meta values ('complete', ?)", ("0" if truncated else "1",))
     con.commit()
     con.close()
-    if n < 1000:
+    if n < 1000 or (truncated and n < 100000):
         os.remove(tmp)
         raise RuntimeError(f"Only {n} licenses parsed; refusing to replace the database")
     os.replace(tmp, db_path_)
@@ -134,12 +139,21 @@ def build(csv_text_stream, db: str | None = None) -> int:
 
 def download(db: str | None = None) -> int:
     req = urllib.request.Request(DOWNLOAD_URL, headers={"User-Agent": "TradeComply-CA/1.0 (license data import)"})
+    truncated = False
     with tempfile.TemporaryFile() as f:
         with urllib.request.urlopen(req, timeout=900) as r:
-            while chunk := r.read(1 << 20):
-                f.write(chunk)
+            try:
+                while chunk := r.read(1 << 20):
+                    f.write(chunk)
+            except (http.client.IncompleteRead, ValueError, OSError) as e:
+                truncated = True     # server closed the stream early; keep what arrived
+                log.warning("CSLB download cut short after %s bytes: %s", f.tell(), type(e).__name__)
         f.seek(0)
-        return build(io.TextIOWrapper(f, encoding="latin-1", newline=""), db)
+        return build(io.TextIOWrapper(f, encoding="latin-1", newline=""), db, truncated=truncated)
+
+
+def is_complete(db: str | None = None) -> bool:
+    return meta(db).get("complete") == "1"
 
 
 def lookup(license_number: str, db: str | None = None) -> dict | None:
@@ -173,7 +187,7 @@ def start_auto_refresh(db: str | None = None, max_age_hours: float = 20):
         while True:
             try:
                 age = time.time() - os.path.getmtime(path) if os.path.exists(path) else None
-                if age is None or age > max_age_hours * 3600:
+                if age is None or age > max_age_hours * 3600 or not is_complete(path):
                     log.info("downloading CSLB master file")
                     log.info("CSLB import done: %s licenses", download(path))
             except Exception:
