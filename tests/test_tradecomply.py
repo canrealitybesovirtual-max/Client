@@ -100,12 +100,22 @@ def test_safety_is_cal_osha_first():
     assert not miss.matched and "ladder" in miss.available_topics
 
 
-def test_permit_fees():
-    r = logic.estimate_permit_fees("Los Angeles", "residential", 100000, 1000)
-    assert r.total_estimated_usd == round(400 + 800 + 350 + 180 + 550, 2) and r.schedule_used == "los angeles"
-    assert logic.estimate_permit_fees("Fresno", "solar", 20000).schedule_used == "default"
+def test_permit_fees_san_diego():
+    r = logic.estimate_permit_fees("City of San Diego", "new_single_family", 3500, 700000, stories=2)
+    i = r.line_items
+    assert i["plan_check"] == round(8085.26 + 500 * 4.10, 2) and i["inspection"] == round(8401.90 + 500 * 4.21, 2)
+    assert i["state_smip_seismic"] == 91.0 and i["state_building_standards"] == 28.0
+    assert r.supported and r.verified and r.total_estimated_usd == round(sum(i.values()), 2)
+    small = logic.estimate_permit_fees("san diego", "tenant_improvement", 1500, 80000, built_before_1978=True)
+    assert small.line_items["plan_check"] == 2532.77 and small.line_items["state_smip_seismic"] == 22.4
+    assert small.line_items["lead_hazard_prevention"] == 58.0
+
+
+def test_permit_fees_other_cities_no_guess():
+    la = logic.estimate_permit_fees("Los Angeles", "new_commercial", 5000, 1_000_000)
+    assert not la.supported and la.total_estimated_usd is None and "lacity.org" in la.official_source
     with pytest.raises(ValueError):
-        logic.estimate_permit_fees("Fresno", "solar", 0)
+        logic.estimate_permit_fees("San Diego", "solar", 100, 1000)
 
 
 # ---- MCP surface

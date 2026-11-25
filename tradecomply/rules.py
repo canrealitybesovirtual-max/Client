@@ -147,13 +147,40 @@ CSLB = {
     "data_portal_url": "https://www.cslb.ca.gov/onlineservices/dataportal/",
 }
 
-# --- Permit fees: PLACEHOLDERS. Real schedules vary by city, valuation tables and project type. ---
-PERMIT_FEE_SCHEDULE: dict = {
-    "verified": False,
-    "checked_on": None,
-    "default": {"base_fee_usd": 250.0, "plan_check_rate": 0.006, "per_sqft_usd": 0.35, "additional": {}},
-    "los angeles": {"base_fee_usd": 400.0, "plan_check_rate": 0.008, "per_sqft_usd": 0.55,
-                    "additional": {"school_fee_rate": 0.0035, "park_fee_rate": 0.0018}},
-    "san diego": {"base_fee_usd": 320.0, "plan_check_rate": 0.007, "per_sqft_usd": 0.42,
-                  "additional": {"school_fee_rate": 0.0030}},
+# --- Permit fees. Only jurisdictions with a published, checked schedule produce a number. ---
+SAN_DIEGO_FEES = {
+    "verified": True,
+    "checked_on": "2026-11-25, read IB-501 directly (version in effect after 2026-08-06)",
+    "source": "https://www.sandiego.gov/development-services/forms-publications/information-bulletins/501",
+    # Table 501A: (base sq ft, plan check base, plan check $/sq ft over base, inspection base, inspection $/sq ft over base)
+    "table_501a": {
+        "new_single_family":            (3000, 8085.26, 4.10, 8401.90, 4.21),   # Res-SDU/DUP
+        "residential_addition_remodel": (500, 3512.92, 6.98, 2228.29, 4.46),    # Res-SDU/DUP Add/Remodel
+        "new_multifamily":              (5000, 4627.13, 0.97, 2130.97, 0.48),   # New MDU
+        "multifamily_or_commercial_addition": (500, 1199.36, 2.41, 858.50, 1.68),
+        "new_commercial":               (3000, 4566.31, 1.57, 1570.80, 0.48),
+        "high_rise":                    (50000, 11567.82, 0.24, 10350.16, 0.24),
+        "tenant_improvement":           (2000, 2532.77, 1.33, 1315.10, 0.60),
+        "tenant_improvement_rapid":     (1000, 840.20, 0.85, 2143.14, 2.17),
+        "townhomes":                    (6000, 14100.60, 2.41, 12054.89, 2.05),
+        "warehouse":                    (20000, 11202.53, 0.60, 7062.47, 0.36),
+        "parking_garage":               (10000, 6331.87, 0.60, 2435.34, 0.24),
+    },
+    "general_plan_maintenance": 737.00,      # once per project with plan review
+    "mapping": 12.16,
+    "other_agency_collection": 17.11,        # charged when DSD collects state/other-agency fees
+    "lead_hazard_pre_1978": 58.00,
+}
+
+# State fees collected by every California building department (quoted in IB-501).
+CA_STATE_PERMIT_FEES = {
+    "verified": True,
+    "checked_on": "2026-11-25, as quoted in San Diego IB-501",
+    "smip_per_1000_low_rise_residential": 0.13,   # Public Resources Code §2705: 1-2 story residential
+    "smip_per_1000_other": 0.28,                  # 3+ story residential and all nonresidential
+    "building_standards_per_25000": 1.00,         # Health & Safety Code §18931.6, min $1
+}
+
+OFFICIAL_FEE_TOOLS = {
+    "los angeles": "https://08web15.lacity.org/fee_est_dir (LADBS Permit Fee Calculator)",
 }

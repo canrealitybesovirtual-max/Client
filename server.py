@@ -17,7 +17,8 @@ from fastmcp import FastMCP
 from pydantic import Field
 
 from tradecomply import logic
-from tradecomply.rules import CA_LIEN, CAL_OSHA_PENALTY_MAX_USD, CSLB, DISCLAIMER, FEDERAL_PENALTY_MAX_USD, PERMIT_FEE_SCHEDULE
+from tradecomply.rules import (CA_LIEN, CA_STATE_PERMIT_FEES, CAL_OSHA_PENALTY_MAX_USD, CSLB, DISCLAIMER,
+                               FEDERAL_PENALTY_MAX_USD, SAN_DIEGO_FEES)
 
 mcp = FastMCP(
     name="TradeComply CA",
@@ -41,13 +42,17 @@ def verify_contractor_license(
 
 @mcp.tool(annotations=READ_ONLY)
 def estimate_permit_fees(
-    jurisdiction: Annotated[str, Field(description="City or county, e.g. 'Los Angeles'")],
-    project_type: Annotated[str, Field(description="residential, commercial, tenant_improvement or solar")],
-    valuation_usd: Annotated[float, Field(gt=0, description="Project valuation in US dollars")],
-    square_footage: Annotated[Optional[float], Field(gt=0, description="Conditioned/project area, if known")] = None,
+    jurisdiction: Annotated[str, Field(description="City, e.g. 'San Diego'. Only cities with a verified schedule get a number")],
+    project_type: Annotated[logic.ProjectType, Field(description="Kind of building work")],
+    square_footage: Annotated[float, Field(gt=0, description="Project area in sq ft, including exterior walls")],
+    valuation_usd: Annotated[float, Field(gt=0, description="Construction valuation (drives the state fees)")],
+    stories: Annotated[int, Field(ge=1, description="Number of stories (affects the state seismic fee)")] = 1,
+    built_before_1978: Annotated[bool, Field(description="Existing structure built before 1978 (lead fee)")] = False,
 ) -> logic.PermitFeeResult:
-    """Rough building permit fee estimate. Placeholder rates until real schedules are loaded."""
-    return logic.estimate_permit_fees(jurisdiction, project_type, valuation_usd, square_footage)
+    """Building permit fee estimate with line items. San Diego uses the official IB-501 tables; other cities get a
+    link to their official calculator instead of a guess."""
+    return logic.estimate_permit_fees(jurisdiction, project_type, square_footage, valuation_usd, stories,
+                                      built_before_1978)
 
 
 @mcp.tool(annotations=READ_ONLY)
@@ -93,7 +98,7 @@ async def health(_request):
 @mcp.resource("tradecomply://disclaimer")
 def disclaimer() -> str:
     """Disclaimer and which data sets have been verified."""
-    rows = [("CA lien rules", CA_LIEN), ("CSLB constants", CSLB), ("Permit fee schedules", PERMIT_FEE_SCHEDULE),
+    rows = [("CA lien rules", CA_LIEN), ("CSLB constants", CSLB), ("San Diego permit fees", SAN_DIEGO_FEES), ("CA state permit fees", CA_STATE_PERMIT_FEES),
             ("Federal OSHA penalties", FEDERAL_PENALTY_MAX_USD), ("Cal/OSHA penalties", CAL_OSHA_PENALTY_MAX_USD)]
     status = "\n".join(f"- {name}: {'verified ' + str(d.get('checked_on')) if d.get('verified') else 'UNVERIFIED'}"
                        f"{' (last checked ' + d['checked_on'] + ')' if d.get('checked_on') and not d.get('verified') else ''}"

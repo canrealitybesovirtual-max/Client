@@ -7,7 +7,8 @@ from pydantic import BaseModel, Field
 
 from . import licenses
 from .rules import (CA_LIEN, CAL_OSHA_PENALTY_MAX_USD, CAL_OSHA_PENALTY_NOTE, CSLB, DISCLAIMER, FEDERAL_PENALTY_MAX_USD,
-                    PERMIT_FEE_SCHEDULE, SAFETY_JURISDICTION_NOTE, SAFETY_TABLE)
+                    CA_STATE_PERMIT_FEES, OFFICIAL_FEE_TOOLS, SAN_DIEGO_FEES, SAFETY_JURISDICTION_NOTE,
+                    SAFETY_TABLE)
 
 CA_TZ = ZoneInfo("America/Los_Angeles")
 Risk = Literal["expired", "critical", "urgent", "normal"]
@@ -101,37 +102,65 @@ def _wc_mandatory_class(classes: list[str]) -> Optional[str]:
 
 
 # ---------------------------------------------------------------- permit fees
+ProjectType = Literal["new_single_family", "residential_addition_remodel", "new_multifamily",
+                      "multifamily_or_commercial_addition", "new_commercial", "high_rise", "tenant_improvement",
+                      "tenant_improvement_rapid", "townhomes", "warehouse", "parking_garage"]
+
+
 class PermitFeeResult(Base):
     jurisdiction: str
-    schedule_used: str
-    base_fee_usd: float
-    plan_check_fee_usd: float
-    additional_fees: dict[str, float] = Field(default_factory=dict)
-    total_estimated_usd: float
+    supported: bool
+    project_type: str
+    line_items: dict[str, float] = Field(default_factory=dict)
+    total_estimated_usd: Optional[float] = None
+    not_included: list[str] = Field(default_factory=list)
+    official_source: Optional[str] = None
     notes: list[str] = Field(default_factory=list)
 
 
-def estimate_permit_fees(jurisdiction: str, project_type: str, valuation_usd: float,
-                         square_footage: Optional[float] = None) -> PermitFeeResult:
-    if valuation_usd <= 0:
-        raise ValueError("valuation_usd must be greater than 0")
-    if square_footage is not None and square_footage <= 0:
-        raise ValueError("square_footage must be greater than 0")
-    key = jurisdiction.strip().lower()
-    known = key in PERMIT_FEE_SCHEDULE and key not in ("verified", "checked_on", "default")
-    sched = PERMIT_FEE_SCHEDULE[key] if known else PERMIT_FEE_SCHEDULE["default"]
-    plan_check = round(valuation_usd * sched["plan_check_rate"], 2)
-    extra = {name: round(valuation_usd * rate, 2) for name, rate in sched.get("additional", {}).items()}
-    if square_footage:
-        extra["square_footage_fee"] = round(square_footage * sched["per_sqft_usd"], 2)
-    total = round(sched["base_fee_usd"] + plan_check + sum(extra.values()), 2)
-    notes = ["Placeholder rates. Final fees are set by the building department.",
-             f"Project type '{project_type}' is recorded but not yet used: real schedules price types differently."]
-    if not known:
-        notes.append(f"No schedule for '{jurisdiction}'; used default rates.")
-    return PermitFeeResult(jurisdiction=jurisdiction, schedule_used=key if known else "default",
-                           base_fee_usd=sched["base_fee_usd"], plan_check_fee_usd=plan_check,
-                           additional_fees=extra, total_estimated_usd=total, notes=notes)
+def _tiered(sqft: float, base_sqft: float, base: float, inc: float) -> float:
+    return round(base + max(0.0, sqft - base_sqft) * inc, 2)
+
+
+def estimate_permit_fees(jurisdiction: str, project_type: str, square_footage: float, valuation_usd: float,
+                         stories: int = 1, built_before_1978: bool = False) -> PermitFeeResult:
+    if square_footage <= 0 or valuation_usd <= 0:
+        raise ValueError("square_footage and valuation_usd must be greater than 0")
+    key = " ".join(jurisdiction.strip().lower().replace("city of", "").split())
+    if key not in ("san diego",):
+        tool = OFFICIAL_FEE_TOOLS.get(key)
+        return PermitFeeResult(
+            jurisdiction=jurisdiction, supported=False, project_type=project_type, official_source=tool,
+            notes=[f"No verified fee schedule loaded for '{jurisdiction}', so no estimate is given."
+                   + (f" Use the official calculator: {tool}." if tool else " Ask the local building department.")])
+    sd, st = SAN_DIEGO_FEES, CA_STATE_PERMIT_FEES
+    if project_type not in sd["table_501a"]:
+        raise ValueError(f"project_type must be one of: {', '.join(sd['table_501a'])}")
+    base_sqft, pc_base, pc_inc, in_base, in_inc = sd["table_501a"][project_type]
+    items = {
+        "plan_check": _tiered(square_footage, base_sqft, pc_base, pc_inc),
+        "inspection": _tiered(square_footage, base_sqft, in_base, in_inc),
+        "general_plan_maintenance": sd["general_plan_maintenance"],
+        "mapping": sd["mapping"],
+    }
+    low_res = project_type in ("new_single_family", "residential_addition_remodel", "new_multifamily",
+                               "townhomes") and stories <= 2
+    smip_rate = st["smip_per_1000_low_rise_residential"] if low_res else st["smip_per_1000_other"]
+    items["state_smip_seismic"] = round(valuation_usd / 1000 * smip_rate, 2)
+    items["state_building_standards"] = max(1.0, -(-valuation_usd // 25000) * st["building_standards_per_25000"])
+    items["other_agency_collection"] = sd["other_agency_collection"]
+    if built_before_1978:
+        items["lead_hazard_prevention"] = sd["lead_hazard_pre_1978"]
+    return PermitFeeResult(
+        jurisdiction="San Diego", supported=True, verified=True, project_type=project_type, line_items=items,
+        total_estimated_usd=round(sum(items.values()), 2), official_source=sd["source"],
+        not_included=["Development impact fees (use the city's DIF calculator)", "School fees",
+                      "Water/sewer fees and capacity charges", "Hourly DIF review (2.5 hours at the plan check rate)",
+                      "Mechanical/electrical/plumbing permits (IB-103)", "Fire permits (IB-506)",
+                      "Construction debris recycling deposit (refundable)"],
+        notes=["Plan check and inspection use IB-501 Table 501A: a base rate, plus a per-square-foot rate above the "
+               "base area. Area includes exterior walls and, for houses, attached/detached accessory structures.",
+               "Fees change several times a year. Confirm against the current IB-501 before quoting."])
 
 
 # ---------------------------------------------------------------- safety standards
