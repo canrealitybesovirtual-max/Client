@@ -150,3 +150,9 @@ def test_roofer_must_carry_workers_comp_even_solo():
 def test_silica_cites_construction_section():
     r = logic.lookup_safety_standard("silica")
     assert "1532.3" in r.cal_osha_section and r.cal_osha_penalty_max_usd["serious"] == 25000.0
+
+
+def test_verified_flags_follow_the_data():
+    assert logic.lookup_safety_standard("fall").verified is True
+    assert logic.lookup_safety_standard("scaffold").verified is False
+    assert logic.lien_deadlines("subcontractor", "2026-05-01", today=T).verified is False

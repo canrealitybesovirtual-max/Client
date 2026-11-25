@@ -9,7 +9,8 @@ DISCLAIMER = (
 # --- California mechanics lien law (Civil Code Div. 4, Part 6, Title 2) ---
 CA_LIEN = {
     "verified": False,
-    "checked_on": "2026-11-24 via search excerpts of leginfo.legislature.ca.gov (pages not opened directly)",
+    "checked_on": ("2026-11-24 via search excerpts of leginfo.legislature.ca.gov. The site blocks automated "
+                   "reading, so a person must open each section and confirm before setting verified=True."),
     "sources": {
         "preliminary_notice": "Cal. Civ. Code §8200-8216 (20-day window: §8204)",
         "direct_contractor_lien": "Cal. Civ. Code §8412",
@@ -38,23 +39,24 @@ SAFETY_JURISDICTION_NOTE = (
 )
 
 FEDERAL_PENALTY_MAX_USD = {
-    "verified": False,
-    "checked_on": "2026-11-24 via search excerpts of osha.gov",
+    "verified": True,
+    "checked_on": "2026-11-25, read osha.gov/penalties directly",
     "source": "29 CFR 1903.15(d). The January 2026 adjustment was cancelled (missing CPI data), so 2025 levels carry "
               "forward. Re-check each January.",
     "serious": 16550.0,
     "willful_or_repeat": 165514.0,
 }
 CAL_OSHA_PENALTY_MAX_USD = {
-    "verified": False,
-    "checked_on": "2026-11-24 via search excerpts of dir.ca.gov (2025 figures; no 2026 notice found)",
+    "verified": True,
+    "checked_on": "2026-11-25, read current text of 8 CCR §336 at dir.ca.gov directly",
     "source": "8 CCR §336; Labor Code §6427-6429; DIR news release 2025-10",
     "general_or_regulatory": 16285.0,
     "serious": 25000.0,
     "willful_or_repeat": 162851.0,
+    "willful_minimum": 11632.0,
 }
-CAL_OSHA_PENALTY_NOTE = ("Cal/OSHA maximums are 2025 figures from 8 CCR §336 and are adjusted annually. Confirm the "
-                         "current year before quoting exposure.")
+CAL_OSHA_PENALTY_NOTE = ("Cal/OSHA maximums from the current text of 8 CCR §336 (adjusted annually). Base penalties "
+                         "are usually lower and adjusted for size, good faith and history.")
 
 SAFETY_TABLE: dict[str, dict] = {
     "fall protection": {
@@ -69,10 +71,11 @@ SAFETY_TABLE: dict[str, dict] = {
         ],
         "ppe": ["full-body harness", "shock-absorbing lanyard", "anchorage rated for fall arrest"],
         "link": "https://www.dir.ca.gov/title8/1670.html",
+        "verified": True,    # §1670 "in excess of 7 1/2 feet"; §1621 railings at 7 1/2 ft or more
     },
     "scaffold": {
         "aliases": ["scaffolding"],
-        "cal_osha": "8 CCR §1635.1-1647 (general), §1658-1663 (suspended scaffolds)",
+        "cal_osha": "8 CCR §1637 (general requirements) and following sections of Article 21",
         "federal": "29 CFR 1926.451",
         "summary": "Design, erection, use and inspection of scaffolds.",
         "key_requirements": [
@@ -82,6 +85,7 @@ SAFETY_TABLE: dict[str, dict] = {
         ],
         "ppe": ["hard hat", "fall protection where guardrails are not provided"],
         "link": "https://www.dir.ca.gov/title8/1637.html",
+        "verified": False,   # §1637 confirmed as General Requirements; requirement bullets not yet checked
     },
     "silica": {
         "aliases": ["concrete cutting", "dust", "crystalline silica", "grinding"],
@@ -95,6 +99,7 @@ SAFETY_TABLE: dict[str, dict] = {
         ],
         "ppe": ["respirator as specified for the task", "eye protection"],
         "link": "https://www.dir.ca.gov/title8/1532_3.html",
+        "verified": True,    # §1532.3(a) scope = construction; (c) Table 1 controls
     },
     "excavation": {
         "aliases": ["trench", "trenching", "digging", "cave-in"],
@@ -110,6 +115,7 @@ SAFETY_TABLE: dict[str, dict] = {
         ],
         "ppe": ["hard hat", "high-visibility vest", "safety-toe boots"],
         "link": "https://www.dir.ca.gov/title8/1541_1.html",
+        "verified": True,    # §1541.1(a) 5 ft / competent person; §341 permit, "descend" at 5 ft
     },
     "ladder": {
         "aliases": ["ladders", "stepladder", "extension ladder"],
@@ -124,6 +130,7 @@ SAFETY_TABLE: dict[str, dict] = {
         ],
         "ppe": [],
         "link": "https://www.dir.ca.gov/title8/3276.html",
+        "verified": True,    # §1629(c)(3) 3 ft; §3276(e)(11) 36 in or secured top
     },
 }
 

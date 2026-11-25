@@ -98,7 +98,8 @@ def disclaimer() -> str:
     status = "\n".join(f"- {name}: {'verified ' + str(d.get('checked_on')) if d.get('verified') else 'UNVERIFIED'}"
                        f"{' (last checked ' + d['checked_on'] + ')' if d.get('checked_on') and not d.get('verified') else ''}"
                        for name, d in rows)
-    return f"{DISCLAIMER}\n\nData status:\n{status}\n- Cal/OSHA safety table: UNVERIFIED summaries; read the linked section."
+    return f"{DISCLAIMER}\n\nData status:\n{status}\n- Cal/OSHA safety table: fall protection, silica, excavation, ladders verified 2026-11-25 against "
+            "dir.ca.gov Title 8; scaffold bullets UNVERIFIED."
 
 
 if __name__ == "__main__":

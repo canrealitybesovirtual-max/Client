@@ -157,11 +157,12 @@ def lookup_safety_standard(hazard: str) -> SafetyResult:
         return SafetyResult(matched=False, topic=needle, available_topics=sorted(SAFETY_TABLE),
                             summary="No topic in this table matched. Search Title 8 directly.")
     e = SAFETY_TABLE[best]
-    return SafetyResult(matched=True, topic=best, cal_osha_section=e["cal_osha"], federal_reference=e["federal"],
+    return SafetyResult(matched=True, topic=best, verified=bool(e.get("verified")), cal_osha_section=e["cal_osha"], federal_reference=e["federal"],
                         summary=e["summary"], key_requirements=e["key_requirements"], ppe=e["ppe"], link=e["link"],
                         federal_penalty_max_usd={k: FEDERAL_PENALTY_MAX_USD[k] for k in ("serious", "willful_or_repeat")},
                         cal_osha_penalty_max_usd={k: CAL_OSHA_PENALTY_MAX_USD[k]
-                                                  for k in ("general_or_regulatory", "serious", "willful_or_repeat")})
+                                                  for k in ("general_or_regulatory", "serious", "willful_or_repeat",
+                                                            "willful_minimum")})
 
 
 # ---------------------------------------------------------------- lien deadlines
