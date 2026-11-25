@@ -1,15 +1,16 @@
 """TradeComply CA: MCP server for California construction trade compliance.
 
-Five tools let an AI agent check a contractor license, estimate permit fees, look up Cal/OSHA safety rules,
-compute mechanics lien deadlines, and prequalify a subcontractor.
+TradeComply CA: California construction compliance tools for AI agents (licenses, liens, payments, payroll, safety,
+public works, permits, contracts, business filings, project setup and a searchable verified rulebook).
 
-All regulatory data lives in tradecomply/rules.py and is UNVERIFIED until someone checks each value against the
-cited source. Every result carries `verified` and a disclaimer. Not legal advice.
+Values come from tradecomply/data/rulebook.json (checked against official sources) and tradecomply/rules.py. Every
+result carries `verified`, citations and a disclaimer. Not legal advice.
 
 Run locally:      python server.py
 Inspect tools:    fastmcp dev server.py
 HTTP transport:   MCP_TRANSPORT=http python server.py     (PORT, default 8000; endpoint /mcp)
 """
+import importlib
 import os
 from typing import Annotated, Optional
 
@@ -87,6 +88,12 @@ def check_subcontractor_compliance(
     """Prequalify a subcontractor: license, classification, insurance, workers' comp and bond, with a risk rating."""
     return logic.check_subcontractor(license_number, required_classification, liability_insurance_expiry,
                                      will_have_employees_on_site)
+
+
+MODULES = ("rulebook_tools", "licensing", "contracts", "payments", "payroll", "safety_programs", "public_works",
+           "building", "business_ops", "project_setup")
+for _name in MODULES:
+    importlib.import_module(f"tradecomply.{_name}").register(mcp)
 
 
 @mcp.custom_route("/health", methods=["GET"])
