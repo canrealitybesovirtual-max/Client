@@ -50,7 +50,12 @@ class LicenseResult(Base):
     expiration_date: Optional[str] = None
     expires_in_days: Optional[int] = None
     workers_comp: Literal["on_file", "exempt", "none", "unknown"] = "unknown"
+    workers_comp_detail: Optional[str] = None
     contractor_bond_on_file: bool = False
+    bond_amount_usd: Optional[float] = None
+    city: Optional[str] = None
+    business_type: Optional[str] = None
+    cslb_last_update: Optional[str] = None
     disciplinary_actions: list[str] = Field(default_factory=list)
     data_source: str
     official_lookup_url: str = CSLB["lookup_url"]
@@ -63,7 +68,10 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
     rec, source = licenses.find(license_number)
     notes = []
     if source == "demo fixtures":
-        notes.append("Demo data, not a live CSLB record. Load CSLB data (LICENSE_CSV) before real use.")
+        notes.append("Demo data, not a live CSLB record. Load CSLB data (python -m tradecomply.cslb --download).")
+    if not rec and source == "CSLB master file":
+        notes.append("Not in CSLB's current master file, which leaves out cancelled, revoked and long-expired "
+                     "licenses. Treat as not licensed until confirmed on the CSLB site.")
     if not rec:
         notes.append("No record found. Check the number on the CSLB site. In California a license is required for "
                      "work of $1,000 or more (labor + materials), any work needing a permit, or any work with employees.")
@@ -81,15 +89,15 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
         if _wc_mandatory_class(rec.get("classifications", [])):
             notes.append(f"Class {_wc_mandatory_class(rec['classifications'])} must carry workers' comp even without "
                          "employees, so this exemption is a problem.")
-    return LicenseResult(**rec, found=True, expires_in_days=exp_days, data_source=source, notes=notes)
+    official = source.startswith("CSLB master file")
+    return LicenseResult(**rec, found=True, expires_in_days=exp_days, data_source=source, notes=notes,
+                         verified=official)  # official CSLB data (daily snapshot); fixtures/CSV stay unverified
 
 
 def _wc_mandatory_class(classes: list[str]) -> Optional[str]:
-    for c in classes:
-        code = c.upper().split()[0] if c.strip() else ""
-        if code in CSLB["wc_required_regardless"]:
-            return code
-    return None
+    from .cslb import norm_class
+    required = {norm_class(c) for c in CSLB["wc_required_regardless"]}
+    return next((norm_class(c) for c in classes if norm_class(c) in required), None)
 
 
 # ---------------------------------------------------------------- permit fees
@@ -297,8 +305,9 @@ def check_subcontractor(license_number: str, required_classification: Optional[s
         blocking = True
     cls_ok = None
     if required_classification:
-        code = required_classification.strip().upper().split()[0]
-        cls_ok = any(c.upper().split()[0] == code for c in lic.classifications)
+        from .cslb import norm_class
+        code = norm_class(required_classification)
+        cls_ok = any(norm_class(c) == code for c in lic.classifications)
         if lic.found and not cls_ok:
             problems.append(f"License does not include {code}")
             blocking = True
@@ -335,7 +344,7 @@ def check_subcontractor(license_number: str, required_classification: Optional[s
         risk, action = "low", "Cleared for the bid list, subject to verifying the source records."
     notes = ["Safety history was not checked. Search the OSHA establishment database for the company name."]
     if lic.disciplinary_actions:
-        notes.append(f"{len(lic.disciplinary_actions)} CSLB disciplinary action(s) on record; review before award.")
+        notes.append("CSLB flags on record: " + "; ".join(lic.disciplinary_actions) + ". Review before award.")
     return SubComplianceResult(license=lic, classification_match=cls_ok, liability_insurance_current=ins_ok,
                                workers_comp_ok=wc_ok, contractor_bond_ok=bond_ok, overall_risk=risk,
                                problems=problems, recommended_action=action, notes=notes)

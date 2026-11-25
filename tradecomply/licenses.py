@@ -65,8 +65,15 @@ def _csv_records(path: str) -> dict[str, dict]:
 
 
 def find(license_number: str) -> tuple[dict | None, str]:
-    """Returns (record, source_name)."""
+    """Returns (record, source_name). Order: CSLB SQLite (real data), custom CSV, demo fixtures."""
+    from . import cslb
     num = _norm(license_number)
+    rec = cslb.lookup(num)
+    if rec:
+        return rec, f"CSLB master file (as of {rec.get('cslb_last_update')})"
+    if cslb.meta():
+        # Real data is loaded but this number isn't in it: don't fall back to demo records.
+        return None, "CSLB master file"
     path = os.getenv("LICENSE_CSV")
     if path and os.path.exists(path):
         rec = _csv_records(path).get(num)

@@ -144,7 +144,7 @@ def test_design_professional_uses_construction_start():
 def test_roofer_must_carry_workers_comp_even_solo():
     r = logic.check_subcontractor("777000", "C-39", "2099-01-01", will_have_employees_on_site=False)
     assert not r.workers_comp_ok and r.overall_risk == "high"
-    assert any("C-39" in p for p in r.problems)
+    assert any("C39" in p for p in r.problems)
 
 
 def test_silica_cites_construction_section():
@@ -156,3 +156,46 @@ def test_verified_flags_follow_the_data():
     assert logic.lookup_safety_standard("fall").verified is True
     assert logic.lookup_safety_standard("scaffold").verified is False
     assert logic.lien_deadlines("subcontractor", "2026-05-01", today=T).verified is False
+
+
+# ---- CSLB master file import
+CSLB_HEADER = ("LicenseNo,LastUpdate,BusinessName,BUS-NAME-2,FullBusinessName,MailingAddress,City,State,County,ZIPCode,"
+               "country,BusinessPhone,BusinessType,IssueDate,ReissueDate,ExpirationDate,InactivationDate,ReactivationDate,"
+               "PendingSuspension,PendingClassRemoval,PendingClassReplace,PrimaryStatus,SecondaryStatus,Classifications(s),"
+               "AsbestosReg,WorkersCompCoverageType,WCInsuranceCompany,WCPolicyNumber,WCEffectiveDate,WCExpirationDate,"
+               "WCCancellationDate,WCSuspendDate,CBSuretyCompany,CBNumber,CBEffectiveDate,CBCancellationDate,CBAmount,"
+               "WBSuretyCompany,WBNumber,WBEffectiveDate,WBCancellationDate,WBAmount,DBSuretyCompany,DBNumber,"
+               "DBEffectiveDate,DBCancellationDate,DBAmount,DateRequired,DiscpCaseRegion,DBBondReason")
+
+
+def _row(num, status="CLEAR", secondary="", classes="C39", wc="Exempt", wc_exp="", exp="01/31/2099", cb_cancel=""):
+    vals = {k: "" for k in CSLB_HEADER.split(",")}
+    vals.update({"LicenseNo": num, "LastUpdate": "11/20/2026", "BusinessName": f"Co {num}", "City": "FRESNO",
+                 "BusinessType": "Sole Owner", "ExpirationDate": exp, "PrimaryStatus": status,
+                 "SecondaryStatus": secondary, "Classifications(s)": classes, "WorkersCompCoverageType": wc,
+                 "WCExpirationDate": wc_exp, "CBAmount": "25000", "CBCancellationDate": cb_cancel})
+    return ",".join(f'"{vals[k]}"' for k in CSLB_HEADER.split(","))
+
+
+def test_cslb_import_and_lookup(tmp_path, monkeypatch):
+    import io
+    from tradecomply import cslb
+    rows = [_row("1000001", classes="B| C10"),
+            _row("1000002", status="Work Comp Susp", secondary="WC Susp Pending", wc="License does not have current W/C"),
+            _row("1000003", wc="Workers' Compensation Insurance", wc_exp="01/01/2020", cb_cancel="02/02/2025")]
+    rows += [_row(str(2000000 + i)) for i in range(1000)]
+    text = CSLB_HEADER + "\n" + "\n".join(rows) + "\n2999999,11/2"      # truncated last line is skipped
+    db = tmp_path / "c.sqlite"
+    assert cslb.build(io.StringIO(text), str(db)) == 1003
+    monkeypatch.setenv("LICENSE_DB", str(db))
+    a = logic.verify_license("1000001")
+    assert a.found and a.verified and a.status == "active" and a.classifications == ["B", "C10"]
+    s = logic.check_subcontractor("1000002", liability_insurance_expiry="2099-01-01")
+    assert s.license.status == "suspended" and s.overall_risk == "do_not_use"
+    assert any("WC Susp Pending" in f for f in s.license.disciplinary_actions)
+    c = logic.verify_license("1000003")
+    assert c.workers_comp == "none" and c.contractor_bond_on_file is False      # expired WC, cancelled bond
+    assert logic.check_subcontractor("1000001", required_classification="C-10",
+                                     liability_insurance_expiry="2099-01-01").classification_match is True
+    miss = logic.verify_license("123456")                       # demo fixture must NOT be used once real data exists
+    assert not miss.found and "master file" in miss.notes[0]

@@ -19,7 +19,7 @@ pip install -r requirements.txt
 python server.py                          # stdio (Claude Desktop / Claude Code)
 MCP_TRANSPORT=http python server.py       # http://localhost:8000/mcp
 uvicorn app.main:app --port 8000          # same, for hosts that run uvicorn (Render)
-python -m pytest -q tests                 # 19 tests
+python -m pytest -q tests                 # 21 tests
 ```
 
 Add to Claude Code: `claude mcp add tradecomply -- python /path/to/server.py`
@@ -32,7 +32,8 @@ Each item: check the source, update the value, set `verified: True` and `checked
 2. **Cal/OSHA table** (`SAFETY_TABLE`): each Title 8 section, the 7.5 ft fall trigger, summaries.
 3. **Penalties**: federal 29 CFR 1903.15(d) (January each year); add Cal/OSHA maximums.
 4. **CSLB** (`CSLB`): bond amount (§7071.6), workers' comp rule (§7125).
-5. **License data**: load CSLB's public data as a CSV (`LICENSE_CSV=...`, columns in `tradecomply/licenses.py`).
+5. **License data**: real CSLB data is built from the official Master License file (free, updated daily):
+   `python -m tradecomply.cslb --download` (or set `CSLB_AUTO_DOWNLOAD=1` on the host to build on boot and refresh daily).
    Don't scrape the CheckLicense page.
 6. **Permit fees**: replace placeholder schedules with real ones per city, priced by project type.
 
