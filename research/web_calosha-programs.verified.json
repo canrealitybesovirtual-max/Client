@@ -3179,7 +3179,7 @@
   {
    "id": "wvpp-workers-comp-notice-one-working-day",
    "title": "Workplace violence injury: workers' comp notice within one working day",
-   "plain_english": "After a workplace violence incident, give the injured employee notice of workers' compensation eligibility within one working day; also log it, investigate, report serious injuries within 8 hours, and record it on the Form 300 if recordable.",
+   "plain_english": "If an employee is the victim of a crime at the workplace (which covers many workplace violence incidents), give them written notice that they may be eligible for workers' compensation, including for psychiatric injuries. Deliver it personally or by first-class mail within one working day of the crime, or of the date the employer reasonably should have known of it. Also log the incident, investigate, report serious injuries within 8 hours, and record it on the Form 300 if recordable.",
    "category": "deadline",
    "parameters": {
     "workers_comp_notice_working_days": 1,
@@ -3190,6 +3190,16 @@
      "report_serious_injury_342",
      "form_5020",
      "form_300_if_recordable"
+    ],
+    "trigger": "employee is the victim of a crime that occurred at the employee's place of employment",
+    "notice_form": "written notice of workers' compensation eligibility, including for psychiatric injuries resulting from the crime",
+    "delivery_methods": [
+     "personal delivery",
+     "first-class mail"
+    ],
+    "clock_starts_from": [
+     "date of the place-of-employment crime",
+     "date the employer reasonably should have known of the crime"
     ]
    },
    "applies_to": "All California employers, places of employment and employer-provided housing, except Labor Code 6401.9(b)(2) exemptions (construction employers are covered)",
@@ -3200,9 +3210,9 @@
    "read_from_primary_text": true,
    "notes": "The CSLB Law Book (PDF p.47) separately notes the Labor Code 3553 duty to notify workplace-crime victims of workers' comp eligibility.",
    "verification": {
-    "status": "unverifiable",
-    "checked_against": "https://www.dir.ca.gov/dosh/Workplace-Violence/General-Industry.html; 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt) PDF p.47; Labor Code 3553 on leginfo was not reachable",
-    "correction": "Not refuted. The quote matches DIR's General-Industry page verbatim. The Law Book (p.47) names the LC 3553 duty to notify workplace-crime victims of workers' comp eligibility but gives no time limit. The LC 3553 statute text, the source of the \"one working day\" deadline, could not be seen."
+    "status": "corrected",
+    "checked_against": "Labor Code 3553 on leginfo.legislature.ca.gov (direct fetch returns HTTP 403; text read through WebSearch excerpts restricted to leginfo.legislature.ca.gov, 2026-11-25); https://www.dir.ca.gov/dwc/faqs.html (DWC employer FAQ, fetched 2026-11-25); https://www.dir.ca.gov/dosh/Workplace-Violence/General-Industry.html",
+    "correction": "The 1-working-day deadline is confirmed. The trigger was too loose. Labor Code 3553 applies when an employee is the victim of a crime at the place of employment, not to every workplace violence incident, and the employee need not be injured. The notice must be written, covers workers' comp eligibility including psychiatric injuries, and goes out personally or by first-class mail within one working day of the crime or of the date the employer reasonably should have known of it. The DWC FAQ agrees: 'If the employee is the victim of a crime that happened at work, you must give notice of workers' compensation eligibility within one working day of the crime.' Added parameters: trigger, notice_form, delivery_methods and clock_starts_from. plain_english was reworded. The verbatim_quote (DIR General-Industry page) is unchanged. The statute text was seen only as leginfo search excerpts, not as the full page."
    }
   },
   {
@@ -3228,11 +3238,11 @@
    "verbatim_quote": "Places of employment where there are less than 10 employees working at the place at any given time and that are not accessible to the public, if the places are in compliance with Section 3203 of Title 8 of the California Code of Regulations.",
    "effective": "2024-07-01",
    "read_from_primary_text": false,
-   "notes": "The quoted sentence appears in DIR's official May 13, 2025 draft-revisions comparison document. There it is formatted bold, double-underlined and double-struck, NOT as 'Regular text is Labor Code 6401.9', so that document does not establish it as statute text. Per the DIR WVP FAQ, the exemptions are at LC 6401.9(b)(2)(A)-(F). The statute itself on leginfo was not reachable. Most active construction jobsites are 'accessible to the public' in some sense or exceed 10 workers, so treat the small-site exemption as narrow and something the employer must prove. Proposed 8 CCR 3343 would change the headcount test (draft only).",
+   "notes": "The quoted sentence appears in DIR's official May 13, 2025 draft-revisions comparison document. There it is formatted bold, double-underlined and double-struck, NOT as 'Regular text is Labor Code 6401.9', so that document does not establish it as statute text. Per the DIR WVP FAQ, the exemptions are at LC 6401.9(b)(2)(A)-(F). Leginfo excerpts read on 2026-11-25 (WebSearch restricted to leginfo.legislature.ca.gov) show this sentence verbatim as Labor Code 6401.9(b)(2)(F). Most active construction jobsites are 'accessible to the public' in some sense or exceed 10 workers, so treat the small-site exemption as narrow and something the employer must prove. Proposed 8 CCR 3343 would change the headcount test (draft only).",
    "verification": {
-    "status": "unverifiable",
-    "checked_against": "https://www.dir.ca.gov/dosh/doshreg/Workplace-Violence-in-General-Industry/WPV-Draft-Revisions-May-13-2025.docx; https://www.dir.ca.gov/dosh/Workplace-Violence/FAQ.html; Labor Code 6401.9 on leginfo was not reachable",
-    "correction": "Not refuted, but the provenance claim is wrong. In DIR's docx the quoted small-site sentence is formatted bold, double-underlined AND double-struck. It is not \"Regular text is Labor Code 6401.9\", so the docx does not show it as baseline statute text. The original notes claimed it did, and they are corrected. The FAQ confirms the exemptions are at LC 6401.9(b)(2)(A)-(F) (six items, which matches the listed categories, with 3342 counted as two), but it does not quote (F). The <10 employees / not accessible to the public / 3203 values remain unverified against the statute."
+    "status": "confirmed",
+    "checked_against": "Labor Code 6401.9(b)(2)-(3) (codified section page and SB 553 'Today's Law As Amended') on leginfo.legislature.ca.gov (direct fetch returns HTTP 403; text read through WebSearch excerpts restricted to leginfo.legislature.ca.gov, 2026-11-25); https://www.dir.ca.gov/dosh/Workplace-Violence/FAQ.html; https://www.dir.ca.gov/dosh/doshreg/Workplace-Violence-in-General-Industry/WPV-Draft-Revisions-May-13-2025.docx",
+    "correction": "No parameter changes. In the leginfo excerpts the quoted small-site sentence appears verbatim as LC 6401.9(b)(2)(F): fewer than 10 employees at any given time, not accessible to the public, and in compliance with 8 CCR 3203. They also show the other exemptions: 8 CCR 3342 health care; (C) CDCR facilities that comply with 3203; (D) law enforcement agencies that are a 'department or participating department' under 11 CCR 1001, have POST compliance confirmation, and have all agency facilities in compliance with 3203; and (E) telework from a location of the employee's choice not under employer control. They also show (b)(3), which lets the Division order an otherwise exempt employer or place to comply. The earlier provenance correction to the notes (docx formatting) still stands. The text was seen as search excerpts, not the full page."
    }
   },
   {
@@ -3267,8 +3277,8 @@
    "notes": "Regulatory/general maximum and repeat/willful caps are inflation-adjusted each January 1 (last amendment shown on DIR page: filed 12-19-2024, operative 1-1-2025). Check for a 2026 adjustment before using as a hard cap.",
    "verification": {
     "status": "confirmed",
-    "checked_against": "https://www.dir.ca.gov/title8/336.html (page Last-Modified 2025-01-10)",
-    "correction": "None. Quote string-matched against the re-fetched official text and every parameter value checked against it. Caveat: the dir.ca.gov 336 page was last modified 10 Jan 2025, and its history ends at the 1-1-2025 adjustment. Whether a 1-1-2026 inflation adjustment was adopted could not be checked: the WebSearch quota was exhausted and no DIR notice was found. Use these as 2025-schedule values only."
+    "checked_against": "https://www.dir.ca.gov/title8/336.html (re-fetched 2026-11-25); https://www.dir.ca.gov/dosh/doshreg/Civil-Penalties/Notice-of-rulemaking.pdf",
+    "correction": "None. The quote and every parameter match the official text re-fetched 2026-11-25. On that date the 336 history still ended at the amendment filed 12-19-2024, operative 1-1-2025, with no 2026 adjustment shown. A WebSearch of dir.ca.gov also found no 1-1-2026 schedule. These are the current published values. Re-check each January for a file-and-print inflation adjustment under Labor Code 6427(b), 6429(a)(2) and 6431(b)."
    }
   },
   {
@@ -3387,18 +3397,24 @@
   {
    "id": "willful-violation-death-criminal",
    "title": "Criminal liability: willful violation causing death or prolonged impairment",
-   "plain_english": "Employers, and anyone directing or controlling employees, who willfully violate a safety standard causing an employee's death or prolonged bodily impairment can be fined and/or imprisoned on conviction.",
+   "plain_english": "Employers, and employees who have direction, management, control or custody of the employment or of other employees, who willfully violate an occupational safety or health standard that causes an employee's death or permanent or prolonged bodily impairment can be prosecuted by the local district attorney. On conviction the penalty is a fine of up to $250,000, imprisonment of up to 3 years, or both. For a corporation or LLC the fine can be up to $1.5 million.",
    "category": "penalty",
    "parameters": {
     "elements": [
-     "willful violation of OSH standard",
-     "causes death or prolonged impairment of employee"
+     "willful violation of an occupational safety or health standard",
+     "causes death of an employee, or permanent or prolonged impairment of the body of an employee"
     ],
     "consequence": "fine and/or imprisonment",
     "who": [
      "employer",
      "employee having direction, management control, or custody of employment"
-    ]
+    ],
+    "max_fine_usd": 250000,
+    "max_imprisonment_years": 3,
+    "fine_and_imprisonment_may_combine": true,
+    "max_fine_usd_corporation_or_llc": 1500000,
+    "enforced_by": "local district attorney (Cal/OSHA Bureau of Investigations refers cases)",
+    "penalty_amounts_source": "DIR, The Guide to Cal/OSHA (Aug 2023) p.13, summarizing Labor Code 6425"
    },
    "applies_to": "Employers and supervisors",
    "citation": "Labor Code 6425",
@@ -3406,11 +3422,11 @@
    "verbatim_quote": "who willfully violates any occupational safety or health standard that causes the death of any employee or the prolonged impairment of the body of any employee shall, upon conviction, be punished by a fine and or imprisonment",
    "effective": "",
    "read_from_primary_text": true,
-   "notes": "Specific fine/prison amounts are in Labor Code 6425 (leginfo not reachable); the Law Book does not state them.",
+   "notes": "Amounts are from DIR's Guide to Cal/OSHA summary of LC 6425. Leginfo excerpts also show a lower alternative tier: county jail up to 1 year and/or a fine up to $100,000. That tier is not encoded because the full statute text was not seen. The verbatim_quote is the CSLB Law Book narrative, which drops 'permanent'. It is not statute text. Pending change: AB 2321 (2025-26) is reported as chaptered (Ch. 936, approved 2026-09-30). It would extend 6425 to willful violations causing serious injury, illness or exposure. Confirm the final text and operative date before relying on the current elements after 2026.",
    "verification": {
-    "status": "unverifiable",
-    "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt) PDF p.49 (CSLB narrative, not statute text); Labor Code 6425 on leginfo was not reachable",
-    "correction": "Not refuted. The quote matches the Law Book narrative verbatim, but the statute text was not seen. FLAG, not applied: Labor Code 6425(a) is believed to read \"permanent or prolonged impairment\" and to cover violations of orders and special orders as well as standards. The Law Book paraphrase says only \"prolonged impairment\" of a \"standard\". Confirm against the statute before relying on the elements list or adding fine and prison amounts."
+    "status": "corrected",
+    "checked_against": "https://www.dir.ca.gov/dosh/dosh_publications/osha_userguide.pdf (The Guide to Cal/OSHA, Aug 2023, p.13, 'Criminal Penalties', fetched 2026-11-25); Labor Code 6425 on leginfo.legislature.ca.gov (direct fetch returns HTTP 403; text read through WebSearch excerpts restricted to leginfo.legislature.ca.gov, 2026-11-25); https://www.dir.ca.gov/dosh/legal-unit.html; 2026 CSLB Law Book PDF p.49",
+    "correction": "The harm element was incomplete. LC 6425 covers a willful violation causing death or PERMANENT or prolonged impairment of the body of an employee. The DIR Guide and the leginfo excerpts both say this. The Law Book paraphrase (and the old elements list) said only 'prolonged impairment'. Fixed elements and plain_english. The penalty amounts were missing. Added from DIR's Guide: a fine up to $250,000, imprisonment up to 3 years, or both; for a corporation or LLC a fine up to $1.5 million; enforced by the local DA. The quote is unchanged because it is verbatim to its Law Book source. FLAG, not applied: leginfo search excerpts report AB 2321 (2025-26) as Chapter 936, approved 2026-09-30. It amends 6425 to add serious injury, illness or exposure as a triggering harm. The final status and text were not seen, and the excerpts conflicted."
    }
   }
  ],
@@ -3421,13 +3437,13 @@
   "in_scope_rules_checked": 78,
   "out_of_scope_rules_unchanged": 56,
   "counts": {
-   "confirmed": 72,
-   "corrected": 3,
-   "unverifiable": 3
+   "confirmed": 73,
+   "corrected": 5
   },
   "non_parameter_edits": [
    "asbestos-dosh-registration-100sqft: notes 5203/5208 -> 5208 (per 341.6 Note)",
    "wvpp-exemptions: notes corrected re docx formatting/provenance; subsection cite per DIR FAQ"
-  ]
+  ],
+  "continuation_2026-11-25": "Follow-up pass. The 3 rules left unverifiable (Labor Code 3553, 6401.9(b)(2), 6425) were checked again. leginfo.legislature.ca.gov still returns HTTP 403 to direct fetch, so the statute text was read through WebSearch excerpts restricted to leginfo.legislature.ca.gov, together with fetched dir.ca.gov pages: the DWC employer FAQ, The Guide to Cal/OSHA PDF and the Cal/OSHA Legal Unit page. Results: 6401.9(b)(2) is confirmed; 3553 and 6425 are corrected. All 39 dir.ca.gov HTML source pages cited by in-scope rules were re-fetched (HTTP 200), and every in-scope verbatim_quote was re-matched against them. The only differences were the micro-sign encoding in the 1532.1 lead quotes. 336 was re-checked for a 2026 penalty adjustment and none is published."
  }
 }
