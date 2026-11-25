@@ -1,5 +1,10 @@
 """JSON API for the web app and for API-key clients: tools, projects, subs, documents, field logs, dashboard,
-calendar, users, API keys and the audit log. Every handler scopes data to the caller's tenant."""
+calendar, users, API keys and the audit log. Every handler scopes data to the caller's tenant.
+
+Database calls never run on the event loop: on PostgreSQL each one is a network round trip (and can wait for a free
+pooled connection), and one slow query there would stall every request, /health and /mcp included. Handlers that
+only talk to the store are plain `def` (FastAPI runs them in its thread pool); `async def` handlers send their store
+calls to a worker thread with anyio.to_thread."""
 import csv
 import hashlib
 import hmac
@@ -22,7 +27,7 @@ from . import dashboard
 from .auth import (EMAIL_RE, Principal, anyone, get_principal, hash_password, license_digits, new_api_key, office_up,
                    owner_only, platform_of)
 from .billing import PRICE_USD_MONTH, base_url, entitlement, require_entitled
-from .store import FIELD_LOG_KINDS
+from .store import FIELD_LOG_KINDS, IntegrityError
 
 logger = logging.getLogger("tradecomply.api")
 router = APIRouter(prefix="/api", tags=["api"])
@@ -221,7 +226,7 @@ async def config(request: Request):
 
 
 @router.get("/me")
-async def me(request: Request, p: Principal = Depends(anyone)):
+def me(request: Request, p: Principal = Depends(anyone)):
     store = _store(request)
     tenant = store.get_tenant(p.tenant_id)
     user = store.user_by_id(p.user_id) if p.user_id else None
@@ -233,7 +238,7 @@ async def me(request: Request, p: Principal = Depends(anyone)):
 
 
 @router.patch("/tenant")
-async def update_tenant(body: TenantIn, request: Request, p: Principal = Depends(office_up)):
+def update_tenant(body: TenantIn, request: Request, p: Principal = Depends(office_up)):
     store = _store(request)
     fields = {}
     if body.company_name is not None:
@@ -241,17 +246,19 @@ async def update_tenant(body: TenantIn, request: Request, p: Principal = Depends
     if body.cslb_license is not None:
         fields["cslb_license"] = license_digits(body.cslb_license)
     if body.settings is not None:
-        tenant = store.get_tenant(p.tenant_id)
         mine = {str(k)[:100]: v for k, v in body.settings.items() if k not in RESERVED_SETTINGS}
-        merged = {**(tenant.get("settings") or {}), **mine}
-        if len(json.dumps(merged)) > 20000:
-            raise HTTPException(413, "settings too large")
-        fields["settings"] = merged
+
+        def merge(current: dict) -> dict:       # under a row lock: a concurrent save or feed rotation isn't lost
+            merged = {**current, **mine}
+            if len(json.dumps(merged)) > 20000:
+                raise HTTPException(413, "settings too large")
+            return merged
+        store.modify_tenant_settings(p.tenant_id, merge)
     return _tenant_public(store.update_tenant(p.tenant_id, **fields))
 
 
 @router.get("/users")
-async def list_users(request: Request, p: Principal = Depends(office_up)):
+def list_users(request: Request, p: Principal = Depends(office_up)):
     return _store(request).list_users(p.tenant_id)
 
 
@@ -262,17 +269,21 @@ async def invite_user(body: UserIn, request: Request, p: Principal = Depends(own
     email = body.email.strip().lower()
     if not EMAIL_RE.match(email):
         raise HTTPException(422, "Enter a valid email address")
-    if store.user_by_email(email):
+    if await anyio.to_thread.run_sync(store.user_by_email, email):
         raise HTTPException(409, "That email already has an account")
     temp = secrets.token_urlsafe(9)
     pw_hash = await anyio.to_thread.run_sync(hash_password, temp)
-    u = store.create_user(p.tenant_id, email, pw_hash, body.role, name=body.name, must_change_password=True)
+    try:
+        u = await anyio.to_thread.run_sync(lambda: store.create_user(p.tenant_id, email, pw_hash, body.role,
+                                                                     name=body.name, must_change_password=True))
+    except IntegrityError:      # created a moment ago, after the check above (unique email index)
+        raise HTTPException(409, "That email already has an account")
     return {"id": u["id"], "email": u["email"], "role": u["role"], "temporary_password": temp,
             "message": "Share this temporary password with them privately. They'll be asked to change it."}
 
 
 @router.patch("/users/{user_id}")
-async def patch_user(user_id: int, body: UserPatch, request: Request, p: Principal = Depends(owner_only)):
+def patch_user(user_id: int, body: UserPatch, request: Request, p: Principal = Depends(owner_only)):
     store = _store(request)
     if user_id == p.user_id and body.role and body.role != "owner":
         raise HTTPException(422, "You can't remove your own owner role")
@@ -285,7 +296,7 @@ async def patch_user(user_id: int, body: UserPatch, request: Request, p: Princip
 
 
 @router.delete("/users/{user_id}")
-async def delete_user(user_id: int, request: Request, p: Principal = Depends(owner_only)):
+def delete_user(user_id: int, request: Request, p: Principal = Depends(owner_only)):
     if user_id == p.user_id:
         raise HTTPException(422, "You can't delete your own account here")
     store = _store(request)
@@ -296,31 +307,31 @@ async def delete_user(user_id: int, request: Request, p: Principal = Depends(own
 
 
 @router.get("/keys")
-async def list_keys(request: Request, p: Principal = Depends(office_up)):
+def list_keys(request: Request, p: Principal = Depends(office_up)):
     return _store(request).list_api_keys(p.tenant_id)
 
 
 @router.post("/keys")
-async def create_key(body: KeyIn, request: Request, p: Principal = Depends(office_up)):
+def create_key(body: KeyIn, request: Request, p: Principal = Depends(office_up)):
     plain, prefix, key_hash = new_api_key()
     k = _store(request).create_api_key(p.tenant_id, body.name.strip(), key_hash, prefix, p.user_id)
     return {**k, "key": plain, "message": "Copy this key now. It won't be shown again."}
 
 
 @router.delete("/keys/{key_id}")
-async def revoke_key(key_id: int, request: Request, p: Principal = Depends(office_up)):
+def revoke_key(key_id: int, request: Request, p: Principal = Depends(office_up)):
     if not _store(request).revoke_api_key(p.tenant_id, key_id):
         _not_found("Active API key")
     return {"ok": True}
 
 
 @router.get("/audit")
-async def audit(request: Request, p: Principal = Depends(office_up), limit: int = Query(200, ge=1, le=1000)):
+def audit(request: Request, p: Principal = Depends(office_up), limit: int = Query(200, ge=1, le=1000)):
     return _store(request).list_audit(p.tenant_id, limit)
 
 
 @router.get("/audit/{audit_id}")
-async def audit_row(audit_id: int, request: Request, p: Principal = Depends(office_up)):
+def audit_row(audit_id: int, request: Request, p: Principal = Depends(office_up)):
     row = _store(request).get_audit(p.tenant_id, audit_id)
     if not row:
         _not_found("Audit entry")
@@ -547,19 +558,19 @@ def _project_payload(body: ProjectIn, existing: dict | None = None) -> dict:
 
 
 @router.get("/projects")
-async def list_projects(request: Request, p: Principal = Depends(anyone)):
+def list_projects(request: Request, p: Principal = Depends(anyone)):
     return _store(request).list("projects", p.tenant_id)
 
 
 @router.post("/projects", status_code=201)
-async def create_project(body: ProjectIn, request: Request, p: Principal = Depends(office_up)):
+def create_project(body: ProjectIn, request: Request, p: Principal = Depends(office_up)):
     if not body.name:
         raise HTTPException(422, "Project name is required")
     return _store(request).insert("projects", p.tenant_id, _project_payload(body))
 
 
 @router.get("/projects/{project_id}")
-async def get_project(project_id: int, request: Request, p: Principal = Depends(anyone)):
+def get_project(project_id: int, request: Request, p: Principal = Depends(anyone)):
     row = _store(request).get("projects", p.tenant_id, project_id)
     if not row:
         _not_found("Project")
@@ -567,19 +578,20 @@ async def get_project(project_id: int, request: Request, p: Principal = Depends(
 
 
 @router.patch("/projects/{project_id}")
-async def patch_project(project_id: int, body: ProjectIn, request: Request, p: Principal = Depends(office_up)):
-    store = _store(request)
-    row = store.get("projects", p.tenant_id, project_id)
+def patch_project(project_id: int, body: ProjectIn, request: Request, p: Principal = Depends(office_up)):
+    def change(row: dict) -> dict:       # `extra` is merged under a row lock, so two edits at once both land
+        data = _project_payload(body, row)
+        if "name" in data and not data["name"]:
+            raise HTTPException(422, "Project name can't be empty")
+        return data
+    row = _store(request).modify("projects", p.tenant_id, project_id, change)
     if not row:
         _not_found("Project")
-    data = _project_payload(body, row)
-    if "name" in data and not data["name"]:
-        raise HTTPException(422, "Project name can't be empty")
-    return store.update("projects", p.tenant_id, project_id, data)
+    return row
 
 
 @router.delete("/projects/{project_id}")
-async def delete_project(project_id: int, request: Request, p: Principal = Depends(office_up)):
+def delete_project(project_id: int, request: Request, p: Principal = Depends(office_up)):
     if not _store(request).delete("projects", p.tenant_id, project_id):
         _not_found("Project")
     return {"ok": True}
@@ -589,12 +601,13 @@ async def delete_project(project_id: int, request: Request, p: Principal = Depen
 async def project_deadlines(project_id: int, request: Request, p: Principal = Depends(anyone)):
     platform = _p(request)
     await anyio.to_thread.run_sync(require_entitled, platform, p)
-    row = platform.store.get("projects", p.tenant_id, project_id)
+    row = await anyio.to_thread.run_sync(platform.store.get, "projects", p.tenant_id, project_id)
     if not row:
         _not_found("Project")
     today = logic.today_ca()
     items, notes = dashboard.project_deadlines(row, today)
-    last = platform.store.last_field_log_dates(p.tenant_id, "toolbox_talk").get(project_id)
+    last = (await anyio.to_thread.run_sync(platform.store.last_field_log_dates, p.tenant_id,
+                                           "toolbox_talk")).get(project_id)
     tb = dashboard.toolbox_item(row, last, today)
     if tb:
         items.append(tb)
@@ -607,8 +620,8 @@ async def project_deadlines(project_id: int, request: Request, p: Principal = De
 async def list_subs(request: Request, p: Principal = Depends(anyone), check: bool = False,
                     project_id: Optional[int] = None):
     platform = _p(request)
-    rows = platform.store.list("subs", p.tenant_id, where={"project_id": project_id} if project_id else None,
-                               order="name asc")
+    rows = await anyio.to_thread.run_sync(lambda: platform.store.list(
+        "subs", p.tenant_id, where={"project_id": project_id} if project_id else None, order="name asc"))
     if check:
         await anyio.to_thread.run_sync(require_entitled, platform, p)
         checks = await anyio.to_thread.run_sync(lambda: [dashboard.sub_check(s) for s in rows])
@@ -618,7 +631,7 @@ async def list_subs(request: Request, p: Principal = Depends(anyone), check: boo
 
 
 @router.post("/subs", status_code=201)
-async def create_sub(body: SubIn, request: Request, p: Principal = Depends(office_up)):
+def create_sub(body: SubIn, request: Request, p: Principal = Depends(office_up)):
     if not body.name:
         raise HTTPException(422, "Subcontractor name is required")
     _check_project(request, p.tenant_id, body.project_id)
@@ -626,7 +639,7 @@ async def create_sub(body: SubIn, request: Request, p: Principal = Depends(offic
 
 
 @router.get("/subs/{sub_id}")
-async def get_sub(sub_id: int, request: Request, p: Principal = Depends(anyone)):
+def get_sub(sub_id: int, request: Request, p: Principal = Depends(anyone)):
     row = _store(request).get("subs", p.tenant_id, sub_id)
     if not row:
         _not_found("Subcontractor")
@@ -637,14 +650,14 @@ async def get_sub(sub_id: int, request: Request, p: Principal = Depends(anyone))
 async def check_sub(sub_id: int, request: Request, p: Principal = Depends(anyone)):
     platform = _p(request)
     await anyio.to_thread.run_sync(require_entitled, platform, p)
-    row = platform.store.get("subs", p.tenant_id, sub_id)
+    row = await anyio.to_thread.run_sync(platform.store.get, "subs", p.tenant_id, sub_id)
     if not row:
         _not_found("Subcontractor")
     return await anyio.to_thread.run_sync(dashboard.sub_check, row)
 
 
 @router.patch("/subs/{sub_id}")
-async def patch_sub(sub_id: int, body: SubIn, request: Request, p: Principal = Depends(office_up)):
+def patch_sub(sub_id: int, body: SubIn, request: Request, p: Principal = Depends(office_up)):
     store = _store(request)
     if not store.get("subs", p.tenant_id, sub_id):
         _not_found("Subcontractor")
@@ -656,7 +669,7 @@ async def patch_sub(sub_id: int, body: SubIn, request: Request, p: Principal = D
 
 
 @router.delete("/subs/{sub_id}")
-async def delete_sub(sub_id: int, request: Request, p: Principal = Depends(office_up)):
+def delete_sub(sub_id: int, request: Request, p: Principal = Depends(office_up)):
     if not _store(request).delete("subs", p.tenant_id, sub_id):
         _not_found("Subcontractor")
     return {"ok": True}
@@ -800,7 +813,7 @@ async def import_subs(request: Request, p: Principal = Depends(office_up), proje
         raw = await request.body()
     if len(raw) > MAX_IMPORT_BYTES:
         raise HTTPException(413, "CSV is larger than 3 MB")
-    _check_project(request, p.tenant_id, project_id)
+    await anyio.to_thread.run_sync(_check_project, request, p.tenant_id, project_id)
     try:
         rows, skipped = parse_sub_csv(decode_csv(raw))
     except csv.Error as e:
@@ -829,7 +842,7 @@ async def import_subs(request: Request, p: Principal = Depends(office_up), proje
 
     created, updated, saved = await anyio.to_thread.run_sync(save)
     report, counts = [], {"red": 0, "amber": 0, "green": 0}
-    ent = entitlement(store.get_tenant(p.tenant_id))
+    ent = entitlement(await anyio.to_thread.run_sync(store.get_tenant, p.tenant_id))
     if ent["ok"]:
         report = await anyio.to_thread.run_sync(lambda: [dashboard.sub_check(s) for s in saved])
         for r in report:
@@ -1014,7 +1027,7 @@ def result_to_markdown(tool: str, result: dict, title: str | None = None) -> str
 
 
 @router.get("/documents")
-async def list_documents(request: Request, p: Principal = Depends(anyone), project_id: Optional[int] = None):
+def list_documents(request: Request, p: Principal = Depends(anyone), project_id: Optional[int] = None):
     rows = _store(request).list("documents", p.tenant_id, where={"project_id": project_id} if project_id else None)
     for r in rows:
         r["excerpt"] = (r.pop("body_markdown") or "")[:240]
@@ -1022,7 +1035,7 @@ async def list_documents(request: Request, p: Principal = Depends(anyone), proje
 
 
 @router.post("/documents", status_code=201)
-async def create_document(body: DocumentIn, request: Request, p: Principal = Depends(office_up)):
+def create_document(body: DocumentIn, request: Request, p: Principal = Depends(office_up)):
     if not body.title:
         raise HTTPException(422, "Title is required")
     _check_project(request, p.tenant_id, body.project_id)
@@ -1033,7 +1046,7 @@ async def create_document(body: DocumentIn, request: Request, p: Principal = Dep
 
 
 @router.post("/documents/from_result", status_code=201)
-async def document_from_result(body: FromResultIn, request: Request, p: Principal = Depends(office_up)):
+def document_from_result(body: FromResultIn, request: Request, p: Principal = Depends(office_up)):
     """Save a tool result as a document: uses the result's markdown field(s) when it has them, otherwise a
     readable rendering of the whole result, with sources and the disclaimer."""
     _check_project(request, p.tenant_id, body.project_id)
@@ -1059,7 +1072,7 @@ async def document_from_result(body: FromResultIn, request: Request, p: Principa
 
 
 @router.get("/documents/{doc_id}")
-async def get_document(doc_id: int, request: Request, p: Principal = Depends(anyone)):
+def get_document(doc_id: int, request: Request, p: Principal = Depends(anyone)):
     row = _store(request).get("documents", p.tenant_id, doc_id)
     if not row:
         _not_found("Document")
@@ -1067,7 +1080,7 @@ async def get_document(doc_id: int, request: Request, p: Principal = Depends(any
 
 
 @router.patch("/documents/{doc_id}")
-async def patch_document(doc_id: int, body: DocumentIn, request: Request, p: Principal = Depends(office_up)):
+def patch_document(doc_id: int, body: DocumentIn, request: Request, p: Principal = Depends(office_up)):
     store = _store(request)
     row = store.get("documents", p.tenant_id, doc_id)
     if not row:
@@ -1080,7 +1093,7 @@ async def patch_document(doc_id: int, body: DocumentIn, request: Request, p: Pri
 
 
 @router.delete("/documents/{doc_id}")
-async def delete_document(doc_id: int, request: Request, p: Principal = Depends(office_up)):
+def delete_document(doc_id: int, request: Request, p: Principal = Depends(office_up)):
     if not _store(request).delete("documents", p.tenant_id, doc_id):
         _not_found("Document")
     return {"ok": True}
@@ -1103,8 +1116,8 @@ def _field_row(log: FieldLogIn, p: Principal) -> dict:
 
 
 @router.get("/field_logs")
-async def list_field_logs(request: Request, p: Principal = Depends(anyone), project_id: Optional[int] = None,
-                          kind: Optional[str] = None, include_signatures: bool = False):
+def list_field_logs(request: Request, p: Principal = Depends(anyone), project_id: Optional[int] = None,
+                    kind: Optional[str] = None, include_signatures: bool = False):
     where = {}
     if project_id:
         where["project_id"] = project_id
@@ -1120,7 +1133,7 @@ async def list_field_logs(request: Request, p: Principal = Depends(anyone), proj
 
 
 @router.post("/field_logs", status_code=201)
-async def create_field_log(body: FieldLogIn, request: Request, p: Principal = Depends(anyone)):
+def create_field_log(body: FieldLogIn, request: Request, p: Principal = Depends(anyone)):
     _check_project(request, p.tenant_id, body.project_id)
     try:
         row, created = _store(request).insert_field_log_once(p.tenant_id, _field_row(body, p))
@@ -1130,7 +1143,7 @@ async def create_field_log(body: FieldLogIn, request: Request, p: Principal = De
 
 
 @router.get("/field_logs/{log_id}")
-async def get_field_log(log_id: int, request: Request, p: Principal = Depends(anyone)):
+def get_field_log(log_id: int, request: Request, p: Principal = Depends(anyone)):
     row = _store(request).get("field_logs", p.tenant_id, log_id)
     if not row:
         _not_found("Field log")
@@ -1138,14 +1151,14 @@ async def get_field_log(log_id: int, request: Request, p: Principal = Depends(an
 
 
 @router.delete("/field_logs/{log_id}")
-async def delete_field_log(log_id: int, request: Request, p: Principal = Depends(office_up)):
+def delete_field_log(log_id: int, request: Request, p: Principal = Depends(office_up)):
     if not _store(request).delete("field_logs", p.tenant_id, log_id):
         _not_found("Field log")
     return {"ok": True}
 
 
 @router.post("/field_logs/sync")
-async def sync_field_logs(body: SyncIn, request: Request, p: Principal = Depends(anyone)):
+def sync_field_logs(body: SyncIn, request: Request, p: Principal = Depends(anyone)):
     """Offline queue upload. Each log carries a client_uuid; sending the same log twice never duplicates it."""
     store = _store(request)
     results = []
@@ -1194,18 +1207,17 @@ def feed_token(platform, tenant: dict) -> str:
 
 
 @router.get("/calendar/feed")
-async def calendar_feed(request: Request, p: Principal = Depends(office_up)):
+def calendar_feed(request: Request, p: Principal = Depends(office_up)):
     platform = _p(request)
     tenant = platform.store.get_tenant(p.tenant_id)
     return {"url": f"{base_url(request)}/api/calendar.ics?tenant={tenant['id']}&token={feed_token(platform, tenant)}"}
 
 
 @router.post("/calendar/feed/rotate")
-async def rotate_feed(request: Request, p: Principal = Depends(office_up)):
+def rotate_feed(request: Request, p: Principal = Depends(office_up)):
     platform = _p(request)
-    tenant = platform.store.get_tenant(p.tenant_id)
-    settings = {**(tenant.get("settings") or {}), "ics_gen": _ics_gen(tenant) + 1}
-    tenant = platform.store.update_tenant(p.tenant_id, settings=settings)
+    tenant = platform.store.modify_tenant_settings(     # locked: a settings save at the same moment can't undo it
+        p.tenant_id, lambda current: {**current, "ics_gen": _ics_gen({"settings": current}) + 1})
     return {"url": f"{base_url(request)}/api/calendar.ics?tenant={tenant['id']}&token={feed_token(platform, tenant)}"}
 
 
@@ -1215,14 +1227,14 @@ async def calendar_ics(request: Request, tenant: Optional[str] = None, token: Op
     link from Settings (calendar apps can't send cookies)."""
     platform = _p(request)
     if tenant and token:
-        t = platform.store.get_tenant(tenant)
+        t = await anyio.to_thread.run_sync(platform.store.get_tenant, tenant)
         if not t or not hmac.compare_digest(feed_token(platform, t), token):
             raise HTTPException(404, "Calendar not found")
         tid = t["id"]
     else:
         p = await get_principal(request)
         tid = p.tenant_id
-    t = platform.store.get_tenant(tid)
+    t = await anyio.to_thread.run_sync(platform.store.get_tenant, tid)
     if not entitlement(t)["ok"]:
         raise HTTPException(402, "Subscription required")
     data = await anyio.to_thread.run_sync(lambda: dashboard.build(platform.store, t, include_past=True))

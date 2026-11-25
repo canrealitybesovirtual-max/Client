@@ -28,6 +28,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
+from .store import IntegrityError
+
 log = logging.getLogger("tradecomply.auth")
 
 SESSION_COOKIE = "tc_session"
@@ -374,8 +376,12 @@ async def signup(body: SignupIn, request: Request):
     pw_hash = await anyio.to_thread.run_sync(hash_password, body.password)
     trial_ends = (datetime.now(timezone.utc) + timedelta(days=platform.settings.trial_days)).replace(
         microsecond=0).isoformat()
-    tenant = platform.store.create_tenant(body.company_name.strip(), license_digits(body.cslb_license), trial_ends)
-    user = platform.store.create_user(tenant["id"], email, pw_hash, "owner", name=(body.name or "").strip() or None)
+    try:      # company and owner in one transaction: a double-submitted form can't leave a company with no owner
+        tenant, user = await anyio.to_thread.run_sync(lambda: platform.store.create_tenant_with_owner(
+            body.company_name.strip(), license_digits(body.cslb_license), trial_ends, email, pw_hash,
+            name=(body.name or "").strip() or None))
+    except IntegrityError:    # the same email signed up a moment ago (it passed the check above at the same time)
+        raise HTTPException(409, "An account with this email already exists. Log in instead.")
     resp = JSONResponse({"ok": True, "tenant_id": tenant["id"], "trial_ends": trial_ends})
     set_session(resp, request, user)
     return resp
@@ -397,7 +403,8 @@ async def login(body: LoginIn, request: Request):
         platform.email_limiter.hit(ekey)
         raise HTTPException(401, "Email or password is incorrect")
     platform.login_limiter.reset(key)
-    platform.store.update_user(user["tenant_id"], user["id"], last_login=datetime.now(timezone.utc).isoformat())
+    await anyio.to_thread.run_sync(lambda: platform.store.update_user(
+        user["tenant_id"], user["id"], last_login=datetime.now(timezone.utc).isoformat()))
     resp = JSONResponse({"ok": True, "must_change_password": bool(user["must_change_password"])})
     set_session(resp, request, user)
     return resp
@@ -427,14 +434,14 @@ async def change_password(body: PasswordIn, request: Request, p: Principal = Dep
     if wait:
         raise HTTPException(429, f"Too many wrong passwords. Try again in {max(1, wait // 60)} minute(s).",
                             headers={"Retry-After": str(wait)})
-    user = platform.store.user_by_id(p.user_id)
+    user = await anyio.to_thread.run_sync(platform.store.user_by_id, p.user_id)
     if not await anyio.to_thread.run_sync(verify_password, body.current_password, user["pw_hash"]):
         platform.login_limiter.hit(key)
         raise HTTPException(403, "Current password is incorrect")
     platform.login_limiter.reset(key)
     pw_hash = await anyio.to_thread.run_sync(hash_password, body.new_password)
-    user = platform.store.update_user(p.tenant_id, p.user_id, pw_hash=pw_hash, session_gen=user["session_gen"] + 1,
-                                      must_change_password=0)
+    user = await anyio.to_thread.run_sync(lambda: platform.store.update_user(
+        p.tenant_id, p.user_id, pw_hash=pw_hash, session_gen=user["session_gen"] + 1, must_change_password=0))
     resp = JSONResponse({"ok": True})
     set_session(resp, request, user)          # this device stays logged in, every other session ends
     return resp
@@ -448,8 +455,8 @@ async def local_login(token: str, request: Request):
     if not (platform.settings.local_mode and want and platform.local_user_id
             and hmac.compare_digest(token.encode(), want.encode())):
         return RedirectResponse("/#/login", status_code=303)
-    platform.local_login_token = None          # single use
-    user = platform.store.user_by_id(platform.local_user_id)
+    platform.local_login_token = None          # single use (cleared before the first await: no second winner)
+    user = await anyio.to_thread.run_sync(platform.store.user_by_id, platform.local_user_id)
     resp = RedirectResponse("/#/dashboard", status_code=303)
     if user:
         set_session(resp, request, user)
@@ -631,7 +638,10 @@ class MCPGate:
                     captured.extend(message.get("body", b""))
                 if not message.get("more_body") and not written:
                     written = True
-                    await anyio.to_thread.run_sync(write_audit)
+                    try:
+                        await anyio.to_thread.run_sync(write_audit)
+                    except Exception:      # never fail the MCP call because of the audit log (e.g. a DB blip)
+                        log.exception("MCP audit write failed")
             await send(message)
 
         try:

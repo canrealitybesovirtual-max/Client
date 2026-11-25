@@ -175,7 +175,12 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
     @app.get("/health", include_in_schema=False)
     async def health():
         store = platform.store
-        schema = await anyio.to_thread.run_sync(store.schema_version)     # a database round trip on Postgres
+        try:
+            schema = await anyio.to_thread.run_sync(store.schema_version)     # a database round trip on Postgres
+        except Exception as e:     # noqa: BLE001 - reported as a failed health check, not a 500 traceback
+            log.error("health check: storage %s is not answering (%s)", store.describe(), type(e).__name__)
+            return JSONResponse({"ok": False, "server": "TradeComply CA", "storage": store.backend,
+                                 "error": "storage unavailable"}, status_code=503)
         return JSONResponse({"ok": True, "server": "TradeComply CA", "schema": schema,
                              "license_data": cslb.snapshot_date() or "demo fixtures",
                              "storage": store.backend, "storage_persistent": store.persistent})

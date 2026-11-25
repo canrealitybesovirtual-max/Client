@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 log = logging.getLogger("tradecomply.store")
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 TENANT_STATUSES = ("trialing", "active", "past_due", "canceled")
 ROLES = ("owner", "office", "field")
@@ -41,6 +41,11 @@ IntegrityError = sqlite3.IntegrityError
 
 class PgIntegrityError(sqlite3.IntegrityError):
     """A PostgreSQL integrity violation (the original psycopg error is __cause__)."""
+
+
+class TransactionAborted(RuntimeError):
+    """PostgreSQL only: a statement failed inside a transaction whose block then ended normally (the error was
+    caught inside it). Postgres had already aborted the transaction, so nothing in it was saved."""
 
 
 class StorageUnavailable(RuntimeError):
@@ -184,6 +189,7 @@ MIGRATIONS: dict[int, str] = {
         created text not null
     );
     """,
+    4: "",          # Postgres only (row level security); kept so both backends have the same version numbers
 }
 
 # The same schema for PostgreSQL. Differences, all chosen so both backends return the same values:
@@ -333,7 +339,36 @@ PG_MIGRATIONS: dict[int, str] = {
         created text not null
     );
     """,
+    # Supabase exposes the `public` schema through its Data API (REST and GraphQL), and in a default project the
+    # `anon` and `authenticated` roles get privileges on new tables there; a table without row level security can be
+    # read, changed and deleted by anyone with the project URL (Supabase docs: "Row Level Security", and Database
+    # Advisor lint 0013_rls_disabled_in_public). These tables hold password hashes, API key hashes, every company's
+    # data and (without SECRET_KEY) the session signing key. So: row level security on every table with no policy
+    # (the app connects as the tables' owner, which RLS doesn't restrict unless forced), and no privileges at all
+    # for anon/authenticated where those roles exist. On a plain PostgreSQL server this changes nothing visible.
+    4: """
+    do $rls$
+    declare t text; r text; seq text;
+    begin
+      foreach t in array array['tenants','users','api_keys','projects','subs','documents','field_logs','audit',
+                               'stripe_events','revoked_sessions','app_secrets','schema_version'] loop
+        execute format('alter table %I enable row level security', t);
+        foreach r in array array['anon','authenticated'] loop
+          if exists (select 1 from pg_roles where rolname = r) then
+            execute format('revoke all on table %I from %I', t, r);
+            if t in ('users','api_keys','projects','subs','documents','field_logs','audit') then   -- identity ids
+              seq := pg_get_serial_sequence(quote_ident(t), 'id');
+              execute format('revoke all on sequence %s from %I', seq, r);
+            end if;
+          end if;
+        end loop;
+      end loop;
+    end
+    $rls$;
+    """,
 }
+APP_TABLES = ("tenants", "users", "api_keys", "projects", "subs", "documents", "field_logs", "audit", "stripe_events",
+              "revoked_sessions", "app_secrets", "schema_version")
 assert sorted(MIGRATIONS) == sorted(PG_MIGRATIONS) and max(MIGRATIONS) == SCHEMA_VERSION
 
 # Writable columns per tenant-owned table. Anything else in a payload is ignored.
@@ -352,7 +387,15 @@ BOOL_COLUMNS = {"subs": {"wc_required", "w9_on_file"}, "documents": {"verified"}
 HAS_UPDATED = {"projects", "subs"}
 
 
-ORDERS = ("id desc", "id asc", "date desc", "date asc", "name asc")
+# Allowed sort orders and the SQL for each. Equal dates or names are ordered by id, so a list comes back in the same
+# order on both backends (without the tie-breaker Postgres and SQLite each return ties in their own order).
+ORDER_SQL = {"id desc": "id desc", "id asc": "id asc", "date desc": "date desc, id desc",
+             "date asc": "date asc, id asc", "name asc": "name asc, id asc"}
+ORDERS = tuple(ORDER_SQL)
+
+# Ids are 64-bit on both backends. A bigger number (a path like /api/projects/99999999999999999999) matches nothing;
+# without this check SQLite raises OverflowError (a 500) while Postgres just finds no row.
+MAX_ID = 2 ** 63 - 1
 
 MIN_SECRET_LEN = 32
 MIGRATION_LOCK_ID = 7_310_442_871_201      # pg_advisory_xact_lock key for schema migrations (any fixed bigint)
@@ -362,6 +405,11 @@ def _check_table(table: str) -> None:
     """Table names are interpolated into SQL, so only the fixed tenant-owned tables are accepted."""
     if table not in COLUMNS:
         raise ValueError(f"bad table {table!r}")
+
+
+def _id_ok(value) -> bool:
+    """False for an int id no row can have (outside the signed 64-bit range). Other types are left to the query."""
+    return not (isinstance(value, int) and not isinstance(value, bool) and not -MAX_ID - 1 <= value <= MAX_ID)
 
 
 def now_iso() -> str:
@@ -438,8 +486,20 @@ def to_pg(sql: str) -> str:
 
 
 def _pg_params(params) -> list:
-    # Booleans are stored as 0/1 smallints (as SQLite does); psycopg would send a Python bool as a Postgres boolean.
-    return [int(p) if isinstance(p, bool) else p for p in params]
+    """Parameters as psycopg should send them so both backends store and match the same values:
+    - booleans as 0/1 (the columns are smallint, as SQLite stores them); psycopg would send a Postgres boolean.
+    - a NUL character in text becomes U+FFFD. Postgres text can't hold NUL (psycopg raises DataError), so without this
+      a stray NUL in a note, a company name or a login email is a 500 on Postgres but saved or matched on SQLite. An
+      offline field log with one would never sync. Replacing it (not dropping it) keeps lookups exact: a login with
+      `a\\x00b@x` still doesn't match `ab@x`, so it can't be used to dodge the per-email rate limit."""
+    out = []
+    for p in params:
+        if isinstance(p, bool):
+            p = int(p)
+        elif isinstance(p, str) and "\x00" in p:
+            p = p.replace("\x00", "\ufffd")
+        out.append(p)
+    return out
 
 
 class Row:
@@ -620,9 +680,14 @@ class _PgConnection:
 
     # used by Store.connect()
     def _finish(self, ok: bool) -> None:
+        from psycopg.pq import TransactionStatus
+        # A statement failed and the caller caught the error inside the `with` block. SQLite would go on and commit
+        # the other statements; Postgres has already aborted the whole transaction, and psycopg's commit() would
+        # then roll back without a word. Say so instead of losing the writes quietly.
+        aborted = ok and not self._conn.closed and self._conn.info.transaction_status == TransactionStatus.INERROR
         broken = False
         try:
-            if ok:
+            if ok and not aborted:
                 self._conn.commit()
             else:
                 self._conn.rollback()
@@ -632,6 +697,9 @@ class _PgConnection:
                 raise
         finally:
             self._pool.put(self._conn, self._born, discard=broken or self._conn.broken)
+        if aborted:
+            raise TransactionAborted("a statement in this transaction failed, so PostgreSQL rolled all of it back; "
+                                     "nothing in it was saved")
 
 
 # ---------------------------------------------------------------------------- the store
@@ -835,15 +903,19 @@ class Store:
         for k, v in (where or {}).items():
             if k not in COLUMNS[table] and k != "id":
                 raise ValueError(f"bad column {k!r}")
+            if not _id_ok(v):
+                return []
             sql += f" and {k} = ?"
             params.append(v)
-        sql += f" order by {order} limit ?"
+        sql += f" order by {ORDER_SQL[order]} limit ?"
         params.append(int(limit))
         with self.connect() as con:
             return [self._row(table, r) for r in con.execute(sql, params).fetchall()]
 
     def get(self, table: str, tenant_id: str, row_id) -> dict | None:
         _check_table(table)
+        if not _id_ok(row_id):
+            return None
         with self.connect() as con:
             row = con.execute(f"select * from {table} where tenant_id = ? and id = ?", (tenant_id, row_id)).fetchone()
             return self._row(table, row)
@@ -861,6 +933,8 @@ class Store:
 
     def update(self, table: str, tenant_id: str, row_id, data: dict) -> dict | None:
         values = self._clean(table, data)
+        if not _id_ok(row_id):
+            return None
         if table in HAS_UPDATED:
             values["updated"] = now_iso()
         if values:
@@ -870,8 +944,39 @@ class Store:
                             [*values.values(), tenant_id, row_id])
         return self.get(table, tenant_id, row_id)
 
+    def _read_for_update(self, con, sql: str, params):
+        """The first read of a read-modify-write transaction, with the row locked until the transaction ends, so
+        two requests changing the same row one after the other each see the other's write (no lost update).
+        Postgres: SELECT ... FOR UPDATE. SQLite: BEGIN IMMEDIATE takes the database write lock before reading."""
+        if self.backend == "sqlite":
+            con.execute("begin immediate")
+            return con.execute(sql, params).fetchone()
+        return con.execute(sql + " for update", params).fetchone()
+
+    def modify(self, table: str, tenant_id: str, row_id, change) -> dict | None:
+        """Read-modify-write of one tenant-owned row in one locked transaction: change(current row as a dict)
+        returns the fields to write (it may raise, which rolls back). Returns the updated row, or None if there is
+        no such row for this tenant. `change` must not use the store (it would need a second connection)."""
+        _check_table(table)
+        if not _id_ok(row_id):
+            return None
+        where = f"from {table} where tenant_id = ? and id = ?"
+        with self.connect() as con:
+            row = self._read_for_update(con, f"select * {where}", (tenant_id, row_id))
+            if row is None:
+                return None
+            values = self._clean(table, change(self._row(table, row)) or {})
+            if table in HAS_UPDATED:
+                values["updated"] = now_iso()
+            if values:
+                con.execute(f"update {table} set {', '.join(f'{c} = ?' for c in values)} where tenant_id = ? "
+                            "and id = ?", [*values.values(), tenant_id, row_id])
+            return self._row(table, con.execute(f"select * {where}", (tenant_id, row_id)).fetchone())
+
     def delete(self, table: str, tenant_id: str, row_id) -> bool:
         _check_table(table)
+        if not _id_ok(row_id):
+            return False
         with self.connect() as con:
             return con.execute(f"delete from {table} where tenant_id = ? and id = ?",
                                (tenant_id, row_id)).rowcount > 0
@@ -884,6 +989,24 @@ class Store:
             con.execute("insert into tenants (id, company_name, cslb_license, plan, status, trial_ends, created) "
                         "values (?,?,?,?,?,?,?)", (tid, company_name, cslb_license, plan, status, trial_ends, now_iso()))
         return self.get_tenant(tid)
+
+    def create_tenant_with_owner(self, company_name: str, cslb_license: str | None, trial_ends: str | None,
+                                 email: str, pw_hash: str, name: str | None = None, status: str = "trialing",
+                                 plan: str = "core") -> tuple[dict, dict]:
+        """Sign-up: the company and its owner in one transaction. If the email is taken (two sign-ups racing past
+        the app's "already exists" check, e.g. a double-submitted form), the unique email index raises
+        IntegrityError and the tenant insert is rolled back with it, so no company is left without an owner."""
+        tid = "t_" + secrets.token_hex(8)
+        created = now_iso()
+        with self.connect() as con:
+            con.execute("insert into tenants (id, company_name, cslb_license, plan, status, trial_ends, created) "
+                        "values (?,?,?,?,?,?,?)", (tid, company_name, cslb_license, plan, status, trial_ends, created))
+            uid = self._insert_id(con, "insert into users (tenant_id, email, name, pw_hash, role, "
+                                       "must_change_password, created) values (?,?,?,?,?,?,?)",
+                                  (tid, email.strip().lower(), name, pw_hash, "owner", 0, created))
+            tenant = self._row("tenants", con.execute("select * from tenants where id = ?", (tid,)).fetchone())
+            user = dict(con.execute("select * from users where id = ?", (uid,)).fetchone())
+        return tenant, user
 
     def get_tenant(self, tenant_id: str) -> dict | None:
         with self.connect() as con:
@@ -913,6 +1036,49 @@ class Store:
                             [*values.values(), tenant_id])
         return self.get_tenant(tenant_id)
 
+    def modify_tenant_settings(self, tenant_id: str, change) -> dict | None:
+        """Read-modify-write of a tenant's settings in one locked transaction: change(current settings) returns
+        the new settings (it may raise, which rolls back). Without the lock, rotating the calendar link while
+        someone saves a setting could write the old link generation back and revive a link meant to be dead."""
+        with self.connect() as con:
+            row = self._read_for_update(con, "select settings_json from tenants where id = ?", (tenant_id,))
+            if row is None:
+                return None
+            try:
+                current = json.loads(row[0] or "{}")
+            except ValueError:
+                current = {}
+            new = change(current if isinstance(current, dict) else {})
+            con.execute("update tenants set settings_json = ? where id = ?",
+                        (json.dumps(new, separators=(",", ":")), tenant_id))
+        return self.get_tenant(tenant_id)
+
+    def update_tenant_from_event(self, tenant_id: str, created: int, status: str | None = None,
+                                 **fields) -> bool:
+        """Apply a Stripe event to a tenant. `fields` (customer and subscription ids) are always written; `status`
+        only if the event is not older than the last one whose status was applied (tenants.stripe_event_created),
+        and that check is part of the UPDATE itself. Reading the tenant first and deciding in Python would let two
+        webhook deliveries processed at the same moment both pass the check, and the older one could land last
+        (a late "active" undoing a cancellation). Returns whether the status was applied."""
+        allowed = {"company_name", "cslb_license", "plan", "trial_ends", "stripe_customer_id", "stripe_subscription_id"}
+        if set(fields) - allowed:
+            raise ValueError(f"can't set {sorted(set(fields) - allowed)} from a Stripe event")
+        values = dict(fields)
+        if status is not None and status not in TENANT_STATUSES:
+            raise ValueError(f"bad tenant status {status!r}")
+        applied = False
+        with self.connect() as con:
+            if values:
+                con.execute(f"update tenants set {', '.join(f'{k} = ?' for k in values)} where id = ?",
+                            [*values.values(), tenant_id])
+            if status is not None and created:
+                applied = con.execute("update tenants set status = ?, stripe_event_created = ? "
+                                      "where id = ? and stripe_event_created <= ?",
+                                      (status, int(created), tenant_id, int(created))).rowcount > 0
+            elif status is not None:           # an event without a timestamp: applied, and orders nothing
+                applied = con.execute("update tenants set status = ? where id = ?", (status, tenant_id)).rowcount > 0
+        return applied
+
     def count_tenants(self) -> int:
         with self.connect() as con:
             return con.execute("select count(*) from tenants").fetchone()[0]
@@ -936,6 +1102,8 @@ class Store:
             return dict(row) if row else None
 
     def user_by_id(self, user_id: int) -> dict | None:
+        if not _id_ok(user_id):
+            return None
         with self.connect() as con:
             row = con.execute("select * from users where id = ?", (user_id,)).fetchone()
             return dict(row) if row else None
@@ -957,6 +1125,8 @@ class Store:
         values = {k: v for k, v in fields.items() if k in allowed}
         if "role" in values and values["role"] not in ROLES:
             raise ValueError("role must be owner, office or field")
+        if not _id_ok(user_id):
+            return None
         if values:
             with self.connect() as con:
                 con.execute(f"update users set {', '.join(f'{k} = ?' for k in values)} where tenant_id = ? and id = ?",
@@ -966,6 +1136,8 @@ class Store:
             return dict(row) if row else None
 
     def delete_user(self, tenant_id: str, user_id: int) -> bool:
+        if not _id_ok(user_id):
+            return False
         with self.connect() as con:
             return con.execute("delete from users where tenant_id = ? and id = ?", (tenant_id, user_id)).rowcount > 0
 
@@ -992,12 +1164,16 @@ class Store:
                                                       (tenant_id,)).fetchall()]
 
     def revoke_api_key(self, tenant_id: str, key_id: int) -> bool:
+        if not _id_ok(key_id):
+            return False
         with self.connect() as con:
             return con.execute("update api_keys set revoked = 1, revoked_at = ? where tenant_id = ? and id = ? "
                                "and revoked = 0", (now_iso(), tenant_id, key_id)).rowcount > 0
 
     def revoke_user_api_keys(self, tenant_id: str, user_id: int) -> int:
         """Keys act for the company, not the person; when someone leaves (or loses office access) their keys go."""
+        if not _id_ok(user_id):
+            return 0
         with self.connect() as con:
             return con.execute("update api_keys set revoked = 1, revoked_at = ? where tenant_id = ? and created_by = ? "
                                "and revoked = 0", (now_iso(), tenant_id, user_id)).rowcount
@@ -1059,6 +1235,8 @@ class Store:
         return out
 
     def get_audit(self, tenant_id: str, audit_id: int) -> dict | None:
+        if not _id_ok(audit_id):
+            return None
         with self.connect() as con:
             row = con.execute("select * from audit where tenant_id = ? and id = ?", (tenant_id, audit_id)).fetchone()
             return dict(row) if row else None

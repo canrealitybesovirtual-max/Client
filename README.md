@@ -113,8 +113,18 @@ dashboard) and the data lives in PostgreSQL; `/health` reports `"storage": "post
   pooler mode: prepared statements are off and nothing is kept in the session between transactions. Put in the real
   password, percent-encoding any `@ : / % # ?` in it (`@` becomes `%40`). Pick the Supabase region closest to the
   Render region; every query is a network round trip.
+- **Supabase Data API.** Supabase serves the `public` schema (where these tables are created) over its REST and
+  GraphQL Data API, and a table there without row level security can be read, changed and deleted by anyone with
+  the project URL (Supabase docs: "Row Level Security" guide and Database Advisor lint
+  `0013_rls_disabled_in_public`). These tables hold password and API-key hashes, every company's data and, without
+  `SECRET_KEY`, the session signing key. So the schema migration turns on row level security for every table with
+  no policies (the app connects as the tables' owner, which RLS doesn't restrict) and revokes every privilege of
+  the `anon` and `authenticated` roles on them where those roles exist. If you don't use the Data API at all, the
+  same lint page suggests also removing `public` from **Exposed schemas** in the project's API settings. Check the
+  project's Security Advisor after the first deploy.
 - **Render Postgres.** Create a database in the same region as the web service and paste its `postgresql://`
-  connection URL from the database's page in the dashboard.
+  connection URL from the database's page in the dashboard. Unverified: whether Render's internal URL accepts TLS
+  (render.com's docs could not be read when this was written). If startup fails with a TLS error, see **TLS** below.
 - **TLS.** Connections use `sslmode=require` unless the URL (or `PGSSLMODE`) sets `sslmode`, e.g.
   `?sslmode=verify-full` to also check the certificate, or `?sslmode=disable` for a local test server without TLS.
 
@@ -122,16 +132,27 @@ What happens at startup: the schema is created or migrated in one transaction un
 (table `schema_version`; two instances starting together migrate once). If `DATABASE_URL` is set but the database
 can't be reached (3 attempts, 5-second connect timeout), the server logs a CRITICAL line naming
 `user@host:port/db` (never the password) and exits, so the deploy fails; it never falls back to a throwaway SQLite
-file. A connection the pooler or server dropped while idle is replaced on the next query. If `SECRET_KEY` is unset,
-a key is generated once and stored in the table `app_secrets`, so logins survive restarts and every instance
-shares it; anyone who can read that table can sign sessions, so set `SECRET_KEY` yourself if others can read the
+file. A connection the pooler or server dropped while idle is replaced on the next query; if the database stops
+answering later, `/health` returns 503 with `"ok": false` (no details) and the log names the storage. If
+`SECRET_KEY` is unset, a key is generated once and stored in the table `app_secrets`, so logins survive restarts
+and every instance shares it; anyone who can read that table can sign sessions, so set `SECRET_KEY` yourself if others can read the
 database. Local mode (`python -m app.local`) always uses SQLite and ignores `DATABASE_URL`. Existing SQLite data is
 not copied to Postgres automatically.
 
 Tests: `python -m pytest -q tests` runs everything on SQLite. With
 `TC_TEST_DATABASE_URL=postgresql://user:pw@host:5432/dbname` (a database the tests may write to; each test gets its
 own schema, dropped afterwards) `tests/test_platform.py` also runs on PostgreSQL and `tests/test_store_pg.py` tests
-the Postgres plumbing (pooler settings, advisory-lock migrations, reconnects, the shared key).
+the Postgres plumbing (pooler settings, advisory-lock migrations, reconnects, the shared key, row level security).
+To also check the Supabase role revokes, create the roles on the test server first (`CREATE ROLE anon NOLOGIN;
+CREATE ROLE authenticated NOLOGIN; GRANT anon, authenticated TO <test user>;`).
+
+How both backends are kept the same: every query on a company's data filters by `tenant_id`; sign-up creates the company and its owner
+in one transaction (a double-submitted form gets a 409, never an ownerless company); the email is unique ignoring
+case; a NUL character in text, which Postgres can't store, is saved as U+FFFD instead of failing; ties in sorted lists
+are ordered by id; settings, calendar-link rotation and project edits are read-modify-writes under a row lock; a
+Stripe status is applied only if its event is not older than the last one applied, checked inside the UPDATE. On
+Postgres a statement error caught inside a transaction is reported (`TransactionAborted`) instead of the whole
+transaction vanishing at commit. Database calls never run on the event loop.
 
 ### Security notes
 
@@ -154,8 +175,9 @@ payroll CSV are stored as length + hash); anonymous `/mcp` rows are capped at th
 ### Known limits
 
 - Rate limits and the tool-list cache are in memory: run one instance. Customer data can be in Postgres
-  (`DATABASE_URL`), but scaling out also needs shared rate limits (e.g. Redis). Request handlers call the database
-  synchronously, so keep Postgres in or near the service's region.
+  (`DATABASE_URL`), but scaling out also needs shared rate limits (e.g. Redis). Database calls run on worker
+  threads (up to `DATABASE_POOL_MAX` connections at once), but each is still a network round trip, so keep Postgres
+  in or near the service's region.
 - Per-IP limits use the first `X-Forwarded-For` entry, which a client can spoof; per-email and global limits back
   them up. Sessions are stateless signed cookies (revoked on logout); keys don't expire until revoked.
 - Team invites set "must change password", but the server doesn't force the change before other use.

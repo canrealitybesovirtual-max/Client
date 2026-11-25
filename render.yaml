@@ -5,7 +5,9 @@
 # "storage_persistent". The disk also keeps the CSLB license data (rebuilt from seed/ at boot if missing) and, when
 # SECRET_KEY is not set, the signing key (with Postgres that key is kept in the database instead).
 # Disks need a paid instance type and limit the service to one instance, which this app expects (rate limits and
-# the tool-list cache are in memory). With DATABASE_URL set, the disk block can be removed.
+# the tool-list cache are in memory). With DATABASE_URL set, the disk block can be removed: remove the DATA_DIR entry
+# with it (the app then uses ./data in the checkout) or point DATA_DIR at a writable directory, because without the
+# disk /var/data may not exist or be writable and the app would fail to start creating it.
 services:
   - type: web
     name: tradecomply-ca

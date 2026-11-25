@@ -990,3 +990,292 @@ def test_gzip_only_on_public_responses(client):
         assert client.get(path, headers=gz).headers.get("content-encoding") is None, path
     key = client.post("/api/keys", json={"name": "x" * 600}, headers=gz)
     assert key.status_code in (200, 201, 422) and key.headers.get("content-encoding") is None
+
+
+# ---------------------------------------------------------------------------- storage: same behaviour on both backends
+def test_nul_characters_do_not_break_saving_login_or_sync(app):
+    """Postgres text can't hold NUL (psycopg refuses it), SQLite can. A NUL pasted into a note, a company name or a
+    login form must not be a 500 on one backend only: an offline field log with one would never sync."""
+    with TestClient(app) as c:
+        signup(c, company="Acme\x00Builders")
+        r = c.post("/api/projects", json={"name": "Main\x00St", "address": "1 A\x00 St"})
+        assert r.status_code == 201, r.text
+        assert c.get(f"/api/projects/{r.json()['id']}").json()["name"] in ("Main\x00St", "Main�St")
+        log = {"client_uuid": "nul-log-0001", "kind": "inspection", "date": "2026-11-20", "notes": "crack\x00ed",
+               "topic": "Scaffold\x00", "attendees": [{"name": "Ana\x00", "acknowledged": True}]}
+        assert c.post("/api/field_logs/sync", json={"logs": [log]}).json()["created"] == 1
+        assert c.post("/api/field_logs/sync", json={"logs": [log]}).json()["duplicates"] == 1
+        assert c.post("/api/documents", json={"title": "T\x00", "body_markdown": "x\x00y"}).status_code == 201
+        assert c.patch("/api/tenant", json={"company_name": "Acme\x00 Inc", "settings": {"k\x00": "v\x00"}}
+                       ).status_code == 200
+    anon = TestClient(app)
+    r = anon.post("/api/auth/login", json={"email": "owner\x00@acme.test", "password": PW})
+    assert r.status_code == 401, r.text
+    assert anon.post("/api/auth/signup", json={"company_name": "X", "email": "a\x00@b.test", "password": PW}
+                     ).status_code in (200, 409, 422)
+    assert anon.get("/api/calendar.ics", params={"tenant": "t_\x00", "token": "x"}).status_code == 404
+    # and the NUL can't be used to reach a different account: owner\x00@acme.test is not owner@acme.test
+    assert anon.post("/api/auth/login", json={"email": "owner@acme.test\x00", "password": PW}).status_code == 401
+
+
+def test_signup_double_submit_makes_one_company(app):
+    """Two sign-ups with the same email at the same moment both pass the "already exists" check. The company and
+    its owner are created in one transaction, so the loser gets a 409 (not a 500) and leaves no ownerless company."""
+    import threading
+    store = app.state.platform.store
+    n, codes = 6, []
+    gate = threading.Barrier(n)
+
+    def go(i):
+        c = TestClient(app)
+        gate.wait()
+        codes.append(c.post("/api/auth/signup", json={"company_name": f"Co {i}", "password": PW,
+                                                       "email": "Same@acme.test" if i % 2 else "same@acme.test"}
+                            ).status_code)
+    threads = [threading.Thread(target=go, args=(i,)) for i in range(n)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert sorted(codes) == [200] + [409] * (n - 1)
+    assert store.count_tenants() == 1
+    # the same race made deterministic: the pre-check misses the account created a moment ago
+    real = store.user_by_email
+    store.user_by_email = lambda email: None
+    try:
+        r = TestClient(app).post("/api/auth/signup", json={"company_name": "Late", "email": "SAME@acme.test",
+                                                           "password": PW})
+    finally:
+        store.user_by_email = real
+    assert r.status_code == 409 and "already exists" in r.json()["detail"]
+    assert store.count_tenants() == 1
+    with store.connect() as con:
+        assert con.execute("select count(*) from tenants t where not exists "
+                           "(select 1 from users u where u.tenant_id = t.id)").fetchone()[0] == 0
+
+
+def test_invite_race_is_409_not_500(client, app, monkeypatch):
+    signup(client)
+    assert client.post("/api/users", json={"email": "crew@acme.test"}).status_code == 200
+    monkeypatch.setattr(app.state.platform.store, "user_by_email", lambda email: None)
+    r = client.post("/api/users", json={"email": "CREW@acme.test", "role": "office"})
+    assert r.status_code == 409, r.text
+    assert [u["email"] for u in client.get("/api/users").json()] == ["owner@acme.test", "crew@acme.test"]
+
+
+def test_equal_dates_and_names_list_in_id_order(client):
+    """Both backends return ties in the same order (newest first for dates, oldest first for names)."""
+    signup(client)
+    ids = [client.post("/api/field_logs", json={"kind": "inspection", "date": "2026-11-20", "topic": str(i)}
+                       ).json()["id"] for i in range(6)]
+    ids.append(client.post("/api/field_logs", json={"kind": "inspection", "date": "2026-11-21"}).json()["id"])
+    got = [r["id"] for r in client.get("/api/field_logs").json()]
+    assert got == [ids[-1]] + sorted(ids[:-1], reverse=True)
+    subs = [client.post("/api/subs", json={"name": "Same Co"}).json()["id"] for _ in range(5)]
+    first = client.post("/api/subs", json={"name": "Alpha"}).json()["id"]
+    assert [s["id"] for s in client.get("/api/subs").json()] == [first] + sorted(subs)
+
+
+def test_ids_beyond_64_bits_are_not_found(client):
+    signup(client)
+    big = 2 ** 63
+    for path in ("projects", "subs", "documents", "field_logs", "audit"):
+        assert client.get(f"/api/{path}/{big}").status_code == 404, path
+    assert client.patch(f"/api/projects/{big}", json={"name": "x"}).status_code == 404
+    assert client.delete(f"/api/projects/{big}").status_code == 404
+    assert client.patch(f"/api/users/{big}", json={"name": "x"}).status_code == 404
+    assert client.delete(f"/api/users/{big}").status_code == 404
+    assert client.delete(f"/api/keys/{big}").status_code == 404
+    assert client.post("/api/subs", json={"name": "X", "project_id": big}).status_code == 422
+    assert client.get(f"/api/subs?project_id={big}").json() == []
+    assert client.get(f"/api/documents?project_id={big}").json() == []
+    r = client.post("/api/field_logs/sync", json={"logs": [{"client_uuid": "bigproject1", "kind": "inspection",
+                                                            "date": "2026-11-20", "project_id": big}]})
+    assert r.json()["results"][0]["error"] == "project not found"
+
+
+def test_stale_stripe_event_cannot_overwrite_a_newer_status(app):
+    """Two webhook deliveries handled at once both read the tenant before either writes. The older event's
+    status must still lose: the "not older than the last applied event" check is made in the UPDATE itself."""
+    store = app.state.platform.store
+    tid = store.create_tenant("Acme", None, None)["id"]
+    stale = store.get_tenant(tid)                                   # read by the delivery of the older event
+    billing._set_status(store, store.get_tenant(tid), 200, status="canceled")
+    billing._set_status(store, stale, 100, status="active", stripe_customer_id="cus_1")
+    t = store.get_tenant(tid)
+    assert (t["status"], t["stripe_event_created"], t["stripe_customer_id"]) == ("canceled", 200, "cus_1")
+    billing._set_status(store, stale, 200, status="past_due")       # same second: applied, as before
+    billing._set_status(store, stale, 0, status="active")           # no timestamp: applied, orders nothing
+    t = store.get_tenant(tid)
+    assert (t["status"], t["stripe_event_created"]) == ("active", 200)
+
+
+def test_mcp_call_still_answers_when_the_audit_write_fails(client, app, monkeypatch):
+    h = mcp_session(client)
+
+    def down(*a, **k):
+        raise RuntimeError("database went away")
+    monkeypatch.setattr(app.state.platform.store, "audit", down)
+    r = client.post("/mcp", headers=h, json={"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {
+        "name": "verify_contractor_license", "arguments": {"license_number": "123456"}}})
+    assert r.status_code == 200
+    assert sse_json(r.text)["result"]["structuredContent"]["business_name"] == "Example Plumbing Inc."
+
+
+def test_health_is_503_when_storage_is_down(client, app, monkeypatch):
+    def down():
+        raise RuntimeError("connection refused")
+    monkeypatch.setattr(app.state.platform.store, "schema_version", down)
+    r = client.get("/health")
+    assert r.status_code == 503 and r.json()["ok"] is False and r.json()["error"] == "storage unavailable"
+    assert "refused" not in r.text
+
+
+def test_database_is_never_called_on_the_event_loop(tmp_path):
+    """On Postgres every store call is a network round trip that may also wait for a pooled connection. Made on the
+    event loop it stalls every other request (/health and /mcp too), so each one must run on a worker thread."""
+    import asyncio
+    import traceback
+    secret = "whsec_loop"
+    app = make_app(tmp_path, stripe_webhook_secret=secret)
+    store = app.state.platform.store
+    real, on_loop = store.connect, []
+
+    def connect():
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            pass
+        else:
+            on_loop.append(" < ".join(f.name for f in reversed(traceback.extract_stack()[-6:-1])))
+        return real()
+    store.connect = connect
+    with TestClient(app) as c:
+        assert c.get("/health").status_code == 200
+        signup(c)
+        c.post("/api/auth/logout")
+        assert c.post("/api/auth/login", json={"email": "owner@acme.test", "password": PW}).status_code == 200
+        c.headers["x-csrf-token"] = c.cookies.get("tc_csrf")
+        c.get("/api/me")
+        c.patch("/api/tenant", json={"company_name": "Acme 2"})
+        uid = c.post("/api/users", json={"email": "crew@acme.test"}).json()["id"]
+        c.patch(f"/api/users/{uid}", json={"role": "office"})
+        c.get("/api/users")
+        key = c.post("/api/keys", json={"name": "agent"}).json()
+        c.get("/api/keys")
+        pid = c.post("/api/projects", json={"name": "Main St", "last_furnishing_date": "2026-11-01"}).json()["id"]
+        c.get("/api/projects")
+        c.get(f"/api/projects/{pid}")
+        c.patch(f"/api/projects/{pid}", json={"city": "Fresno"})
+        c.get(f"/api/projects/{pid}/deadlines")
+        sid = c.post("/api/subs", json={"name": "Sub", "license_number": "123456", "project_id": pid}).json()["id"]
+        c.get("/api/subs?check=true")
+        c.get(f"/api/subs/{sid}")
+        c.get(f"/api/subs/{sid}/check")
+        c.patch(f"/api/subs/{sid}", json={"scope": "plumbing"})
+        c.post("/api/subs/import", json={"csv": "name,license_number\nCo,654321\n", "project_id": pid})
+        out = c.post("/api/tools/verify_contractor_license", json={"license_number": "123456"}).json()
+        did = c.post("/api/documents/from_result", json={"tool": "verify_contractor_license",
+                                                         "result": out["structured"],
+                                                         "result_sig": out.get("result_sig")}).json()["id"]
+        c.post("/api/documents", json={"title": "Note"})
+        c.get("/api/documents")
+        c.get(f"/api/documents/{did}")
+        c.patch(f"/api/documents/{did}", json={"title": "Renamed"})
+        lid = c.post("/api/field_logs", json={"kind": "toolbox_talk", "date": "2026-11-20", "project_id": pid}
+                     ).json()["id"]
+        c.post("/api/field_logs/sync", json={"logs": [{"client_uuid": "loop-sync-1", "kind": "inspection",
+                                                        "date": "2026-11-20"}]})
+        c.get("/api/field_logs")
+        c.get(f"/api/field_logs/{lid}")
+        c.get("/api/dashboard")
+        feed = c.get("/api/calendar/feed").json()["url"]
+        c.get("/api/calendar.ics")
+        TestClient(app).get(feed.split("testserver", 1)[1])
+        feed = c.post("/api/calendar/feed/rotate").json()["url"]
+        c.get("/api/audit")
+        c.get("/api/billing/status")
+        c.post("/api/billing/checkout")
+        c.post("/api/billing/portal")
+        payload = json.dumps({"id": "evt_loop", "type": "customer.subscription.updated",
+                              "data": {"object": {"id": "sub_x", "customer": "cus_x", "status": "active"}}}).encode()
+        c.post("/api/billing/webhook", content=payload, headers={
+            "stripe-signature": billing.sign_payload(payload, secret), "content-type": "application/json"})
+        h = mcp_session(c, {"authorization": f"Bearer {key['key']}"})
+        c.post("/mcp", headers=h, json={"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {
+            "name": "verify_contractor_license", "arguments": {"license_number": "123456"}}})
+        c.get("/api/keys", headers={"authorization": f"Bearer {key['key']}"})
+        c.delete(f"/api/field_logs/{lid}")
+        c.delete(f"/api/documents/{did}")
+        c.delete(f"/api/subs/{sid}")
+        c.delete(f"/api/projects/{pid}")
+        c.delete(f"/api/keys/{key['id']}")
+        c.delete(f"/api/users/{uid}")
+        assert c.post("/api/auth/password", json={"current_password": PW, "new_password": PW + "!"}
+                      ).status_code == 200
+    store.connect = real
+    assert on_loop == []
+
+
+def test_read_modify_writes_lock_the_row(app):
+    """Handlers run on worker threads, so two requests can change one row at the same moment. Settings (including
+    the calendar link generation) and a project's `extra` are merged under a row lock: the second change waits for
+    the first and builds on it instead of writing back what it read before."""
+    import threading
+    store = app.state.platform.store
+    tid = store.create_tenant("A", None, None)["id"]
+    pid = store.insert("projects", tid, {"name": "Job", "extra": {"x": 0}})["id"]
+    for modify, first, second, want in (
+            (lambda f: store.modify_tenant_settings(tid, f),
+             lambda cur: {**cur, "theme": "dark"},
+             lambda cur: {**cur, "ics_gen": int(cur.get("ics_gen", 0)) + 1},
+             lambda: store.get_tenant(tid)["settings"] == {"theme": "dark", "ics_gen": 1}),
+            (lambda f: store.modify("projects", tid, pid, f),
+             lambda row: {"extra": {**row["extra"], "claimant_role": "subcontractor"}},
+             lambda row: {"extra": {**row["extra"], "x": row["extra"]["x"] + 1}},
+             lambda: store.get("projects", tid, pid)["extra"] == {"x": 1, "claimant_role": "subcontractor"})):
+        inside, release = threading.Event(), threading.Event()
+
+        def slow(cur, first=first):
+            inside.set()
+            assert release.wait(10)
+            return first(cur)
+        t1 = threading.Thread(target=modify, args=(slow,))
+        t1.start()
+        assert inside.wait(10)
+        t2 = threading.Thread(target=modify, args=(second,))
+        t2.start()
+        t2.join(0.5)
+        assert t2.is_alive()          # waiting for the first change's lock, not working from a stale read
+        release.set()
+        t1.join(10)
+        t2.join(10)
+        assert want()
+
+
+def test_concurrent_settings_saves_and_feed_rotations_all_land(app):
+    import threading
+    with TestClient(app) as owner:
+        signup(owner)
+        cookies, csrf = dict(owner.cookies), owner.headers["x-csrf-token"]
+    errors = []
+
+    def go(i):
+        c = TestClient(app, cookies=cookies, headers={"x-csrf-token": csrf})
+        r = (c.post("/api/calendar/feed/rotate") if i % 3 == 0 else
+             c.patch("/api/tenant", json={"settings": {f"k{i}": i}}))
+        if r.status_code != 200:
+            errors.append(r.text)
+    threads = [threading.Thread(target=go, args=(i,)) for i in range(15)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    settings = app.state.platform.store.get_tenant(signup_tid(app))["settings"]
+    assert {k: v for k, v in settings.items() if k != "ics_gen"} == {f"k{i}": i for i in range(15) if i % 3}
+    assert settings["ics_gen"] == 5
+
+
+def signup_tid(app) -> str:
+    return app.state.platform.store.first_owner()["tenant_id"]

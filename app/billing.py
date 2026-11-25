@@ -130,15 +130,12 @@ def _event_created(event: dict) -> int:
 def _set_status(store, tenant: dict, created: int, **fields) -> None:
     """Stripe doesn't deliver events in order (and retries old ones for days), so a status change is applied only if
     its event is not older than the last one applied to this tenant. Without this a late "subscription.updated:
-    active" could undo a cancellation."""
-    if "status" in fields:
-        if created and created < int(tenant.get("stripe_event_created") or 0):
-            fields.pop("status")
-        elif created:
-            fields["stripe_event_created"] = created
+    active" could undo a cancellation. The comparison is made by the database in the same UPDATE (not against the
+    `tenant` read earlier), so two deliveries processed at once can't both pass it."""
+    status = fields.pop("status", None) or None
     fields = {k: v for k, v in fields.items() if v is not None and v != ""}
-    if fields:
-        store.update_tenant(tenant["id"], **fields)
+    if fields or status:
+        store.update_tenant_from_event(tenant["id"], created, status=status, **fields)
 
 
 def apply_event(store, event: dict) -> str | None:
@@ -217,7 +214,7 @@ def base_url(request: Request) -> str:
 
 
 @router.get("/status")
-async def status(request: Request, p: Principal = Depends(get_principal)):
+def status(request: Request, p: Principal = Depends(get_principal)):
     platform = platform_of(request)
     tenant = platform.store.get_tenant(p.tenant_id)
     return {"configured": platform.settings.stripe_enabled, "status": tenant["status"], "plan": tenant["plan"],
@@ -231,7 +228,7 @@ async def checkout(request: Request, p: Principal = Depends(owner_only)):
     s = platform.settings
     if not s.stripe_enabled:
         raise HTTPException(503, NOT_CONFIGURED)
-    tenant = platform.store.get_tenant(p.tenant_id)
+    tenant = await anyio.to_thread.run_sync(platform.store.get_tenant, p.tenant_id)
     base = base_url(request)
     form = {
         "mode": "subscription",
@@ -257,7 +254,7 @@ async def portal(request: Request, p: Principal = Depends(owner_only)):
     platform = platform_of(request)
     if not platform.settings.stripe_enabled:
         raise HTTPException(503, NOT_CONFIGURED)
-    tenant = platform.store.get_tenant(p.tenant_id)
+    tenant = await anyio.to_thread.run_sync(platform.store.get_tenant, p.tenant_id)
     if not tenant.get("stripe_customer_id"):
         raise HTTPException(409, "No billing account yet. Subscribe first.")
     session = await _stripe(platform, "/v1/billing_portal/sessions",
@@ -288,6 +285,6 @@ async def webhook(request: Request):
     except Exception:
         log.exception("Stripe event %s failed", event.get("type"))
         if event_id:
-            platform.store.forget_stripe_event(event_id)       # let Stripe's retry process it again
+            await anyio.to_thread.run_sync(platform.store.forget_stripe_event, event_id)   # Stripe's retry redoes it
         raise HTTPException(500, "Event processing failed")
     return {"received": True, "tenant_updated": bool(tenant_id)}
