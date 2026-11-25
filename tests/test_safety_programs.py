@@ -120,6 +120,7 @@ def test_fall_protection_plan_only_when_conventional_protection_infeasible():
     r = sp.generate_safety_programs("Roof Co", 12, True, max_fall_height_ft=22, as_of=AS_OF)
     fp = prog(r, "fall_protection_plan")
     assert fp.status == "not_required" and "more than 7.5 ft" in fp.why and "22 ft" in fp.why
+    assert "any height on steeper residential roofs" in fp.why and "up to 7:12 slope" in fp.why
     assert fp.verified is True and fp.document_outline_md == ""
     r = sp.generate_safety_programs("Roof Co", 12, True, max_fall_height_ft=22,
                                     conventional_fall_protection_infeasible=True, as_of=AS_OF)
@@ -157,7 +158,12 @@ def test_deep_excavation_names_engineer_and_screens_permit():
                                     as_of=AS_OF)
     ex = prog(r, "excavation")
     assert "REQUIRED at this depth" in ex.elements[1].requirement                    # 22 >= 5
-    assert "Registered professional engineer (excavations deeper than 20 ft)" in ex.named_people
+    assert any(n.startswith("Registered professional engineer (sloping/benching deeper than 20 ft")
+               for n in ex.named_people)
+    deep = next(e for e in ex.elements if e.item.startswith("Deeper than 20 ft"))
+    # 1541.1 App. B Table B-1 note 3: sloping/benching > 20 ft needs a PE; shoring may use manufacturer's data
+    assert "22 ft > 20 ft" in deep.requirement and "manufacturer's tabulated data" in deep.requirement
+    assert deep.unverified == ["excavation_over_20ft_engineer"]
     assert ex.verified is False                                                        # engineer rule is UNVERIFIED
     assert r.permits_to_check == ["Trench / excavation: project"]
     shallow = prog(sp.generate_safety_programs("Dig Co", 20, True, excavation_max_depth_ft=4, as_of=AS_OF),
@@ -203,8 +209,11 @@ def test_gc_four_story_building_trench_and_scaffold_fees_and_dates():
     # $50 trench + $50 structure + $50 scaffold (8 CCR 341.3) = $150
     assert r.total_fees_usd == 150.0
     assert r.fee_math.endswith("= $150")
-    # Project permit issued within 5 working days: Mon 1/11 back 5 weekdays (1/8,7,6,5,4) = Mon 2027-01-04
-    assert item(r, "Trench / excavation").deadline == "2027-01-04"
+    # Project permit issued within 5 working days, permit in hand the working day before start: Mon 1/11 back
+    # 5 + 1 = 6 weekdays (1/8,7,6,5,4,1) = Fri 2027-01-01. That is New Year's Day, which the working-day note
+    # tells the user to skip (apply one working day earlier per holiday).
+    assert item(r, "Trench / excavation").deadline == "2027-01-01"
+    assert any("state holidays are not skipped" in n for n in r.notes)
     assert item(r, "Building / structure over 36 ft").holder == "project administrator"
     # 811: call day does not count, so 2 full working days between call and dig: Wed 1/6 call, Thu, Fri, dig Mon.
     usa = item(r, "811 underground utility locate")
@@ -412,6 +421,155 @@ def test_every_cited_rule_exists_and_unverified_has_sources():
     for c in r.citations:
         assert core.rule(c.rule_id).citation_text == c.citation
     assert r.verified is False and len(r.required_programs) >= 12
+
+
+# ---------------------------------------------------------------- accuracy review fixes
+def test_exigent_circumstances_run_24_hours_from_the_incident_not_from_knowledge():
+    # 342(a): 8 h after the employer knew, or with exigent circumstances "no longer than 24 hours after the incident".
+    # Incident Tue 06:00, known 07:00: 8 h rule = 15:00; exigent = 06:00 + 24 h = Wed 06:00 (old code gave Wed 07:00).
+    r = sp.injury_reporting_deadlines("2026-11-24T06:00", serious=True, employer_knew_at="2026-11-24T07:00",
+                                      exigent_circumstances=True, as_of="2026-11-24T12:00")
+    d = dl(r, "Report to Cal/OSHA")
+    assert d.due == "2026-11-25T06:00" and d.hours_left == 18.0              # 12:00 -> 06:00 next day = 18 h
+    assert "24 hours after the INCIDENT" in d.how_computed
+    # Learned 28 h after the incident: exigent cap (incident + 24 h) is already past, so knew + 8 h governs.
+    r = sp.injury_reporting_deadlines("2026-11-24T06:00", serious=True, employer_knew_at="2026-11-25T10:00",
+                                      exigent_circumstances=True, as_of="2026-11-25T11:00")
+    assert dl(r, "Report to Cal/OSHA").due == "2026-11-25T18:00"             # 10:00 + 8 h
+
+
+def test_failure_to_report_penalty_text_and_log_penalty_citations():
+    r = sp.injury_reporting_deadlines("2026-11-24T15:30", hospitalized=True, as_of="2026-11-24T20:00")
+    pen = {p.item: p for p in r.penalties}
+    late = pen["Late or missing Cal/OSHA serious injury/death report"]
+    assert "good faith" not in late.detail and "336(a)(6)" in late.detail and late.verified is True
+    assert pen["Log 300 / 300A recordkeeping or posting failures"].rule_ids == ["calosha-penalty-amounts"]
+    assert not any("same day" in s for s in r.next_steps)
+    assert any("within 5 days" in s for s in r.next_steps)
+
+
+def test_dwc1_first_aid_only_flags_labor_code_5401a_trigger():
+    r = sp.injury_reporting_deadlines("2026-11-24T09:00", beyond_first_aid_or_lost_time=False, as_of=AS_OF)
+    d = dl(r, "Give the employee a DWC-1")
+    assert d.required is True and d.unverified == ["dwc1_trigger_5401a"] and d.verified is False
+    assert "lost time beyond the employee's work shift" in d.how_computed
+    r = sp.injury_reporting_deadlines("2026-11-24T09:00", as_of=AS_OF)             # treatment beyond first aid
+    d = dl(r, "Give the employee a DWC-1")
+    assert d.unverified == [] and d.verified is True
+
+
+def test_hazcom_chemical_list_is_required_not_optional():
+    r = sp.generate_safety_programs("Paint Co", 15, True, as_of=AS_OF)
+    hc = prog(r, "hazcom")
+    el = next(e for e in hc.elements if e.item == "Chemical list and non-routine tasks")
+    assert "list of the hazardous chemicals known to be present" in el.requirement
+    assert "non-routine tasks" in el.requirement and el.unverified == ["hazcom_list_and_nonroutine"]
+    assert "recommended practice" not in hc.document_outline_md
+    assert "at the time of their initial assignment" in UNVERIFIED_TEXT("hazcom_training_timing")
+
+
+def UNVERIFIED_TEXT(key):
+    return sp.UNVERIFIED[key]["text"]
+
+
+def test_indoor_heat_controls_only_at_87f_or_82f_triggers():
+    r = sp.generate_safety_programs("Attic Air", 15, True, heat_exposure=True, as_of=AS_OF)
+    ih = prog(r, "heat_illness_indoor")
+    els = {e.item: e for e in ih.elements}
+    assert "apply only in areas at 87F or more" in els["Scope"].requirement
+    # incidental exposure exception: 82F to under 95F for less than 15 min in any 60 (corrected rule values)
+    assert "82F to under 95F for less than 15 minutes in any 60-minute period" in els["Scope"].requirement
+    assert els["Measurement and records"].requirement.startswith("In areas at 87F or more")
+    assert "newly assigned to an area at 87F or more" in els["Acclimatization"].requirement
+    assert "82F or more with heat-restrictive clothing" in els["Acclimatization"].requirement
+    assert els["Emergency response and training"].unverified == ["indoor_heat_response_training"]
+
+
+def test_outdoor_shade_covers_meal_periods():
+    r = sp.generate_safety_programs("Co", 12, True, as_of=AS_OF)
+    shade = next(e for e in prog(r, "heat_illness_outdoor").elements if e.item == "Shade")
+    assert "meal periods" in shade.requirement
+
+
+def test_small_employer_iipp_records_exceptions():
+    # 8 employees (< 10): 3203(b) Exceptions 1-2; 12 employees: no exception text
+    small = next(e for e in prog(sp.generate_safety_programs("Tiny", 8, False, as_of=AS_OF), "iipp").elements
+                 if e.item == "Records")
+    assert "only until the hazard is corrected" in small.requirement and "log of the instructions" in small.requirement
+    big = next(e for e in prog(sp.generate_safety_programs("Mid", 12, False, as_of=AS_OF), "iipp").elements
+               if e.item == "Records")
+    assert "only until the hazard is corrected" not in big.requirement
+
+
+def test_size_exempt_log300_still_owes_survey_records_and_5020():
+    r = sp.generate_safety_programs("Tiny Tile", 8, False, as_of=AS_OF)
+    line = r.recordkeeping[0]
+    assert "OSHA or the BLS informs them in writing" in line.detail and "Form 5020" in line.detail
+    assert line.unverified == ["log300_survey_and_5020"] and line.verified is False
+    big = sp.generate_safety_programs("Mid", 12, False, as_of=AS_OF).recordkeeping[0]
+    assert big.unverified == [] and big.verified is True
+
+
+def test_wvpp_exempt_company_still_gets_crime_victim_notice():
+    r = sp.generate_safety_programs("Tiny", 8, False, as_of=AS_OF)
+    assert prog(r, "wvpp").status == "exempt"
+    assert any("Labor Code 3553 still applies" in n and "within 1 working day" in n for n in r.notes)
+    assert "workers-comp-workplace-crime-notice" in ids(r)
+
+
+def test_toolbox_meeting_overdue_flag():
+    # Mon 2026-11-02 + 10 working days = Mon 2026-11-16, before as_of 2026-11-25 -> overdue
+    r = sp.generate_safety_programs("Co", 12, True, last_toolbox_meeting="2026-11-02", as_of=AS_OF)
+    tb = next(t for t in r.training if t.item.startswith("Toolbox"))
+    assert tb.due == "2026-11-16" and "OVERDUE as of 2026-11-25" in tb.detail
+
+
+def test_silica_housekeeping_compressed_air_exceptions():
+    r = sp.generate_safety_programs("Cut Crew", 15, True, silica_tasks=True, as_of=AS_OF)
+    hk = next(e for e in prog(r, "silica").elements if e.item == "Housekeeping")
+    assert "captures the dust cloud or no alternative method is feasible" in hk.requirement
+
+
+def test_project_permit_latest_date_leaves_five_working_days_to_issue():
+    # Start Mon 2027-02-08: back 5 + 1 working days (2/5, 2/4, 2/3, 2/2, 2/1, 1/29) = Fri 2027-01-29, no holidays.
+    r = sp.check_cal_osha_permits(building_height_ft=48, planned_start="2027-02-08T07:00", as_of=AS_OF)
+    s = item(r, "Building / structure over 36 ft")
+    assert s.deadline == "2027-01-29" and "5 + 1 working days" in s.lead_time
+
+
+def test_neshap_notice_explains_federal_residential_exclusion():
+    r = sp.check_cal_osha_permits(demolition=True, building_stories=1, building_height_ft=14, as_of=AS_OF)
+    n = item(r, "Air district / NESHAP demolition notice")
+    assert n.required is True and "4 or fewer dwelling units" in n.why and "Bay Area AQMD" in n.why
+    assert "inspected for asbestos" in n.why
+    assert {"neshap-facility-excludes-4-or-fewer-units", "neshap-asbestos-inspection-before-demo"} <= set(n.rule_ids)
+    assert any("NESHAP/air district count already matches federal law" in x for x in r.notes)
+
+
+def test_government_exemption_is_for_the_agency_itself():
+    r = sp.check_cal_osha_permits(excavation_max_depth_ft=8, workers_enter_trench=True, tower_crane=True,
+                                  scaffold_or_falsework_height_ft=40, exemption="government_agency", as_of=AS_OF)
+    assert item(r, "Trench / excavation").required is False
+    assert item(r, "Tower crane erection / climbing / dismantling").required is False
+    scaf = item(r, "Scaffold / falsework / vertical shoring")
+    assert scaf.required is False and "Exempt employer (8 CCR 341(e))" in scaf.why and "permit-exceptions" in scaf.rule_ids
+    assert r.total_fees_usd == 0
+    assert any("private contractor doing the work for one is a separate employer" in x for x in r.notes)
+
+
+def test_lead_notice_names_trigger_tasks_and_asbestos_copies():
+    r = sp.check_cal_osha_permits(lead_disturbed_sqft=150, asbestos_sqft=150, as_of=AS_OF)
+    assert "trigger task listed in 8 CCR 1532.1(d)(2)" in item(r, "Lead work notice to district office").why
+    assert "copies to the prime contractor" in item(r, "Asbestos registration (Cal/OSHA)").why
+    la = prog(sp.generate_safety_programs("Reno", 22, True, asbestos_or_lead=True, as_of=AS_OF), "lead_asbestos")
+    lic = next(e for e in la.elements if e.item == "Asbestos license")
+    assert "installation, maintenance and repair" in lic.requirement and "vinyl asbestos floor" in lic.requirement
+
+
+def test_falsework_engineer_triggers_include_traffic_and_sill_to_soffit():
+    r = sp.check_cal_osha_permits(scaffold_or_falsework_height_ft=20, as_of=AS_OF)          # 20 > 14, < 36
+    f = item(r, "Scaffold / falsework / vertical shoring")
+    assert f.required is False and "top of sills to soffit" in f.why and "rail traffic" in f.why
 
 
 # ---------------------------------------------------------------- MCP

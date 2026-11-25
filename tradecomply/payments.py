@@ -14,6 +14,7 @@ Every legal number comes from the rulebook (core.rule(id).param(key)) at call ti
 hold are in UNVERIFIED below with their official source; any result that uses one has verified=False.
 """
 import calendar
+import re
 from datetime import date, datetime, timedelta
 from typing import Annotated, Literal, Optional
 
@@ -26,8 +27,9 @@ CIV_8800, CIV_8800_DISPUTE, CIV_8800_PEN = ("private-owner-progress-payment-30-d
                                             "private-owner-progress-penalty-2pct")
 BP_7108_5, BP_DISPUTE, BP_PEN, BP_CITATION = ("bp-7108-5-pay-subs-7-days", "bp-7108-5-dispute-150",
                                               "bp-7108-5-penalty-2pct", "civpen-7108-5-subcontractor-payment")
-PCC_10262, PCC_20104_50, PCC_10261_5 = ("state-contract-pay-subs-7-days", "pcc-20104-50-local-progress-30-days",
-                                        "pcc-10261-5-state-progress-30-days")
+PCC_10262, PCC_10262_DISPUTE, PCC_20104_50, PCC_10261_5 = (
+    "state-contract-pay-subs-7-days", "pcc-10262-state-subs", "pcc-20104-50-local-progress-30-days",
+    "pcc-10261-5-state-progress-30-days")
 CIV_8812, CIV_8814, CIV_RET_DISPUTE, CIV_8818 = ("private-retention-release-owner-45-days",
                                                  "private-retention-passthrough-gc-to-sub-10-days",
                                                  "private-retention-dispute-150", "private-retention-penalty-2pct")
@@ -45,6 +47,7 @@ WAIVER_REQUIRED, WAIVER_EVIDENCE, WAIVER_CO, WAIVER_7034 = ("waiver-statutory-fo
                                                            "waiver-conditional-evidence-of-payment",
                                                            "waiver-covers-executed-change-orders", "no-illegal-lien-waivers")
 HIC_RELEASE, HIC_CLAUSE = "hic-lien-release-on-payment", "hic-contract-lien-release-clause"
+BP_7120 = "failure-to-pay-suppliers-and-services"
 LIEN_DC, LIEN_OTHER = "lien-deadline-direct-contractor", "lien-deadline-subcontractor-supplier"
 SPN_WHO, SPN_BOND, SPN_SUIT, SPN_WITHHOLD = ("spn-who-may-give-owner", "spn-bonded-lender-125", "spn-enforcement-timing",
                                              "spn-owner-must-withhold")
@@ -55,16 +58,18 @@ PRELIM, PRELIM_LATE, PRELIM_REQ, PRELIM_WHO = ("prelim-notice-20-day-deadline", 
 BOND_NOTICE, BOND_SUIT = "private-bond-claim-notice", "private-bond-action-6-months"
 PUB_SPN, PUB_PRELIM, PUB_FILE, PUB_SUIT = ("public-spn-deadline", "public-prelim-notice", "public-spn-filing-location",
                                            "public-spn-enforcement-timing")
-PUB_BOND_NOTICE, PUB_BOND_SUIT, PUB_NO_LIEN = ("public-bond-claim-notice", "public-bond-action-6-months",
-                                               "web_lien-payment:public-works-no-mechanics-lien")
+PUB_BOND_NOTICE, PUB_BOND_SUIT, PUB_NO_LIEN, PUB_BOND_REQ = (
+    "public-bond-claim-notice", "public-bond-action-6-months", "web_lien-payment:public-works-no-mechanics-lien",
+    "public-payment-bond-required-25000")
 
 # Law the rulebook does not hold. Any result that uses an entry lists it in unverified_sources and has verified=False.
 UNVERIFIED = {
     "ccp-685.010-legal-rate": {
         "citation": "Code of Civil Procedure 685.010(a)", "rate_percent_per_year": 10,
         "source": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=685.010",
-        "note": "PCC 20104.50 and 10261.5 charge interest at the legal rate in CCP 685.010(a), which is 10% per year "
-                "simple. Not in the rulebook; confirm the current rate on leginfo."},
+        "note": "PCC 20104.50 and 10261.5 charge interest at the legal rate in CCP 685.010(a): the general rate is 10% "
+                "per year simple. (A lower rate added in 2023 for certain medical and personal-debt judgments does not "
+                "fit a contractor's payment claim.) Not in the rulebook; confirm the current rate on leginfo."},
     "civ-8508-spn-timing": {
         "citation": "Civil Code 8508",
         "source": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=8508",
@@ -246,6 +251,7 @@ class Obligation(BaseModel):
     amount_due_usd: float = 0.0
     disputed_amount_usd: float = 0.0
     max_withhold_usd: float = 0.0
+    max_withhold_basis: str = ""
     must_pay_by_due_date_usd: float = 0.0
     paid_date: Optional[str] = None
     status: Status = "due_date_unknown"
@@ -319,12 +325,20 @@ def _obligation(ctx: _Ctx, kind: str, payer: str, payee: str, law: str, *, as_of
         pct = P(dispute_rule, dispute_key)
         withhold = _money(min(amount, disputed * pct / 100))
         rids.append(dispute_rule)
+        ob.max_withhold_basis = f"statutory limit: {pct:g}% of the amount in good-faith dispute"
         ctx.item(f"{label}: most that may be withheld for the good-faith dispute", _usd(withhold),
                  f"min({_usd(amount)}, {pct:g}% x {_usd(disputed)})", dispute_rule)
     elif disputed and dispute_excluded:
         withhold = _money(disputed)
+        ob.max_withhold_basis = "disputed amount left out (statute covers undisputed requests only)"
         ob.notes.append("The statute covers undisputed payment requests, so the disputed portion is left out of the "
                         "amount that earns interest. The rulebook has no percentage-of-dispute withholding rule for this payment.")
+    elif disputed:
+        withhold = _money(disputed)
+        ob.max_withhold_basis = "disputed amount left out (no statutory dispute rule)"
+        ob.notes.append(f"No statutory dispute-withholding rule applies here (none in the rulebook): the {_usd(disputed)} "
+                        "in dispute is left out of the amount shown as due and is settled under the contract or "
+                        "purchase order.")
     ob.max_withhold_usd = withhold
     must_pay = _money(amount - withhold)
     ob.must_pay_by_due_date_usd = must_pay
@@ -376,14 +390,29 @@ def _fees(charge_rule: Optional[str]) -> bool:
     return any(P(charge_rule, k, False) for k in ("prevailing_party_fees", "prevailing_party_fees_and_costs"))
 
 
-def _actions(ob: Obligation, charge_rule: Optional[str], project: str, ctx: _Ctx) -> list[str]:
+def _citation_range(as_of: date) -> tuple[float, float]:
+    """CSLB citation civil-penalty range for a B&P 7108.5 violation; the higher minimum is operative from the date in
+    the rule's `effective` field."""
+    r = core.rule(BP_CITATION)
+    lo, hi = r.param("min_usd"), r.param("max_usd")
+    m = re.search(r"operative (\d{4}-\d{2}-\d{2})", r.effective or "")
+    if m and as_of < date.fromisoformat(m.group(1)):
+        lo = r.param("min_usd_before_2026_07_01", lo)
+    return lo, hi
+
+
+def _actions(ob: Obligation, charge_rule: Optional[str], project: str, ctx: _Ctx, as_of: date) -> list[str]:
     out, law = [], ob.governing_law
     payer, payee, Payer_, Payee_ = f"the {ob.payer}", f"the {ob.payee}", f"The {ob.payer}", f"The {ob.payee}"
     what = "retention" if ob.kind == "retention" else "progress payment"
     if ob.max_withhold_usd and ob.status != "due_date_unknown":
-        out.append(f"{Payer_} may hold back at most {_usd(ob.max_withhold_usd)} for the good-faith dispute and must pay "
-                   f"the other {_usd(ob.must_pay_by_due_date_usd)} by {ob.due_date}. Put the dispute and the amount "
-                   "held in writing.")
+        if ob.max_withhold_basis.startswith("statutory"):
+            out.append(f"{Payer_} may hold back at most {_usd(ob.max_withhold_usd)} for the good-faith dispute and must "
+                       f"pay the other {_usd(ob.must_pay_by_due_date_usd)} by {ob.due_date}. Put the dispute and the "
+                       "amount held in writing.")
+        else:
+            out.append(f"The {_usd(ob.max_withhold_usd)} in dispute is outside the deadline; {payer} must pay the "
+                       f"undisputed {_usd(ob.must_pay_by_due_date_usd)} by {ob.due_date}. Put the dispute in writing.")
     if ob.status == "not_yet_due":
         out.append(f"{Payer_} pays {payee} {_usd(ob.must_pay_by_due_date_usd)} by {ob.due_date} "
                    f"({ob.days_until_due} days from now) under {law}.")
@@ -406,10 +435,21 @@ def _actions(ob: Obligation, charge_rule: Optional[str], project: str, ctx: _Ctx
             out.append(f"In a lawsuit to collect, the prevailing party recovers attorney's fees ({law}).")
         if charge_rule == BP_PEN and P(BP_PEN, "disciplinary_action"):
             ctx.use(BP_CITATION)
+            lo, hi = _citation_range(as_of)
             out.append("Late payment to a subcontractor is also cause for CSLB discipline; a CSLB citation carries a "
-                       f"civil penalty of {_usd(P(BP_CITATION, 'min_usd'))} to {_usd(P(BP_CITATION, 'max_usd'))}. "
-                       "The subcontractor may file a complaint with the CSLB.")
-        if ob.status == "overdue":
+                       f"civil penalty of {_usd(lo)} to {_usd(hi)}. The subcontractor may file a complaint with the "
+                       "CSLB.")
+        if ob.status == "overdue" and ob.payee == "direct contractor" and project == "public":
+            src = ctx.unverified("civ-9100-public-claimant")
+            out.append("Unpaid direct contractor on public works: there is no mechanics lien on public property and the "
+                       f"stop payment notice and payment bond protect the people below you, not you ({src['citation']}, "
+                       "not in the rulebook). Use the claim procedure in your contract and have a construction "
+                       "attorney review it.")
+        elif ob.status == "overdue" and ob.payee == "direct contractor":
+            out.append("Unpaid: your remedies are a mechanics lien (calculate_lien_deadline) and, if the job has a "
+                       "construction lender, a bonded stop payment notice to the lender (stop_payment_notice_deadline, "
+                       "claimant_role=direct_contractor).")
+        elif ob.status == "overdue":
             out.append("Unpaid: check your remaining remedies now with stop_payment_notice_deadline"
                        + (" (stop payment notice to the public entity, payment bond claim)" if project == "public"
                           else " and calculate_lien_deadline (mechanics lien, stop payment notice, payment bond)") + ".")
@@ -417,7 +457,8 @@ def _actions(ob: Obligation, charge_rule: Optional[str], project: str, ctx: _Ctx
         out.append("Exchange statutory lien waivers for this payment: conditional before payment, unconditional only "
                    "after it clears (select_lien_waiver, payment_type=progress).")
     else:
-        out.append("Retention is usually the last payment: run select_lien_waiver with payment_type=final.")
+        out.append("Retention is usually the last payment: if it pays your whole remaining balance, use "
+                   "select_lien_waiver with payment_type=final; if money is still owed, use the progress forms.")
     return out
 
 
@@ -465,7 +506,7 @@ def prompt_payment_check(project_type: Project, payer_role: Payer, payee_role: P
         obligations.append((ob, cr))
 
     for ob, cr in obligations:
-        ob.what_to_send = _actions(ob, cr, project_type, ctx)
+        ob.what_to_send = _actions(ob, cr, project_type, ctx, as_of)
         res.what_to_send.extend(a for a in ob.what_to_send if a not in res.what_to_send)
     res.obligations = [ob for ob, _ in obligations]
     res.total_late_charges_usd = _money(sum(ob.late_charge_usd for ob in res.obligations))
@@ -484,6 +525,9 @@ def _progress(ctx, project, payer_role, payee_role, payer, payee, amount, disput
                         "and payment bond rights (stop_payment_notice_deadline).")
         if not d["payment_due_date"]:
             ob.notes.append("Give payment_due_date (the date on the purchase order or credit terms).")
+        ctx.use(BP_7120)
+        ob.notes.append("A licensee's willful failure to pay for materials when due, when it can pay or has been paid "
+                        "for that job, is cause for CSLB discipline (B&P 7120).")
         return ob, None
 
     if payer_role == "owner" and project == "private":
@@ -512,6 +556,8 @@ def _progress(ctx, project, payer_role, payee_role, payer, payee, amount, disput
         if not d["payment_request_date"]:
             ob.notes.append("Give payment_request_date: the day the agency received your properly submitted payment "
                             "request.")
+        ob.notes.append("If the agency returned the request as improper, the 30 days run from its receipt of a proper "
+                        "request. Interest starts only on an undisputed, properly submitted request.")
         if agency == "state":
             ob.notes.append(f"A state agency must return an improper payment request within "
                             f"{P(PCC_10261_5, 'return_improper_request_within_days')} days with written reasons.")
@@ -524,10 +570,12 @@ def _progress(ctx, project, payer_role, payee_role, payer, payee, amount, disput
         ob = _obligation(ctx, "progress_payment", payer, payee, "Public Contract Code 10262", days_rule=PCC_10262,
                          days_key="deadline_days_after_progress_payment",
                          trigger=f"the {payer}'s receipt of the progress payment",
-                         trigger_date=d["payment_received_by_payer_date"], **common)
+                         trigger_date=d["payment_received_by_payer_date"], dispute_rule=PCC_10262_DISPUTE, **common)
         ob.notes.append("On state agency contracts PCC 10262 applies instead of B&P 7108.5, so the B&P 7108.5 "
-                        f"{P(BP_PEN, 'penalty_percent_per_month'):g}% per month penalty is not computed; the rulebook "
-                        "has no verified late charge under PCC 10262.")
+                        f"{P(BP_PEN, 'penalty_percent_per_month'):g}% per month penalty is not computed. A late-payment "
+                        "penalty for state contracts may be in PCC 10262.5, which is not in the rulebook, so no late "
+                        "charge is computed here; check https://leginfo.legislature.ca.gov/faces/codes_displaySection"
+                        ".xhtml?lawCode=PCC&sectionNum=10262.5 before demanding one.")
         ob.notes.append("An underpaid subcontractor must notify, in writing: "
                         + " and ".join(P(PCC_10262, "sub_must_notify_of_underpayment")) + ".")
         if not d["payment_received_by_payer_date"]:
@@ -609,6 +657,9 @@ def _retention(ctx, project, payer_role, payee_role, payer, payee, amount, dispu
         ob = _obligation(ctx, "retention", payer, payee, "Public Contract Code 7107(d)", days_rule=PCC_7107_PASS,
                          trigger=trigger, trigger_date=rec, dispute_rule=PCC_7107_PASS, charge="penalty",
                          charge_rule=PCC_7107_PEN, **common)
+        if payer_role == "subcontractor":
+            ob.notes.append("The rulebook's PCC 7107(d) rule names the original (prime) contractor as payer; it is "
+                            "applied to a subcontractor paying a lower tier here. Confirm with an attorney.")
         cr = PCC_7107_PEN
     if not rec:
         ob.notes.append(f"Give retention_received_by_payer_date: the {payer} must pass retention through within days "
@@ -809,7 +860,7 @@ def select_lien_waiver(payment_type: Literal["progress", "final"], payment_statu
         form_name=_title(form.param("heading")), civil_code_section=section, form_rule_id=rid,
         when_to_use=form.plain_english or "",
         takes_effect=(f"On {form.param('effective_on')}" if payment_status == "conditional"
-                      else "Immediately when signed, even if payment never arrives"),
+                      else "As soon as the claimant signs and delivers it, even if payment never arrives"),
         signed_by=f"The {P(WAIVER_REQUIRED, 'must_be_signed_by')}", fields_to_fill=form.param("fields"),
         exceptions_on_form=form.param("standard_exceptions"), notice_text_excerpt=form.quote or "",
         official_form_url=form.source or "",
@@ -834,6 +885,8 @@ def select_lien_waiver(payment_type: Literal["progress", "final"], payment_statu
     else:
         ctx.use(WAIVER_EVIDENCE)
         res.safe_to_sign_now = True
+        res.warnings.append("Safe to sign before payment only if the check details on the form (maker, amount, "
+                            "payable to) match the payment you are actually expecting.")
         if payment_received:
             res.warnings.append("Payment has already cleared: the payer will usually ask for the unconditional form "
                                 "now; a conditional form is still safe to sign.")
@@ -853,6 +906,10 @@ def select_lien_waiver(payment_type: Literal["progress", "final"], payment_statu
     elif payment_type == "final":
         res.warnings.append("A final waiver releases every claim for the job except the 'Disputed claims for extras' "
                             "amount you write on it. Enter open change-order claims before signing.")
+    if payment_type == "final":
+        res.warnings.append("Use a final form only for the payment of your whole remaining balance, retention included. "
+                            "Once that payment is made it releases everything not listed as disputed extras, so for a "
+                            "partial payment (or a retention release with money still owed) use the progress forms.")
     if payment_type == "progress":
         res.warnings.append("Progress waivers do not waive retention (it is a listed exception).")
     res.warnings.append("A licensed contractor may not require a subcontractor, employee or supplier to waive lien rights "
@@ -911,7 +968,8 @@ def stop_payment_notice_deadline(project_type: Project, claimant_role: Claimant,
                                  preliminary_notice_served_date=None, claim_amount_usd: Optional[float] = None,
                                  construction_lender: bool = False, payment_bond_recorded: bool = False,
                                  spn_given_date=None, noc_copy_received: Optional[bool] = None,
-                                 public_agency: Agency = "local") -> StopPaymentNoticeResult:
+                                 public_agency: Agency = "local",
+                                 residential_4_or_fewer_units: Optional[bool] = None) -> StopPaymentNoticeResult:
     """Last day to give a California stop payment notice (private or public works) and what goes with it."""
     as_of = _d(as_of, "as_of") or logic.today_ca()
     if project_type not in ("private", "public"):
@@ -943,7 +1001,7 @@ def stop_payment_notice_deadline(project_type: Project, claimant_role: Claimant,
         raise ValueError("Give completion_date, noc_recorded_date, cessation_of_labor_date or last_furnishing_date.")
     if project_type == "private":
         _spn_private(ctx, res, claimant_role, d, claim_amount_usd, construction_lender, payment_bond_recorded,
-                     noc_copy_received)
+                     noc_copy_received, residential_4_or_fewer_units)
     else:
         _spn_public(ctx, res, claimant_role, d, payment_bond_recorded, public_agency)
 
@@ -977,17 +1035,18 @@ def stop_payment_notice_deadline(project_type: Project, claimant_role: Claimant,
                  "filing.")
     res.what_to_send.append(suit)
     pn = res.preliminary_notice
-    if pn and pn.required and not pn.served_date and claimant_role != "direct_contractor":
+    if pn and pn.required and not pn.served_date and (claimant_role != "direct_contractor" or construction_lender):
         back = P(PUB_PRELIM if project_type == "public" else PRELIM_LATE, "lookback_days")
-        res.what_to_send.insert(0, "If you have not served a preliminary notice, serve it today: it is a prerequisite "
-                                   f"to a valid stop payment notice and reaches back only {back} days.")
+        res.what_to_send.insert(0, "If you have not served a preliminary notice, serve it today on "
+                                   f"{', '.join(pn.recipients)}: it is a prerequisite to a valid stop payment notice "
+                                   f"and reaches back only {back} days.")
     res.what_to_send.append("Keep a signed proof-of-service declaration for every notice, with the USPS registered/"
                             "certified/express receipt or the carrier's tracking record attached.")
     ctx.use(PROOF)
     return _finish(res, ctx)
 
 
-def _prelim(ctx: _Ctx, res: StopPaymentNoticeResult, role: str, d: dict, public: bool) -> None:
+def _prelim(ctx: _Ctx, res: StopPaymentNoticeResult, role: str, d: dict, public: bool, lender: bool = False) -> None:
     first, served = d["first_furnishing_date"], d["preliminary_notice_served_date"]
     rule_deadline, rule_late = (PUB_PRELIM, PUB_PRELIM) if public else (PRELIM, PRELIM_LATE)
     days_key, late_key = ("lookback_days", "lookback_days") if public else ("deadline_days", "lookback_days")
@@ -997,9 +1056,12 @@ def _prelim(ctx: _Ctx, res: StopPaymentNoticeResult, role: str, d: dict, public:
         res.preliminary_notice = PrelimCheck(required=False, note="Laborers do not give a preliminary notice.")
         return
     if role == "direct_contractor":
-        res.preliminary_notice = PrelimCheck(required=True, recipients=P(PRELIM_WHO, "direct_contractor_must_notify"),
+        res.preliminary_notice = PrelimCheck(required=lender, recipients=P(PRELIM_WHO, "direct_contractor_must_notify"),
+                                             served_date=_iso(d["preliminary_notice_served_date"]),
                                              note="A direct contractor gives a preliminary notice only to the "
-                                                  "construction lender, if there is one.")
+                                                  "construction lender, if there is one"
+                                                  + ("; it is needed for a stop payment notice to the lender."
+                                                     if lender else "; this job has none."))
         return
     recipients = P(PUB_PRELIM, "recipients") if public else P(PRELIM, "recipients")
     pc = PrelimCheck(required=True, recipients=recipients, served_date=_iso(served))
@@ -1015,20 +1077,28 @@ def _prelim(ctx: _Ctx, res: StopPaymentNoticeResult, role: str, d: dict, public:
     if served and pc.on_time is not True:
         look = P(rule_late, late_key)
         pc.covers_work_from = (served - timedelta(days=look)).isoformat()
-        ctx.item("Late preliminary notice covers work from", pc.covers_work_from,
+        ctx.item("Late preliminary notice covers work from" if pc.on_time is False
+                 else "If served late, the preliminary notice covers work from", pc.covers_work_from,
                  f"{served.isoformat()} (served) - {look} days", rule_late)
     if not served:
         pc.note = ("No preliminary notice date given. If you never served one, the stop payment notice is not valid: "
                    "serve it now on " + ", ".join(recipients) + f"; it will cover work furnished from "
                    f"{P(rule_late, late_key)} days before service.")
+        if public:
+            pc.note += (" The rulebook notes (unverified) that a claimant in direct contract with the direct contractor "
+                        "may be exempt on public works: serve one anyway, and if you did not, ask an attorney before "
+                        "giving up the stop payment notice.")
     elif pc.on_time is False:
         pc.note = f"Served late: the notice protects only work furnished on or after {pc.covers_work_from}."
     elif pc.on_time:
         pc.note = "Served on time: covers all your work on the job."
+    else:
+        pc.note = (f"Give first_furnishing_date to check whether it was on time; if it was late it covers only work "
+                   f"furnished on or after {pc.covers_work_from}.")
     res.preliminary_notice = pc
 
 
-def _spn_private(ctx, res, role, d, claim, lender, bond, noc_copy):
+def _spn_private(ctx, res, role, d, claim, lender, bond, noc_copy, small_residential):
     direct = role == "direct_contractor"
     lien_rule = LIEN_DC if direct else LIEN_OTHER
     src = ctx.unverified("civ-8508-spn-timing")
@@ -1048,8 +1118,12 @@ def _spn_private(ctx, res, role, d, claim, lender, bond, noc_copy):
         ctx.use(SPN_WHO)
         res.may_give_to = ["owner (or the owner's architect)"] + (["construction lender (bonded notice)"] if lender else [])
 
+    # completion of the whole work (Civil Code 8180): the earliest of the events we know about
     completion, basis = d["completion_date"], "completion"
-    cess = d["cessation_of_labor_date"]
+    cess, noc = d["cessation_of_labor_date"], d["noc_recorded_date"]
+    min_cess = P(COMPLETION, "cessation_days_before_notice_of_cessation")
+    # a notice recorded at least `min_cess` days after labor stopped may be a notice of cessation (Civil Code 8180)
+    cessation_notice = bool(cess and noc and noc >= cess + timedelta(days=min_cess))
     if cess:
         auto = cess + timedelta(days=P(COMPLETION, "cessation_days_auto_completion"))
         ctx.item("Completion by cessation of labor", auto.isoformat(),
@@ -1057,47 +1131,79 @@ def _spn_private(ctx, res, role, d, claim, lender, bond, noc_copy):
                  "days", COMPLETION)
         if not completion or auto < completion:
             completion, basis = auto, f"completion ({P(COMPLETION, 'cessation_days_auto_completion')} days of cessation)"
+        if cessation_notice and noc < completion:
+            completion, basis = noc, "completion (notice of cessation recorded)"
+            ctx.item("Completion by a recorded notice of cessation", noc.isoformat(),
+                     f"notice recorded {noc.isoformat()}, at least {min_cess} days after labor stopped "
+                     f"{cess.isoformat()}", COMPLETION)
     base = completion or d["last_furnishing_date"]
     if not completion and base:
         basis = "your last furnishing (completion unknown; this can only make the deadline earlier)"
         ctx.note("Completion date not given; your last furnishing date was used, which is the safe (earlier) choice.")
     res.completion_date_used = _iso(completion)
     no_notice_days = P(lien_rule, "days_after_completion_if_no_notice")
+    noc_days = P(lien_rule, "days_after_recorded_noc_or_cessation")
     cands = []
     if base:
         cands.append((base + timedelta(days=no_notice_days), f"{no_notice_days} days after {basis}"))
         ctx.item("Deadline if no valid notice of completion", cands[-1][0].isoformat(),
                  f"{base.isoformat()} + {no_notice_days} days", lien_rule)
-    noc = d["noc_recorded_date"]
+    timing_ok = True   # recorded on or within the allowed days after completion (Civil Code 8182)
     if noc:
         ctx.use(NOC_15)
         window = P(NOC_15, "deadline_days")
-        effective = True
+        short = noc + timedelta(days=noc_days)
+        effective: Optional[bool] = True
         if completion and noc < completion:
-            effective = False
-            ctx.note("The notice of completion was recorded before completion, so it is likely ineffective; the "
-                     f"{no_notice_days}-day rule was used. Confirm with counsel.")
+            effective = None
+            ctx.note(f"The notice was recorded {noc.isoformat()}, before the completion date used "
+                     f"({completion.isoformat()}). A notice of completion recorded before completion is ineffective, "
+                     f"which would leave the {no_notice_days}-day rule ({cands[0][0].isoformat()}). But if it is a "
+                     "valid notice of cessation, or the owner's completion date is the right one, the shorter "
+                     f"{noc_days}-day date ({short.isoformat()}) applies. The shorter date is used to be safe; have an "
+                     "attorney confirm before relying on the later one.")
+        elif completion and noc > completion + timedelta(days=window) and cessation_notice:
+            effective = None
+            ctx.note(f"The notice was recorded more than {window} days after completion. It is treated as a notice of "
+                     f"cessation (labor had stopped at least {min_cess} days before), so the shorter date "
+                     f"{short.isoformat()} is used to be safe. If it is a notice of completion it was recorded late "
+                     f"and is ineffective, and the {no_notice_days}-day rule ({cands[0][0].isoformat()}) applies; "
+                     "confirm with counsel.")
         elif completion and noc > completion + timedelta(days=window):
-            effective = False
+            effective, timing_ok = False, False
             ctx.note(f"The notice of completion was recorded more than {window} days after completion, so it is "
-                     f"ineffective; the {no_notice_days}-day rule was used.")
-        if effective and noc_copy is False:
+                     f"ineffective and the {no_notice_days}-day rule was used. If the completion date you entered is "
+                     f"wrong (true completion within {window} days before recording), the notice is effective and the "
+                     f"deadline is {short.isoformat()}: meet that date if you can.")
+        if effective is not False and noc_copy is False:
             ctx.use(NOC_COPY)
-            effective = False
-            ctx.note(f"The owner did not send you a copy within {P(NOC_COPY, 'deadline_days')} days of recording, so "
-                     f"the notice does not shorten your deadline (exception flagged in the rule: "
-                     f"{P(NOC_COPY, 'exempt')}). Confirm with counsel.")
-        elif effective and noc_copy is None:
+            entitled = direct or (role != "laborer" and d["preliminary_notice_served_date"] is not None)
+            if not entitled:
+                ctx.note("The owner must send a copy of the notice only to the direct contractor and to claimants that "
+                         f"gave it a preliminary notice ({', '.join(P(NOC_COPY, 'recipients'))}). You gave none, so "
+                         "the missing copy does not extend your deadline.")
+            elif small_residential is not False:
+                ctx.note(f"The copy rule does not apply to an {P(NOC_COPY, 'exempt')} (the rulebook flags its exact "
+                         "scope as unsettled: the CSLB Law Book says any residential property of four or fewer units). "
+                         + ("This property is one, so" if small_residential else "It is not known whether this property "
+                            "is one, so") + " the missing copy is not relied on and the shorter date is kept. Give "
+                         "residential_4_or_fewer_units=false if the property is not a residence of four or fewer "
+                         "units.")
+            else:
+                effective = False
+                ctx.note(f"The owner did not send you a copy within {P(NOC_COPY, 'deadline_days')} days of recording, so "
+                         f"the notice does not shorten your deadline and the {no_notice_days}-day rule was used. The "
+                         f"owner will dispute this if it says it mailed a copy: meet {short.isoformat()} if you can, "
+                         "and confirm with counsel.")
+        elif effective is not False and noc_copy is None:
             ctx.use(NOC_COPY)
             ctx.note(f"The shorter deadline applies to you only if the owner sent you a copy of the notice within "
                      f"{P(NOC_COPY, 'deadline_days')} days of recording; it is used here to be safe.")
         res.notice_of_completion_effective = effective
-        if effective:
-            days = P(lien_rule, "days_after_recorded_noc_or_cessation")
-            cands.append((noc + timedelta(days=days), f"{days} days after the notice of completion/cessation was "
-                                                      "recorded"))
-            ctx.item("Deadline after a recorded notice of completion/cessation", cands[-1][0].isoformat(),
-                     f"{noc.isoformat()} + {days} days", lien_rule)
+        if effective is not False:
+            cands.append((short, f"{noc_days} days after the notice of completion/cessation was recorded"))
+            ctx.item("Deadline after a recorded notice of completion/cessation", short.isoformat(),
+                     f"{noc.isoformat()} + {noc_days} days", lien_rule)
     if not cands:
         raise ValueError("The notice of completion is not effective and no completion or last furnishing date was "
                          "given; add completion_date or last_furnishing_date.")
@@ -1108,7 +1214,7 @@ def _spn_private(ctx, res, role, d, claim, lender, bond, noc_copy):
     if d["last_furnishing_date"] and d["last_furnishing_date"] > deadline:
         ctx.note("Your last furnishing date is after the computed deadline. Check the dates.")
 
-    _prelim(ctx, res, role, d, public=False)
+    _prelim(ctx, res, role, d, public=False, lender=lender)
     res.where_to_serve = [*(["Owner: " + "; ".join(P(SPN_SERVICE, "owner_delivery"))] if not direct else []),
                           *(["Construction lender: " + P(SPN_SERVICE, "lender_delivery")] if lender else [])]
     res.service_methods = P(SERVICE_METHODS, "methods")
@@ -1128,17 +1234,21 @@ def _spn_private(ctx, res, role, d, claim, lender, bond, noc_copy):
     if not direct:
         res.what_to_send.insert(0, f"Owner: give a signed, verified stop payment notice by {deadline.isoformat()} "
                                    "(the owner must then withhold enough to pay the claim, or risk paying it directly).")
-    if bond:
+    if bond and direct:
+        ctx.note("A payment bond given by the direct contractor protects the subcontractors and suppliers below it, "
+                 "not the direct contractor, so no payment bond deadlines are given.")
+    elif bond:
         ctx.use(SPN_SURETY, BOND_NOTICE, BOND_SUIT)
         b = ["A payment bond is recorded: if no mechanics lien has been recorded, serve the notice on the surety."]
         if completion:
             suit = _add_months(completion, P(BOND_SUIT, "months_after_completion"))
             b.append(f"Suit on the recorded payment bond: no later than {suit.isoformat()} "
-                     f"({P(BOND_SUIT, 'months_after_completion')} months after completion).")
+                     f"({P(BOND_SUIT, 'months_after_completion')} months after completion; condition: "
+                     f"{P(BOND_SUIT, 'condition')}).")
             ctx.item("Payment bond suit deadline", suit.isoformat(),
                      f"{completion.isoformat()} + {P(BOND_SUIT, 'months_after_completion')} months", BOND_SUIT)
-        if not d["preliminary_notice_served_date"] and role not in ("laborer", "direct_contractor"):
-            b.append(_bond_notice_line(ctx, BOND_NOTICE, noc if res.notice_of_completion_effective else None, completion))
+        if not d["preliminary_notice_served_date"] and role != "laborer":
+            b.append(_bond_notice_line(ctx, BOND_NOTICE, noc if timing_ok else None, completion))
         res.payment_bond = [x for x in b if x]
 
 
@@ -1196,7 +1306,10 @@ def _spn_public(ctx, res, role, d, bond, agency):
     res.where_to_serve = [f"File with: {office}"]
     res.service_methods = [f"{P(PUB_FILE, 'mail_ok')} (same effect as personal service)", "personal delivery"]
     res.what_to_send.insert(0, f"File a signed, verified stop payment notice with the {office} by {deadline.isoformat()}.")
-    ctx.use(PUB_BOND_NOTICE, PUB_BOND_SUIT)
+    ctx.use(PUB_BOND_NOTICE, PUB_BOND_SUIT, PUB_BOND_REQ)
+    ctx.note(f"A payment bond is required only on public works contracts with an expenditure in excess of "
+             f"{_usd(P(PUB_BOND_REQ, 'threshold_dollars'))} (rule {PUB_BOND_REQ}). Ask the public entity for a copy of "
+             "the direct contractor's payment bond and the surety's name and address.")
     suit = _add_months(deadline, P(PUB_BOND_SUIT, "months_after_stop_notice_period"))
     ctx.item("Payment bond suit deadline", suit.isoformat(),
              f"{deadline.isoformat()} (end of the notice period) + {P(PUB_BOND_SUIT, 'months_after_stop_notice_period')}"
@@ -1316,13 +1429,16 @@ def register(mcp) -> None:
         construction_lender: Annotated[bool, Field(description="Private: is there a construction lender?")] = False,
         payment_bond_recorded: Annotated[bool, Field(description="Private: has a payment bond been recorded?")] = False,
         spn_given_date: Annotated[Optional[str], Field(description=f"{D}. Day you gave the stop payment notice, if already given")] = None,
-        noc_copy_received: Annotated[Optional[bool], Field(description="Private: did the owner send you a copy of the recorded notice within the statutory time after recording? Unknown -> assumed yes (safe)")] = None,
+        noc_copy_received: Annotated[Optional[bool], Field(description="Private: did the owner send you a copy of the recorded notice within the statutory time after recording? Unknown -> assumed yes (safe). The copy is owed only to the direct contractor and claimants that gave the owner a preliminary notice")] = None,
         public_agency: Annotated[Agency, Field(description="Public: state (file with the department director) or local")] = "local",
+        residential_4_or_fewer_units: Annotated[Optional[bool], Field(description="Private: is the property a residence with four or fewer units? Its owner may be exempt from the copy rule, so a missing copy only extends your deadline when this is false. Unknown -> treated as possibly exempt (safe)")] = None,
     ) -> StopPaymentNoticeResult:
         """California stop payment notice deadline. Private works: the notice must be given before the claimant's
         lien recording period ends (30 days after a valid recorded notice of completion/cessation, or 90 days after
         completion; 60/90 for a direct contractor's lender notice). Public works (Civil Code 9356): 30 days after a
-        recorded notice of completion/acceptance/cessation, or 90 days after completion/cessation. Returns the
+        recorded notice of completion/acceptance/cessation, or 90 days after completion/cessation. When a notice's
+        validity is uncertain (recorded before the completion date you give, possibly a notice of cessation, or a
+        missing owner copy that may not count) the earlier date is used and the later one is given in notes. Returns the
         deadline, days_remaining, risk_level, who it may be given to, where and how to serve it, required contents,
         the preliminary-notice check (deadline, on time, coverage), the bonded lender notice amount (125%), the window
         to sue on the notice, payment bond deadlines, what_to_send, line_items with citations and verified. Most
@@ -1334,4 +1450,5 @@ def register(mcp) -> None:
                                             preliminary_notice_served_date=preliminary_notice_served_date,
                                             claim_amount_usd=claim_amount_usd, construction_lender=construction_lender,
                                             payment_bond_recorded=payment_bond_recorded, spn_given_date=spn_given_date,
-                                            noc_copy_received=noc_copy_received, public_agency=public_agency)
+                                            noc_copy_received=noc_copy_received, public_agency=public_agency,
+                                            residential_4_or_fewer_units=residential_4_or_fewer_units)

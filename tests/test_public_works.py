@@ -1,5 +1,6 @@
 """Public works module: hand-computed California prevailing wage / DIR / apprenticeship / listing scenarios."""
 import asyncio
+from datetime import date
 
 import pytest
 from fastmcp import Client, FastMCP
@@ -52,16 +53,18 @@ def test_school_remodel_full_compliance_dates_and_amounts():
     assert (p.ecpr_late_penalty_per_day_usd, p.ecpr_late_penalty_max_per_project_usd) == (100, 5000)
     assert (p.cpr_request_response_days, p.cpr_late_penalty_per_worker_per_day_usd) == (10, 100)
     # Apprenticeship: DAS 140 = min(signed 12/1 + 10 = 12/11, start 1/11) = 12/11/2026
-    # DAS 142: 72 h = 3 weekdays before Mon 1/11 -> Fri 1/8, Thu 1/7, Wed 1/6
+    # DAS 142: 72 weekday hours before 12:00 a.m. Mon 1/11 = Fri 1/8 + Thu 1/7 + Wed 1/6 (24 h each), so the window
+    # opens at 12:00 a.m. Wed 1/6 -> send by the end of Tue 1/5 (8 CCR 230.1(a): "before the date")
     # Training fund: 15th of the month after January -> 2/15/2027; hours statement 8/31 + 60 = 10/30/2027
     a = r.apprenticeship
     assert (a.das140_due, a.das142_request_by, a.training_fund_first_due, a.hours_statement_due) == (
-        "2026-12-11", "2027-01-06", "2027-02-15", "2027-10-30")
+        "2026-12-11", "2027-01-05", "2027-02-15", "2027-10-30")
     # Electricians 1,250 h / 5 = 250 apprentice h; DAS 142 >= max(8, 20% x 250 = 50) = 50 h
-    # Laborers 30 h / 5 = 6 h; under 40 journeyman h -> no minimum request size
+    # Laborers 30 h / 5 = 6 h; the under-40-hour exemption is per PROJECT (1,250 + 30 = 1,280 h), so the request must
+    # still be at least max(8, 20% x 6 = 1.2) = 8 h
     crafts = {x.craft: x for x in a.crafts}
     assert (crafts["electrician"].required_apprentice_hours, crafts["electrician"].das142_min_request_hours) == (250, 50)
-    assert (crafts["laborer"].required_apprentice_hours, crafts["laborer"].das142_min_request_hours) == (6, None)
+    assert (crafts["laborer"].required_apprentice_hours, crafts["laborer"].das142_min_request_hours) == (6, 8)
     # Listing: 0.5% x $480,000 = $2,400. Electric $62,000 must be listed; 10% x 62,000 = $6,200 max penalty.
     s = r.subcontractor_listing
     assert s.applies and s.threshold_usd == 2400
@@ -96,9 +99,15 @@ def test_school_remodel_registration_renewal_and_checklist():
     assert dues == sorted(dues)                                  # sorted by due date, undated last
     assert r.checklist[-1].due is None
     assert "0 checklist item(s) overdue, 1 due within 14 days" in r.summary
-    # Only the LC 1720 definition is unchecked; every number used is verified
-    assert r.verified is False and r.unverified_rule_ids == ["pw-definition-public-works"]
-    assert all(x.verified for x in r.line_items) and all(t.verified for t in r.checklist)
+    # Unverified: the LC 1720 definition (unchecked), the no-4/10 overtime statement (unchecked), and SB 909 because
+    # the job runs past 2027-01-01: the renewal fee (paid by 6/30/2027, LC 1725.5) and the LC 1776(h) records
+    # penalty during the job may be SB 909 amounts. Every other line and task is verified.
+    assert r.verified is False and r.unverified_rule_ids == ["pw-definition-public-works", "pw-no-alternative-workweek",
+                                                             "sb909-pending-penalty-increases"]
+    assert sorted(x.item for x in r.line_items if not x.verified) == [
+        "DIR registration fee (renewal)", "Late certified payroll after a written request (LC 1776(h))"]
+    assert [t.task[:30] for t in r.checklist if not t.verified] == ["Answer any written request for"]
+    assert any("SB 909" in n and "2027-01-01" in n for n in r.notes)
     assert {"dir-registration-fee", "ecpr-late-penalty", "sub-listing-threshold", "public-retention-5pct-cap",
             "apprentice-ratio-1-to-5"} <= {c.rule_id for c in r.citations}
 
@@ -162,12 +171,18 @@ def test_private_development_de_minimis_subsidy():
     b = pw.public_works_readiness(40_000_000, "private_developer", True, "construction", "2027-03-01", False,
                                   as_of=AS_OF, public_subsidy_usd=700_000)
     assert b.coverage.public_work is True and b.coverage.tier == "full" and b.dir_registration.status == "not_registered"
-    # All single-family homes: only the 2% test. $700k -> 1.75% de minimis; $800k -> exactly 2.00%, not "less than"
+    # All single-family homes: only the 2% test. $700k -> 1.75% de minimis; $800k -> exactly 2.00%, not "less than",
+    # so not de minimis - but private residential work on private property is still excluded unless built under an
+    # agreement with a state agency / redevelopment agency / housing authority (LC 1720(c)(1)) -> uncertain
     c = pw.public_works_readiness(40_000_000, "private_developer", True, "construction", "2027-03-01", False,
                                   as_of=AS_OF, public_subsidy_usd=700_000, all_single_family=True)
     d = pw.public_works_readiness(40_000_000, "private_developer", True, "construction", "2027-03-01", False,
                                   as_of=AS_OF, public_subsidy_usd=800_000, all_single_family=True)
-    assert c.coverage.public_work is False and d.coverage.public_work is True
+    assert c.coverage.public_work is False and d.coverage.public_work is None and d.coverage.tier == "full"
+    assert any("1720(c)(1)" in x for x in d.coverage.reasons) and d.summary.startswith("Coverage uncertain")
+    # Private owner: Civil Code 8811 retention (5%), not PCC 7201
+    assert any("Civil Code 8811" in n and "5%" in n for n in b.retention.notes)
+    assert "private-retention-5pct-cap" in {x.rule_id for x in b.citations}
     # Coverage rests on LC 1720(b)/(c)(1) (unchecked) -> verified False; a $35M+ prime adds the AB 1198 flag
     assert {"pw-paid-with-public-funds-definition", "ab1198-mid-project-rate-changes-35m"} <= set(b.unverified_rule_ids)
     # Subsidy amount unknown -> cannot tell; planned as covered
@@ -200,9 +215,12 @@ def test_working_unregistered_after_start_shows_penalty_exposure():
     assert (reg.status, reg.fee_usd, reg.penalty_low_usd, reg.penalty_high_usd) == ("not_registered", 400, 2000, 4400)
     t = task(r, "Register with DIR")
     assert (t.due, t.status) == ("2026-11-02", "overdue")
-    # eCPR due 11/2 + 30 = 12/2; DAS 142 3 weekdays before Mon 11/2 = Wed 10/28; training fund 12/15
+    # Working unregistered also brings a stop order and up to 10 days' pay for idled workers (LC 1771.1(j))
+    assert any("stop order" in n and "10 days" in n for n in reg.notes)
+    # eCPR due 11/2 + 30 = 12/2; DAS 142: window opens 3 weekdays before Mon 11/2 (Wed 10/28) -> send by Tue 10/27;
+    # training fund 12/15
     assert r.payroll.first_upload_due == "2026-12-02"
-    assert (r.apprenticeship.das142_request_by, r.apprenticeship.training_fund_first_due) == ("2026-10-28", "2026-12-15")
+    assert (r.apprenticeship.das142_request_by, r.apprenticeship.training_fund_first_due) == ("2026-10-27", "2026-12-15")
     overdue = sum(t.status == "overdue" for t in r.checklist)
     assert overdue >= 5 and f"{overdue} checklist item(s) overdue" in r.summary
 
@@ -222,18 +240,30 @@ def test_multi_year_registration_fee_and_three_year_cap():
 
 
 def test_lapsed_registration_grace_period_and_after():
-    # Expired 6/30/2026; on 8/15/2026 that is 46 days (<= 90): $400 (inadvertent) to $2,000 penalty + $400 fee,
-    # renew by 6/30 + 90 days = 9/28/2026
+    # Expired 6/30/2026; on 8/15/2026 that is 46 days (<= 90). The job starts 9/8, so nothing was bid or worked while
+    # lapsed: no penalty, just the $400 renewal fee, by 6/30 + 90 days = 9/28/2026
     r = pw.public_works_readiness(150_000, "city", True, "construction", "2026-09-08", True, "2026-06-30",
                                   as_of="2026-08-15", estimated_completion_date="2026-12-31")
     reg = r.dir_registration
-    assert (reg.status, reg.penalty_low_usd, reg.penalty_high_usd, reg.fee_usd) == ("expired_grace_period", 400,
-                                                                                   2000, 400)
-    assert task(r, "Renew DIR registration now").due == "2026-09-28"
-    # 10/15/2026 is 107 days after expiry: past the grace; worked while lapsed -> $2,000 penalty to re-register
+    assert (reg.status, reg.penalty_low_usd, reg.penalty_high_usd, reg.fee_usd) == ("expired_grace_period", 0, 0, 400)
+    t = task(r, "Renew DIR registration now")
+    assert t.due == "2026-09-28" and "do not bid or work" in t.task
+    assert any("07-01 to 09-30" in n for n in reg.notes)
+    # Same lapse, but the crew has been on the job since 7/6 (worked while lapsed): $400 (inadvertent) to $2,000
+    r = pw.public_works_readiness(150_000, "city", True, "construction", "2026-07-06", True, "2026-06-30",
+                                  as_of="2026-08-15", estimated_completion_date="2026-12-31")
+    reg = r.dir_registration
+    assert (reg.status, reg.penalty_low_usd, reg.penalty_high_usd) == ("expired_grace_period", 400, 2000)
+    assert "$400 penalty" in task(r, "Renew DIR registration now").task
+    # 10/15/2026 is 107 days after expiry: past the grace; worked since 9/8 while lapsed -> $2,000 penalty
     r = pw.public_works_readiness(150_000, "city", True, "construction", "2026-09-08", True, "2026-06-30",
                                   as_of="2026-10-15", estimated_completion_date="2026-12-31")
     assert (r.dir_registration.status, r.dir_registration.penalty_low_usd) == ("expired", 2000)
+    assert line(r, "Penalty registration fee").value == 2000
+    # A job that ended 6/15, before the 6/30 lapse: no work while lapsed -> no penalty to re-register
+    r = pw.public_works_readiness(150_000, "city", True, "construction", "2026-03-02", True, "2026-06-30",
+                                  as_of="2026-10-15", estimated_completion_date="2026-06-15")
+    assert (r.dir_registration.status, r.dir_registration.penalty_low_usd) == ("expired", 0)
 
 
 def test_registration_expiring_before_start_and_bad_expiry_date():
@@ -280,6 +310,7 @@ def test_listing_uses_prime_bid_and_flags_sub_problems_before_bid_opening():
     assert (roof.listing_violation_penalty_max_usd, hvac.listing_violation_penalty_max_usd) == (4000, 9000)
     lst = task(r, "List in the bid every sub over $5,000.00")
     assert (lst.due, lst.status) == ("2026-12-03", "due_soon") and "2 of 2" in lst.task
+    assert "sub-listing-required-information" in lst.rule_ids and not lst.verified     # PCC 4104(b) fields: unchecked
     assert task(r, "Correct any inadvertent").due == "2026-12-04"            # 24 hours after bid opening
     # Sub amounts over the prime bid are flagged
     r = pw.public_works_readiness(100_000, "city", True, "construction", "2027-02-01", True, "2027-06-30", subs,
@@ -315,11 +346,23 @@ def test_legacy_lcp_and_state_agency_retention_flag():
     assert r.payroll.ecpr_upload_required
 
 
-def test_sb909_flag_after_operative_date():
+def test_sb909_flag_follows_job_dates():
+    # A job that starts and ends in 2026 (before SB 909's assumed 2027-01-01 operative date): amounts are current law
+    short = pw.public_works_readiness(150_000, "city", True, "construction", "2026-12-01", True, "2027-06-30",
+                                      as_of=AS_OF, estimated_completion_date="2026-12-23")
+    assert "sb909-pending-penalty-increases" not in short.unverified_rule_ids
+    assert line(short, "Late certified payroll").verified and any("re-check" in n for n in short.notes)
+    # Same start with no completion date: the job may run into 2027, so the LC 1776(h) amount is not verified
+    open_ended = pw.public_works_readiness(150_000, "city", True, "construction", "2026-12-01", True, "2027-06-30",
+                                           as_of=AS_OF)
+    assert not line(open_ended, "Late certified payroll").verified
+    assert any("estimated_completion_date" in n for n in open_ended.dir_registration.notes)
+    # The school remodel runs in 2027: the LC 1776(h) amount is flagged even when asked in 2026
     before = school_remodel()
     after = school_remodel(as_of="2027-01-04", award_date=None, bid_opening_date=None)
-    assert "sb909-pending-penalty-increases" not in before.unverified_rule_ids
-    assert "sb909-pending-penalty-increases" in after.unverified_rule_ids
+    for r in (before, after):
+        assert "sb909-pending-penalty-increases" in r.unverified_rule_ids
+        assert not line(r, "Late certified payroll").verified and line(r, "Late eCPR penalty").verified
     assert any("pre-SB 909" in n for n in after.notes)
 
 
@@ -420,11 +463,121 @@ def test_cpr_penalty_runs_until_produced_and_sb909_flag():
         pw.prevailing_wage_penalties(-1, as_of=AS_OF)
 
 
+# ---------------------------------------------------------------- review fixes
+def test_das142_send_by_counts_back_from_the_start_of_the_day():
+    # Thu 2/4/2027: 72 weekday hours before 12:00 a.m. Thu = Wed 2/3 + Tue 2/2 + Mon 2/1 -> window opens 12:00 a.m.
+    # Mon 2/1, so the last day to send is the weekday before: Fri 1/29
+    assert pw._das142_send_by(date(2027, 2, 4), 72) == (date(2027, 1, 29), date(2027, 2, 1))
+    # Tue 3/2/2027: Mon 3/1 + Fri 2/26 + Thu 2/25 -> window opens Thu 2/25; send by Wed 2/24
+    assert pw._das142_send_by(date(2027, 3, 2), 72) == (date(2027, 2, 24), date(2027, 2, 25))
+    r = school_remodel()
+    assert "send it by the end of 2027-01-05" in task(r, "Send DAS 142").due_rule
+
+
+def test_das142_minimum_request_exemption_is_per_project():
+    # 30 laborer hours and nothing else on the project: under 40 journeyman hours -> no minimum request size
+    alone = pw.apprentice_hours_required(30, as_of=AS_OF)
+    assert alone.das142_min_request_hours is None and any("PROJECTS under 40" in n for n in alone.notes)
+    # Same 30 h on a 500-journeyman-hour project: 30 / 5 = 6 h required; minimum max(8, 20% x 6 = 1.2) = 8 h
+    r = pw.apprentice_hours_required(30, project_journeyman_hours=500, as_of=AS_OF)
+    assert (r.required_apprentice_hours, r.das142_min_request_hours) == (6, 8)
+
+
+def test_shortfall_relies_on_registered_apprentice_rule():
+    # 500 / 5 = 100 required - 60 registered-apprentice hours = 40 short; who counts as an apprentice is LC 1777.5(c)
+    # (unchecked), so the shortfall is not verified; the plain ratio is
+    r = pw.apprentice_hours_required(500, apprentice_hours_worked=60, as_of=AS_OF)
+    assert r.shortfall_hours == 40 and r.verified is False
+    assert r.unverified_rule_ids == ["apprentice-must-be-registered"] and not line(r, "Shortfall").verified
+    assert pw.apprentice_hours_required(500, as_of=AS_OF).verified is True
+
+
+def test_unregistered_listed_sub_cure_needs_the_penalty_fee():
+    subs = [{"name": "Unreg Concrete", "license_number": "5", "bid_amount_usd": 80_000, "portion_of_work": "concrete"}]
+    r = pw.public_works_readiness(1_000_000, "city", True, "construction", "2027-02-01", True, "2027-06-30", subs,
+                                  as_of=AS_OF, bid_opening_date="2026-12-10")
+    p = r.subcontractor_listing.subs[0].problems[0]
+    # LC 1771.1(c)(2): register AND pay the $2,000 penalty registration fee within 24 hours, or substitute (PCC 4107)
+    assert "24 hours" in p and "$2,000 penalty registration fee" in p and "PCC 4107" in p
+
+
+def test_unregistered_exposure_stops_at_completion_and_award_exception():
+    # Worked 9/1-10/15/2026 unregistered: 30 + 15 = 45 calendar days -> $2,000 + $100 x 45 = $6,500 (cap $8,000)
+    r = pw.public_works_readiness(150_000, "city", True, "construction", "2026-09-01", False, as_of=AS_OF,
+                                  estimated_completion_date="2026-10-15")
+    assert r.dir_registration.penalty_high_usd == 6500
+    assert "2026-09-01 to 2026-10-15" in line(r, "Penalty exposure").math
+    # Bid opens next month, not yet registered: JV and federal-funds bids may register by award (LC 1771.1(a))
+    r = pw.public_works_readiness(150_000, "city", True, "construction", "2027-02-01", False, as_of=AS_OF,
+                                  bid_opening_date="2026-12-15")
+    assert any("time of contract award" in n for n in r.dir_registration.notes)
+    assert "registration-jv-and-federal-bids-at-award" in {c.rule_id for c in r.citations}
+
+
+def test_under_30000_training_amount_splitting_and_lc1861():
+    # $28,000 construction: full tier (> $25,000) but < $30,000 -> no LC 1777.5; the training amount goes to the worker
+    r = pw.public_works_readiness(28_000, "city", True, "construction", "2027-02-01", True, "2027-06-30", as_of=AS_OF)
+    assert r.coverage.tier == "full" and not r.apprenticeship.applies
+    assert "pay it to each worker" in r.apprenticeship.reason
+    assert "training-fund-contributions" in {c.rule_id for c in r.citations}
+    # $900 repair: no prevailing wage, but no splitting to stay under thresholds, and LC 1861 still applies
+    small = pw.public_works_readiness(900, "city", True, "repair", "2027-02-01", False, as_of=AS_OF)
+    assert "pw-no-project-splitting" in small.unverified_rule_ids and any("split" in x for x in small.coverage.reasons)
+    assert task(small, "Sign and file the LC 1861").due == "2027-02-01"
+    assert "4/10" in school_remodel().payroll.overtime_rule
+
+
+def test_ab1198_only_for_contracts_awarded_on_or_after_its_date():
+    # $40M prime awarded 11/17/2026, before AB 1198's reported 7/1/2027 start: not flagged; award unknown: flagged
+    a = pw.public_works_readiness(40_000_000, "city", True, "construction", "2027-03-01", True, "2027-06-30",
+                                  as_of=AS_OF, award_date="2026-11-17")
+    b = pw.public_works_readiness(40_000_000, "city", True, "construction", "2027-09-01", True, "2027-06-30",
+                                  as_of=AS_OF)
+    assert "ab1198-mid-project-rate-changes-35m" not in a.unverified_rule_ids
+    assert "ab1198-mid-project-rate-changes-35m" in b.unverified_rule_ids
+
+
+def test_subcontractor_retention_and_listing_use_the_subcontract():
+    # $45,000 sub on a $2,000,000 prime: cap 5% x 45,000 = $2,250; listing 0.5% x 2,000,000 = $10,000 < 45,000
+    r = pw.public_works_readiness(2_000_000, "city", True, "construction", "2027-02-01", True, "2027-06-30",
+                                  as_of=AS_OF, your_role="subcontractor", estimated_completion_date="2027-05-28",
+                                  your_contract_usd=45_000)
+    assert r.retention.max_total_retention_usd == 2250
+    assert r.retention.release_due is None and any("whole project" in n for n in r.retention.notes)
+    assert "the prime must list you" in line(r, "Must the prime list you").math
+    assert task(r, "Post at the job site").who.startswith("awarding body or the prime")
+    # Without the subcontract price no dollar cap is guessed from the prime contract
+    r = pw.public_works_readiness(2_000_000, "city", True, "construction", "2027-02-01", True, "2027-06-30",
+                                  as_of=AS_OF, your_role="subcontractor")
+    assert r.retention.max_total_retention_usd is None and any("your_contract_usd" in n for n in r.retention.notes)
+
+
+def test_de_minimis_numbers_flag_pre_july_2021_projects():
+    r = pw.public_works_readiness(40_000_000, "private_developer", True, "construction", "2027-03-01", False,
+                                  as_of=AS_OF, public_subsidy_usd=500_000, bid_opening_date="2021-03-01")
+    assert any("2021-07-01" in x for x in r.coverage.reasons)
+
+
+def test_penalties_sb909_flag_is_per_section():
+    # In 2027 only lines under sections SB 909 amends (LC 1775, 1776, 1777.7, 1725.5) are unverified
+    r = pw.prevailing_wage_penalties(10, overtime_violation_worker_days=4, ecpr_days_late=20, unregistered_work_days=5,
+                                     as_of="2027-02-01")
+    by = {x.section: x for x in r.lines}
+    assert not by["LC 1775(a)"].verified and not by["LC 1725.5; 8 CCR 16412(a)(4)"].verified
+    assert by["LC 1813"].verified and by["LC 1771.4(a)(3)"].verified and by["LC 1771.1(g)"].verified
+    assert by["LC 1813"].high_usd == 100                                               # 4 x $25
+    # Request received 11/1/2026, due 11/11, produced 11/16: 5 days x 2 workers x $100 = $1,000, all before 2027
+    r = pw.prevailing_wage_penalties(cpr_workers=2, cpr_request_received_date="2026-11-01",
+                                     cpr_produced_date="2026-11-16", as_of="2027-02-01")
+    assert r.lines[0].high_usd == 1000 and r.verified is True
+    assert pw.prevailing_wage_penalties(overtime_violation_worker_days=4, as_of="2027-02-01").verified is True
+
+
 # ---------------------------------------------------------------- rulebook wiring
 def test_every_rule_id_exists_in_rulebook():
-    ids = [v for k, v in vars(pw).items() if k.isupper() and isinstance(v, str) and v.count("-") >= 2]
-    assert len(ids) > 40
-    for rid in ids:
+    consts = {v for k, v in vars(pw).items() if k.isupper() and isinstance(v, str) and "-" in v and " " not in v}
+    assert consts == set(pw.RULE_IDS) and len(pw.RULE_IDS) > 60
+    for rid in pw.RULE_IDS:
         core.rule(rid)
 
 
@@ -442,12 +595,13 @@ def test_register_and_call_through_mcp_client():
                 "dir_registration_expiry": "2027-06-30", "as_of": AS_OF, "award_date": "2026-11-17",
                 "subcontractors": [{"name": "Volt Electric", "license_number": "1012345", "dir_number": "1000045678",
                                     "bid_amount_usd": 62_000, "portion_of_work": "electrical"}]})
-            hours = await c.call_tool("apprentice_hours_required", {"journeyman_hours": 1250})
+            hours = await c.call_tool("apprentice_hours_required", {"journeyman_hours": 30,
+                                                                    "project_journeyman_hours": 1280})
             pen = await c.call_tool("prevailing_wage_penalties", {"underpaid_worker_days": 48, "as_of": AS_OF})
             return names, ready.structured_content, hours.structured_content, pen.structured_content
     names, ready, hours, pen = asyncio.run(run())
     assert {"public_works_readiness", "apprentice_hours_required", "prevailing_wage_penalties"} <= names
     assert ready["pwc100_due"] == "2026-12-17" and ready["subcontractor_listing"]["threshold_usd"] == 2400
     assert ready["retention"]["max_total_retention_usd"] == 24_000
-    assert hours["required_apprentice_hours"] == 250
+    assert (hours["required_apprentice_hours"], hours["das142_min_request_hours"]) == (6, 8)   # 30/5; max(8, 1.2)
     assert (pen["penalties_low_usd"], pen["penalties_high_usd"]) == (1920, 9600)

@@ -32,6 +32,8 @@ R_CLASSES, R_A, R_B, R_B_PRIME, R_B_SUB, R_B_FIRE_WELL = (
     "b-prime-contract-two-trade-rule", "b-subcontract-two-trade-rule", "b-fire-protection-well-drilling-restriction")
 R_B2, R_B2_MIN, R_B2_MEP, R_SOLAR_AB = ("b2-residential-remodeling-scope", "b2-three-trade-minimum",
                                        "b2-mep-system-restriction", "solar-work-within-class-a-b-c61")
+R_B2_STRUCT, R_B2_RESTRICTED, R_C38 = ("b2-no-structural-load-bearing-work", "b2-restricted-trades-c16-c22-c57",
+                                       "class-c38-refrigeration-50f-threshold")
 R_C7, R_C46, R_C61, R_FIRE, R_ASB, R_ASB_B, R_WELL, R_TREE, R_POOL_C27, R_ADU, R_PW_MAJORITY, R_HAZ, R_UST = (
     "class-c07-low-voltage-91-volt-limit", "class-c46-solar-battery-80kwh-limit", "class-c61-limited-specialty-scope",
     "fire-protection-system-installer", "asbestos-100-sqft-c22-or-certification", "asbestos-gc-must-hold-c22-or-subcontract",
@@ -151,9 +153,11 @@ ALIASES: dict[str, tuple[str, ...]] = {
             "acoustic ceiling", "acoustical tile"),
     "C-4": ("boiler", "hydronic", "hydronic heating", "steam fitting", "steam piping", "radiant heating", "radiator"),
     "C-5": ("framing", "rough carpentry", "formwork", "subfloor", "sub floor", "sheathing", "roof deck", "truss",
-            "stud wall", "joist", "siding", "exterior stair", "garage door", "deck framing", "shear wall"),
+            "stud wall", "joist", "siding", "exterior stair", "garage door", "deck framing", "shear wall",
+            "load bearing wall", "bearing wall", "beam", "header", "rafter", "structural framing",
+            "seismic retrofit"),
     "C-6": ("cabinet", "cabinetry", "millwork", "finish carpentry", "trim", "baseboard", "crown molding", "casework",
-            "interior door", "closet shelving", "built in"),
+            "interior door", "closet shelving", "built in", "vanity"),
     "C-7": ("low voltage", "data cabling", "network cabling", "structured cabling", "cat6", "cat 6", "cat5",
             "ethernet", "telephone system", "phone system", "sound system", "speaker", "audio visual", "av system",
             "cctv", "security camera", "camera system", "satellite dish", "cable tv", "intercom",
@@ -165,7 +169,9 @@ ALIASES: dict[str, tuple[str, ...]] = {
              "dimmer", "electrical panel", "main panel", "service upgrade", "panel upgrade", "subpanel", "circuit",
              "breaker", "lighting", "light fixture", "recessed light", "can light", "ceiling fan", "ev charger",
              "ev charging", "car charger", "standby generator", "conduit", "landscape lighting", "battery",
-             "battery storage", "energy storage", "bess", "powerwall"),
+             "battery storage", "energy storage", "bess", "powerwall",
+             # 832.07 and 832.28 exclude fire alarms; 7026.12 excludes electrical alarms from fire protection.
+             "fire alarm", "low voltage fire alarm", "fire alarm system"),
     "C-11": ("elevator", "dumbwaiter"),
     "C-12": ("grading", "excavation", "excavate", "earthwork", "trenching", "trench", "backfill", "cut fill",
              "asphalt", "paving", "blacktop", "site prep", "compaction"),
@@ -235,6 +241,11 @@ REMODEL_WORDS = ("remodel", "renovation", "tenant improvement", "build out", "bu
 BATTERY_WORDS = ("battery", "battery storage", "energy storage", "bess", "powerwall")
 SOLAR_THERMAL_WORDS = ("solar water heating", "solar thermal", "solar pool heating", "solar hot water")
 MEP_CLASSES = {"C-4", "C-10", "C-20", "C-36", "C-38"}
+# B&P 7057.5(c)(2): a B-2 may not contract structural changes to load-bearing portions (no subcontract exception).
+STRUCTURAL_WORDS = ("load bearing", "bearing wall", "structural", "beam", "header", "footing", "foundation",
+                    "shear wall", "rafter", "truss", "joist", "roof structure", "roof framing", "seismic retrofit",
+                    "underpinning", "underpin")
+_NON_STRUCTURAL = re.compile(r"non ?(?:load )?(?:bearing|structural)")
 FIXTURE_WORDS = ("faucet", "toilet", "sink", "tub", "bathtub", "fixture", "ceiling fan", "exhaust fan", "fan",
                  "switch", "outlet", "receptacle", "dimmer", "air filter", "grill", "register", "garbage disposal")
 SYSTEM_WORDS = ("add", "new", "relocate", "move", "extend", "reroute", "rewire", "repipe", "re pipe", "upgrade",
@@ -314,6 +325,7 @@ class TradeMatch(BaseModel):
     battery: bool = False
     solar_thermal: bool = False
     mep_system_work: bool = False
+    structural: bool = Field(False, description="Mentions load-bearing/structural work (B&P 7057.5(c)(2))")
     civil_work: list[str] = Field(default_factory=list)
 
 
@@ -332,6 +344,7 @@ def _detect(scope: str) -> tuple[list[TradeMatch], list[str], bool, bool]:
             if pat.search(seg) and len(kw) > best.get(code, (0, ""))[0]:
                 best[code] = (len(kw), kw)
         civil = _has(seg, CIVIL_WORDS)
+        structural = bool(_has(_NON_STRUCTURAL.sub(" ", seg), STRUCTURAL_WORDS))
         if not best:
             if civil:
                 segs.append(TradeMatch(segment=seg, classes=[], matched_keywords=[], civil_work=civil))
@@ -345,8 +358,28 @@ def _detect(scope: str) -> tuple[list[TradeMatch], list[str], bool, bool]:
             segment=seg, classes=primary, matched_keywords=sorted({best[c][1] for c in primary}),
             also_possible=sorted((c for c in best if c not in primary), key=_code_key),
             battery="C-10" in primary and bool(_has(seg, BATTERY_WORDS)),
-            solar_thermal=bool(_has(seg, SOLAR_THERMAL_WORDS)), mep_system_work=mep, civil_work=civil))
+            solar_thermal=bool(_has(seg, SOLAR_THERMAL_WORDS)), mep_system_work=mep, structural=structural,
+            civil_work=civil))
     return segs, unmatched, whole, remodel
+
+
+def _groups(segs: list[TradeMatch]) -> list[list[str]]:
+    """Distinct trades in the scope. Classes tied on one piece of work (e.g. 'metal roofing': C-39 or C-43) are
+    alternatives for the same trade, so they merge into one group and count once toward B&P 7057 / 7057.5."""
+    groups: list[set[str]] = []
+    for s in segs:
+        cs = set(s.classes)
+        if not cs:
+            continue
+        for g in [g for g in groups if g & cs]:
+            groups.remove(g)
+            cs |= g
+        groups.append(cs)
+    return sorted((sorted(g, key=_code_key) for g in groups), key=lambda g: _code_key(g[0]))
+
+
+def _label(group: list[str]) -> str:
+    return " or ".join(group)
 
 
 class ClassOption(BaseModel):
@@ -365,6 +398,8 @@ class ClassificationResult(core.Result):
     contract_role: str
     trades: list[TradeMatch]
     trade_classes: list[str]
+    trade_groups: list[list[str]] = Field(description="Distinct trades. Classes in one group are alternatives for the "
+                                                      "same piece of work and count as one trade")
     unrelated_trades_excluding_framing_carpentry: int
     options: list[ClassOption]
     can_perform: list[str] = Field(description="Classes that can take this contract as described")
@@ -380,6 +415,12 @@ def _carpentry_codes() -> set[str]:
     return {c for c, e in class_table().items() if "carpentry" in e.name.lower() or "framing" in e.name.lower()}
 
 
+def _non_carpentry(groups: list[list[str]]) -> list[list[str]]:
+    """Trades that count toward B&P 7057(b). Work a carpentry class could do (alone or as an alternative) never counts."""
+    carp = _carpentry_codes()
+    return [g for g in groups if not set(g) & carp]
+
+
 def _opt(code, name, status, basis, conditions, rule_ids) -> ClassOption:
     return ClassOption(code=code, name=name, status=status, basis=basis, conditions=conditions,
                        rule_ids=list(dict.fromkeys(rule_ids)), rule_text=_rule_text(rule_ids[0]))
@@ -390,36 +431,53 @@ def _names(codes) -> str:
     return ", ".join(f"{c} {t[c].name}" if c in t else c for c in codes)
 
 
-def _specialty_option(code: str, trades: list[str], segs: list[TradeMatch], role: str, project_type: str,
-                      battery_kwh: Optional[float], asbestos_sq_ft: Optional[float], whole: bool) -> ClassOption:
+def _gnames(groups: list[list[str]]) -> str:
+    t = class_table()
+    return "; ".join(" or ".join(f"{c} {t[c].name}" if c in t else c for c in g) for g in groups)
+
+
+def _covers(code: str, seg: TradeMatch) -> bool:
+    """True if `code` can do this piece of work under its own class. C-10 also covers low-voltage (C-7) and PV
+    (C-46, not solar thermal) work: 16 CCR 832.10 covers electrical work 'in any form', incl. PV systems."""
+    if code in seg.classes:
+        return True
+    return code == "C-10" and ("C-7" in seg.classes or ("C-46" in seg.classes and not seg.solar_thermal))
+
+
+def _specialty_option(code: str, segs: list[TradeMatch], role: str, project_type: str, battery_kwh: Optional[float],
+                      asbestos_sq_ft: Optional[float], whole: bool, standalone: bool = False) -> ClassOption:
     e = class_table()[code]
-    others = [t for t in trades if t != code]
+    uncovered = [] if standalone else [s for s in segs if s.classes and not _covers(code, s)]
     conds, rules = [], [e.rule_id]
     basis = f"{code} {e.name} scope (16 CCR 832): {', '.join(e.scope[:6]) or e.name}."
     battery_only = any(s.battery for s in segs) and all(s.battery for s in segs if "C-10" in s.classes)
     if code == "C-10":
-        covered = {"C-7"} | (set() if any(s.solar_thermal for s in segs) else {"C-46"})
-        if covered & set(others):
+        if any(_covers(code, s) and code not in s.classes for s in segs):
             basis += " C-10 covers electrical work 'in any form or for any purpose', incl. low-voltage and PV systems."
-        others = [o for o in others if o not in covered]
     elif code == "C-7":
         basis += (f" Limited to energy-limited systems of {P(R_C7, 'max_voltage_v')} volts or less; low-voltage fire "
-                  "alarm systems are excluded.")
+                  "alarm systems are excluded (they are C-10 work).")
+    elif code == "C-38":
+        basis += (f" Only for air, liquid or gas temperatures below {P(R_C38, 'temperature_threshold_f')} F "
+                  f"({P(R_C38, 'temperature_threshold_c')} C); comfort heating and cooling is C-20 work.")
+        rules.append(R_C38)
     elif code == "C-46":
         kwh_max = P(R_C46, "bess_max_rating_kwh")
         basis += (" A C-46 may do other trades only when required to install the solar system (832.46(a)). The "
                   "amended 832.10/832.46 battery text was stayed when the 2026 Law Book was printed; confirm its "
                   "status with CSLB.")
-        if "C-10" in others and battery_only:
-            others.remove("C-10")
+        bats = [s for s in uncovered if s.battery and s.classes == ["C-10"]]
+        if bats and battery_only:
+            uncovered = [s for s in uncovered if s not in bats]
             if battery_kwh is None:
                 conds.append(f"Battery storage only as incidental to the PV install and only if rated {kwh_max} kWh or "
                              "less (16 CCR 832.46(c)); give battery_kwh to check.")
             elif battery_kwh <= kwh_max:
                 basis += f" The {battery_kwh:g} kWh battery is within the {kwh_max} kWh C-46 limit (832.46(c))."
             else:
-                conds.append(f"The {battery_kwh:g} kWh battery is over the {kwh_max} kWh C-46 limit: a C-10 must install "
-                             "it under its own contract (16 CCR 832.46(b)-(c)).")
+                conds.append(f"The {battery_kwh:g} kWh battery is over the {kwh_max} kWh C-46 limit, so the C-46 may not "
+                             "contract for it: a C-10 must contract for and install it separately, or a C-10 or B "
+                             "takes the whole job (16 CCR 832.46(b)-(c)).")
     elif code == "C-16":
         basis = ("Fire protection systems (other than electrical alarm systems) may be installed only by a contractor "
                  "holding the fire protection classification, or a qualifying owner-builder (B&P 7026.12).")
@@ -437,12 +495,15 @@ def _specialty_option(code: str, trades: list[str], segs: list[TradeMatch], role
     elif code == "C-49":
         basis += " Tree removal, pruning, stump removal and guying are contracting work (B&P 7026.1(a)(4))."
         rules.append(R_TREE)
-    elif code == "C-53" and others:
+    elif code == "C-53" and uncovered:
         basis += " C-53 scope includes the trades necessary to build the pool or spa."
-    if code == "C-27" and "C-53" in others:
-        others.remove("C-53")
+    if code == "C-27" and any("C-53" in s.classes for s in uncovered):
+        uncovered = [s for s in uncovered if "C-53" not in s.classes]
         conds.append("A C-27 prime may include a pool/spa only if it is part of the landscape project and the pool is "
-                     "subcontracted to a single licensed C-53 (or the C-27 also holds C-53) (B&P 7027.5).")
+                     "subcontracted to a single licensed C-53 (or the C-27 also holds C-53) (B&P 7027.5(b)(1))."
+                     if role == "prime" else
+                     "B&P 7027.5(b) lets a C-27 include a pool/spa only in a prime contract: as a subcontractor the "
+                     "C-27 must also hold C-53, or the pool goes to a C-53 under its own contract.")
         rules.append(R_POOL_C27)
     if code == "C-47" and project_type == "adu":
         conds.append("Only for a manufactured home built off site and transported to the lot (CSLB ADU guidance).")
@@ -451,20 +512,25 @@ def _specialty_option(code: str, trades: list[str], segs: list[TradeMatch], role
         return _opt(code, e.name, "no", basis + " A whole building or addition is a multi-trade B job; a specialty "
                     "contractor may take only its own trade on it, as a subcontract.",
                     [], rules + [R_ADU if project_type == "adu" else R_834])
-    if others:
-        conds.append(f"The other work ({_names(others)}) must be incidental and supplemental, meaning essential to "
+    others = _groups(uncovered)
+    if others and project_type == "public_works" and role == "prime":
+        # B&P 7059(b)(1) replaces the private-work 834(c) bar: an authorized specialty prime subs out the rest.
+        conds.append(f"Public works: the awarding agency decides which class may bid, and may not award the prime to a "
+                     f"specialty contractor whose class is less than a majority of the project (B&P 7059(b)(1)). "
+                     f"The other work ({_gnames(others)}) must be performed by licensed subcontractors unless it is "
+                     f"incidental and supplemental to the {code} work (B&P 7059(a); 16 CCR 831).")
+        rules += [R_PW_MAJORITY, R_831, R_7059A]
+    elif others:
+        conds.append(f"The other work ({_gnames(others)}) must be incidental and supplemental, meaning essential to "
                      f"accomplish the {code} work (16 CCR 831). Otherwise {code} may not contract for it at all, even "
                      "with a subcontractor (16 CCR 834(c)): use separate contracts or a B prime.")
         rules += [R_831, R_7059A, R_834]
-        if project_type == "public_works" and role == "prime":
-            conds.append(f"Public works: a specialty prime's class must be a majority of the project and work outside "
-                         f"{code} goes to licensed subs (B&P 7059(b)); the agency sets the required class.")
-            rules.append(R_PW_MAJORITY)
     return _opt(code, e.name, "conditional" if conds else "yes", basis, conds, rules)
 
 
-def _b_option(trades, segs, role, project_type, whole, remodel) -> ClassOption:
-    non_carp = [t for t in trades if t not in _carpentry_codes()]
+def _b_option(groups, segs, role, project_type, whole, remodel) -> ClassOption:
+    trades = sorted({c for g in groups for c in g}, key=_code_key)
+    non_carp = _non_carpentry(groups)
     solar = "C-46" in trades
     rule = R_B_PRIME if role == "prime" else R_B_SUB
     min_n = P(rule, "min_unrelated_trades_excluding_framing_carpentry")
@@ -479,7 +545,7 @@ def _b_option(trades, segs, role, project_type, whole, remodel) -> ClassOption:
                         "832.62(b)).", "yes"
         rules.append(R_SOLAR_AB)
     elif len(non_carp) >= min_n:
-        basis, status = (f"{len(non_carp)} unrelated trades besides framing/carpentry ({_names(non_carp)}); B&P "
+        basis, status = (f"{len(non_carp)} unrelated trades besides framing/carpentry ({_gnames(non_carp)}); B&P "
                          f"7057(b) needs at least {min_n}."), "yes"
     elif whole and not trades:
         basis, status = "A whole building or addition uses two or more unrelated building trades (B&P 7057(a)).", "yes"
@@ -490,35 +556,47 @@ def _b_option(trades, segs, role, project_type, whole, remodel) -> ClassOption:
     elif trades and not non_carp:
         basis, status = "Framing or carpentry alone: a B may take it as a prime or a subcontract (B&P 7057(b)).", "yes"
     else:
-        one = non_carp[0]
-        status = "conditional"
-        basis = (f"Only {len(non_carp)} trade besides framing/carpentry ({_names(non_carp)}); as a {role} B&P 7057(b) "
+        one = _label(non_carp[0])
+        basis = (f"Only {len(non_carp)} trade besides framing/carpentry ({_gnames(non_carp)}); as a {role} B&P 7057(b) "
                  f"needs at least {min_n}.")
-        conds.append(f"The B must hold {one} itself or subcontract the {one} work to a licensed {one} contractor."
-                     if role == "prime" else
-                     f"The B must hold {one} itself; subcontracting it out does not cure this for a subcontract.")
-    for code, rid, what in (("C-16", R_B_FIRE_WELL, "a fire protection system"), ("C-57", R_B_FIRE_WELL, "well "
-                            "drilling"), ("C-22", R_ASB_B, "asbestos abatement")):
+        if role == "prime":
+            status = "conditional"
+            conds.append(f"The B must hold {one} itself or subcontract the {one} work to a licensed {one} contractor.")
+        else:
+            status = "no"
+            basis += (f" A B may take this subcontract only if it also holds {one} (it then works under that class); "
+                      "subcontracting the work out does not cure this for a subcontract.")
+    for code, rid, what, cite in (("C-16", R_B_FIRE_WELL, "a fire protection system", "B&P 7057(c)"),
+                                  ("C-57", R_B_FIRE_WELL, "well drilling", "B&P 7057(c)"),
+                                  ("C-22", R_ASB_B, "asbestos abatement", "16 CCR 833(b)")):
         if code in trades:
             conds.append(f"The project includes {what}: the B must hold {code}"
                          + (" (or the asbestos certification plus DOSH registration)" if code == "C-22" else "")
-                         + f" or subcontract it to a licensed {code} (B&P 7057(c); 16 CCR 833(b)).")
+                         + f" or subcontract it to a licensed {code} ({cite}).")
             rules.append(rid)
-            status = "conditional"
+            if status == "yes":
+                status = "conditional"
     if project_type == "adu":
         basis += " A B may build a site-built ADU and subcontract the specialty trades (CSLB ADU guidance)."
         rules.append(R_ADU)
     return _opt("B", "General Building", status, basis, conds, rules)
 
 
-def _b2_option(trades, segs, project_type) -> ClassOption:
+def _b2_option(groups, segs, project_type) -> ClassOption:
     min_n = P(R_B2_MIN, "min_unrelated_trades_per_contract")
+    trades = {c for g in groups for c in g}
     if project_type != "residential_existing":
         return _opt("B-2", "Residential Remodeling", "no", "B-2 covers only improvements to an existing residential "
                     "wood-frame structure (B&P 7057.5); set project_type to residential_existing if that applies.",
                     [], [R_B2])
-    if len(trades) < min_n:
-        return _opt("B-2", "Residential Remodeling", "no", f"{len(trades)} unrelated trade(s) found; a B-2 contract "
+    structural = [s.segment for s in segs if s.structural]
+    if structural:
+        return _opt("B-2", "Residential Remodeling", "no", f"Structural work on load-bearing parts ({'; '.join(structural)})"
+                    ": a B-2 may not contract structural changes to footings, foundations, load-bearing walls, "
+                    "partitions or roof structures, and subcontracting does not cure it (B&P 7057.5(c)(2)). Use a B.",
+                    [], [R_B2_STRUCT, R_B2])
+    if len(groups) < min_n:
+        return _opt("B-2", "Residential Remodeling", "no", f"{len(groups)} unrelated trade(s) found; a B-2 contract "
                     f"needs at least {min_n} (B&P 7057.5(b)(2)).", [], [R_B2_MIN, R_B2])
     conds, rules = ["Existing residential wood-frame structure only; no new construction."], [R_B2_MIN, R_B2]
     mep = sorted({c for s in segs if s.mep_system_work for c in s.classes if c in MEP_CLASSES}, key=_code_key)
@@ -529,9 +607,11 @@ def _b2_option(trades, segs, project_type) -> ClassOption:
         rules.append(R_B2_MEP)
     for code in ("C-16", "C-22", "C-57"):
         if code in trades:
-            conds.append(f"{code} work must go to a licensed {code} contractor.")
+            conds.append(f"{code} work: the B-2 must hold {code} or subcontract it to a licensed {code} contractor "
+                         "(B&P 7057.5(c)(1)).")
+            rules.append(R_B2_RESTRICTED)
     return _opt("B-2", "Residential Remodeling", "conditional" if len(conds) > 1 else "yes",
-                f"{len(trades)} unrelated trades in one contract ({_names(trades)}); B-2 needs at least {min_n}.",
+                f"{len(groups)} unrelated trades in one contract ({_gnames(groups)}); B-2 needs at least {min_n}.",
                 conds, rules)
 
 
@@ -548,8 +628,12 @@ def _a_option(trades, segs, project_type) -> ClassOption:
                     "Fixed works requiring specialized engineering knowledge" + (f" ({', '.join(civil)})" if civil else "")
                     + " are Class A work (B&P 7056).", conds, [R_A, R_834])
     if solar:
-        return _opt("A", "General Engineering", "yes", "An active solar energy system is a fixed work within Class A "
-                    "(16 CCR 832.62(a)).", [], [R_SOLAR_AB, R_A])
+        building = [t for t in trades if t not in ("C-46", "C-10") and t not in A_ISH]
+        conds = [f"Class A may not take the building trades in this scope ({_names(building)}) (16 CCR 834(a)): "
+                 "separate contracts or a B prime."] if building else []
+        return _opt("A", "General Engineering", "conditional" if conds else "yes", "An active solar energy system is a "
+                    "fixed work within Class A (16 CCR 832.62(a)).", conds,
+                    [R_SOLAR_AB, R_A] + ([R_834] if building else []))
     if trades and set(trades) <= A_ISH:
         return _opt("A", "General Engineering", "conditional", f"{_names(trades)} work is Class A work when it is "
                     "part of B&P 7056 fixed works (site work, roads, utilities, grading).",
@@ -565,23 +649,26 @@ def classification_for_scope(scope_of_work: str, project_type: ProjectType = "ot
     if not (scope_of_work or "").strip():
         raise ValueError("scope_of_work must describe the work, e.g. 'replace water heater, add 2 outlets'")
     segs, unmatched, strong, remodel = _detect(scope_of_work)
-    trades = sorted({c for s in segs for c in s.classes}, key=_code_key)
-    whole = (strong and (not trades or len(trades) >= 2)) or (project_type == "adu" and not trades)
+    groups = _groups(segs)
+    trades = sorted({c for g in groups for c in g}, key=_code_key)
+    whole = (strong and (not trades or len(groups) >= 2)) or (project_type == "adu" and not trades)
     hard_no = whole and contract_role == "prime"         # a sub's contract covers only its own trade
-    n_unrelated = len([t for t in trades if t not in _carpentry_codes()])
+    n_unrelated = len(_non_carpentry(groups))
     args = (segs, contract_role, project_type, battery_kwh, asbestos_sq_ft, hard_no)
-    options = [_specialty_option(c, trades, *args) for c in trades]
-    thermal = any(s.solar_thermal for s in segs)
-    if "C-10" not in trades and ("C-7" in trades or ("C-46" in trades and not thermal)):
-        options.append(_specialty_option("C-10", trades + ["C-10"], *args))
+    options = [_specialty_option(c, *args) for c in trades]
+    if "C-10" not in trades and any(_covers("C-10", s) for s in segs):
+        options.append(_specialty_option("C-10", *args))
     if project_type in ("adu", "manufactured_home") and "C-47" not in trades:
-        options.append(_specialty_option("C-47", ["C-47"], *args))
+        options.append(_specialty_option("C-47", *args, standalone=True))
     if trades or whole or remodel or any(s.civil_work for s in segs):
-        options += [_b_option(trades, segs, contract_role, project_type, whole, remodel),
-                    _b2_option(trades, segs, project_type), _a_option(trades, segs, project_type)]
+        options += [_b_option(groups, segs, contract_role, project_type, whole, remodel),
+                    _b2_option(groups, segs, project_type), _a_option(trades, segs, project_type)]
     notes = ["Keyword matching against 16 CCR 832 class scopes. CSLB decides which trades are 'unrelated' and what is "
              "incidental and supplemental case by case; confirm borderline scopes with CSLB.",
              "The class must be on an active license (B&P 7117.6)."]
+    if any(len(g) > 1 for g in groups):
+        notes.append("Classes listed together (" + "; ".join(_label(g) for g in groups if len(g) > 1) + ") can each do "
+                     "that piece of work, so it counts as one trade.")
     if unmatched:
         notes.append(f"Not recognized: {', '.join(unmatched)}. If no listed class covers the work, it may be C-61 "
                      "Limited Specialty, whose endorsed scope is printed on the license (16 CCR 832.61).")
@@ -611,9 +698,9 @@ def classification_for_scope(scope_of_work: str, project_type: ProjectType = "ot
         humans.append("C-16 fire protection contractor for the sprinkler or suppression system.")
     res = ClassificationResult(
         scope_of_work=scope_of_work, project_type=project_type, contract_role=contract_role, trades=segs,
-        trade_classes=trades, unrelated_trades_excluding_framing_carpentry=n_unrelated, options=options,
-        can_perform=yes, can_perform_with_conditions=cond, unmatched_segments=unmatched, answer=answer,
-        licensed_humans=humans, notes=notes)
+        trade_classes=trades, trade_groups=groups, unrelated_trades_excluding_framing_carpentry=n_unrelated,
+        options=options, can_perform=yes, can_perform_with_conditions=cond, unmatched_segments=unmatched,
+        answer=answer, licensed_humans=humans, notes=notes)
     res.cite(R_CLASSES, R_830, R_7117_6, *[r for o in options for r in o.rule_ids])
     for flag, rid in (("C-22" in trades, "owner-must-hire-certified-asbestos-consultant"), (haz, R_HAZ),
                       (ust, R_UST), (bool(unmatched), R_C61)):

@@ -67,6 +67,27 @@ NO_SECURITY_MAX_USD = Decimal(str(R("no-real-property-security-5000-or-less").pa
 FINE_MIN = R("hic-payment-violations-misdemeanor").param("fine_min_dollars")
 FINE_MAX = R("hic-payment-violations-misdemeanor").param("fine_max_dollars")
 JAIL_YEARS = R("hic-payment-violations-misdemeanor").param("jail_max_years")
+SR_REFUND_DAYS = R("service-repair-right-to-cancel-notice").param("refund_days")
+SR_PICKUP_DAYS = R("service-repair-right-to-cancel-notice").param("goods_pickup_days")
+# type sizes (points) used in labels and print notes
+BODY_PT = R("hic-legibility-typeface-minimums").param("min_body_font_pt")
+HEAD_PT = R("hic-legibility-typeface-minimums").param("min_heading_font_pt")
+HI_HEAD_PT = R("hic-heading-home-improvement").param("min_font_pt")
+COPY_PT = R("hic-entitled-to-copy-statement").param("min_font_pt")
+DOWN_PT = R("hic-downpayment-disclosure").param("min_font_pt")
+PROG_PT = R("hic-progress-payment-schedule").param("statement_min_font_pt")
+CSLB_PT = R("hic-cslb-information-notice").param("min_font_pt")
+CANCEL_PT = R("right-to-cancel-notice-format").param("min_font_pt")
+SR_HEAD_PT = R("service-repair-heading").param("min_font_pt")
+SR_NOTICE_PT = R("service-repair-buyer-requirements-notice").param("min_font_pt")
+SR_COPY_PT = R("service-repair-entitled-to-copy-notice").param("min_font_pt")
+SR_CANCEL_PT = R("service-repair-right-to-cancel-notice").param("min_font_pt")
+ARB_PT = R("residential-arbitration-clause-title-and-format").param("min_font_pt_black")
+ARB_RED_PT = R("residential-arbitration-clause-title-and-format").param("min_font_pt_red")
+DOWN_STATEMENT = R("hic-downpayment-disclosure").param("required_text")
+# B&P 7125 (version repealed 2028-01-01): these classifications can never use the no-employee exemption
+WC_ALWAYS_CLASSES = R("workers-comp-exemption-until-2028").param("classifications_always_require_wc")
+WC_EXEMPTION_ENDS = date.fromisoformat(R("wc-exemption-ends-2028").param("operative_date"))
 
 
 def _effective(rule_id: str) -> Optional[date]:
@@ -80,7 +101,7 @@ SB517_FROM = _effective("hic-subcontractor-disclosure-on-request")   # subcontra
 ATTORNEY = ("California-licensed attorney: review the contract before use and write the terms the statute does not "
             "supply (warranty, permits and who pays for them, delays, allowances, termination, dispute resolution).")
 ATTORNEY_ARB = ("California-licensed attorney: draft the arbitration provision itself. B&P 7191 fixes only its title, "
-                "type and the NOTICE; a defective clause binds only you.")
+                "type and the NOTICE; a defective clause may not be enforceable against anyone but you.")
 
 Status = Literal["ok", "violation", "warning", "not_checked", "not_applicable"]
 
@@ -151,22 +172,22 @@ class CancellationResult(core.Result):
 
 class ContractIncludes(BaseModel):
     """What the written contract contains. True = present, False = missing, None/omitted = not checked."""
-    type_size_10pt_text_and_bold_headings: Optional[bool] = Field(None, description="Legible; text >= 10-pt, headings >= 10-pt bold")
+    type_size_10pt_text_and_bold_headings: Optional[bool] = Field(None, description=f"Legible; text >= {BODY_PT}-pt, headings >= {HEAD_PT}-pt bold")
     signed_dated_copy_to_buyer_before_work: Optional[bool] = Field(None, description="Buyer gets a copy signed and dated by both sides before work starts")
     first_page_buyer_sign_date: Optional[bool] = Field(None, description="First page shows the date the buyer signed")
     first_page_cancellation_address_and_email: Optional[bool] = Field(None, description="First page: contractor name, address AND email for the Notice of Cancellation, right after a statement that it may be sent there")
     first_page_cancellation_help_phone: Optional[bool] = Field(None, description="First page: phone number to help the buyer with the Notice of Cancellation")
     contractor_name_address_license: Optional[bool] = Field(None, description="Contractor name, business address and license number")
-    heading_home_improvement: Optional[bool] = Field(None, description="Heading 'Home Improvement' in >= 10-pt bold")
-    entitled_to_copy_statement: Optional[bool] = Field(None, description="12-pt bold 'You are entitled to a completely filled in copy...' statement")
+    heading_home_improvement: Optional[bool] = Field(None, description=f"Heading 'Home Improvement' in >= {HI_HEAD_PT}-pt bold")
+    entitled_to_copy_statement: Optional[bool] = Field(None, description=f"{COPY_PT}-pt bold 'You are entitled to a completely filled in copy...' statement")
     contract_price_heading: Optional[bool] = Field(None, description="'Contract Price' heading with the amount in dollars and cents")
     finance_charge_heading: Optional[bool] = Field(None, description="'Finance Charge' heading, separate from the price (only if financed)")
     description_heading: Optional[bool] = Field(None, description="Project description heading with description of significant materials and equipment")
     pool_plan_and_scale_drawing: Optional[bool] = Field(None, description="Swimming pools only: plan and scale drawing with shape, size, dimensions, construction and equipment specs")
     downpayment_heading_and_amount: Optional[bool] = Field(None, description="'Downpayment' heading and the amount")
-    downpayment_statement: Optional[bool] = Field(None, description="12-pt bold 'THE DOWNPAYMENT MAY NOT EXCEED $1,000 OR 10 PERCENT...' statement")
+    downpayment_statement: Optional[bool] = Field(None, description=f"{DOWN_PT}-pt bold '{DOWN_STATEMENT}' statement")
     progress_schedule_heading: Optional[bool] = Field(None, description="'Schedule of Progress Payments' heading")
-    progress_payment_statement: Optional[bool] = Field(None, description="12-pt bold 'IT IS AGAINST THE LAW FOR A CONTRACTOR TO COLLECT PAYMENT FOR WORK NOT YET COMPLETED...' statement")
+    progress_payment_statement: Optional[bool] = Field(None, description=f"{PROG_PT}-pt bold 'IT IS AGAINST THE LAW FOR A CONTRACTOR TO COLLECT PAYMENT FOR WORK NOT YET COMPLETED...' statement")
     substantial_commencement_statement: Optional[bool] = Field(None, description="Statement of what counts as substantial commencement of work")
     approximate_start_date_heading: Optional[bool] = Field(None, description="'Approximate Start Date' heading and date")
     approximate_completion_date_heading: Optional[bool] = Field(None, description="'Approximate Completion Date' heading and date")
@@ -181,16 +202,16 @@ class ContractIncludes(BaseModel):
     workers_comp_notice: Optional[bool] = Field(None, description="'Workers' Compensation Insurance' notice with the true statement")
     extra_work_buyer_notice: Optional[bool] = Field(None, description="Notice to buyer about extra/change-order work (B&P 7159(e)(3))")
     mechanics_lien_warning: Optional[bool] = Field(None, description="Verbatim 'Mechanics Lien Warning'")
-    cslb_information_notice: Optional[bool] = Field(None, description="'Information about the Contractors State License Board (CSLB)' notice in >= 12-pt")
-    right_to_cancel_notice: Optional[bool] = Field(None, description="Right-to-cancel notice: 12-pt bold, next to owner's signature, signed and dated by owner, in the sales-pitch language")
+    cslb_information_notice: Optional[bool] = Field(None, description=f"'Information about the Contractors State License Board (CSLB)' notice in >= {CSLB_PT}-pt")
+    right_to_cancel_notice: Optional[bool] = Field(None, description=f"Right-to-cancel notice: {CANCEL_PT}-pt bold, next to owner's signature, signed and dated by owner, in the sales-pitch language")
     notice_of_cancellation_form: Optional[bool] = Field(None, description="Completed 'Notice of Cancellation' form in duplicate, attached and easily detachable")
     cgl_disclosure_form_872: Optional[bool] = Field(None, description="CSLB 'Information About Commercial General Liability Insurance' form with the bid and contract (16 CCR 872(a))")
     # service and repair (B&P 7159.10) only
     written_same_language: Optional[bool] = Field(None, description="Service & repair: in writing, same language as the sales presentation")
     date_signed: Optional[bool] = Field(None, description="Service & repair: date the contract was signed")
-    heading_service_and_repair: Optional[bool] = Field(None, description="Service & repair: 'Service and Repair' in >= 10-pt bold")
-    service_repair_requirements_notice: Optional[bool] = Field(None, description="Service & repair: 12-pt bold 'Notice to the Buyer' with the four requirements, signed and dated by buyer")
-    service_repair_entitled_to_copy_notice: Optional[bool] = Field(None, description="Service & repair: 12-pt bold 'entitled to a completely filled in and signed copy' notice")
+    heading_service_and_repair: Optional[bool] = Field(None, description=f"Service & repair: 'Service and Repair' in >= {SR_HEAD_PT}-pt bold")
+    service_repair_requirements_notice: Optional[bool] = Field(None, description=f"Service & repair: {SR_NOTICE_PT}-pt bold 'Notice to the Buyer' with the four requirements, signed and dated by buyer")
+    service_repair_entitled_to_copy_notice: Optional[bool] = Field(None, description=f"Service & repair: {SR_COPY_PT}-pt bold 'entitled to a completely filled in and signed copy' notice")
     estimated_contract_price_tm: Optional[bool] = Field(None, description="Service & repair, time and materials: 'Estimated Contract Price', set rate, estimated materials, time increments and the not-to-exceed statement")
     replaced_parts_statement_and_checkbox: Optional[bool] = Field(None, description="Service & repair: replaced-parts statement and 'OK for contractor to take replaced parts' checkbox")
     service_charge_heading: Optional[bool] = Field(None, description="Service & repair: 'Amount of Service Charge' and the one-service-charge statement (if charged)")
@@ -289,20 +310,28 @@ def add_business_days(start: date, n: int) -> tuple[date, list[str], list[str]]:
 
 
 def _cancellation(received: Optional[date], senior: bool, disaster: bool, at_place_of_business: bool,
-                  service_and_repair: bool, today: date) -> CancellationPeriod:
-    contract_date = received or today
+                  service_and_repair: bool, today: date, contract_date: Optional[date] = None) -> CancellationPeriod:
+    contract_date = contract_date or received or today
+    refund, pickup, refund_rule = REFUND_DAYS, PICKUP_DAYS, "cancellation-refund-10-days-goods-20-days"
     if service_and_repair:
         kind, rid = "service_and_repair", "service-repair-right-to-cancel-notice"
+        refund, pickup, refund_rule = SR_REFUND_DAYS, SR_PICKUP_DAYS, rid
         senior_ok = senior and contract_date >= SR_SENIOR_FROM
         days = SR_DAYS["disaster" if disaster else "senior" if senior_ok else "standard"]
         p = CancellationPeriod(applies=True, kind=kind, notice_title="YOUR RIGHTS TO CANCEL BEFORE WORK BEGINS",
-                               business_days=days, rule_ids=[rid])
+                               business_days=days, rule_ids=[rid], refund_due_days_after_notice=refund,
+                               goods_pickup_days_after_notice=pickup)
         p.explanation += [
             "Before work starts, the buyer may cancel until BOTH (1) they have a copy signed and dated by both sides "
             "and (2) you start work.",
             f"After work starts, the buyer may cancel within {days} business days only if a listed reason occurred: "
             f"price over {_usd(SR_MAX_USD)}, the buyer did not call you, you sold more than the problem needed, or "
-            "payment was due or taken before the work was complete."]
+            "payment was due or taken before the work was complete. The notice counts from signing in one place and "
+            "from receipt of the signed copy in another; we count from receipt, the later date."]
+        if senior and not disaster:
+            p.explanation.append(f"A buyer is {SENIOR_AGE} or older: 'three' becomes 'five' in the notice."
+                                 if senior_ok else "The five-day senior period applies only to contracts entered into "
+                                 f"on or after {SR_SENIOR_FROM}; this contract is older.")
     elif disaster:
         kind, rid, days = "seven_day_disaster", "seven-day-right-to-cancel-disaster", HIC_DAYS["seven_day_disaster"]
         p = CancellationPeriod(applies=True, kind=kind, notice_title="Seven-Day Right to Cancel", business_days=days,
@@ -329,7 +358,8 @@ def _cancellation(received: Optional[date], senior: bool, disaster: bool, at_pla
         elif senior:
             p.explanation.append(f"The five-day senior period applies only to contracts entered into on or after "
                                  f"{SENIOR_FROM.isoformat()}; this contract is older.")
-    p.rule_ids.append("cancellation-refund-10-days-goods-20-days")
+    if refund_rule not in p.rule_ids:
+        p.rule_ids.append(refund_rule)
     if received:
         last, counted, skipped = add_business_days(received, days)
         p.received_signed_copy_on = received.isoformat()
@@ -344,10 +374,14 @@ def _cancellation(received: Optional[date], senior: bool, disaster: bool, at_pla
             "holidays, so Saturdays count. When a fixed-date holiday falls on a weekend we also skip the nearby "
             f"weekday, which can only make the deadline later. Deadline: midnight at the end of {last.isoformat()}.")
         p.explanation.append(
-            f"If the buyer cancels on time you must return everything paid within {REFUND_DAYS} days of receiving the "
-            f"notice, and goods you leave there for {PICKUP_DAYS} days become theirs. Starting work or delivering "
-            f"goods before {p.earliest_safe_start_date} puts that at risk; Civil Code 1689.5-1689.15 (not in our "
-            "rulebook) govern early starts, so ask your attorney before starting early.")
+            f"If the buyer cancels on time you must return everything they paid within {refund} days of receiving "
+            "the notice; if they make delivered goods available and you do not pick them up within "
+            f"{pickup} days of the date of their notice, they may keep them. Starting work or delivering goods before "
+            f"{p.earliest_safe_start_date} puts that at risk; Civil Code 1689.5-1689.15 (not in our rulebook) govern "
+            "early starts, so ask your attorney before starting early.")
+        p.explanation.append("Before you mobilize, check email, fax and mail: a notice the buyer sent by the deadline "
+                             "can reach you after it (when a mailed notice takes effect is a Civil Code question not "
+                             "in our rulebook).")
     else:
         p.explanation.append("Give the date the buyer received the signed and dated copy to compute the deadline.")
     return p
@@ -385,8 +419,8 @@ def down_payment_limit(contract_price_usd: float, down_payment_usd: float = 0.0,
 
 _ADVANCE = re.compile(r"\b(sign\w*|execut\w*|start\w*|commenc\w*|mobiliz\w*|before|prior to|in advance|advance|"
                       r"deposit|up ?front|retainer|order\w*|booking|reserv\w*)\b", re.I)
-_CALENDAR = re.compile(r"\b(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}(/\d{2,4})?|january|february|march|april|june|july|"
-                       r"august|september|october|november|december|week\w*|month\w*|days? after|every)\b", re.I)
+_CALENDAR = re.compile(r"\b(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}(/\d{2,4})?|january|february|march|april|may \d{1,2}|june|"
+                       r"july|august|september|october|november|december|week\w*|month\w*|days? after|every)\b", re.I)
 
 
 def check_payment_schedule(contract_price_usd: float, down_payment_usd: float, payments: list[ProgressPayment],
@@ -453,22 +487,22 @@ def check_payment_schedule(contract_price_usd: float, down_payment_usd: float, p
 
 # ---------------------------------------------------------------- validator
 _HIC_ITEMS = [  # (includes key, label, rule id, condition)
-    ("type_size_10pt_text_and_bold_headings", "Legible; text >= 10-pt and headings >= 10-pt bold", "hic-legibility-typeface-minimums", None),
+    ("type_size_10pt_text_and_bold_headings", f"Legible; text >= {BODY_PT}-pt and headings >= {HEAD_PT}-pt bold", "hic-legibility-typeface-minimums", None),
     ("signed_dated_copy_to_buyer_before_work", "Copy signed and dated by both sides to buyer before work", "lawbook_p381-430:hic-signed-copy-before-work", None),
     ("first_page_buyer_sign_date", "First page: date the buyer signed", "hic-first-page-cancellation-contact", None),
-    ("first_page_cancellation_address_and_email", "First page: name, address and email for the Notice of Cancellation, preceded by the 'may be sent to' statement", "hic-contractor-email-required", "ab1327"),
+    ("first_page_cancellation_address_and_email", "First page: name, address and email for the Notice of Cancellation, preceded by the 'may be sent to' statement", "hic-contractor-email-required", "ab1327_addr"),
     ("first_page_cancellation_help_phone", "First page: phone number to help with the Notice of Cancellation", "hic-notice-of-cancellation-phone", "ab1327"),
     ("contractor_name_address_license", "Contractor name, business address, license number", "hic-contractor-and-salesperson-identification", None),
-    ("heading_home_improvement", "Heading 'Home Improvement' (10-pt bold)", "hic-heading-home-improvement", None),
-    ("entitled_to_copy_statement", "12-pt bold 'You are entitled to a completely filled in copy...'", "hic-entitled-to-copy-statement", None),
+    ("heading_home_improvement", f"Heading 'Home Improvement' ({HI_HEAD_PT}-pt bold)", "hic-heading-home-improvement", None),
+    ("entitled_to_copy_statement", f"{COPY_PT}-pt bold 'You are entitled to a completely filled in copy...'", "hic-entitled-to-copy-statement", None),
     ("contract_price_heading", "'Contract Price' in dollars and cents", "hic-contract-price-heading", None),
     ("finance_charge_heading", "'Finance Charge' set out separately", "hic-finance-charge-separate", "finance"),
     ("description_heading", "'Description of the Project and Description of the Significant Materials to be Used and Equipment to be Installed'", "hic-project-description-heading", None),
     ("pool_plan_and_scale_drawing", "Pool plan and scale drawing (shape, size, dimensions, construction and equipment specs)", "hic-project-description-heading", "pool"),
     ("downpayment_heading_and_amount", "'Downpayment' heading and amount", "hic-downpayment-disclosure", "down"),
-    ("downpayment_statement", "12-pt bold 'THE DOWNPAYMENT MAY NOT EXCEED $1,000 OR 10 PERCENT...'", "hic-downpayment-disclosure", "down_unbonded"),
+    ("downpayment_statement", f"{DOWN_PT}-pt bold '{DOWN_STATEMENT}'", "hic-downpayment-disclosure", "down_unbonded"),
     ("progress_schedule_heading", "'Schedule of Progress Payments' heading", "hic-progress-payment-schedule", "progress_unbonded"),
-    ("progress_payment_statement", "12-pt bold progress-payment statement", "hic-progress-payment-schedule", "progress_unbonded"),
+    ("progress_payment_statement", f"{PROG_PT}-pt bold progress-payment statement", "hic-progress-payment-schedule", "progress_unbonded"),
     ("substantial_commencement_statement", "What counts as substantial commencement of work", "hic-commencement-and-start-date", None),
     ("approximate_start_date_heading", "'Approximate Start Date' and date", "hic-commencement-and-start-date", None),
     ("approximate_completion_date_heading", "'Approximate Completion Date' and date", "hic-approximate-completion-date", None),
@@ -483,22 +517,22 @@ _HIC_ITEMS = [  # (includes key, label, rule id, condition)
     ("workers_comp_notice", "Workers' Compensation Insurance notice", "hic-workers-comp-notice", None),
     ("extra_work_buyer_notice", "Notice to buyer about extra/change-order work", "hic-change-order-buyer-notice", None),
     ("mechanics_lien_warning", "Mechanics Lien Warning (verbatim)", "hic-mechanics-lien-warning", "unbonded"),
-    ("cslb_information_notice", "CSLB information notice (12-pt)", "hic-cslb-information-notice", None),
-    ("right_to_cancel_notice", "Right-to-cancel notice (12-pt bold, by owner's signature, signed and dated, sales-pitch language)", "right-to-cancel-notice-format", "cancel"),
+    ("cslb_information_notice", f"CSLB information notice ({CSLB_PT}-pt)", "hic-cslb-information-notice", None),
+    ("right_to_cancel_notice", f"Right-to-cancel notice ({CANCEL_PT}-pt bold, by owner's signature, signed and dated, sales-pitch language)", "right-to-cancel-notice-format", "cancel"),
     ("notice_of_cancellation_form", "Completed Notice of Cancellation in duplicate, easily detachable", "notice-of-cancellation-form-duplicate", "cancel"),
     ("cgl_disclosure_form_872", "16 CCR 872(a) 'Information About Commercial General Liability Insurance' form", "cgl-insurance-disclosure-home-improvement", None),
 ]
 _SR_ITEMS = [
     ("written_same_language", "In writing, same language as the sales presentation", "service-repair-writing-language-copy", None),
-    ("type_size_10pt_text_and_bold_headings", "Legible; text >= 10-pt and headings >= 10-pt bold", "service-repair-writing-language-copy", None),
+    ("type_size_10pt_text_and_bold_headings", f"Legible; text >= {BODY_PT}-pt and headings >= {HEAD_PT}-pt bold", "service-repair-writing-language-copy", None),
     ("signed_dated_copy_to_buyer_before_work", "Copy signed and dated by buyer and contractor before work", "service-repair-writing-language-copy", None),
     ("contractor_name_address_license", "Contractor name, business address, license number", "service-repair-contractor-info-and-date", None),
     ("date_signed", "Date the contract was signed", "service-repair-contractor-info-and-date", None),
     ("cgl_notice", "Commercial General Liability Insurance (CGL) notice", "service-repair-cgl-wc-notices", None),
     ("workers_comp_notice", "Workers' Compensation Insurance notice", "service-repair-cgl-wc-notices", None),
-    ("heading_service_and_repair", "'Service and Repair' (10-pt bold)", "service-repair-heading", None),
-    ("service_repair_requirements_notice", "12-pt bold 'Notice to the Buyer' (four requirements), signed and dated by buyer", "service-repair-buyer-requirements-notice", None),
-    ("service_repair_entitled_to_copy_notice", "12-pt bold 'entitled to a completely filled in and signed copy' notice", "service-repair-entitled-to-copy-notice", None),
+    ("heading_service_and_repair", f"'Service and Repair' ({SR_HEAD_PT}-pt bold)", "service-repair-heading", None),
+    ("service_repair_requirements_notice", f"{SR_NOTICE_PT}-pt bold 'Notice to the Buyer' (four requirements), signed and dated by buyer", "service-repair-buyer-requirements-notice", None),
+    ("service_repair_entitled_to_copy_notice", f"{SR_COPY_PT}-pt bold 'entitled to a completely filled in and signed copy' notice", "service-repair-entitled-to-copy-notice", None),
     ("incorporated_documents_list", "'List of Documents to be Incorporated into the Contract'", "service-repair-price-headings", "docs"),
     ("contract_price_heading", "'Contract Price' (fixed price)", "service-repair-price-headings", "fixed"),
     ("finance_charge_heading", "'Finance Charge' set out separately", "service-repair-price-headings", "finance"),
@@ -506,26 +540,48 @@ _SR_ITEMS = [
     ("description_heading", "'Description of the Project and Materials to be Used and Equipment to be Installed'", "service-repair-description-heading", None),
     ("replaced_parts_statement_and_checkbox", "Replaced-parts statement and checkbox", "service-repair-replaced-parts", None),
     ("service_charge_heading", "'Amount of Service Charge' and one-charge statement", "service-repair-one-service-charge", "service_charge"),
-    ("right_to_cancel_notice", "'YOUR RIGHTS TO CANCEL BEFORE WORK BEGINS' (12-pt bold, by buyer's signature, signed and dated)", "service-repair-right-to-cancel-notice", None),
+    ("right_to_cancel_notice", f"'YOUR RIGHTS TO CANCEL BEFORE WORK BEGINS' ({SR_CANCEL_PT}-pt bold, by buyer's signature, signed and dated)", "service-repair-right-to-cancel-notice", None),
+    ("cgl_disclosure_form_872", "16 CCR 872(a) 'Information About Commercial General Liability Insurance' form", "cgl-insurance-disclosure-home-improvement", "sr872"),
 ]
 
 
-def _checklist(items, inc: ContractIncludes, cond: dict[str, tuple[bool, str]]) -> list[Finding]:
+def _checklist(items, inc: ContractIncludes, cond: dict[str, tuple]) -> list[Finding]:
+    """cond[c] = (applies, why_not_applicable[, soft]): when `soft` is set, a missing item is a warning, not a violation."""
     out = []
     for key, label, rid, c in items:
         val = getattr(inc, key)
-        if c and not cond[c][0]:
-            out.append(_f(label, "not_applicable", cond[c][1], rid))
+        applies, na_text, soft = (tuple(cond[c]) + (None,))[:3] if c else (True, "", None)
+        if not applies:
+            out.append(_f(label, "not_applicable", na_text, rid))
         elif val is True:
             out.append(_f(label, "ok", "present", rid))
-        elif val is False and c == "docs":
-            out.append(_f(label, "warning", "Missing. Required whenever plans, specs or other documents are part of "
-                          "the contract; list them.", rid))
+        elif val is False and soft:
+            out.append(_f(label, "warning", soft, rid))
         elif val is False:
             out.append(_f(label, "violation", "Missing from the contract.", rid))
         else:
             out.append(_f(label, "not_checked", "Not confirmed. Check the contract and set this item.", rid))
     return out
+
+
+def _license_codes(classifications) -> set[str]:
+    """'C-39 Roofing', 'c39', 'C-61/D-49' -> {'C-39'}, {'C-39'}, {'C-61', 'D-49'}."""
+    return {f"{m.group(1).upper()}-{int(m.group(2))}"
+            for c in classifications or [] for m in re.finditer(r"\b([abcd])-?(\d{1,2})\b", str(c), re.I)}
+
+
+def _wc_exemption_problem(classifications, on: date) -> Optional[tuple[str, str]]:
+    """Why a 'no employees and is exempt' workers' comp statement would be false, as (message, rule id), or None."""
+    if on >= WC_EXEMPTION_ENDS:
+        return (f"The no-employee workers' comp exemption ended {WC_EXEMPTION_ENDS} for every license except a "
+                "no-employee joint venture: a workers' comp certificate must be on file and the contract must say "
+                "you carry workers' compensation.", "wc-exemption-ends-2028")
+    bad = sorted(_license_codes(classifications) & set(WC_ALWAYS_CLASSES))
+    if bad:
+        return (f"License classification {', '.join(bad)} can never use the no-employee workers' comp exemption "
+                f"(only licenses without {', '.join(WC_ALWAYS_CLASSES)} can): carry workers' comp and use the "
+                "'carries workers' compensation insurance' statement.", "workers-comp-exemption-until-2028")
+    return None
 
 
 def validate_home_improvement_contract(
@@ -540,16 +596,19 @@ def validate_home_improvement_contract(
         disaster_repair: bool = False, negotiated_at_contractor_place_of_business: bool = False,
         is_swimming_pool: bool = False, buyer_initiated_contact: Optional[bool] = None,
         only_work_needed_for_the_problem: Optional[bool] = None, time_and_materials: bool = False,
-        service_charge_usd: float = 0.0) -> ContractValidation:
+        service_charge_usd: float = 0.0, contract_signed_on: Optional[str] = None,
+        workers_comp_notice_says_no_employees: bool = False,
+        license_classifications: Optional[list[str]] = None) -> ContractValidation:
     """Check a California home improvement (or service and repair) contract against B&P 7159-7159.14 and 7191."""
-    if contract_price_usd < 0 or down_payment_usd < 0 or finance_charge_usd < 0:
+    if contract_price_usd < 0 or down_payment_usd < 0 or finance_charge_usd < 0 or service_charge_usd < 0:
         raise ValueError("amounts must not be negative")
     if residential_units < 1:
         raise ValueError("residential_units must be at least 1 (home improvement rules cover residential property)")
     today = _dt(as_of, "as_of") or logic.today_ca()
     received = _dt(buyer_received_signed_copy_on, "buyer_received_signed_copy_on")
     start, finish = _dt(start_date, "start_date"), _dt(completion_date, "completion_date")
-    contract_date = received or today
+    signed = _dt(contract_signed_on, "contract_signed_on")
+    contract_date = signed or received or today
     payments = [p if isinstance(p, ProgressPayment) else ProgressPayment(**p) for p in progress_payments or []]
     inc = includes if isinstance(includes, ContractIncludes) else ContractIncludes(**(includes or {}))
     price, down = _money(contract_price_usd), _money(down_payment_usd)
@@ -586,6 +645,9 @@ def validate_home_improvement_contract(
         findings.append(_f("Payment rules still apply", "ok", "B&P 7159.5 covers every home improvement contract as "
                            "defined in B&P 7151.2, which has no price floor, so the down payment cap and the "
                            "no-payment-ahead-of-work rule still apply.", "home-improvement-contract-definition"))
+        notes.append("B&P 7159.5(a)(1) also covers small jobs: put the contract in writing with the agreed amount in "
+                     "dollars and cents (profit, labor and materials included, finance charges excluded).")
+        rids.append("hic-contract-price-heading")
         notes.append("Below the B&P 7159 threshold the statutory cancellation notice is not required, but Civil Code "
                      "1689.5-1689.14 home-solicitation cancellation rights (not in our rulebook) may still apply to "
                      "sales made at the home; the period shown is computed as if they do.")
@@ -598,27 +660,44 @@ def validate_home_improvement_contract(
                           "Bonded/joint-control contractor may omit this statement (B&P 7159.5(a)(8))."),
         "progress_unbonded": (bool(payments) and not bonded, "No progress payments listed." if not payments else
                               "Bonded/joint-control contractor may omit the progress-payment details (B&P 7159.5(a)(8))."),
-        "docs": (True, ""),
+        "docs": (True, "", "Missing. Required whenever plans, specs or other documents are part of the contract; "
+                 "list them."),
         "ab1327": (not AB1327_FROM or contract_date >= AB1327_FROM,
                    f"Added by AB 1327 for contracts from {AB1327_FROM}; this contract is dated earlier."),
+        "ab1327_addr": (True, "", None if not AB1327_FROM or contract_date >= AB1327_FROM else
+                        f"AB 1327 added the email address for contracts from {AB1327_FROM}, so a missing email is not "
+                        "a violation on this older contract. The earlier text (not in our rulebook) still required "
+                        "the contractor's name and address for the Notice of Cancellation on the first page, after a "
+                        "statement that it may be sent there: confirm those are present."),
         "sb517": (not SB517_FROM or contract_date >= SB517_FROM,
                   f"Added by SB 517 for contracts from {SB517_FROM}; this contract is dated earlier."),
         "subs_yes": (subcontractors_will_be_used is not False and (not SB517_FROM or contract_date >= SB517_FROM),
                      "No subcontractors will be used." if subcontractors_will_be_used is False else
-                     f"Added by SB 517 for contracts from {SB517_FROM}."),
+                     f"Added by SB 517 for contracts from {SB517_FROM}.",
+                     "Required only if the subcontractor box is checked Yes; say whether subcontractors will be "
+                     "used." if subcontractors_will_be_used is None else None),
+        "sr872": (True, "", "16 CCR 872(a) requires this form with every home improvement contract as defined in "
+                  "B&P 7151.2, which includes service and repair work; B&P 7159.10(c) limits only the B&P 7159 "
+                  "notices, so attach the form to be safe."),
         "unbonded": (not bonded, "Bonded/joint-control contractor may omit the Mechanics Lien Warning (B&P 7159.5(a)(8))."),
         "cancel": (disaster_repair or not negotiated_at_contractor_place_of_business,
-                   "Negotiated at your place of business: the 3/5-day notice is not required."),
+                   f"Negotiated at your place of business: the {HIC_DAYS['three_day']}/{HIC_DAYS['five_day_senior']}-"
+                   "day notice is not required."),
         "fixed": (not time_and_materials, "Time-and-materials contract: uses 'Estimated Contract Price' instead."),
         "tm": (time_and_materials, "Fixed-price contract."),
         "service_charge": (service_charge_usd > 0, "No service charge."),
     }
 
     cancel = _cancellation(received, buyer_age_65_or_older, disaster_repair, negotiated_at_contractor_place_of_business,
-                           ctype == "service_and_repair", today)
+                           ctype == "service_and_repair", today, contract_date)
+    if ctype == "under_7159_threshold" and cancel.applies:
+        cancel.explanation.insert(0, "B&P 7159 does not require its cancellation notice at this price. The period "
+                                  "below assumes the Civil Code home-solicitation right to cancel applies (a sale made "
+                                  "away from your place of business); confirm with your attorney.")
     dp, lines = None, []
     if ctype == "home_improvement":
         findings += _checklist(_HIC_ITEMS, inc, cond)
+        rids.append("hic-subcontractor-disclosure-on-request")  # source of the SB 517 effective date
         if subcontractors_will_be_used is None and cond["sb517"][0]:
             notes.append("Say whether subcontractors will be used: if Yes, the disclaimer must be in the contract and "
                          "on every change order, and you must hand over the sub list (name, contact, license number, "
@@ -674,6 +753,30 @@ def validate_home_improvement_contract(
             notes.append("Only one service charge (trip and inspection fees included); disclose it in every ad and "
                          "state the amount when the customer calls.")
             rids.append("service-repair-one-service-charge")
+            total = price + _money(service_charge_usd)
+            if total > SR_MAX_USD:
+                findings.append(_f("Price plus service charge", "warning",
+                                   f"{_usd(price)} + {_usd(service_charge_usd)} service charge = {_usd(total)}, over "
+                                   f"{_usd(SR_MAX_USD)}. The contract amount must include the entire cost (B&P "
+                                   "7159.14(a)(3)); if the service charge is billed on top of the price, the job may "
+                                   "not qualify as service and repair. Include it in the price or use a full home "
+                                   "improvement contract.", "service-repair-substantive-rules"))
+    if ctype != "under_7159_threshold" and workers_comp_notice_says_no_employees:
+        why = _wc_exemption_problem(license_classifications, contract_date)
+        if why:
+            findings.append(_f("Workers' comp statement is not correct", "violation", why[0] + " The notice must use "
+                               "whichever statement is correct.", why[1]))
+            rids.append("hic-workers-comp-notice" if ctype == "home_improvement" else "service-repair-cgl-wc-notices")
+        elif finish and finish >= WC_EXEMPTION_ENDS:
+            findings.append(_f("Workers' comp exemption ends during the job", "warning",
+                               f"The job runs to {finish}, past {WC_EXEMPTION_ENDS}, when the no-employee exemption "
+                               "ends; get a workers' comp policy on file before then.", "wc-exemption-ends-2028"))
+        if license_classifications is None and not why:
+            notes.append("The no-employee exemption is not available to " + ", ".join(WC_ALWAYS_CLASSES) +
+                         " licensees; give license_classifications to check it.")
+        rids.append("wc-exemption-ends-2028")
+        if contract_date < WC_EXEMPTION_ENDS:
+            rids.append("workers-comp-exemption-until-2028")
 
     if ctype != "service_and_repair":
         dp = down_payment_limit(float(price), float(down), bonded)
@@ -687,9 +790,11 @@ def validate_home_improvement_contract(
         findings += pf
         if any(f.status == "violation" and f.rule_id in ("downpayment-cap-1000-or-10-percent", "no-payment-ahead-of-work")
                for f in findings):
-            notes.append(f"Taking an oversized down payment or payment ahead of the work is a misdemeanor: fine of "
-                         f"{_usd(FINE_MIN)} to {_usd(FINE_MAX)} and/or up to {JAIL_YEARS} year in county jail; in a "
-                         "declared natural-disaster area the court must impose the maximum fine.")
+            notes.append(f"Requesting or taking an oversized down payment or payment ahead of the work is a "
+                         f"misdemeanor (B&P 7159.5(b)(1)): fine of {_usd(FINE_MIN)} to {_usd(FINE_MAX)} and/or up to "
+                         f"{JAIL_YEARS} year in county jail. In a place damaged by a natural disaster with a Governor "
+                         "state of emergency or a Presidential emergency or major-disaster declaration, the court "
+                         "must impose the maximum fine.")
             rids.append("hic-payment-violations-misdemeanor")
 
     if includes_arbitration_clause:
@@ -701,11 +806,13 @@ def validate_home_improvement_contract(
             findings.append(_f("Arbitration clause (B&P 7191)", "ok", "Titled ARBITRATION OF DISPUTES, statutory "
                                "NOTICE and acknowledgment right before the initials, in the required type.",
                                "residential-arbitration-notice-and-initials"))
+            rids.append("residential-arbitration-clause-title-and-format")
         else:
             findings.append(_f("Arbitration clause (B&P 7191)", "violation", "Needs the title ARBITRATION OF DISPUTES, "
-                               "10-pt roman bold (or 8-pt red roman bold; capitals if typed), and the verbatim NOTICE "
-                               "and 'WE HAVE READ AND UNDERSTAND...' statement right before the initials. As written it "
-                               "may not be enforceable against anyone but you.", "noncompliant-arbitration-clause-unenforceable"))
+                               f"at least {ARB_PT}-pt roman bold (or {ARB_RED_PT}-pt contrasting red roman bold; capitals "
+                               "if typed), and the verbatim NOTICE and 'WE HAVE READ AND UNDERSTAND...' statement right "
+                               "before the initials. As written it may not be enforceable against anyone but you.",
+                               "noncompliant-arbitration-clause-unenforceable"))
             rids += ["residential-arbitration-clause-title-and-format", "residential-arbitration-notice-and-initials"]
         notes.append("Agreeing to private arbitration means the dispute cannot go to CSLB arbitration (B&P 7085(a)(6)).")
         rids.append("private-arbitration-requires-bp7191-notice")
@@ -728,6 +835,10 @@ def validate_home_improvement_contract(
     if counts["not_checked"]:
         res.notes.append(f"{counts['not_checked']} checklist items were not confirmed; compliant=true only means no "
                          "violation was found among what was checked.")
+    if not (signed or received):
+        res.notes.append(f"No contract date given: date-dependent rules (AB 1327 email and phone, SB 517 subcontractor "
+                         f"box, senior five-day period) were applied as if the contract was signed {today}. Give "
+                         "contract_signed_on for an older contract.")
     return _finish(res, [f.rule_id for f in findings] + cancel.rule_ids + rids, unverified)
 
 
@@ -754,6 +865,9 @@ class ContractFields(BaseModel):
     cgl_insurer_name: Optional[str] = None
     cgl_insurer_phone: Optional[str] = None
     workers_comp_status: Literal["carries", "no_employees_exempt"] = "carries"
+    license_classifications: list[str] = Field(default_factory=list, description="CSLB classifications on the license, "
+                                               f"e.g. ['B', 'C-39'] ({', '.join(WC_ALWAYS_CLASSES)} can never claim "
+                                               "the no-employee workers' comp exemption)")
     subcontractors_will_be_used: bool = False
     buyer_age_65_or_older: bool = False
     salesperson_name: Optional[str] = None
@@ -915,13 +1029,24 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
     cancel = _cancellation(signed, f.buyer_age_65_or_older, f.disaster_repair,
                            f.negotiated_at_contractor_place_of_business, sr, today)
     rids += cancel.rule_ids
+    wc_issue = (_wc_exemption_problem(f.license_classifications, signed or today)
+                if f.workers_comp_status == "no_employees_exempt" else None)
+
+    def wc_block(sr_form: bool) -> list[str]:
+        out = ["## Workers’ Compensation Insurance", _wc_text(f, sr_form)]
+        if wc_issue:
+            out.append(f"[[FIX BEFORE USE: {wc_issue[0]}]]")
+            rids.append(wc_issue[1])
+        return out
+
     lic_line = f"**{f.contractor_name}** · {f.contractor_business_address} · CSLB License No. {f.contractor_license_number}"
     buyers = ", ".join(f.buyer_names)
     md: list[str] = []
 
     if sr:
-        body_pt = R("service-repair-writing-language-copy").param("min_body_font_pt")
-        ts("All text / headings", f"{body_pt}-pt text, {body_pt}-pt bold headings", "service-repair-writing-language-copy")
+        wl = R("service-repair-writing-language-copy")
+        ts("All text / headings", f"{wl.param('min_body_font_pt')}-pt text, {wl.param('min_heading_font_pt')}-pt bold "
+           "headings", wl.id)
         heading = R("service-repair-heading")
         md += [f"# {heading.param('required_heading')}", _pc("service-repair-heading", f"at least {heading.param('min_font_pt')}-pt bold"),
                lic_line, f"**Buyer(s):** {buyers} · **Service address:** {f.project_address}",
@@ -959,8 +1084,14 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
             s = R("service-repair-one-service-charge")
             md += [f"## {s.param('required_heading')}", _usd(f.service_charge_usd), s.param("required_text")]
             rids.append(s.id)
-        md += ["## Commercial General Liability Insurance (CGL)", _cgl_text(f, True),
-               "## Workers’ Compensation Insurance", _wc_text(f, True)]
+            total = price + _money(f.service_charge_usd)
+            if total > SR_MAX_USD:
+                problems.append(f"Price {_usd(price)} + service charge {_usd(f.service_charge_usd)} = {_usd(total)}, "
+                                f"over {_usd(SR_MAX_USD)}. The contract amount must include the entire cost (B&P "
+                                "7159.14(a)(3)); if the service charge is billed on top, the job may not qualify as "
+                                "service and repair.")
+                rids.append("service-repair-substantive-rules")
+        md += ["## Commercial General Liability Insurance (CGL)", _cgl_text(f, True)] + wc_block(True)
         rids.append("service-repair-cgl-wc-notices")
         md += ["## Additional Terms", "[[ATTORNEY: warranty, permits and inspections, and other terms. Keep them "
                "consistent with the four service and repair requirements above.]]",
@@ -1075,8 +1206,7 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
                "change order becomes part of this contract only if it is in writing and signed by the parties before "
                "any work covered by it begins."]
         rids += [ne.id, sub.id, lr.id, "hic-change-order-form-incorporated"]
-        md += ["## Commercial General Liability Insurance (CGL)", _cgl_text(f, False),
-               "## Workers’ Compensation Insurance", _wc_text(f, False)]
+        md += ["## Commercial General Liability Insurance (CGL)", _cgl_text(f, False)] + wc_block(False)
         fields_ = R("change-order-enforceability").param("required_change_order_fields")
         md += ["## Extra Work and Change Orders: Notice to Buyer",
                "You, the buyer, may not require the contractor to perform extra or change-order work without providing "
@@ -1134,12 +1264,19 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
                    "Owner acknowledges receipt of this notice.\n\n" + _sign_lines(f)]
             ts(cancel.notice_title, f"{fmt.param('min_font_pt')}-pt bold, owner signs and dates", fmt.id)
     if f.workers_comp_status == "no_employees_exempt":
-        wc = R("wc-exemption-ends-2028")
-        ends = date.fromisoformat(wc.param("operative_date"))
-        msg = (f"The no-employees workers' comp exemption ends {ends} for every license except a no-employee joint "
-               "venture; you will need a workers' comp certificate on file.")
-        (problems if (signed or today) >= ends else notes).append(msg)
-        rids.append(wc.id)
+        rids += ["wc-exemption-ends-2028", "workers-comp-exemption-until-2028"]
+        if wc_issue:
+            problems.append(wc_issue[0])
+        elif finish and finish >= WC_EXEMPTION_ENDS:
+            problems.append(f"The job runs to {finish}, past {WC_EXEMPTION_ENDS}, when the no-employee workers' comp "
+                            "exemption ends for every license except a no-employee joint venture: get a workers' comp "
+                            "certificate on file before then and issue a corrected notice.")
+        else:
+            notes.append(f"The no-employees workers' comp exemption ends {WC_EXEMPTION_ENDS} for every license except "
+                         "a no-employee joint venture; you will need a workers' comp certificate on file.")
+        if not f.license_classifications:
+            notes.append("The no-employee exemption is never available to " + ", ".join(WC_ALWAYS_CLASSES) +
+                         " licensees; list license_classifications to check it.")
     if f.sales_language.strip().lower() != "english":
         problems.append(f"Sales presentation in {f.sales_language}: the contract and cancellation notices must be "
                         f"in {f.sales_language}. This draft is English; translate it before use.")
@@ -1168,10 +1305,11 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
                   + _sign_lines(f) + f"\n\n{f.contractor_name}, by: ______________________  Date: ________")
         rids.append("hic-subcontractor-disclaimer-on-each-change-order")
     form = R("cgl-insurance-disclosure-home-improvement")
-    md += ["---", "# Attachment C: Information About Commercial General Liability Insurance",
-           _pc(form.id, "heading at least 14-pt, questions at least 12-pt, comments in italics at least 11-pt; also "
-               "give this with the bid"), _form_872(f)]
     typo = form.param("typography")
+    md += ["---", "# Attachment C: Information About Commercial General Liability Insurance",
+           _pc(form.id, f"heading at least {typo['heading_min_point']}-pt, questions at least "
+               f"{typo['questions_min_point']}-pt, comments in italics at least {typo['comments_min_point']}-pt; also "
+               "give this with the bid"), _form_872(f)]
     ts("Attachment C (16 CCR 872(a) form)", f"heading {typo['heading_min_point']}-pt, questions "
        f"{typo['questions_min_point']}-pt, comments {typo['comments_min_point']}-pt italics", form.id)
     if sr:
@@ -1274,8 +1412,8 @@ def check_change_order(
     res = ChangeOrderResult(enforceable_against_buyer=enforceable, compliant=all(x.status != "violation" for x in fs),
                             findings=fs, revised_contract_price_usd=float(revised) if revised is not None else None,
                             math=math, notes=notes, as_of=today.isoformat())
-    return _finish(res, [x.rule_id for x in fs] + ([] if enforceable else ["unlicensed-no-right-to-sue-disgorgement"]),
-                   False)
+    return _finish(res, [x.rule_id for x in fs] + ["hic-subcontractor-disclosure-on-request"]
+                   + ([] if enforceable else ["unlicensed-no-right-to-sue-disgorgement"]), False)
 
 
 # ---------------------------------------------------------------- MCP tools
@@ -1306,6 +1444,9 @@ def register(mcp) -> None:
         only_work_needed_for_the_problem: Annotated[Optional[bool], Field(description="Service and repair: you sell only what the problem needs")] = None,
         time_and_materials: Annotated[bool, Field(description="Service and repair priced by time and materials")] = False,
         service_charge_usd: Annotated[float, Field(ge=0, description="Service and repair: service/trip/inspection charge")] = 0.0,
+        contract_signed_on: Annotated[Optional[str], Field(description="Date the contract was signed (ISO); decides which version of the law applies (AB 1327 / SB 517 items from 2026-01-01, senior five-day from 2021-01-01). Defaults to the received date, else as_of")] = None,
+        workers_comp_notice_says_no_employees: Annotated[bool, Field(description="The Workers' Compensation notice says the contractor has no employees and is exempt")] = False,
+        license_classifications: Annotated[Optional[list[str]], Field(description="CSLB classifications on the license, e.g. ['B', 'C-39']; used to check a no-employee workers' comp claim")] = None,
         as_of: Annotated[Optional[str], Field(description="Evaluate as of this ISO date (default today in California)")] = None,
     ) -> ContractValidation:
         """Check a California home improvement contract (B&P 7159, 7159.5) or service and repair contract
@@ -1313,7 +1454,9 @@ def register(mcp) -> None:
         Returns findings (ok / violation / warning / not_checked / not_applicable, each with its citation), the
         down payment cap math (lesser of $1,000 or 10% of price), a payment-by-payment schedule check, the
         cancellation period with the exact last day to cancel (3 business days, 5 if a buyer is 65+, 7 for declared
-        disaster repairs) and the licensed professionals the contract needs."""
+        disaster repairs), whether a no-employee workers' comp statement is allowed (never for C-8, C-20, C-22,
+        C-39, D-49; for no one but joint ventures from 2028-01-01) and the licensed professionals the contract
+        needs. verified is false whenever a deadline uses the unverified Civil Code business-day definition."""
         return validate_home_improvement_contract(
             contract_price_usd, down_payment_usd, progress_payments, buyer_age_65_or_older, has_salesperson,
             salesperson_his_number, includes_arbitration_clause, arbitration_formatted_per_7191,
@@ -1323,7 +1466,9 @@ def register(mcp) -> None:
             disaster_repair=disaster_repair, negotiated_at_contractor_place_of_business=negotiated_at_contractor_place_of_business,
             is_swimming_pool=is_swimming_pool, buyer_initiated_contact=buyer_initiated_contact,
             only_work_needed_for_the_problem=only_work_needed_for_the_problem, time_and_materials=time_and_materials,
-            service_charge_usd=service_charge_usd)
+            service_charge_usd=service_charge_usd, contract_signed_on=contract_signed_on,
+            workers_comp_notice_says_no_employees=workers_comp_notice_says_no_employees,
+            license_classifications=license_classifications)
 
     @mcp.tool(name="generate_home_improvement_contract", annotations=READ_ONLY)
     def _generate(

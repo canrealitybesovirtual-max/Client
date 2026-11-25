@@ -165,9 +165,32 @@ def test_ab1327_email_items_not_required_before_2026():
                subcontractor_yes_no=False)
     r = _kitchen(includes=inc, buyer_received_signed_copy_on="2025-12-15", start_date="2026-01-12",
                  completion_date="2026-03-01", as_of="2025-12-16")
-    first_page = by_item(r, "First page: name, address") + by_item(r, "First page: phone")
-    assert len(first_page) == 2 and all(f.status == "not_applicable" for f in first_page)
+    assert by_item(r, "First page: phone")[0].status == "not_applicable"          # phone is new in AB 1327
+    addr = by_item(r, "First page: name, address")[0]
+    # email is new, but the older text still wanted name + address on page 1: a warning, not a violation
+    assert addr.status == "warning" and "name and address" in addr.detail
     assert by_item(r, "Subcontractors [__] Yes")[0].status == "not_applicable"
+    assert r.violation_count == 0
+
+
+def test_contract_signed_on_drives_date_rules_without_a_receipt_date():
+    # Reviewing a 2025 contract in 2026: without a date the 2026 rules would be applied; with contract_signed_on they are not
+    inc = dict(ALL_IN, first_page_cancellation_help_phone=False)
+    r = _kitchen(includes=inc)
+    assert by_item(r, "First page: phone")[0].status == "violation"
+    assert any("No contract date given" in n for n in r.notes)
+    r = _kitchen(includes=inc, contract_signed_on="2025-10-06")
+    assert by_item(r, "First page: phone")[0].status == "not_applicable"
+    assert not any("No contract date given" in n for n in r.notes)
+
+
+def test_subcontractor_disclaimer_unknown_box_is_a_warning():
+    # Box answer unknown: a missing disclaimer is only required if the box is Yes -> warning, not violation
+    r = _kitchen(includes=dict(ALL_IN, subcontractor_disclaimer=False), subcontractors_will_be_used=None)
+    f = by_item(r, "Subcontractor-list disclaimer")[0]
+    assert f.status == "warning" and r.violation_count == 0
+    r = _kitchen(includes=dict(ALL_IN, subcontractor_disclaimer=False), subcontractors_will_be_used=True)
+    assert by_item(r, "Subcontractor-list disclaimer")[0].status == "violation"
 
 
 def test_salesperson_needs_his_number():
@@ -213,6 +236,8 @@ def test_arbitration_clause_7191():
     assert by_item(r, "Arbitration")[0].status == "not_applicable"     # 7191 covers 4 or fewer units
     r = _kitchen(includes_arbitration_clause=True, arbitration_formatted_per_7191=True, residential_units=4)
     assert by_item(r, "Arbitration")[0].status == "ok" and r.compliant
+    assert {"residential-arbitration-clause-title-and-format", "residential-arbitration-notice-and-initials"} <= {
+        x.rule_id for x in r.citations}                                  # the ok finding relies on both 7191(a), (b)
 
 
 def test_dates_and_pool():
@@ -234,6 +259,14 @@ def test_small_job_still_capped():
     assert r.contract_type == "under_7159_threshold" and r.down_payment.max_allowed_usd == 40.0
     assert r.down_payment.excess_usd == 60.0 and not r.compliant
     assert r.verified is False  # relies on the B&P 7151.2 definition rule, which is unchecked
+    assert any("7159.5(a)(1)" in n and "writing" in n for n in r.notes)    # small jobs still need a written contract
+
+
+def test_small_job_cancellation_is_labelled_as_civil_code_not_7159():
+    # $400 job signed at the home Mon 11/23: 7159 notice not required; the period is shown as the Civil Code right
+    r = c.validate_home_improvement_contract(400, buyer_received_signed_copy_on="2026-11-23", as_of=AS_OF)
+    assert r.cancellation.explanation[0].startswith("B&P 7159 does not require its cancellation notice")
+    assert r.cancellation.last_day_to_cancel == "2026-11-27"   # Tue 24 (1), Wed 25 (2), Thu 26 skipped, Fri 27 (3)
 
 
 # ---------------------------------------------------------------- service and repair
@@ -246,6 +279,28 @@ def test_conforming_service_and_repair():
     assert r.cancellation.kind == "service_and_repair" and r.cancellation.last_day_to_cancel == "2026-11-28"
     assert by_item(r, "'Service and Repair'")[0].status == "ok"
     assert not by_item(r, "Home Improvement' (10-pt")                         # no 7159 checklist
+    assert by_item(r, "16 CCR 872(a)")[0].status == "ok"                      # CGL form covers every HIC (7151.2)
+    # refund/pickup periods come from the service and repair notice itself, not the 7159(e)(6) notice
+    ids = {x.rule_id for x in r.citations}
+    assert "service-repair-right-to-cancel-notice" in ids and "cancellation-refund-10-days-goods-20-days" not in ids
+    assert r.cancellation.refund_due_days_after_notice == 10 and r.cancellation.goods_pickup_days_after_notice == 20
+
+
+def test_service_and_repair_extra_checks():
+    # 872 form missing on a service and repair contract: warning (B&P 7159.10(c) limits only the 7159 notices)
+    r = c.validate_home_improvement_contract(600, is_service_and_repair=True, buyer_initiated_contact=True,
+                                             only_work_needed_for_the_problem=True, service_charge_usd=200,
+                                             includes=dict(ALL_IN, cgl_disclosure_form_872=False), as_of=AS_OF)
+    assert r.contract_type == "service_and_repair" and r.compliant
+    assert by_item(r, "16 CCR 872(a)")[0].status == "warning"
+    # $600 + $200 service charge = $800 > $750 -> warning that the job may not qualify
+    f = by_item(r, "Price plus service charge")[0]
+    assert f.status == "warning" and "$800.00" in f.detail
+    # $600 + $150 = $750 exactly -> no warning ("$750 or less")
+    r = c.validate_home_improvement_contract(600, is_service_and_repair=True, buyer_initiated_contact=True,
+                                             only_work_needed_for_the_problem=True, service_charge_usd=150,
+                                             includes=ALL_IN, as_of=AS_OF)
+    assert not by_item(r, "Price plus service charge")
 
 
 def test_service_and_repair_falls_back_to_full_hic():
@@ -262,6 +317,23 @@ def test_service_and_repair_falls_back_to_full_hic():
     r = c.validate_home_improvement_contract(300, is_service_and_repair=True, only_work_needed_for_the_problem=True,
                                              as_of=AS_OF)
     assert r.contract_type == "home_improvement"
+
+
+def test_workers_comp_exemption_claim_checked_against_license_class_and_2028():
+    # A C-39 roofer can never claim the no-employee exemption (B&P 7125, version through 2027)
+    r = _kitchen(workers_comp_notice_says_no_employees=True, license_classifications=["B", "C-39 Roofing"])
+    f = by_item(r, "Workers' comp statement")[0]
+    assert f.status == "violation" and "C-39" in f.detail and f.rule_id == "workers-comp-exemption-until-2028"
+    # a B-licensee with no employees may, but a job finishing 2028-01-04 runs past the 2028-01-01 end -> warning
+    r = _kitchen(workers_comp_notice_says_no_employees=True, license_classifications=["B"],
+                 completion_date="2028-01-04")
+    assert by_item(r, "Workers' comp exemption ends")[0].status == "warning" and r.compliant
+    # contract signed after 2028-01-01: the statement is simply false -> violation under wc-exemption-ends-2028
+    r = _kitchen(workers_comp_notice_says_no_employees=True, license_classifications=["B"],
+                 contract_signed_on="2028-02-01", start_date="2028-03-01", completion_date="2028-04-01",
+                 as_of="2028-02-01")
+    assert by_item(r, "Workers' comp statement")[0].rule_id == "wc-exemption-ends-2028"
+    assert c._license_codes(["c39", "C-61/D-49", "B"]) == {"C-39", "C-61", "D-49"}
 
 
 # ---------------------------------------------------------------- generator
@@ -303,6 +375,7 @@ def test_generated_contract_has_every_item_in_order():
     assert "| 3 | Cabinets delivered and installed | $12,000.00 |" in md
     assert g.problems == [] and g.cancellation.last_day_to_cancel == "2026-11-27"
     assert any(t.section == "Entitled-to-copy statement" and t.minimum == "12-pt bold" for t in g.type_size_notes)
+    assert "heading at least 14-pt, questions at least 12-pt, comments in italics at least 11-pt" in md  # 16 CCR 872(a)
     assert any(p.startswith("[[ATTORNEY:") for p in g.placeholders)
     assert g.verified is False   # the cancellation deadline uses the unverified business-day definition
 
@@ -334,6 +407,13 @@ def test_generator_flags_problems_and_special_cases():
     g = c.generate_home_improvement_contract(dict(BASE, workers_comp_status="no_employees_exempt"), as_of=AS_OF)
     assert "has no employees and is exempt" in g.markdown and any("2028-01-01" in n for n in g.notes)
     g = c.generate_home_improvement_contract(dict(BASE, workers_comp_status="no_employees_exempt",
+                                                  license_classifications=["C-39"]), as_of=AS_OF)
+    assert "[[FIX BEFORE USE: License classification C-39" in g.markdown and any("C-39" in p for p in g.problems)
+    g = c.generate_home_improvement_contract(dict(BASE, workers_comp_status="no_employees_exempt",
+                                                  license_classifications=["B"], completion_date="2028-02-15"),
+                                             as_of=AS_OF)
+    assert any("past 2028-01-01" in p for p in g.problems)
+    g = c.generate_home_improvement_contract(dict(BASE, workers_comp_status="no_employees_exempt",
                                                   signing_date="2028-02-01", start_date="2028-03-01",
                                                   completion_date="2028-05-01"), as_of="2028-02-01")
     assert any("2028-01-01" in p for p in g.problems)
@@ -360,6 +440,9 @@ def test_generated_service_and_repair_form():
     assert g.cancellation.last_day_to_cancel == "2026-12-01"
     g = c.generate_home_improvement_contract(dict(sr, contract_price_usd=900), as_of=AS_OF)
     assert g.contract_type == "home_improvement" and "over $750.00" in g.problems[0]
+    # $700 + $89 service charge = $789 > $750 -> flagged
+    g = c.generate_home_improvement_contract(dict(sr, contract_price_usd=700), as_of=AS_OF)
+    assert g.contract_type == "service_and_repair" and any("$789.00" in p for p in g.problems)
 
 
 # ---------------------------------------------------------------- change orders
@@ -421,14 +504,18 @@ def test_mcp_tools_register_and_run():
                 BASE, progress_payments=[p.model_dump() for p in KITCHEN]), "as_of": AS_OF})
             d = await cl.call_tool("home_improvement_cancellation_deadline",
                                    {"received_signed_copy_on": "2026-11-23", "buyer_age_65_or_older": True})
+            wc = await cl.call_tool("validate_home_improvement_contract", {
+                "contract_price_usd": 18500, "as_of": AS_OF, "workers_comp_notice_says_no_employees": True,
+                "license_classifications": ["C-39"], "contract_signed_on": "2026-11-20"})
             co = await cl.call_tool("check_change_order", {"scope_of_work": "Extra outlet", "amount_change_usd": 350,
                                                            "effect_on_payments_or_completion": "No change",
                                                            "buyer_signed_on": "2026-12-14",
                                                            "contractor_signed_on": "2026-12-14",
                                                            "changed_work_starts_on": "2026-12-15"})
-            return names, v.structured_content, g.structured_content, d.structured_content, co.structured_content
+            return (names, v.structured_content, g.structured_content, d.structured_content, co.structured_content,
+                    wc.structured_content)
 
-    names, v, g, d, co = asyncio.run(run())
+    names, v, g, d, co, wc = asyncio.run(run())
     assert names == {"validate_home_improvement_contract", "generate_home_improvement_contract",
                      "check_change_order", "home_improvement_cancellation_deadline"}
     assert v["down_payment"]["max_allowed_usd"] == 800.0 and v["compliant"] is False   # 10% of 8,000 = 800
@@ -436,3 +523,5 @@ def test_mcp_tools_register_and_run():
     assert "# Home Improvement" in g["markdown"]
     assert d["cancellation"]["last_day_to_cancel"] == "2026-11-30"
     assert co["enforceable_against_buyer"] is True
+    assert any(f["item"] == "Workers' comp statement is not correct" and f["status"] == "violation"
+               for f in wc["findings"])                                     # roofer (C-39) cannot claim exemption

@@ -63,6 +63,13 @@ FTB_LLC, SOI_LLC, SOI_CORP, SOI_PEN, SOS_GOOD = ("ftb-llc-annual-tax-800", "sos-
                                                  "sos-good-standing-or-cslb-suspension")
 EST_TAX = "estimated-income-tax-owners"
 NO_SUE = "unlicensed-no-right-to-sue-disgorgement"
+EDD_REG_LB, I9_PEN = "lawbook-edd-registration-100-per-quarter", "form-i9-civil-penalties"
+WVPP_PLAN, WVPP_TRAIN, WVPP_REVIEW, WVPP_EXEMPT, WVPP_RECORDS = (
+    "wvpp-written-plan-required", "wvpp-training-initial-and-annual", "wvpp-plan-review-annual", "wvpp-exemptions",
+    "wvpp-records-retention")
+PW_REG, PW_FEE, PW_LATE, PW_UNREG, PW_REQ = ("dir-registration-fiscal-year-renewal", "dir-registration-fee",
+                                             "dir-registration-late-renewal-grace", "unregistered-contractor-penalty",
+                                             "dir-registration-required-to-bid-or-work")
 
 # Values with no rule in the rulebook. An item or result that uses one is marked verified=False.
 UNVERIFIED = {

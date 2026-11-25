@@ -343,10 +343,64 @@ def test_private_late_noc_is_ineffective():
     r = pm.stop_payment_notice_deadline("private", "supplier", "2026-08-01", "2026-08-20", as_of="2026-09-01")
     assert (r.deadline, r.notice_of_completion_effective) == ("2026-10-30", False)
     assert r.days_remaining == 59                                   # Sep 1 -> Oct 30
-    # Owner never sent the claimant a copy -> the NOC does not shorten the period either.
+    assert any("2026-09-19" in n and "meet that date" in n for n in r.notes)   # safe date if upheld: 08-20 + 30
+    # The supplier gave the owner a preliminary notice, the property is not a 1-4 unit residence, and the owner never
+    # sent it a copy (Civ 8190) -> the NOC does not shorten its period: 08-01 + 90 = 10-30.
     r2 = pm.stop_payment_notice_deadline("private", "supplier", "2026-08-01", "2026-08-05", as_of="2026-09-01",
-                                         noc_copy_received=False)
+                                         noc_copy_received=False, preliminary_notice_served_date="2026-06-10",
+                                         residential_4_or_fewer_units=False)
     assert (r2.deadline, r2.notice_of_completion_effective) == ("2026-10-30", False)
+    assert any("2026-09-04" in n for n in r2.notes)                 # the owner's position: 08-05 + 30
+
+
+def test_missing_owner_copy_only_helps_claimants_owed_one():
+    # Civ 8190 copy goes only to the direct contractor and claimants that gave the owner a preliminary notice.
+    # No preliminary notice -> no copy owed -> NOC still shortens: 08-05 + 30 = 2026-09-04.
+    r = pm.stop_payment_notice_deadline("private", "supplier", "2026-08-01", "2026-08-05", as_of="2026-09-01",
+                                        noc_copy_received=False)
+    assert (r.deadline, r.notice_of_completion_effective) == ("2026-09-04", True)
+    assert any("does not extend your deadline" in n for n in r.notes)
+    # Preliminary notice given, but the property is (or may be) a residence of 4 or fewer units: the owner may be
+    # exempt from the copy rule, so the shorter date is kept.
+    for small in (True, None):
+        r2 = pm.stop_payment_notice_deadline("private", "subcontractor", "2026-08-01", "2026-08-05", as_of="2026-09-01",
+                                             noc_copy_received=False, preliminary_notice_served_date="2026-06-10",
+                                             residential_4_or_fewer_units=small)
+        assert r2.deadline == "2026-09-04" and r2.notice_of_completion_effective is True
+        assert "noc-copy-to-claimants-10-days" in ids(r2)
+
+
+def test_notice_of_cessation_sets_completion():
+    # Labor stopped 2026-08-20; owner recorded a notice of cessation 2026-09-25 (36 days later, >= 30): completion is
+    # the recording date (Civ 8180). Deadline = 09-25 + 30 = 2026-10-25 (a Sunday), not 08-20 + 60 + 90 = 2027-01-17.
+    # As of 10-01: Oct 1 -> Oct 25 = 24 days. Bond: suit 09-25 + 6 months = 2027-03-25; no prelim -> bond notice
+    # 09-25 + 15 = 2026-10-10.
+    r = pm.stop_payment_notice_deadline("private", "subcontractor", as_of="2026-10-01",
+                                        cessation_of_labor_date="2026-08-20", noc_recorded_date="2026-09-25",
+                                        payment_bond_recorded=True)
+    assert (r.completion_date_used, r.deadline, r.days_remaining) == ("2026-09-25", "2026-10-25", 24)
+    assert r.notice_of_completion_effective is True
+    assert any("2027-03-25" in b for b in r.payment_bond) and any("2026-10-10" in b for b in r.payment_bond)
+    assert any(li.item == "Completion by a recorded notice of cessation" for li in r.line_items)
+
+
+def test_possible_cessation_notice_recorded_late_uses_shorter_date():
+    # Labor stopped 06-01 -> completion by 60 days' cessation 07-31. Notice recorded 08-25 (> 07-31 + 15) but 85 days
+    # after labor stopped, so it may be a notice of cessation: use 08-25 + 30 = 09-24 (safe), not 07-31 + 90 = 10-29.
+    r = pm.stop_payment_notice_deadline("private", "supplier", as_of="2026-09-01", cessation_of_labor_date="2026-06-01",
+                                        noc_recorded_date="2026-08-25")
+    assert (r.completion_date_used, r.deadline, r.notice_of_completion_effective) == ("2026-07-31", "2026-09-24", None)
+    assert any("2026-10-29" in n for n in r.notes)
+
+
+def test_notice_recorded_before_given_completion_uses_shorter_date():
+    # Claimant says completion 10-20; the owner recorded a notice 10-10. Possibly premature (ineffective -> 10-20 + 90
+    # = 2027-01-18) but it may be valid: use 10-10 + 30 = 2026-11-09 to be safe. As of 10-25: Oct 25 -> Oct 31 (6)
+    # + 9 = 15 days left (urgent: more than 14).
+    r = pm.stop_payment_notice_deadline("private", "supplier", "2026-10-20", "2026-10-10", as_of="2026-10-25")
+    assert (r.deadline, r.days_remaining, r.risk_level) == ("2026-11-09", 15, "urgent")
+    assert r.notice_of_completion_effective is None
+    assert any("2027-01-18" in n for n in r.notes)
 
 
 def test_private_spn_without_completion_uses_last_furnishing():
@@ -423,6 +477,101 @@ def test_unverified_dict_entries_have_sources():
         assert entry["source"].startswith("https://") and entry["citation"], key
 
 
+# ---------------------------------------------------------------- review fixes
+def test_public_direct_contractor_overdue_not_sent_to_stop_notice():
+    # A prime on public works has no stop payment notice or payment bond claim of its own (Civ 9100).
+    r = pm.prompt_payment_check("public", "owner", "direct_contractor", 100_000, as_of=AS_OF,
+                                payment_request_date="2026-09-15")
+    assert any("Unpaid direct contractor on public works" in a for a in r.what_to_send)
+    assert not any("stop payment notice to the public entity" in a for a in r.what_to_send)
+    assert "civ-9100-public-claimant" in {u["key"] for u in r.unverified_sources}
+    # Private prime: mechanics lien plus a bonded notice to the construction lender (not the owner).
+    p = pm.prompt_payment_check("private", "owner", "direct_contractor", 50_000, as_of=AS_OF,
+                                payment_request_date="2026-10-01")
+    assert any("mechanics lien" in a and "construction lender" in a for a in p.what_to_send)
+
+
+def test_state_contract_dispute_uses_150_percent_and_flags_10262_5():
+    # $5,000 billed, $1,000 disputed: hold min(5,000, 150% x 1,000 = 1,500) = $1,500; pay $3,500.
+    r = pm.prompt_payment_check("public", "direct_contractor", "subcontractor", 5_000, None, "2026-11-10", None,
+                                disputed_amount_usd=1_000, as_of=AS_OF, public_agency="state")
+    ob = r.obligations[0]
+    assert (ob.max_withhold_usd, ob.must_pay_by_due_date_usd) == (1_500.0, 3_500.0)
+    assert "pcc-10262-state-subs" in ob.rule_ids and not r.verified       # 10262 dispute rule is unverifiable
+    assert any("10262.5" in n for n in ob.notes) and ob.late_charge_usd == 0
+
+
+def test_supplier_dispute_has_no_statutory_percentage():
+    # $3,000 invoice, $500 disputed: no statutory dispute rule, so the undisputed $2,500 is shown as due.
+    r = pm.prompt_payment_check("private", "direct_contractor", "supplier", 3_000, "2026-12-01", None, None,
+                                disputed_amount_usd=500, as_of=AS_OF)
+    ob = r.obligations[0]
+    assert (ob.max_withhold_usd, ob.must_pay_by_due_date_usd, ob.status) == (500.0, 2_500.0, "not_yet_due")
+    assert ob.max_withhold_basis.startswith("disputed amount left out")
+    assert any("outside the deadline" in a for a in r.what_to_send)
+    assert not any("may hold back at most" in a for a in r.what_to_send)
+    assert "failure-to-pay-suppliers-and-services" in ids(r)          # B&P 7120 discipline note
+
+
+def test_cslb_citation_minimum_before_july_2026():
+    # Received 05-01 -> due 05-08; paid 06-20: May 8 -> Jun 8 (31) + 12 = 43 days late.
+    # 1 full month + 12/30 (Jun 8 -> Jul 8 = 30 days) = 1.4 months; 10,000 x 2% x 1.4 = $280.00.
+    # Citation range before the 2026-07-01 statutory floor: $200 to $2,000.
+    r = pm.prompt_payment_check("private", "direct_contractor", "subcontractor", 10_000, None, "2026-05-01",
+                                "2026-06-20", as_of="2026-06-25")
+    ob = r.obligations[0]
+    assert (ob.days_late, ob.late_charge_usd) == (43, 280.00)
+    assert any("$200.00 to $2,000.00" in a for a in r.what_to_send)
+
+
+def test_public_sub_tier_retention_pass_through_flagged():
+    # Sub received retention 11-01 -> pays its sub by 11-08 (PCC 7107(d), 7 days); flagged as applied by analogy.
+    r = pm.prompt_payment_check("public", "subcontractor", "subcontractor", retention_amount_usd=4_000, as_of=AS_OF,
+                                retention_received_by_payer_date="2026-11-01", retention_paid_date="2026-11-06")
+    ob = r.obligations[0]
+    assert (ob.due_date, ob.status) == ("2026-11-08", "paid_on_time")
+    assert any("original (prime) contractor" in n for n in ob.notes)
+
+
+def test_final_waiver_warns_partial_payment_and_unconditional_timing():
+    r = pm.select_lien_waiver("final", "conditional", as_of=AS_OF)
+    assert any("whole remaining balance" in w for w in r.warnings)
+    assert any("check details" in w for w in r.warnings)
+    u = pm.select_lien_waiver("progress", "unconditional", payment_received=True, as_of=AS_OF)
+    assert "signs and delivers" in u.takes_effect and u.safe_to_sign_now is True
+    assert not any("whole remaining balance" in w for w in u.warnings)
+
+
+def test_direct_contractor_lender_prelim_and_no_bond_rights():
+    # Prime with a construction lender must give the lender a preliminary notice; its own payment bond protects
+    # the people below it, so no bond deadlines. Completion 10-20 + 90 = 2027-01-18.
+    r = pm.stop_payment_notice_deadline("private", "direct_contractor", "2026-10-20", as_of=AS_OF,
+                                        construction_lender=True, payment_bond_recorded=True)
+    assert r.deadline == "2027-01-18" and r.payment_bond == []
+    assert r.preliminary_notice.required is True
+    assert r.what_to_send[0].startswith("If you have not served a preliminary notice, serve it today on construction")
+    assert any("protects the subcontractors" in n for n in r.notes)
+    no_lender = pm.stop_payment_notice_deadline("private", "direct_contractor", "2026-10-20", as_of=AS_OF)
+    assert no_lender.preliminary_notice.required is False
+    assert not any("preliminary notice, serve it today" in a for a in no_lender.what_to_send)
+
+
+def test_prelim_served_without_first_furnishing_date():
+    # Served 07-01, first furnishing unknown: on-time unknown; if late it covers work from 07-01 - 20 = 06-11.
+    r = pm.stop_payment_notice_deadline("private", "subcontractor", "2026-10-20", as_of=AS_OF,
+                                        preliminary_notice_served_date="2026-07-01")
+    pn = r.preliminary_notice
+    assert (pn.on_time, pn.covers_work_from) == (None, "2026-06-11")
+    assert "first_furnishing_date" in pn.note
+    assert any(li.item.startswith("If served late") for li in r.line_items)
+
+
+def test_public_payment_bond_threshold_note():
+    r = pm.stop_payment_notice_deadline("public", "supplier", "2026-09-30", as_of=AS_OF)
+    assert "public-payment-bond-required-25000" in ids(r)
+    assert any("$25,000.00" in n for n in r.notes)
+
+
 # ---------------------------------------------------------------- MCP wiring
 def test_mcp_tools_round_trip():
     mcp = FastMCP("t")
@@ -441,7 +590,7 @@ def test_mcp_tools_round_trip():
             waiver = await c.call_tool("select_lien_waiver", {"payment_type": "final", "payment_status": "conditional"})
             spn = await c.call_tool("stop_payment_notice_deadline", {
                 "project_type": "public", "claimant_role": "subcontractor", "completion_date": "2026-09-30",
-                "as_of": AS_OF})
+                "as_of": AS_OF, "residential_4_or_fewer_units": False})
             return names, pay.structured_content, cap.structured_content, waiver.structured_content, \
                 spn.structured_content
 

@@ -55,6 +55,18 @@ LISTING, LIST_24H, SUBLET_PEN = "sub-listing-threshold", "sub-listing-24-hour-co
 RET_CAP, RET_RELEASE, RET_STATE = ("public-retention-5pct-cap", "public-retention-release-60-days",
                                    "pcc-7107-public-retention-60-days")
 SB909, AB1198 = "sb909-pending-penalty-increases", "ab1198-mid-project-rate-changes-35m"
+PW_NO_AWS, PW_SPLIT = "pw-no-alternative-workweek", "pw-no-project-splitting"
+APP_REGISTERED, STOP_ORDER, REG_AT_AWARD, PRIV_RET = (
+    "apprentice-must-be-registered", "unregistered-stop-order", "registration-jv-and-federal-bids-at-award",
+    "private-retention-5pct-cap")
+SUB_INFO = "sub-listing-required-information"
+RULE_IDS = (PW_DEF, PW_FUNDS, PW_DEMIN, PW_RES, PW_1000, SMALL, SMALL_MEASURE, COVERAGE_DET, FED_ONLY, REG_PROOF,
+            REG_FEE, REG_FY, REG_PEN, REG_GRACE, REG_TIME, UNREG, UNREG_SUB, LIST_CURE, PWC100, PWC100_PEN, FINAL_HOLD,
+            POSTINGS, RATES, WC_CERT, SAFE_HARBOR, ECPR, ECPR_PEN, ECPR_EXEMPT, CPR_REQ, CPR_PEN, CPR_LOC, CPR_DEBAR,
+            CPR_KEEP, CSLB_KEEP, CWPA, OT, PEN_1775, PEN_1813, APP_MIN, DAS140, DAS142, DAS142_SIZE, RATIO, TRAIN,
+            HOURS_STMT, APP_PRIME, PEN_1777_7, DEBAR_WILLFUL, DEBAR_APP, LIQ, CWPA_REVIEW, LISTING, LIST_24H, SUBLET_PEN,
+            RET_CAP, RET_RELEASE, RET_STATE, SB909, AB1198, PW_NO_AWS, PW_SPLIT, APP_REGISTERED, STOP_ORDER,
+            REG_AT_AWARD, PRIV_RET, SUB_INFO)
 
 # Every value this module computes with has a rulebook rule, so nothing is defined here. A result that relies on
 # an unchecked or unverifiable rule cites it, which sets verified=False and lists it in unverified_rule_ids.
@@ -125,6 +137,22 @@ def _business_days_before(d: date, n: int) -> date:
         if d.weekday() < 5:
             n -= 1
     return d
+
+
+def _das142_send_by(needed: date, hours: float) -> tuple[date, date]:
+    """8 CCR 230.1(a): notice 'at least 72 hours (excluding Saturdays, Sundays and holidays) before the date' apprentices
+    are required. Counted back from 12:00 a.m. on that date, 72 weekday hours end at the START of the 3rd weekday
+    before, so the notice must go out by the end of the weekday before that. -> (send-by date, cutoff date)."""
+    cutoff = _business_days_before(needed, math.ceil(hours / 24))
+    return _business_days_before(cutoff, 1), cutoff
+
+
+def _sb909_operative() -> date:
+    """Assumed SB 909 operative date, read from the rule ('2026 non-urgency statutes default to 2027-01-01')."""
+    m = re.search(r"\d{4}-\d{2}-\d{2}", str(P(SB909, "operative_date")))
+    if not m:
+        raise KeyError(f"rule {SB909} operative_date has no ISO date")
+    return date.fromisoformat(m.group(0))
 
 
 def _fy_end(d: date) -> date:
@@ -326,6 +354,7 @@ class ApprenticeHoursResult(core.Result):
     das142_min_request_hours: Optional[float] = None
     applies: Optional[bool] = None
     line_items: list[Line] = Field(default_factory=list)
+    unverified_rule_ids: list[str] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
 
@@ -384,38 +413,57 @@ class _Ctx:
                                licensed_human=licensed_human, rule_ids=self.use(*ids), verified=_ok(ids)))
 
 
-def _sb909(ctx: _Ctx, what: str) -> None:
-    """SB 909 (Ch. 660, Stats. 2026) amends LC 1725.5, 1775, 1776 and 1777.7; its amounts were not verified. A 2026
-    non-urgency statute defaults to Jan 1 of the next year (per the rule), so on/after that date the amounts shown
-    may be out of date and the rule is cited (verified=False)."""
-    chaptered = _d(P(SB909, "chaptered"), "chaptered")
-    operative = date(chaptered.year + 1, 1, 1)
+def _sb909(ctx: _Ctx, what: str, reaches_operative: bool) -> None:
+    """SB 909 (Ch. 660, Stats. 2026) amends LC 1725.5, 1775, 1776 and 1777.7; its amounts and operative date were not
+    verified. When the dates involved reach the assumed operative date, the affected items cite the rule
+    (verified=False) and this note says why; otherwise the note only warns."""
+    operative = _sb909_operative()
     sections = ", ".join(P(SB909, "sections_amended_per_chaptered_title"))
-    if ctx.today >= operative:
+    if reaches_operative:
         ctx.use(SB909)
-        ctx.notes.append(f"SB 909 ({P(SB909, 'chapter')}) amends {sections} and probably took effect "
-                         f"{operative.isoformat()}. The {what} shown are the pre-SB 909 amounts; confirm the current "
+        ctx.notes.append(f"SB 909 ({P(SB909, 'chapter')}) amends {sections} and probably takes effect "
+                         f"{operative.isoformat()} (operative date not verified). The {what} shown are the pre-SB 909 "
+                         "amounts; items that fall on or after that date are marked unverified. Confirm the current "
                          "figures on leginfo or with DIR before relying on them.")
     else:
         ctx.notes.append(f"SB 909 ({P(SB909, 'chapter')}) amends {sections}. The {what} shown are current law as "
-                         "checked; re-check them before relying on them after the bill's operative date.")
+                         f"checked; re-check them for anything on or after {operative.isoformat()}.")
 
 
-def _apprentice_calc(journeyman_hours: float) -> tuple[float, Optional[float], str, str]:
-    """-> (required apprentice hours, minimum DAS 142 request hours or None, ratio text, math)."""
+def _apprentice_calc(journeyman_hours: float, project_journeyman_hours: Optional[float] = None
+                     ) -> tuple[float, Optional[float], str, str]:
+    """-> (required apprentice hours, minimum DAS 142 request hours or None, ratio text, math).
+    The ratio is per craft; the under-40-hour exemption from the minimum request size is per PROJECT (8 CCR 230.1(a):
+    'projects with less than 40 hours of journeyman work'), so it is tested on project_journeyman_hours when given."""
     ratio = P(RATIO, "ratio_apprentice_to_journeyman_hours")
     a, j = _ratio(ratio)
     required = _money(journeyman_hours * a / j)
     math_ = f"{journeyman_hours:,.2f} journeyman h x {a:g}/{j:g} = {required:,.2f} apprentice h"
     floor = P(DAS142_SIZE, "exempt_if_journeyman_hours_below")
-    if journeyman_hours < floor:
-        return required, None, ratio, math_ + f"; under {floor:g} journeyman h, no minimum DAS 142 request size"
+    project = journeyman_hours if project_journeyman_hours is None else project_journeyman_hours
+    if project < floor:
+        return required, None, ratio, math_ + (f"; project under {floor:g} journeyman h ({project:,.2f}), no minimum "
+                                               "DAS 142 request size")
     per_app = P(DAS142_SIZE, "min_hours_per_apprentice_request")
     pct = P(DAS142_SIZE, "min_pct_of_estimated_apprentice_hours")
     minimum = _money(max(per_app, required * pct / 100))
     return required, minimum, ratio, (math_ + f"; DAS 142 request at least the greater of {per_app:g} h per apprentice "
                                       f"or {pct:g}% x {required:,.2f} = {_money(required * pct / 100):,.2f} h "
                                       f"-> {minimum:,.2f} h")
+
+
+def _listing_threshold(bid: float, work_type: str) -> tuple[float, str]:
+    """PCC 4104(a)(1): list subs 'in excess of' 1/2 of 1% of the prime's total bid; streets/highways/bridges: in excess
+    of the greater of 1/2 of 1% or $10,000."""
+    if work_type == "street_highway_bridge":
+        pct = P(LISTING, "streets_highways_bridges.pct_exclusive")
+        floor = P(LISTING, "streets_highways_bridges.usd_exclusive")
+        threshold = _money(max(bid * pct / 100, floor))
+        return threshold, (f"streets/highways/bridges: greater of {pct:g}% x ${bid:,.2f} = ${_money(bid * pct / 100):,.2f}"
+                           f" or ${floor:,.0f} -> list subs over ${threshold:,.2f}")
+    pct = P(LISTING, "general_listing_threshold_pct_of_total_bid_exclusive")
+    threshold = _money(bid * pct / 100)
+    return threshold, f"{pct:g}% x ${bid:,.2f} prime bid = ${threshold:,.2f}; list subs over that"
 
 
 # ---------------------------------------------------------------- readiness
@@ -428,7 +476,8 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
                            journeyman_hours_by_craft: Optional[dict[str, float]] = None,
                            public_subsidy_usd: Optional[float] = None, all_single_family: bool = False,
                            awarding_body_name: Optional[str] = None,
-                           worked_or_bid_while_unregistered: bool = False) -> ReadinessResult:
+                           worked_or_bid_while_unregistered: bool = False,
+                           your_contract_usd: Optional[float] = None) -> ReadinessResult:
     today = _d(as_of, "as_of") or logic.today_ca()
     start = _d(start_date, "start_date")
     if start is None:
@@ -436,8 +485,9 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
     award, executed = _d(award_date, "award_date"), _d(contract_execution_date, "contract_execution_date")
     bid_open, completion = _d(bid_opening_date, "bid_opening_date"), _d(estimated_completion_date,
                                                                           "estimated_completion_date")
-    if project_value_usd < 0 or (prime_bid_usd is not None and prime_bid_usd < 0):
-        raise ValueError("project_value_usd and prime_bid_usd must be 0 or more")
+    if project_value_usd < 0 or any(x is not None and x < 0 for x in (prime_bid_usd, your_contract_usd,
+                                                                         public_subsidy_usd)):
+        raise ValueError("project_value_usd, prime_bid_usd, your_contract_usd and public_subsidy_usd must be 0 or more")
     if completion and completion < start:
         raise ValueError("estimated_completion_date is before start_date")
     if awarding_body_type not in PUBLIC_BODIES | {"private_developer", "federal_agency"}:
@@ -460,7 +510,9 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
         if not is_public_funds:
             ctx.use(PW_DEF)
             public_work = False
-            reasons.append("Private project with no public funds or subsidy: not a public work under LC 1720.")
+            reasons.append("Private project with no public funds or subsidy: not a public work under LC 1720(a)(1) on "
+                           "these facts. If a public agency will lease or buy the building, get a coverage "
+                           "determination.")
         else:
             ctx.use(PW_DEF, PW_FUNDS, PW_RES)
             reasons.append("A private project paid in part with public money or subsidies (cash, below-market land or "
@@ -489,9 +541,27 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
                 ctx.line("Public subsidy as % of total project cost", round(pct, 2), "percent",
                          f"${public_subsidy_usd:,.0f} / ${value:,.0f} = {pct:.2f}%; de minimis if {test} -> "
                          f"{'de minimis' if de_min else 'NOT de minimis'}", PW_DEMIN)
-                public_work = not de_min
-                reasons.append("The public subsidy is de minimis, so the project is not a public work (LC 1720(c)(3))."
-                               if de_min else "The public subsidy is not de minimis, so the project is a public work.")
+                demin_from = _d(P(PW_DEMIN, "not_applicable_if_advertised_or_awarded_before"), "de minimis date")
+                first_step = min((d for d in (bid_open, award) if d), default=None)
+                if first_step and first_step < demin_from:
+                    reasons.append(f"The dollar/percent de minimis test applies to projects advertised or awarded on "
+                                   f"or after {demin_from}; this one dates from {first_step}, so get a coverage "
+                                   "determination.")
+                if de_min:
+                    public_work = False
+                    reasons.append("The public subsidy is de minimis, so the project is not a public work (LC "
+                                   "1720(c)(3)).")
+                elif all_single_family:
+                    public_work = None
+                    reasons.append("The subsidy is not de minimis, but a private residential project on private "
+                                   "property is a public work only if built under an agreement with a state agency, "
+                                   "a redevelopment/successor agency or a local public housing authority (LC "
+                                   "1720(c)(1)). Check the subsidy agreement; planned below as if covered.")
+                else:
+                    public_work = True
+                    reasons.append("The public subsidy is not de minimis, so the project is a public work (if it is "
+                                   "private residential work on private property, see the LC 1720(c)(1) exclusion "
+                                   "above).")
     else:
         ctx.use(PW_DEF)
         if is_public_funds:
@@ -542,9 +612,11 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
     tier = "not_public_work" if not covered else ("1000_or_less" if duty == "none" else
                                                   "small_project" if duty == "small" else "full")
     pw_applies = (duty != "none") if public_work is not None or duty == "none" else None
-    if duty == "none" and covered:
-        reasons.append("Prevailing wage is not required at this amount, but jobs may not be split into smaller "
-                       "orders to stay under a threshold (8 CCR 16100(b)(6)). Yearly work for the same agency adds up.")
+    if covered and duty in ("none", "small"):
+        ctx.use(PW_SPLIT)
+        reasons.append("Jobs may not be split into smaller work orders to stay under the "
+                       + ", ".join(f"${x:,.0f}" for x in P(PW_SPLIT, "thresholds_affected_usd"))
+                       + " thresholds (8 CCR 16100(b)(6)); yearly work for the same agency and vendor adds up.")
     coverage = Coverage(public_work=public_work, prevailing_wage_applies=pw_applies, tier=tier, measured_on_usd=value,
                         small_project_limit_usd=small_max if covered else None, small_project_exempt=duty == "small",
                         apprenticeship_applies=apprentice, reasons=reasons)
@@ -554,6 +626,12 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
 
     reg_required, pw_on = duty == "full", duty != "none"
     need_until = completion or start
+    # SB 909 (unverified) amends LC 1725.5 (registration fees) and LC 1776 (records penalty): amounts that fall due on
+    # or after its assumed operative date cite it.
+    sb_op = _sb909_operative()
+
+    def sb(*ids: str, on: Optional[date] = None) -> tuple[str, ...]:
+        return ids + ((SB909,) if (on or today) >= sb_op else ())
 
     # ---- DIR contractor registration
     fy_now = _fy_end(today)
@@ -567,7 +645,7 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
         options = P(REG_FEE, "multi_year_options_usd")
         max_years = max(int(k) for k in options)
 
-        def buy(first_day: date, why: str) -> None:
+        def buy(first_day: date, pay_by: date, why: str) -> None:
             n = _fiscal_years(first_day, need_until)
             if n > max_years:
                 reg.notes.append(f"The project runs {n} fiscal years; DIR sells at most {max_years} at once, so renew "
@@ -579,13 +657,16 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
             span = f"fiscal year ending {first_fy}" if n == 1 else f"fiscal years ending {first_fy} through {last_fy}"
             ctx.line(f"DIR registration fee ({why})", reg.fee_usd, "usd",
                      f"${P(REG_FEE, 'fee_per_fiscal_year_usd'):,.0f} per fiscal year x {n} ({span}) = "
-                     f"${reg.fee_usd:,.0f}; nonrefundable", REG_FEE, REG_FY)
+                     f"${reg.fee_usd:,.0f}; nonrefundable; paid by {pay_by}", *sb(REG_FEE, REG_FY, on=pay_by))
 
         bid_or_sign = min(d for d in (bid_open, executed, start) if d)
         bid_unregistered = worked_or_bid_while_unregistered or start <= today or bool(
             prime and bid_open and bid_open <= today)
         speed = (f"Pay by credit card: registration posts in about {P(REG_TIME, 'credit_card_processing_hours')} "
                  f"hours; other payment methods can take up to {P(REG_TIME, 'other_methods_max_weeks')} weeks.")
+        stop_order = (f"Working unregistered: the Labor Commissioner issues a stop order barring you from all public "
+                      f"works until you register, and you must pay idled workers their prevailing rate for up to "
+                      f"{P(STOP_ORDER, 'idled_worker_pay_max_days')} days (LC 1771.1(j)).")
         if contractor_dir_registered:
             if exp is None:
                 exp = fy_now
@@ -598,58 +679,87 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
                 ctx.use(REG_GRACE)
                 grace = P(REG_GRACE, "grace_period_days")
                 lapsed = (today - exp).days
-                buy(today, "re-register")
+                # Penalties apply only if you bid, were listed or worked while lapsed (8 CCR 16412(a)(4)-(5)).
+                worked_lapsed = worked_or_bid_while_unregistered or (start <= today and (completion or today) > exp) \
+                    or bool(prime and bid_open and exp < bid_open <= today)
+                buy(today, today, "re-register")
                 reg.fee_due_by = today.isoformat()
                 if lapsed <= grace:
                     reg.status = "expired_grace_period"
-                    reg.penalty_low_usd = float(P(REG_GRACE, "penalty_accidental_lapse_usd"))
-                    reg.penalty_high_usd = float(P(REG_GRACE, "penalty_non_accidental_lapse_usd"))
-                    ctx.line("Late-renewal penalty (8 CCR 16412(a)(5))", reg.penalty_low_usd, "usd",
-                             f"lapsed {lapsed} days ago (<= {grace}-day grace): ${reg.penalty_low_usd:,.0f} if the "
-                             f"lapse was inadvertent, ${reg.penalty_high_usd:,.0f} if not, plus the renewal fee",
-                             REG_GRACE)
-                    ctx.task(f"Renew DIR registration now (grace period) and pay ${reg.fee_usd:,.0f} fee + "
-                             f"${reg.penalty_low_usd:,.0f} penalty", you, exp + timedelta(days=grace),
-                             f"within {grace} days after the {exp} expiry", [REG_GRACE, REG_FEE])
+                    renew_by = exp + timedelta(days=grace)
+                    reg.notes.append(f"DIR describes the grace window as {P(REG_GRACE, 'grace_window')}; the due date "
+                                     f"here is {grace} days after expiry ({renew_by}), the earlier reading.")
+                    if worked_lapsed:
+                        reg.penalty_low_usd = float(P(REG_GRACE, "penalty_accidental_lapse_usd"))
+                        reg.penalty_high_usd = float(P(REG_GRACE, "penalty_non_accidental_lapse_usd"))
+                        ctx.line("Late-renewal penalty (8 CCR 16412(a)(5))", reg.penalty_low_usd, "usd",
+                                 f"lapsed {lapsed} days ago (<= {grace}-day grace) and you bid or worked since: "
+                                 f"${reg.penalty_low_usd:,.0f} if the lapse was inadvertent, "
+                                 f"${reg.penalty_high_usd:,.0f} if not, plus the renewal fee", *sb(REG_GRACE))
+                        what = (f"Renew DIR registration now (grace period, retroactive) and pay ${reg.fee_usd:,.0f} "
+                                f"fee + ${reg.penalty_low_usd:,.0f} penalty")
+                    else:
+                        what = (f"Renew DIR registration now and pay ${reg.fee_usd:,.0f}; do not bid or work on public "
+                                "works until it posts (doing so adds a "
+                                f"${P(REG_GRACE, 'penalty_accidental_lapse_usd'):,.0f}-"
+                                f"${P(REG_GRACE, 'penalty_non_accidental_lapse_usd'):,.0f} penalty)")
+                    ctx.task(what, you, renew_by, f"within {grace} days after the {exp} expiry", [REG_GRACE, REG_FEE])
                 else:
                     reg.status = "expired"
-                    if bid_unregistered:
-                        ctx.use(REG_PEN)
+                    if worked_lapsed:
+                        ctx.use(REG_PEN, STOP_ORDER)
                         reg.penalty_low_usd = reg.penalty_high_usd = float(P(REG_PEN, "penalty_usd"))
+                        ctx.line("Penalty registration fee (8 CCR 16412(a)(4))", reg.penalty_low_usd, "usd",
+                                 f"lapsed {lapsed} days (> {grace}-day grace) and you bid or worked since: "
+                                 f"${reg.penalty_low_usd:,.0f} on top of the ${reg.fee_usd:,.0f} fee", *sb(REG_PEN))
+                        if start <= today:
+                            reg.notes.append(stop_order)
                     ctx.task(f"Registration lapsed more than {grace} days ago: register again (${reg.fee_usd:,.0f}"
                              + (f" + ${reg.penalty_low_usd:,.0f} penalty" if reg.penalty_low_usd else "") + ")",
                              you, today, "now; you may not bid, be listed or work until registered", ids)
             elif exp < start:
                 reg.status = "expires_before_start"
-                buy(exp + timedelta(days=1), "renewal")
+                buy(exp + timedelta(days=1), exp, "renewal")
                 reg.fee_due_by = exp.isoformat()
                 ctx.task(f"Renew DIR registration (${reg.fee_usd:,.0f}) before it expires", you, exp,
                          f"by June 30 ({exp}); the job starts {start}", ids)
             elif exp < need_until:
                 reg.status = "renew_before_completion"
-                buy(exp + timedelta(days=1), "renewal")
+                buy(exp + timedelta(days=1), exp, "renewal")
                 reg.fee_due_by = exp.isoformat()
                 ctx.task(f"Renew DIR registration (${reg.fee_usd:,.0f}) before it expires mid-project", you, exp,
                          f"by June 30 ({exp}) to avoid a lapse during the job", ids)
             else:
                 reg.status = "ok"
                 ctx.task("DIR registration current through the job", you, exp, f"expires {exp}", ids, status="done")
+                if not completion:
+                    reg.notes.append(f"Checked only through the start date; give estimated_completion_date to see "
+                                     f"whether the {exp} expiry falls mid-job.")
         else:
             reg.status = "not_registered"
-            buy(today, "new registration")
+            buy(today, bid_or_sign if bid_or_sign > today else today, "new registration")
             reg.fee_due_by = bid_or_sign.isoformat()
             if bid_unregistered:
                 ctx.use(REG_PEN, UNREG)
                 reg.penalty_low_usd = float(P(REG_PEN, "penalty_usd"))
-                days = max(0, (today - start).days + 1)     # calendar days on the job so far (upper bound)
+                last = min(today, completion) if completion else today
+                days = max(0, (last - start).days + 1)     # calendar days on the job so far (upper bound)
                 daily = min(P(UNREG, "per_day_usd") * days, P(UNREG, "max_usd"))
                 reg.penalty_high_usd = reg.penalty_low_usd + daily
                 ctx.line("Penalty exposure for bidding/working unregistered", reg.penalty_high_usd, "usd",
                          f"${reg.penalty_low_usd:,.0f} penalty registration fee + up to ${P(UNREG, 'per_day_usd'):,.0f}"
-                         f"/day of work x {days} calendar days since {start} (cap ${P(UNREG, 'max_usd'):,.0f}) = "
-                         f"${reg.penalty_low_usd:,.0f} to ${reg.penalty_high_usd:,.0f}", REG_PEN, UNREG)
+                         f"/day of work x {days} calendar days {start} to {last} (cap ${P(UNREG, 'max_usd'):,.0f}) = "
+                         f"${reg.penalty_low_usd:,.0f} to ${reg.penalty_high_usd:,.0f}", *sb(REG_PEN, UNREG))
+                if start <= today:
+                    ctx.use(STOP_ORDER)
+                    reg.notes.append(stop_order)
             ctx.task(f"Register with DIR as a public works contractor and pay ${reg.fee_usd:,.0f}", you, bid_or_sign,
                      "before you bid, are listed in a bid, or sign the contract (LC 1771.1)", ids)
+            if bid_or_sign >= today:
+                ctx.use(REG_AT_AWARD)
+                reg.notes.append("Exception: a joint-venture bid (B&P 7029.1) or a bid on a federally funded job under "
+                                 "PCC 10164 or 20103.5 may be submitted unregistered if you are registered by the "
+                                 f"{P(REG_AT_AWARD, 'register_by')} (LC 1771.1(a)).")
         reg.notes.append(speed)
     elif covered and duty == "small":
         reg.notes.append("Small project: DIR registration is not required (LC 1771.1(n)), but prevailing wages and "
@@ -672,21 +782,24 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
     # ---- prevailing wage basics, certified payroll and eCPR
     pay = PayrollReporting(certified_payroll_required=pw_on, ecpr_upload_required=False)
     if pw_on:
-        ctx.use(RATES, OT, CPR_REQ, CPR_PEN, CPR_LOC)
+        ctx.use(RATES, OT, PW_NO_AWS, CPR_REQ, CPR_PEN, CPR_LOC)
+        # LC 1776 is amended by SB 909; with no completion date the job may run past its operative date
+        cpr_ids = sb(CPR_REQ, CPR_PEN, on=max(today, completion) if completion else max(today, sb_op))
         ctx.task("Get DIR prevailing wage determinations for every craft on the job (from the call for bids, the "
                  "contract, or the awarding body's office) and set pay rates", you, _next(today, bid_open, start),
                  "before you bid (to price labor) and before work starts (to pay it)", [RATES])
         daily, weekly, mult = (P(OT, "daily_hours_threshold"), P(OT, "weekly_hours_threshold"),
                                P(OT, "min_multiplier"))
         pay.overtime_rule = (f"Pay at least {mult:g}x the basic prevailing rate for hours over {daily:g} in a day or "
-                             f"{weekly:g} in a week, or the determination's higher overtime rate; no alternative "
-                             "workweek on public works.")
+                             f"{weekly:g} in a week, or the determination's higher overtime rate. A 4/10 or other "
+                             "alternative workweek schedule does not avoid daily overtime on public works; pay the "
+                             "overtime the wage determination specifies (DLSE; LC 1810-1815).")
         pay.cpr_request_response_days = P(CPR_REQ, "deadline_days")
         pay.cpr_late_penalty_per_worker_per_day_usd = float(P(CPR_PEN, "per_worker_per_day_usd"))
         ctx.task(f"Answer any written request for certified payroll within {pay.cpr_request_response_days} days "
                  f"(late: ${pay.cpr_late_penalty_per_worker_per_day_usd:,.0f} per worker per calendar day)", you, None,
                  f"within {pay.cpr_request_response_days} days after you receive the written request",
-                 [CPR_REQ, CPR_PEN], status="on_request")
+                 list(cpr_ids), status="on_request")
         ctx.task("Tell the awarding body the street address, city and county where payroll records are kept", you,
                  start, f"when work starts (the statute sets no first date); any change within "
                  f"{P(CPR_LOC, 'change_notice_working_days')} working days", [CPR_LOC])
@@ -724,7 +837,7 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
         ctx.line("Late certified payroll after a written request (LC 1776(h))",
                  pay.cpr_late_penalty_per_worker_per_day_usd, "usd",
                  f"${pay.cpr_late_penalty_per_worker_per_day_usd:,.0f} x each worker x each calendar day after the "
-                 f"{pay.cpr_request_response_days}-day deadline", CPR_PEN, CPR_REQ)
+                 f"{pay.cpr_request_response_days}-day deadline", *cpr_ids)
 
     # ---- apprenticeship
     if apprentice:
@@ -732,15 +845,17 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
         d140 = P(DAS140, "deadline_days_after_contract_execution")
         das140 = min(executed + timedelta(days=d140), start) if executed else start
         hours = P(DAS142, "advance_notice_hours")
-        das142 = _business_days_before(start, math.ceil(hours / 24))
+        das142, cutoff142 = _das142_send_by(start, hours)
         tday = P(TRAIN, "due_day_of_following_month")
         train = _plus_months(start.replace(day=1), 1).replace(day=tday)
         stmt = completion + timedelta(days=P(HOURS_STMT, "deadline_days_after_work_concluded")) if completion else None
         crafts = []
-        for craft, jh in (journeyman_hours_by_craft or {}).items():
-            if jh < 0:
-                raise ValueError(f"journeyman hours for {craft!r} must be 0 or more")
-            req, minimum, ratio, m = _apprentice_calc(float(jh))
+        by_craft = journeyman_hours_by_craft or {}
+        if any(jh < 0 for jh in by_craft.values()):
+            raise ValueError("journeyman hours per craft must be 0 or more")
+        total_jh = float(sum(by_craft.values()))      # your journeyman hours on the project, all crafts
+        for craft, jh in by_craft.items():
+            req, minimum, ratio, m = _apprentice_calc(float(jh), total_jh)
             ctx.use(DAS142_SIZE)
             crafts.append(CraftHours(craft=craft, journeyman_hours=float(jh), required_apprentice_hours=req,
                                      das142_min_request_hours=minimum, math=m))
@@ -755,8 +870,10 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
                  "craft - not to DAS", you, das140, f"within {d140} days after the contract is signed, no later than "
                  "the first day workers are on the job", [DAS140])
         ctx.task("Send DAS 142 apprentice dispatch request(s) to each committee for the craft (mail, fax or email; "
-                 "keep proof)", you, das142, f"at least {hours:g} hours before apprentices are needed, not counting "
-                 "Saturdays, Sundays or holidays (holidays not checked here)", [DAS142])
+                 "keep proof)", you, das142, f"at least {hours:g} hours before the date apprentices are needed, not "
+                 f"counting Saturdays, Sundays or holidays: counted back from 12:00 a.m. on {start}, the {hours:g} "
+                 f"hours start at 12:00 a.m. on {cutoff142}, so send it by the end of {das142}. Holidays are not "
+                 "checked here; send a day earlier for each holiday in the window", [DAS142])
         ctx.task("Pay apprenticeship training fund contributions for every hour worked in apprenticeable crafts (CAC-2 "
                  "or approved program)", you, train, f"by the {tday}th of each month for the prior month's work",
                  [TRAIN])
@@ -774,8 +891,10 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
         if not covered or duty == "none":
             why = "Prevailing wage law does not apply, so neither does apprenticeship."
         elif duty == "small" or value < app_min:
-            ctx.use(APP_MIN)
-            why = f"Prime contract ${value:,.0f} < ${app_min:,.0f}: LC 1777.5 apprenticeship duties do not apply."
+            ctx.use(APP_MIN, TRAIN)
+            why = (f"Prime contract ${value:,.0f} < ${app_min:,.0f}: LC 1777.5 apprenticeship duties do not apply. "
+                   "The training amount on the wage determination is still owed: pay it to each worker as part of "
+                   "the prevailing wage, not to the apprenticeship council (DAS FAQ).")
         else:
             ctx.use(APP_MIN)
             why = "No employees on the job, so no apprentices are required (a sole owner working alone)."
@@ -786,12 +905,10 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
     if pw_on:
         ctx.use(POSTINGS)
         postings = list(P(POSTINGS, "postings"))
-        ctx.task("Post at the job site: " + "; ".join(postings), "awarding body, or you if the contract says so",
+        ctx.task("Post at the job site: " + "; ".join(postings),
+                 "awarding body, or you (prime) if the contract says so" if prime else
+                 "awarding body or the prime (confirm the posting is up before your crew starts)",
                  start, "before work starts", [POSTINGS])
-        if prime:
-            ctx.use(WC_CERT)
-            ctx.task("Sign and file the LC 1861 workers' compensation certification with the awarding body", you,
-                     start, "before performing work under the contract", [WC_CERT])
         if prime or subs:
             ctx.use(SAFE_HARBOR)
             secs = ", ".join(P(SAFE_HARBOR, "sections_to_attach"))
@@ -801,30 +918,33 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
                      "(penalty of perjury) that prevailing wages and LC 1813 amounts were paid", you, None,
                      "periodically, and before each sub's final payment", [SAFE_HARBOR], status="recurring")
 
+    if covered and prime:                        # LC 1861 applies to every public works contract, any amount
+        ctx.use(WC_CERT)
+        ctx.task("Sign and file the LC 1861 workers' compensation certification with the awarding body", you,
+                 start, "before performing work under the contract", [WC_CERT])
+
     # ---- subcontractors: DIR registration and PCC 4104 listing
     public_body = awarding_body_type in PUBLIC_BODIES
     listing = SubListing(applies=prime and public_body and covered)
     threshold = None
     if listing.applies:
         ctx.use(LISTING, SUBLET_PEN)
-        pct = P(LISTING, "general_listing_threshold_pct_of_total_bid_exclusive")
-        if work_type == "street_highway_bridge":
-            pct = P(LISTING, "streets_highways_bridges.pct_exclusive")
-            floor = P(LISTING, "streets_highways_bridges.usd_exclusive")
-            threshold = _money(max(bid * pct / 100, floor))
-            listing.threshold_math = (f"streets/highways/bridges: greater of {pct:g}% x ${bid:,.2f} = "
-                                      f"${_money(bid * pct / 100):,.2f} or ${floor:,.0f} -> list subs over "
-                                      f"${threshold:,.2f}")
-        else:
-            threshold = _money(bid * pct / 100)
-            listing.threshold_math = f"{pct:g}% x ${bid:,.2f} prime bid = ${threshold:,.2f}; list subs over that"
+        threshold, listing.threshold_math = _listing_threshold(bid, work_type)
         listing.prime_bid_usd, listing.threshold_usd = bid, threshold
         ctx.line("Subcontractor listing threshold (PCC 4104)", threshold, "usd", listing.threshold_math, LISTING)
         if sum(s.bid_amount_usd for s in subs) > bid:
             listing.notes.append("Sub amounts add up to more than the prime bid; check the figures.")
-    elif not prime:
+    elif not prime and public_body and covered:
         listing.notes.append("The prime lists subcontractors in its bid. If your subcontract is over the prime's "
                              "listing threshold, make sure the prime listed you with your license and DIR numbers.")
+        if your_contract_usd is not None:
+            ctx.use(LISTING)
+            t, m = _listing_threshold(bid, work_type)
+            listing.prime_bid_usd, listing.threshold_usd, listing.threshold_math = bid, t, m
+            listed = your_contract_usd > t
+            ctx.line("Must the prime list you? (PCC 4104)", t, "usd",
+                     f"{m}; your ${your_contract_usd:,.2f} {'>' if listed else '<='} ${t:,.2f} -> "
+                     + ("the prime must list you" if listed else "listing not required"), LISTING)
     pct_sub = P(SUBLET_PEN, "max_penalty_pct_of_subcontract") if listing.applies else None
     for s in subs:
         problems: list[str] = []
@@ -835,22 +955,25 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
             if chk.must_list:
                 chk.listing_violation_penalty_max_usd = _money(s.bid_amount_usd * pct_sub / 100)
                 if not s.license_number:
-                    ctx.use(LIST_24H)
+                    ctx.use(LIST_24H, SUB_INFO)
                     hours = P(LIST_24H, "license_or_pwcr_correction_hours_after_bid_opening")
                     problems.append("No CSLB license number: the bid list needs it (an inadvertent error can be "
                                     f"corrected within {hours} hours after bid opening).")
                 if not s.portion_of_work:
+                    ctx.use(SUB_INFO)
                     problems.append("Name the portion of work this sub will do (list one sub per portion).")
         if reg_required:
             ctx.use(REG_PROOF, UNREG_SUB)
             sub_exp = s.dir_registration_expiry
             if not s.dir_number:
                 if chk.must_list:
-                    ctx.use(LIST_CURE)
+                    ctx.use(LIST_CURE, REG_PEN)
                 problems.append("No DIR registration number: you may not list this sub or sign its subcontract "
                                 "until it is registered"
-                                + (f" (a listed sub can still register within "
-                                   f"{P(LIST_CURE, 'cure_window_hours_after_bid_opening')} hours after bid opening)"
+                                + (f" (an inadvertently listed unregistered sub can still cure within "
+                                   f"{P(LIST_CURE, 'cure_window_hours_after_bid_opening')} hours after bid opening by "
+                                   f"registering and paying the ${P(REG_PEN, 'penalty_usd'):,.0f} penalty registration "
+                                   "fee, or you substitute a registered sub under PCC 4107)"
                                    if chk.must_list else "")
                                 + f"; using it costs you ${P(UNREG_SUB, 'per_day_usd'):,.0f}/day up to "
                                   f"${P(UNREG_SUB, 'max_usd'):,.0f}.")
@@ -870,7 +993,7 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
         ctx.use(LIST_24H)
         ctx.task(f"List in the bid every sub over ${threshold:,.2f}: name, place of business, CSLB license number, DIR "
                  f"registration number and portion of work ({len(must)} of {len(subs)} entered subs)", you, bid_open,
-                 "with the bid", [LISTING, LIST_24H])
+                 "with the bid", [LISTING, LIST_24H, SUB_INFO])
     if listing.applies and bid_open and must:
         h = P(LIST_24H, "license_or_pwcr_correction_hours_after_bid_opening")
         fix = bid_open + timedelta(days=math.ceil(h / 24))
@@ -888,21 +1011,34 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
     if ret.applies:
         ctx.use(RET_CAP, RET_RELEASE)
         cap = P(RET_CAP, "max_retention_percent")
-        ret.max_retention_pct, ret.max_total_retention_usd = float(cap), _money(value * cap / 100)
+        base = value if prime else your_contract_usd       # the cap is on YOUR contract price
+        ret.max_retention_pct = float(cap)
         ret.release_days_after_completion = P(RET_RELEASE, "deadline_days")
         ret.pass_through_days_after_receipt = P(RET_RELEASE, "prime_to_sub_passthrough_days_per_companion_research")
         ret.disputed_withhold_max_pct = float(P(RET_RELEASE, "max_withhold_percent_of_disputed"))
-        ctx.line("Maximum retention (PCC 7201)", ret.max_total_retention_usd, "usd",
-                 f"{cap:g}% x ${value:,.2f} = ${ret.max_total_retention_usd:,.2f} total; also no more than {cap:g}% of "
-                 "any single payment, and sub retention may not exceed the prime's percentage", RET_CAP)
+        if base is not None:
+            ret.max_total_retention_usd = _money(base * cap / 100)
+            ctx.line("Maximum retention (PCC 7201)", ret.max_total_retention_usd, "usd",
+                     f"{cap:g}% x ${base:,.2f} {'prime contract' if prime else 'subcontract'} = "
+                     f"${ret.max_total_retention_usd:,.2f} total; also no more than {cap:g}% of any single payment, "
+                     "and sub retention may not exceed the prime's percentage", RET_CAP)
+        else:
+            ret.notes.append(f"Give your_contract_usd (your subcontract price) to get your retention cap: {cap:g}% of "
+                             "each payment and of your subcontract price, never more than the prime's percentage.")
         ret.notes.append("Exceptions: a pre-bid 'substantially complex' finding stated in the bid documents, or a "
                          "sub that will not furnish bonds after written notice. No one may require a waiver.")
-        if completion:
+        if completion and prime:
             rel = completion + timedelta(days=ret.release_days_after_completion)
             ret.release_due = rel.isoformat()
-            ctx.task("Awarding body releases retention to the prime (up to "
+            ctx.task("Awarding body releases retention to you (up to "
                      f"{ret.disputed_withhold_max_pct:g}% of disputed amounts may be held)", "awarding body",
-                     rel, f"within {ret.release_days_after_completion} days after completion", [RET_RELEASE])
+                     rel, f"within {ret.release_days_after_completion} days after {P(RET_RELEASE, 'trigger')} "
+                     f"(estimated {completion})", [RET_RELEASE])
+        elif not prime:
+            ret.notes.append(f"The awarding body releases retention to the prime within "
+                             f"{ret.release_days_after_completion} days after {P(RET_RELEASE, 'trigger')} (the whole "
+                             "project, not your scope); the prime then has "
+                             f"{ret.pass_through_days_after_receipt} days to pay your share.")
         ctx.task("Pass retention through to subs", "you (prime)" if prime else "the prime (to you)", None,
                  f"within {ret.pass_through_days_after_receipt} days after the prime receives it", [RET_RELEASE],
                  status="recurring")
@@ -918,8 +1054,12 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
                              "after the complete subcontractor list is in DIR's system (LC 1773.3(d)); add every "
                              "sub to the DIR project early.")
     elif awarding_body_type == "private_developer":
-        ret.notes.append("Private-owner job: private-works retention rules (Civil Code 8811-8820) apply, not PCC "
-                         "7107/7201.")
+        ctx.use(PRIV_RET)
+        ret.notes.append("Private-owner job: PCC 7107/7201 do not apply; private-works retention rules do. For "
+                         f"contracts entered on or after {P(PRIV_RET, 'applies_to_contracts_entered_on_or_after')}, "
+                         f"retention may not exceed {P(PRIV_RET, 'max_retention_percent_of_each_payment'):g}% of any "
+                         f"payment or {P(PRIV_RET, 'max_total_retention_percent_of_contract_price'):g}% of the contract "
+                         "price (Civil Code 8811).")
 
     # ---- record retention
     rr = RecordRetention()
@@ -945,8 +1085,9 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
 
     # ---- notes that change with law in flux
     if reg_required or pw_on:
-        _sb909(ctx, "penalties and registration fees")
-    if covered and value >= P(AB1198, "prime_contract_min_usd"):
+        _sb909(ctx, "LC 1776 records penalty and LC 1725.5 registration fees", SB909 in ctx.cited)
+    ab_op = _d(P(AB1198, "operative"), "AB 1198 operative")
+    if covered and value >= P(AB1198, "prime_contract_min_usd") and not (award and award < ab_op):
         ctx.use(AB1198)
         big = P(AB1198, "prime_contract_min_usd")
         ctx.notes.append(f"Reported but unverified ({P(AB1198, 'bill')}): from {P(AB1198, 'operative')}, prevailing "
@@ -984,25 +1125,34 @@ def public_works_readiness(project_value_usd: float, awarding_body_type: Awardin
 # ---------------------------------------------------------------- apprentice hours
 def apprentice_hours_required(journeyman_hours: float, excluded_overtime_hours: float = 0,
                               apprentice_hours_worked: Optional[float] = None, craft: Optional[str] = None,
-                              prime_contract_usd: Optional[float] = None) -> ApprenticeHoursResult:
-    if journeyman_hours < 0 or excluded_overtime_hours < 0 or (apprentice_hours_worked or 0) < 0:
-        raise ValueError("hours must be 0 or more")
+                              prime_contract_usd: Optional[float] = None,
+                              project_journeyman_hours: Optional[float] = None, as_of=None) -> ApprenticeHoursResult:
+    if any(x is not None and x < 0 for x in (journeyman_hours, excluded_overtime_hours, apprentice_hours_worked,
+                                             project_journeyman_hours, prime_contract_usd)):
+        raise ValueError("hours and amounts must be 0 or more")
     if excluded_overtime_hours > journeyman_hours:
         raise ValueError("excluded_overtime_hours cannot exceed journeyman_hours")
-    ctx = _Ctx(logic.today_ca())
+    ctx = _Ctx(_d(as_of, "as_of") or logic.today_ca())
     counted = _money(journeyman_hours - excluded_overtime_hours)
     ex = P(RATIO, "exclude_journeyman_hours_over")
     if excluded_overtime_hours:
         ctx.line("Journeyman hours counted", counted, "hours",
                  f"{journeyman_hours:,.2f} total - {excluded_overtime_hours:,.2f} hours over {ex['daily']:g}/day or "
                  f"{ex['weekly']:g}/week = {counted:,.2f} straight-time hours", RATIO)
-    required, minimum, ratio, m = _apprentice_calc(counted)
+    # the under-40-hour exemption is per project; without the project total, the craft's own hours stand in
+    project = journeyman_hours if project_journeyman_hours is None else max(project_journeyman_hours, journeyman_hours)
+    required, minimum, ratio, m = _apprentice_calc(counted, project)
     ctx.line("Apprentice hours required", required, "hours", m, RATIO, DAS142_SIZE)
     shortfall = None
     if apprentice_hours_worked is not None:
+        ctx.use(APP_REGISTERED)
         shortfall = _money(max(0.0, required - apprentice_hours_worked))
         ctx.line("Shortfall", shortfall, "hours",
-                 f"max(0, {required:,.2f} required - {apprentice_hours_worked:,.2f} worked) = {shortfall:,.2f}", RATIO)
+                 f"max(0, {required:,.2f} required - {apprentice_hours_worked:,.2f} worked) = {shortfall:,.2f}; only "
+                 "hours of apprentices registered in a DAS-approved program count", RATIO, APP_REGISTERED)
+        ctx.notes.append("Only apprentices in a DAS-approved program with a written apprentice agreement count (LC "
+                         "1777.5(c)); anyone else doing the craft's work is paid the journeyman rate. Check each one "
+                         "in the DAS registered-apprentice search.")
     applies = None
     if prime_contract_usd is not None:
         app_min = P(APP_MIN, "threshold_usd")
@@ -1010,14 +1160,18 @@ def apprentice_hours_required(journeyman_hours: float, excluded_overtime_hours: 
         ctx.line("Apprenticeship threshold", prime_contract_usd, "usd",
                  f"prime contract ${prime_contract_usd:,.2f} {'>=' if applies else '<'} ${app_min:,.0f} -> ratio "
                  f"{'required' if applies else 'not required'}", APP_MIN)
+    if minimum is None and project_journeyman_hours is None and journeyman_hours > 0:
+        ctx.notes.append(f"The no-minimum-request exemption is for PROJECTS under "
+                         f"{P(DAS142_SIZE, 'exempt_if_journeyman_hours_below'):g} journeyman hours; give "
+                         "project_journeyman_hours (all crafts) if other crafts work on the job.")
+    ctx.use(DAS142)
     ctx.notes += [
         f"Measured per craft at the end of your contract or subcontract; crafts cannot be combined, and journeyman "
         f"hours over {ex['daily']:g} a day or {ex['weekly']:g} a week do not count. Schedule apprentices while "
         "journeymen are on site.",
-        "Only apprentices registered in a DAS-approved program count; anyone else doing the craft's work is paid the "
-        "journeyman rate.",
-        "Short on hours? You avoid penalties only with timely written DAS 142 requests to every committee in the area "
-        "and by employing everyone dispatched. Keep the proof of sending.",
+        f"Short on apprentices? Send written DAS 142 requests ({P(DAS142, 'advance_notice_hours'):g} hours ahead, not "
+        "counting weekends and holidays) to the committees for the craft, and to every other committee in the area "
+        "if one does not dispatch (8 CCR 230.1(a)). Keep proof of sending.",
     ]
     res = ApprenticeHoursResult(craft=craft, journeyman_hours=journeyman_hours,
                                 excluded_overtime_hours=excluded_overtime_hours, counted_journeyman_hours=counted,
@@ -1025,7 +1179,9 @@ def apprentice_hours_required(journeyman_hours: float, excluded_overtime_hours: 
                                 apprentice_hours_worked=apprentice_hours_worked, shortfall_hours=shortfall,
                                 das142_min_request_hours=minimum, applies=applies, line_items=ctx.lines,
                                 notes=ctx.notes)
-    return res.cite(*sorted(ctx.cited))
+    res.cite(*sorted(ctx.cited))
+    res.unverified_rule_ids = sorted(r for r in ctx.cited if not core.rule(r).verified)
+    return res
 
 
 # ---------------------------------------------------------------- penalties
@@ -1052,6 +1208,11 @@ def prevailing_wage_penalties(underpaid_worker_days: int = 0,
     ctx = _Ctx(today)
     lines: list[PenaltyLine] = []
     debar: list[str] = []
+    sb_op = _sb909_operative()
+
+    def sb(*ids: str, on: Optional[date] = None) -> tuple[str, ...]:
+        """SB 909 amends LC 1725.5, 1775, 1776 and 1777.7: those lines cite it from its assumed operative date."""
+        return ids + ((SB909,) if (on or today) >= sb_op else ())
 
     def add(item, section, low, high, math_, *ids):
         lines.append(PenaltyLine(item=item, section=section, low_usd=_money(low), high_usd=_money(high), math=math_,
@@ -1062,7 +1223,7 @@ def prevailing_wage_penalties(underpaid_worker_days: int = 0,
         n = underpaid_worker_days
         add("Prevailing wage underpayment penalty", "LC 1775(a)", mn * n, mx * n,
             f"{n} worker-days x ${mn:,.0f} minimum ({underpayment_category.replace('_', ' ')}) to ${mx:,.0f} maximum "
-            f"= ${mn * n:,.0f} to ${mx * n:,.0f}", PEN_1775)
+            f"= ${mn * n:,.0f} to ${mx * n:,.0f}", *sb(PEN_1775))
         if underpayment_category == "willful":
             ctx.use(DEBAR_WILLFUL)
             debar.append(f"Willful violations: {P(DEBAR_WILLFUL, 'willful_count')} or more separate willful violations "
@@ -1093,13 +1254,13 @@ def prevailing_wage_penalties(underpaid_worker_days: int = 0,
             status = f"produced {produced}" if produced else f"not produced as of {today}"
             how = f"request received {got}, due {deadline} ({window} days); {status} -> {days} days late"
         else:
-            days, how = cpr_days_late, f"{cpr_days_late} days past the {window}-day deadline"
+            days, how, end = cpr_days_late, f"{cpr_days_late} days past the {window}-day deadline", today
         rate = P(CPR_PEN, "per_worker_per_day_usd")
         amt = rate * days * cpr_workers
         if not cpr_workers:
             ctx.notes.append("Give cpr_workers (workers on the requested records) to compute the LC 1776(h) amount.")
         add("Late certified payroll after a written request", "LC 1776(h)", amt, amt,
-            f"{how}; ${rate:,.0f} x {cpr_workers} workers x {days} days = ${amt:,.0f}", CPR_PEN, CPR_REQ)
+            f"{how}; ${rate:,.0f} x {cpr_workers} workers x {days} days = ${amt:,.0f}", *sb(CPR_PEN, CPR_REQ, on=end))
         if days:
             debar.append(f"Records still missing {P(CPR_DEBAR, 'cure_days_after_notice')} days after the Labor "
                          f"Commissioner's debarment notice: debarment for {P(CPR_DEBAR, 'debarment_min_years')}-"
@@ -1117,8 +1278,8 @@ def prevailing_wage_penalties(underpaid_worker_days: int = 0,
             + (f"; ${rate:,.0f}/day x {n - grace} days after the grace (${low:,.0f}) to x {n} days from the due date "
                f"(${high:,.0f}), cap ${cap:,.0f} per project" if n > grace else ""), ECPR_PEN)
         if n > grace:
-            ctx.notes.append("The statute does not say whether the 14 grace days count once the penalty is levied; "
-                             "the range shows both readings.")
+            ctx.notes.append(f"The statute does not say whether the {grace} grace days count once the penalty is "
+                             "levied; the range shows both readings.")
 
     if unregistered_work_days:
         rate, cap, fee = P(UNREG, "per_day_usd"), P(UNREG, "max_usd"), P(REG_PEN, "penalty_usd")
@@ -1127,7 +1288,8 @@ def prevailing_wage_penalties(underpaid_worker_days: int = 0,
         add("Working on public works while unregistered", "LC 1771.1(g)", amt, amt,
             f"${rate:,.0f} x {n} days of work = ${rate * n:,.0f}, cap ${cap:,.0f} -> ${amt:,.0f}", UNREG)
         add("Penalty registration fee to register after working unregistered", "LC 1725.5; 8 CCR 16412(a)(4)",
-            fee, fee, f"${fee:,.0f} on top of the ${P(REG_PEN, 'in_addition_to_fee_usd'):,.0f} annual fee", REG_PEN)
+            fee, fee, f"${fee:,.0f} on top of the ${P(REG_PEN, 'in_addition_to_fee_usd'):,.0f} annual fee",
+            *sb(REG_PEN))
     if unregistered_sub_work_days:
         rate, cap, n = P(UNREG_SUB, "per_day_usd"), P(UNREG_SUB, "max_usd"), unregistered_sub_work_days
         amt = min(rate * n, cap)
@@ -1141,7 +1303,7 @@ def prevailing_wage_penalties(underpaid_worker_days: int = 0,
         rate, n = P(PEN_1777_7, key), apprenticeship_noncompliance_days
         add("Apprenticeship violation (DAS 140, DAS 142/ratio, training funds)", "LC 1777.7", 0, rate * n,
             f"up to ${rate:,.0f} x {n} full calendar days = ${rate * n:,.0f}; only for knowing violations and "
-            "reducible if disproportionate, so the low end is $0", PEN_1777_7)
+            "reducible if disproportionate, so the low end is $0", *sb(PEN_1777_7))
         if apprenticeship_repeat_within_3_years:
             ctx.notes.append(f"The ${rate:,.0f}/day tier needs a knowing repeat violation within "
                              f"{P(PEN_1777_7, 'repeat_window_years')} years that left apprentices untrained.")
@@ -1160,7 +1322,7 @@ def prevailing_wage_penalties(underpaid_worker_days: int = 0,
                          f"{P(CWPA_REVIEW, 'request_review_within_days')} days of service or it becomes final; have "
                          "a public works attorney file it.")
     if lines or unpaid_wages_usd:
-        _sb909(ctx, "penalty amounts")
+        _sb909(ctx, "LC 1775, 1776, 1777.7 and 1725.5 amounts", SB909 in ctx.cited)
     res = PenaltyResult(as_of=today.isoformat(), lines=lines, penalties_low_usd=pen_low, penalties_high_usd=pen_high,
                         back_wages_usd=_money(unpaid_wages_usd), liquidated_damages_usd=ld,
                         total_low_usd=_money(pen_low + unpaid_wages_usd + ld),
@@ -1226,6 +1388,9 @@ def register(mcp) -> None:
             "Agency name, e.g. 'Caltrans' (detects legacy labor compliance programs)"))] = None,
         worked_or_bid_while_unregistered: Annotated[bool, Field(description=(
             "True if you bid, were listed or worked on public works unregistered in the last 12 months"))] = False,
+        your_contract_usd: Annotated[Optional[float], Field(ge=0, description=(
+            "Subcontractor role: your subcontract price (for your 5% retention cap and whether the prime must list "
+            "you). Ignored for the prime"))] = None,
     ) -> ReadinessResult:
         """California public works readiness check (Labor Code 1720-1861, 8 CCR 16000+/230, PCC 4104, 7107, 7201).
         Returns: coverage (is it a public work; prevailing wage over $1,000; small-project exemption at $25,000
@@ -1236,7 +1401,9 @@ def register(mcp) -> None:
         dates, 1:5 apprentice hours per craft, training fund due date, hours statement), PCC 4104 subcontractor
         listing threshold and per-sub problems (missing DIR/license numbers), retention cap and release date, record
         retention date, job-site postings, a checklist sorted by due date with status and the rule behind each item,
-        line items showing the math, citations, and verified flags."""
+        line items showing the math, citations, and verified flags. verified is false whenever coverage rests on the
+        unchecked LC 1720 definition or an amount falls on/after SB 909's assumed operative date; unverified_rule_ids
+        names the rules, and each line item / checklist entry has its own verified flag."""
         return public_works_readiness(project_value_usd, awarding_body_type, is_public_funds, work_type, start_date,
                                       contractor_dir_registered, dir_registration_expiry, subcontractors,
                                       prime_bid_usd, as_of, your_role=your_role, award_date=award_date,
@@ -1246,7 +1413,8 @@ def register(mcp) -> None:
                                       has_employees=has_employees, journeyman_hours_by_craft=journeyman_hours_by_craft,
                                       public_subsidy_usd=public_subsidy_usd, all_single_family=all_single_family,
                                       awarding_body_name=awarding_body_name,
-                                      worked_or_bid_while_unregistered=worked_or_bid_while_unregistered)
+                                      worked_or_bid_while_unregistered=worked_or_bid_while_unregistered,
+                                      your_contract_usd=your_contract_usd)
 
     @mcp.tool(name="apprentice_hours_required", annotations=ro)
     def _apprentice_hours_required(
@@ -1259,14 +1427,20 @@ def register(mcp) -> None:
         craft: Annotated[Optional[str], Field(description="Craft name, e.g. 'carpenter'")] = None,
         prime_contract_usd: Annotated[Optional[float], Field(ge=0, description=(
             "Prime contract amount, to check the $30,000 threshold"))] = None,
+        project_journeyman_hours: Annotated[Optional[float], Field(ge=0, description=(
+            "Total journeyman hours on the project, all crafts (the under-40-hour DAS 142 exemption is per project); "
+            "defaults to this craft's hours"))] = None,
+        as_of: Annotated[Optional[str], Field(description=(
+            "ISO date to evaluate as of; default today in California"))] = None,
     ) -> ApprenticeHoursResult:
         """California public works apprentice ratio (LC 1777.5(g)-(h)): required apprentice hours = 1 hour per 5
         straight-time journeyman hours in the craft, measured at the end of the contract. Returns counted journeyman
-        hours, required apprentice hours, shortfall against hours worked, the minimum DAS 142 dispatch request (the
-        greater of 8 hours per apprentice or 20% of the apprentice hours, unless under 40 journeyman hours), whether
-        the ratio applies at the given prime contract amount, the math, notes and citations."""
+        hours, required apprentice hours, shortfall against registered-apprentice hours worked, the minimum DAS 142
+        dispatch request (the greater of 8 hours per apprentice or 20% of the apprentice hours, unless the PROJECT has
+        under 40 journeyman hours), whether the ratio applies at the given prime contract amount, the math, notes,
+        citations and unverified_rule_ids."""
         return apprentice_hours_required(journeyman_hours, excluded_overtime_hours, apprentice_hours_worked, craft,
-                                         prime_contract_usd)
+                                         prime_contract_usd, project_journeyman_hours, as_of)
 
     @mcp.tool(name="prevailing_wage_penalties", annotations=ro)
     def _prevailing_wage_penalties(
@@ -1307,7 +1481,9 @@ def register(mcp) -> None:
         eCPR ($100/day after a 14-day grace, max $5,000 per project), LC 1771.1 unregistered work ($100/day up to
         $8,000 plus the $2,000 penalty registration fee) and unregistered subs ($100/day up to $10,000), LC 1777.7
         apprenticeship (up to $100/day, $300 for knowing repeats). Also back wages, liquidated damages, totals,
-        debarment risks, notes and verified flags."""
+        debarment risks, notes and verified flags. Lines under sections SB 909 amends (LC 1725.5, 1775, 1776, 1777.7)
+        are marked unverified on/after its assumed operative date (2027-01-01), since the new amounts are not
+        verified."""
         return prevailing_wage_penalties(underpaid_worker_days, underpayment_category, unpaid_wages_usd,
                                          unpaid_60_days_after_assessment, overtime_violation_worker_days, cpr_workers,
                                          cpr_request_received_date, cpr_produced_date, cpr_days_late, ecpr_days_late,

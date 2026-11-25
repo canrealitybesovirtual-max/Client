@@ -30,13 +30,23 @@ UNVERIFIED = {
     },
     "excavation_over_20ft_engineer": {
         "depth_ft_gt": 20,
-        "text": "Sloping, benching or support systems for excavations deeper than 20 ft must be designed by a "
-                "registered professional engineer (8 CCR 1541.1(b)-(c)).",
-        "source": "https://www.dir.ca.gov/title8/1541_1.html",
+        "text": "Excavations deeper than 20 ft: sloping or benching must be designed by a registered professional "
+                "engineer (8 CCR 1541.1 Appendix B, Table B-1 note 3), and the Appendix C timber and Appendix D "
+                "aluminum hydraulic shoring tables stop at 20 ft, so shoring or shields must follow the manufacturer's "
+                "tabulated data for that depth, other tabulated data approved by a registered professional engineer, "
+                "or a registered professional engineer's design (8 CCR 1541.1(c)(2)-(4)).",
+        "source": "https://www.dir.ca.gov/title8/1541_1b.html",
     },
     "hazcom_training_timing": {
-        "text": "Train employees on hazardous substances in their work area at initial assignment and whenever a new "
-                "chemical hazard they have not been trained on is introduced (8 CCR 5194(h)(1)).",
+        "text": "Train employees on hazardous chemicals in their work area at the time of their initial assignment and "
+                "whenever a new chemical hazard is introduced into their work area (8 CCR 5194(h)(1)).",
+        "source": "https://www.dir.ca.gov/title8/5194.html",
+    },
+    "hazcom_list_and_nonroutine": {
+        "text": "The written program must also include a list of the hazardous chemicals known to be present (by the "
+                "product identifier on each SDS, for the whole workplace or by work area) and the methods used to "
+                "inform employees of the hazards of non-routine tasks and of chemicals in unlabeled pipes in their "
+                "work areas (8 CCR 5194(e)(1)(A)-(B)).",
         "source": "https://www.dir.ca.gov/title8/5194.html",
     },
     "respirator_program_elements": {
@@ -56,9 +66,31 @@ UNVERIFIED = {
                      "How all employees are accounted for after evacuation", "Rescue and medical duties",
                      "Names or job titles of people to contact for more information", "Alarm / alert method"],
         "text": "8 CCR 3220 sets the contents of an Emergency Action Plan wherever a Title 8 order requires one; "
-                "many contractors include it in the IIPP. Confirm with your safety professional whether your "
-                "operations trigger it.",
+                "many contractors include it in the IIPP. The plan must be written, except that an employer with 10 "
+                "or fewer employees may communicate it orally (3220(e)(3)). Confirm with your safety professional "
+                "whether your operations trigger it.",
         "source": "https://www.dir.ca.gov/title8/3220.html",
+    },
+    "indoor_heat_response_training": {
+        "text": "Emergency response procedures (respond to symptoms, never leave a symptomatic employee alone or send "
+                "them home without offering first aid or emergency medical services, clear directions to the site "
+                "for responders) and effective training of every employee and supervisor before work that may "
+                "expose them to heat illness risk (8 CCR 3396(f), (h)).",
+        "source": "https://www.dir.ca.gov/title8/3396.html",
+    },
+    "log300_survey_and_5020": {
+        "text": "Size-exempt employers must still keep Cal/OSHA injury and illness records if OSHA or the BLS informs "
+                "them in writing that they must (14300.41 / 14300.42), and must still file occupational injury "
+                "reports (Form 5020) with the Division of Labor Statistics and Research or their insurer "
+                "(8 CCR 14300.1(a)(1)).",
+        "source": "https://www.dir.ca.gov/T8/14300_1.html",
+    },
+    "dwc1_trigger_5401a": {
+        "text": "Labor Code 5401(a) ties the one-working-day claim-form duty to injuries that cause lost time beyond "
+                "the employee's work shift at the time of injury or need medical treatment beyond first aid. DIR's "
+                "employer fact sheet says to give the form for any injury or illness you learn of, which is the safe "
+                "practice; if the worker left work early or missed any later shift, the form is required.",
+        "source": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=LAB&sectionNum=5401",
     },
     "log300_recording_criteria": {
         "criteria": ["death", "days away from work", "restricted work or job transfer", "medical treatment beyond "
@@ -309,9 +341,16 @@ def _iipp(company, n, as_of) -> Program:
             ids.append("iipp-employee-access-5-business-days")
         els.append(_el(title, req, ids, fill))
     yrs = P("iipp-inspection-records-1-year", "retention_years_min")
-    els.append(_el("Records", f"Keep inspection records (inspector, unsafe conditions found, corrective action) and "
-                              f"training records (employee, dates, type, trainer) at least {yrs} year(s).",
-                   ["iipp-inspection-records-1-year", "iipp-training-records-1-year"],
+    rec_req = (f"Keep inspection records (inspector, unsafe conditions found, corrective action) and training records "
+               f"(employee, dates, type, trainer) at least {yrs} year(s).")
+    # 3203(b) Exceptions 1-2 use the same "fewer than 10 employees" cut as the (a)(3) oral exception; the records
+    # rules carry it only as a flag (their quote states "fewer than 10"), so the number comes from the (a)(3) rule.
+    lt10 = P("iipp-small-employer-oral-communication", "employee_count_lt")
+    if n < lt10 and P("iipp-inspection-records-1-year", "small_employer_lt_10_may_keep_until_hazard_corrected"):
+        rec_req += (f" With fewer than {lt10} employees you may keep inspection records only until the hazard is "
+                    "corrected, and may document training with a log of the instructions given to each employee at "
+                    "hire or on new duties (3203(b) Exceptions 1-2).")
+    els.append(_el("Records", rec_req, ["iipp-inspection-records-1-year", "iipp-training-records-1-year"],
                    ["Where inspection and training records are filed"]))
     lt20, emr = (P("iipp-reduced-documentation-under-20", "employee_count_lt"),
                  P("iipp-reduced-documentation-under-20", "emr_max"))
@@ -382,8 +421,9 @@ def _heat_outdoor(company, site_n, shift_h, language, as_of) -> Program:
             "procedures. Encourage frequent drinking.", ["heat-water-one-quart-per-hour"],
             ["Water source and refill procedure", "Who checks water levels"]),
         _el("Shade", f"Above {shade_f}F keep shade up at all times while employees are present, large enough for "
-            f"everyone on rest or recovery to sit fully in the shade. At or below {shade_f}F provide shade or timely "
-            "access on request.", ["heat-shade-above-80f"], ["Shade type (canopy, building)", "Who sets it up"]),
+            f"everyone on rest or recovery to sit fully in the shade without touching, and during meal periods for "
+            f"everyone who stays on site to eat. At or below {shade_f}F provide shade or timely access on request.",
+            ["heat-shade-above-80f"], ["Shade type (canopy, building)", "Who sets it up"]),
         _el("Cool-down rests", f"Allow a cool-down rest in the shade whenever an employee asks; monitor them, ask about "
             f"symptoms, and do not order them back until symptoms are gone and at least {rest} minutes have passed "
             "(plus time to reach shade).", ["heat-cool-down-rest-5-minutes"], ["Who monitors resting workers"]),
@@ -423,30 +463,46 @@ def _heat_indoor(company, as_of) -> Program:
     cool = P("indoor-heat-cool-down-area", "cool_down_area_temp_f_lt")
     rest = P("indoor-heat-cool-down-area", "min_rest_minutes")
     m = core.rule("indoor-heat-measurement-records").parameters
-    acc = P("indoor-heat-acclimatization-14-days", "new_employee_observation_days")
+    acc = core.rule("indoor-heat-acclimatization-14-days").parameters
+    inc = sc["incidental_exposure_exception"]
+    trig = (f"areas at {full['temperature_f_gte']}F or more (temperature or heat index), or at "
+            f"{full['restrictive_clothing_and_temperature_f_gte']}F or more where employees wear heat-restrictive "
+            "clothing or work near high radiant heat")
     els = [
         _el("Scope", f"Applies to fully enclosed indoor work areas at {sc['scope_temperature_f_gte']}F or more while "
-            f"employees are present. Full assessment and controls apply at {full['temperature_f_gte']}F temperature "
-            f"or heat index, or {full['restrictive_clothing_and_temperature_f_gte']}F with heat-restrictive clothing "
-            "or high radiant heat. Partially enclosed construction areas may fall under the outdoor rule instead.",
-            ["indoor-heat-scope-82f"], ["Indoor areas that reach 82F (attics, mechanical rooms, unconditioned shells)"]),
+            f"employees are present. Measurement and control measures (3396(e)) apply only in {trig}. Not covered: "
+            f"incidental exposure at {inc['temperature_f_gte']}F to under {inc['temperature_f_lt']}F for less than "
+            f"{inc['exposure_minutes_lt']} minutes in any {inc['per_period_minutes']}-minute period (not available in "
+            "vehicles without working air conditioning). Partially enclosed construction areas may fall under the "
+            "outdoor rule instead.",
+            ["indoor-heat-scope-82f"], ["Indoor areas that reach 82F (attics, mechanical rooms, unconditioned shells)",
+                                        "Which of those reach the 87F / 82F control triggers"]),
         _el("Water and cool-down areas", f"Water as in the outdoor rule; one or more cool-down areas kept below {cool}F "
             f"unless infeasible; cool-down rests of at least {rest} minutes plus access time.",
             ["indoor-heat-cool-down-area"], ["Cool-down area location"]),
-        _el("Measurement and records", f"Measure temperature and heat index, record the greater with date, time and "
-            f"location, re-measure when readings are expected to rise {m['remeasure_when_expected_increase_f_gte']}F "
-            f"or more, and keep records {m['retention_months']} months or until the next measurement, whichever is "
-            "later.", ["indoor-heat-measurement-records"], ["Who measures", "Instrument used"]),
-        _el("Control measures", "Engineering controls first (fans, ventilation, cooling), then administrative "
-            "controls, then personal heat-protective equipment.", ["indoor-heat-control-hierarchy"],
-            ["Controls for each hot area"]),
-        _el("Acclimatization", f"Closely observe newly assigned employees for their first {acc} days.",
-            ["indoor-heat-acclimatization-14-days"], ["Observation method"]),
+        _el("Measurement and records", f"In {trig}: measure temperature and heat index, record the greater with date, "
+            f"time and location, re-measure when readings are expected to rise "
+            f"{m['remeasure_when_expected_increase_f_gte']}F or more, and keep records {m['retention_months']} months "
+            "or until the next measurement, whichever is later.", ["indoor-heat-measurement-records",
+                                                                  "indoor-heat-scope-82f"],
+            ["Who measures", "Instrument used"]),
+        _el("Control measures", f"In {trig}: engineering controls first (fans, ventilation, cooling), then "
+            "administrative controls, then personal heat-protective equipment.",
+            ["indoor-heat-control-hierarchy", "indoor-heat-scope-82f"], ["Controls for each hot area"]),
+        _el("Acclimatization", f"Closely observe an employee newly assigned to an area at {acc['trigger_f_gte']}F or "
+            f"more (temperature or heat index, whichever is greater), or {acc['trigger_restrictive_or_radiant_f_gte']}F"
+            f" or more with heat-restrictive clothing or high radiant heat, for their first "
+            f"{acc['new_employee_observation_days']} days; where no engineering controls hold off outdoor heat, "
+            "observe everyone during a heat wave.", ["indoor-heat-acclimatization-14-days"], ["Observation method"]),
+        _el("Emergency response and training", UNVERIFIED["indoor_heat_response_training"]["text"],
+            ["indoor-heat-written-plan"], ["EMS caller", "Training date and trainer"],
+            unverified=["indoor_heat_response_training"]),
         _el("Written plan", "Written in English and the language of most employees, available at the worksite; may be "
             "combined with the IIPP or the outdoor heat plan.", ["indoor-heat-written-plan"], ["Plan location"]),
     ]
     return _program("heat_illness_indoor", "Indoor Heat Illness Prevention Plan (8 CCR 3396)", "required",
-                    "You reported indoor work areas that reach 82F or more.", "Foreman / supervisor of indoor work",
+                    f"You reported indoor work areas that reach {sc['scope_temperature_f_gte']}F or more.",
+                    "Foreman / supervisor of indoor work",
                     els, company=company, as_of=as_of)
 
 
@@ -512,7 +568,11 @@ def _hazcom(company, as_of) -> Program:
         _el("Labels and warnings", "Containers labeled; secondary containers marked.", ["hazcom-written-program"],
             ["Labeling method for secondary containers"]),
         _el("Safety data sheets", "SDS for each hazardous chemical, readily accessible during each shift.",
-            ["hazcom-written-program"], ["SDS binder / app location", "Chemical list (recommended practice)"]),
+            ["hazcom-written-program"], ["SDS binder / app location"]),
+        _el("Chemical list and non-routine tasks", UNVERIFIED["hazcom_list_and_nonroutine"]["text"],
+            ["hazcom-written-program"], ["Hazardous chemical list (by SDS product identifier)",
+                                         "How crews are briefed before non-routine tasks"],
+            unverified=["hazcom_list_and_nonroutine"]),
         _el("Training", UNVERIFIED["hazcom_training_timing"]["text"], ["hazcom-written-program"],
             ["Training schedule"], unverified=["hazcom_training_timing"]),
         _el("Multi-employer sites", "Explain how you inform other employers on the site of hazardous chemicals their "
@@ -556,8 +616,9 @@ def _silica(company, as_of) -> Program:
             f"and respirators; otherwise assess exposure and keep it at or below the {pel} ug/m3 PEL.",
             ["silica-table1-or-pel-50", "silica-written-exposure-control-plan"],
             ["Table 1 line and controls for each task", "Respirator (APF) required by Table 1, if any"]),
-        _el("Housekeeping", "No dry sweeping or brushing where it could add to exposure unless wet sweeping or HEPA "
-            "vacuuming is infeasible; no compressed air to clean clothing or surfaces without dust capture.",
+        _el("Housekeeping", "No dry sweeping or brushing where it could add to exposure unless wet sweeping, HEPA "
+            "vacuuming or other low-exposure methods are infeasible; no compressed air to clean clothing or surfaces "
+            "unless a ventilation system captures the dust cloud or no alternative method is feasible.",
             ["silica-no-dry-sweeping-compressed-air"], ["Cleanup method"]),
         _el("Restricting access", "Procedures to limit other workers' access to areas with high exposure.",
             ["silica-written-exposure-control-plan"], ["Access control method"]),
@@ -629,9 +690,11 @@ def _fall(company, fall_ft, infeasible, as_of) -> Program:
     res_ft = P("residential-framing-fall-6-ft", "fall_height_ft_gte")
     roof_ft = P("residential-roofing-fall-6-ft", "fall_height_ft_gte")
     com = P("commercial-roofing-fall-20-ft", "roof_height_ft_gt")
+    steep = P("residential-roofing-fall-6-ft", "slope_max_for_6ft_rule")
     triggers = (f"Conventional fall protection triggers: more than {gen} ft generally (8 CCR 1670); {res_ft} ft or more "
-                f"for residential framing (1716.2) and {roof_ft} ft for residential roofing (1731); more than {com} ft "
-                "for commercial roofing (1730).")
+                f"for residential framing (1716.2) and {roof_ft} ft or more for residential roofing up to {steep} "
+                f"slope, any height on steeper residential roofs (1731); more than {com} ft for commercial roofing "
+                "(1730).")
     ids = ["fall-protection-7-5-ft", "residential-framing-fall-6-ft", "residential-roofing-fall-6-ft",
            "commercial-roofing-fall-20-ft"]
     exposure = f"Your highest fall exposure: {fall_ft:g} ft. " if fall_ft else ""
@@ -695,9 +758,13 @@ def _excavation(company, depth, enter, as_of) -> Program:
     named = ["Competent person for daily excavation inspections"]
     over = UNVERIFIED["excavation_over_20ft_engineer"]
     if depth > over["depth_ft_gt"]:
-        els.append(_el("Engineer-designed protective system", over["text"], [], ["Registered PE name and stamp"],
+        els.append(_el(f"Deeper than {over['depth_ft_gt']} ft: engineered protective system",
+                       f"Planned depth {depth:g} ft > {over['depth_ft_gt']} ft. " + over["text"],
+                       ["excavation-protective-system-5-ft"],
+                       ["Registered PE name and stamp, or the manufacturer's tabulated data covering this depth"],
                        unverified=["excavation_over_20ft_engineer"]))
-        named.append("Registered professional engineer (excavations deeper than 20 ft)")
+        named.append(f"Registered professional engineer (sloping/benching deeper than {over['depth_ft_gt']} ft; or "
+                     "approves the tabulated data or design used for shoring/shields)")
     return _program("excavation", "Excavation and Trenching Procedures (8 CCR 1541-1541.1)", "required",
                     f"You reported excavations up to {depth:g} ft" + (" that workers enter." if enter else "."),
                     "Excavation competent person", els, named=named, company=company, as_of=as_of)
@@ -707,10 +774,10 @@ def _crane(company, as_of) -> Program:
     cert = core.rule("crane-annual-certification").parameters
     op = core.rule("crane-operator-certification-5-years").parameters
     els = [
-        _el("Crane certification", f"Cranes and derricks over {cert['rated_capacity_tons_gt']} tons rated capacity "
-            f"may not be used without current annual (every {cert['certification_interval_years']} year) and "
-            "quadrennial certificates from a Cal/OSHA-licensed certifying agency.", ["crane-annual-certification"],
-            ["Crane ID and certificate expiry"]),
+        _el("Crane certification", f"Cranes and derricks used in lifting service over "
+            f"{cert['rated_capacity_tons_gt']} tons rated capacity may not be used without current annual (every "
+            f"{cert['certification_interval_years']} year) and quadrennial certificates from a Cal/OSHA-licensed "
+            "certifying agency.", ["crane-annual-certification"], ["Crane ID and certificate expiry"]),
         _el("Operator certification", f"Operators trained, certified by an accredited entity (valid up to "
             f"{op['certificate_validity_years_max']} years) or government-licensed, and evaluated before operating; "
             "the employer pays for certification.", ["crane-operator-certification-5-years"],
@@ -732,16 +799,18 @@ def _lead_asbestos(company, as_of) -> Program:
             f"at the worksite. Lead PEL {P('lead-pel-and-action-level-2025', 'pel_ug_m3_8hr_twa')} ug/m3, action "
             f"level {P('lead-pel-and-action-level-2025', 'action_level_ug_m3_8hr_twa')} ug/m3.",
             ["lead-written-compliance-program", "lead-pel-and-action-level-2025"], ["Lead tasks and controls"]),
-        _el("Lead notice to Cal/OSHA", f"Written notice to the nearest district office at least "
-            f"{lead['advance_notice_hours']} hours before lead trigger-task work (not needed under "
-            f"{lead['exempt_if_area_sqft_or_linear_ft_lt']} sq ft / linear ft disturbed, among other exemptions).",
-            ["lead-pre-job-notification-24h"], []),
+        _el("Lead notice to Cal/OSHA", f"When planned work includes a lead trigger task listed in 8 CCR 1532.1(d)(2), "
+            f"the nearest district office must receive written notice at least {lead['advance_notice_hours']} hours "
+            f"before work starts (not needed under {lead['exempt_if_area_sqft_or_linear_ft_lt']} sq ft / linear ft "
+            "disturbed, among other exemptions).", ["lead-pre-job-notification-24h"], []),
         _el("Asbestos registration and notification", f"Asbestos work on {asb['surface_area_sqft_gte']} sq ft or more "
             "of asbestos-containing construction material at one site needs a Cal/OSHA registration before work "
             "starts and a written notice to the district office before each job.",
             ["asbestos-dosh-registration-100sqft", "asbestos-job-notification"], ["Registration number"]),
         _el("Asbestos license", f"Asbestos work of {asb['surface_area_sqft_gte']} sq ft or more must be done by a "
-            "C-22 contractor or one whose qualifier passed the CSLB asbestos certification exam.",
+            "C-22 contractor or one whose qualifier passed the CSLB asbestos certification exam. B&P 7058.5 waives the "
+            "exam only for installation, maintenance and repair of "
+            + ", ".join(P("asbestos-cslb-certification-100sqft", "exempt_materials")) + ".",
             ["asbestos-cslb-certification-100sqft"], ["C-22 / certified contractor"]),
         _el("Asbestos competent person", "Designate a competent person on every asbestos worksite; for Class I work "
             f"they inspect at least {P('asbestos-competent-person-inspections', 'class_i_inspection_min')}.",
@@ -764,7 +833,10 @@ def _log300(peak: int, naics: Optional[str], as_of: date) -> tuple[bool, list[Li
                    f"Peak employment last calendar year {peak}; records are required above {lim} (company-wide "
                    f"peak). Construction (NAICS 23) is not a partially exempt industry. "
                    + ("REQUIRED." if required else "Size-exempt, but you must still report serious injuries "
-                                                   "and deaths to Cal/OSHA."), ["log300-size-exemption-10-or-fewer"])]
+                                                   "and deaths to Cal/OSHA. "
+                                                   + UNVERIFIED["log300_survey_and_5020"]["text"]),
+                   ["log300-size-exemption-10-or-fewer"],
+                   unverified=[] if required else ["log300_survey_and_5020"])]
     if not required:
         return False, lines
     post = core.rule("log300a-posting-feb1-apr30").parameters
@@ -865,7 +937,8 @@ def generate_safety_programs(company_name: str, employee_count: int, worksites_h
               "Practices; also on new assignments and new hazards.", ["new-worker-safety-instruction",
                                                                        "iipp-training-triggers"]),
         _line("Toolbox / tailgate meeting", f"Every crew, at least every {wd} working days, led by its supervisor."
-              + (f" Last meeting {last_toolbox_meeting} -> next due by {tb_due} ({wd} working days later). "
+              + (f" Last meeting {last_toolbox_meeting} -> next due by {tb_due} ({wd} working days later)"
+                 + (f"; OVERDUE as of {today.isoformat()}, hold one now. " if tb_due < today.isoformat() else ". ")
                  + WORKING_DAY_NOTE if tb_due else ""), ["toolbox-tailgate-meetings-10-working-days"], due=tb_due),
         _line("Supervisor safety meeting", "Periodic, led by management (no fixed interval).",
               ["supervisor-safety-meetings"]),
@@ -953,6 +1026,12 @@ def generate_safety_programs(company_name: str, employee_count: int, worksites_h
         if not respirators_used:
             res.notes.append("If any silica, lead or asbestos task requires respirators, a written Respiratory "
                              "Protection Program (8 CCR 5144) becomes required.")
+    if wv.status == "exempt":
+        res.notes.append("Even with the WVPP small-site exemption, Labor Code 3553 still applies: if an employee is the "
+                         "victim of a crime at work, give written notice of workers' comp eligibility within "
+                         f"{P('wvpp-workers-comp-notice-one-working-day', 'workers_comp_notice_working_days')} "
+                         "working day.")
+        res.cite("wvpp-workers-comp-notice-one-working-day", "workers-comp-workplace-crime-notice")
     res.notes.append("Have a qualified safety professional review the finished programs; they must match how your "
                      "crews actually work.")
     res.cite("penalty-no-iipp-no-reduction")
@@ -1034,8 +1113,14 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                    "Scaffold / falsework / vertical shoring":
                        fees["construction_building_structure_scaffold_falsework_usd"]}
 
+    # Cal/OSHA has up to issue_wd working days after complete materials to issue, so the latest safe date leaves all
+    # of them AND has the permit in hand by the working day before work starts (issue_wd + 1 working days back).
+    project_lead = (f"Cal/OSHA issues within {issue_wd} working days of complete materials (or the safety "
+                    f"conference); latest date = {issue_wd} + 1 working days before start so the permit is in hand "
+                    "the working day before. Apply earlier")
+
     def project_deadline():
-        return _add_working_days(start.date(), -issue_wd).isoformat() if start else None
+        return _add_working_days(start.date(), -(issue_wd + 1)).isoformat() if start else None
 
     def annual_notice():
         return _fmt(start - timedelta(hours=notice_h)) if start else None
@@ -1052,8 +1137,7 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                      f"permit (${fees['annual_permit_usd']:g}) covers any site with {notice_h}-hour notice.",
                      ids + ["permit-annual-vs-project", "permit-project-issuance-5-working-days"], unv,
                      permit_type="project", holder="your company", fee_usd=project_fee[activity],
-                     lead_time=f"Cal/OSHA issues within {issue_wd} working days of complete materials or the safety "
-                               "conference; apply earlier", deadline=project_deadline())
+                     lead_time=project_lead, deadline=project_deadline())
 
     # ---- trench / excavation
     if excavation_max_depth_ft > 0:
@@ -1098,7 +1182,7 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                                    f"project permit.", ids + ["permit-project-issuance-5-working-days"], unv,
                                    permit_type="project", holder="project administrator",
                                    fee_usd=fees["construction_building_structure_scaffold_falsework_usd"],
-                                   lead_time=f"issued within {issue_wd} working days of complete materials",
+                                   lead_time=project_lead,
                                    deadline=project_deadline()))
             elif self_performs_structural_work:
                 items.append(_item("Building / structure over 36 ft", "permit", True,
@@ -1124,9 +1208,10 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
         gt = P("permit-scaffold-falsework-36ft", "height_ft_gt")
         hit, how, unv = _tall(scaffold_or_falsework_height_ft, scaffold_or_falsework_height_stories, gt)
         ce = core.rule("falsework-engineer-design").parameters
-        eng = (f" Falsework or vertical shoring over {ce['engineer_required_if_height_ft_gt']} ft high or with spans "
-               f"over {ce['engineer_required_if_span_ft_gt']} ft needs design drawings signed by a California-"
-               "registered civil engineer; scaffold erection is directed by a qualified person.")
+        eng = (f" Falsework or vertical shoring over {ce['engineer_required_if_height_ft_gt']} ft high (top of sills to "
+               f"soffit), with spans over {ce['engineer_required_if_span_ft_gt']} ft, or with vehicle or rail traffic "
+               "through it needs design drawings signed by a California-registered civil engineer; scaffold "
+               "erection is directed by a qualified person.")
         tall_for_ce = hit or (scaffold_or_falsework_height_ft or 0) > ce["engineer_required_if_height_ft_gt"]
         ids = ["permit-scaffold-falsework-36ft"] + (["falsework-engineer-design", "scaffold-qualified-person-erection"]
                                                     if tall_for_ce else [])
@@ -1139,8 +1224,10 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
             it.named_people = named
             items.append(it)
         else:
-            items.append(_item("Scaffold / falsework / vertical shoring", "permit", False, f"{how}. No permit needed."
-                               + (eng if tall_for_ce else ""), ids, unv, named_people=named))
+            items.append(_item("Scaffold / falsework / vertical shoring", "permit", False,
+                               f"{how}." + (" Exempt employer (8 CCR 341(e))." if hit else " No permit needed.")
+                               + (eng if tall_for_ce else ""), ids + (["permit-exceptions"] if hit else []), unv,
+                               named_people=named))
 
     # ---- demolition
     if demolition:
@@ -1156,7 +1243,7 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                                    "project permit; every other employer doing demolition holds an annual permit.",
                                    ids + ["permit-project-issuance-5-working-days"], unv, permit_type="project",
                                    holder="project administrator", fee_usd=fees["demolition_usd"],
-                                   lead_time=f"issued within {issue_wd} working days of complete materials",
+                                   lead_time=project_lead,
                                    deadline=project_deadline()))
             else:
                 items.append(_item("Demolition over 36 ft", "permit", True, f"{how}. Demolition subcontractors need "
@@ -1166,20 +1253,32 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                                    holder="your company", fee_usd=0 if has_annual_permit else fees["annual_permit_usd"],
                                    lead_time=f"{notice_h} hours' notice", deadline=annual_notice()))
         else:
-            items.append(_item("Demolition over 36 ft", "permit", False, f"{how}. No Cal/OSHA demolition permit.",
-                               ids, unv))
+            items.append(_item("Demolition over 36 ft", "permit", False,
+                               f"{how}." + (" Exempt employer (8 CCR 341(e))." if hit else
+                                            " No Cal/OSHA demolition permit."),
+                               ids + (["permit-exceptions"] if hit else []), unv))
         ne = core.rule("neshap-notification-10-working-days").parameters
+        units = P("neshap-facility-excludes-4-or-fewer-units", "excluded_residential_max_units")
         dl = _add_working_days(start.date(), -ne["lead_time_working_days"]).isoformat() if start else None
         items.append(_item("Air district / NESHAP demolition notice", "notification", True,
                            f"Written notice postmarked or delivered at least {ne['lead_time_working_days']} working "
-                           f"days (Mon-Fri, holidays count) before ANY demolition, even with little or no asbestos. "
-                           "Your city will not issue the demolition permit without a copy.",
+                           f"days (Mon-Fri, holidays count) before demolition begins, even with little or no "
+                           f"asbestos. The federal rule excludes residential buildings with {units} or fewer dwelling "
+                           "units, but California air districts can still require notice (Bay Area AQMD requires it for "
+                           "every demolition; South Coast AQMD even has a form for owner-occupants demolishing their "
+                           "own house), so check your district before relying on that. Have the building inspected "
+                           "for asbestos before demolition. Your city will not issue the demolition permit without a "
+                           "copy of the notice (or your declaration that none is needed).",
                            ["neshap-notification-10-working-days", "air-district-demolition-notice-10-working-days",
+                            "neshap-facility-excludes-4-or-fewer-units", "neshap-asbestos-inspection-before-demo",
                             "demolition-permit-requires-air-district-notice"], holder="owner or operator",
                            lead_time=f"{ne['lead_time_working_days']} working days", deadline=dl))
 
     # ---- tower crane
-    if tower_crane:
+    if tower_crane and all_exempt:
+        items.append(_item("Tower crane erection / climbing / dismantling", "permit", False,
+                           "Exempt employer under 8 CCR 341(e).", ["permit-tower-crane", "permit-exceptions"]))
+    elif tower_crane:
         tc = core.rule("permit-tower-crane").parameters
         items.append(_item("Tower crane erection / climbing / dismantling", "permit", True,
                            f"Project permit held by the crane erector; a crane relocated on the same project needs a "
@@ -1208,7 +1307,8 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                                   f"confirm completeness and {pt['decision_business_days']} more to decide = {lead_bd} "
                                   "business days." if reg_needed else "You hold a registration: renew it at least "
                                   f"{P('asbestos-registration-renewal-30-days', 'renew_days_before_expiration')} days "
-                                  "before it expires.") + " Post a copy beside the Cal/OSHA poster.",
+                                  "before it expires.") + " Post a copy beside the Cal/OSHA poster and give copies to "
+                               "the prime contractor and the other employers on the site.",
                                ["asbestos-dosh-registration-100sqft", "asbestos-registration-processing-time",
                                 "asbestos-registration-fees", "asbestos-posting-sign-and-registration",
                                 "asbestos-cslb-certification-100sqft"]
@@ -1239,8 +1339,10 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
         items.append(_item("Lead work notice to district office", "notification", need,
                            f"{lead_disturbed_sqft:g} sq ft disturbed "
                            f"{'>=' if need else '<'} {ld['exempt_if_area_sqft_or_linear_ft_lt']}: "
-                           + (f"written notice must be RECEIVED at least {ld['advance_notice_hours']} hours before "
-                              "trigger-task work (letter, fax, email, or phone then writing). Also exempt if only "
+                           + (f"if the work includes a lead trigger task listed in 8 CCR 1532.1(d)(2) (e.g. manual "
+                              "demolition, scraping or sanding, power-tool cleaning, abrasive blasting, torch cutting), "
+                              f"written notice must be RECEIVED at least {ld['advance_notice_hours']} hours before "
+                              "the work starts (letter, fax, email, or phone then writing). Also exempt if only "
                               f"torch cutting/welding up to {ld['exempt_if_only_torch_cutting_welding_hours_per_shift_lte']}"
                               f" h/shift or material under {ld['exempt_if_lead_pct_lt']}% lead." if need else
                               "no notice needed."), ["lead-pre-job-notification-24h"], holder="your company",
@@ -1291,8 +1393,13 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
         res.notes.append("planned_start had no time, so deadlines assume work starts at 00:00 that day; give a time "
                          "for exact hours.")
     if all_exempt:
-        res.notes.append(f"Exemption '{exemption}': 8 CCR 341 permits do not apply, but all safety orders still do.")
-    res.notes.append(WORKING_DAY_NOTE)
+        res.notes.append(f"Exemption '{exemption}': 8 CCR 341 permits do not apply, but all safety orders still do. "
+                         "341(e)(1)-(2) name the government body or the PUC-regulated utility itself; a private "
+                         "contractor doing the work for one is a separate employer and is not listed, so it still "
+                         "needs its own permits.")
+    res.notes.append(WORKING_DAY_NOTE + (" Exception: the NESHAP/air district count already matches federal law, "
+                                         "which counts holidays that fall Monday-Friday as working days."
+                                         if demolition else ""))
     res.cite("permit-violation-min-penalty-1250")
     _finish(res, items)
     return res
@@ -1404,17 +1511,24 @@ def injury_reporting_deadlines(incident_datetime: str, serious: bool = False, fa
 
     # 1. Cal/OSHA (DOSH) report
     r342 = core.rule("serious-injury-report-8-hours").parameters
-    hrs = r342["deadline_hours_exigent_circumstances"] if exigent_circumstances else r342["deadline_hours"]
+    hrs, ex_hrs = r342["deadline_hours"], r342["deadline_hours_exigent_circumstances"]
+    due8 = knew + timedelta(hours=hrs)
+    due342 = max(due8, inc + timedelta(hours=ex_hrs)) if exigent_circumstances else due8
     kinds = [k for k, on in [("death", fatality), ("inpatient hospitalization", hospitalized),
                              ("amputation / loss of eye / serious permanent disfigurement", serious)] if on]
-    how = (f"Employer knew at {_fmt(knew)} + {hrs} hours = {_fmt(knew + timedelta(hours=hrs))}"
-           + (" (exigent circumstances you can demonstrate)" if exigent_circumstances else "")
-           + ("; you gave no time, so the clock starts at 00:00" if knew_date_only else "") + "."
-           if reportable else
-           ("Public street or highway accident outside a construction zone is excluded from the definition."
-            if serious_case else "Not a death or serious injury/illness (no inpatient hospitalization beyond "
-                                 "observation, amputation, eye loss or serious permanent disfigurement)."))
-    dl.append(_deadline("Report to Cal/OSHA (DOSH) district office", reportable, knew + timedelta(hours=hrs), now,
+    if not reportable:
+        how = ("Public street or highway accident outside a construction zone is excluded from the definition."
+               if serious_case else "Not a death or serious injury/illness (no inpatient hospitalization beyond "
+                                    "observation, amputation, eye loss or serious permanent disfigurement).")
+    else:
+        how = f"Employer knew at {_fmt(knew)} + {hrs} hours = {_fmt(due8)}"
+        if exigent_circumstances:
+            # 342(a): the exigent-circumstances limit runs from the incident, not from when the employer knew.
+            how += (f". Exigent circumstances you can demonstrate allow up to {ex_hrs} hours after the INCIDENT: "
+                    f"{_fmt(inc)} + {ex_hrs} hours = {_fmt(inc + timedelta(hours=ex_hrs))}; the later of the two "
+                    f"is {_fmt(due342)}")
+        how += ("; you gave no time, so the clock starts at 00:00" if knew_date_only else "") + "."
+    dl.append(_deadline("Report to Cal/OSHA (DOSH) district office", reportable, due342, now,
                         now_date_only, ["serious-injury-report-8-hours", "serious-injury-definition",
                                         "serious-injury-report-cal-osha-immediately"],
                         f"Immediately, by phone or Cal/OSHA's online reporting, for: {', '.join(kinds) or 'n/a'}. "
@@ -1423,12 +1537,15 @@ def injury_reporting_deadlines(incident_datetime: str, serious: bool = False, fa
     # 2. DWC-1 claim form
     dwc = P("workers-comp-claim-form-one-working-day", "deadline_working_days")
     due = _add_working_days(kd, dwc)
+    first_aid_only = not recordable
     dl.append(_deadline("Give the employee a DWC-1 workers' comp claim form", True, due, now, now_date_only,
                         ["workers-comp-claim-form-one-working-day"],
                         "Hand it to the employee (or mail it first class); when returned, complete the employer part, "
                         "give them a copy and send it to your claims administrator.",
-                        f"Learned {kd.isoformat()} + {dwc} working day = {due.isoformat()}. The rule as stated covers "
-                        f"any work injury or illness you learn of. {WORKING_DAY_NOTE}"))
+                        f"Learned {kd.isoformat()} + {dwc} working day = {due.isoformat()}. DIR's employer guidance "
+                        f"covers any work injury or illness you learn of. {WORKING_DAY_NOTE}"
+                        + (" " + UNVERIFIED["dwc1_trigger_5401a"]["text"] if first_aid_only else ""),
+                        unverified=["dwc1_trigger_5401a"] if first_aid_only else []))
 
     # 3. Form 5020
     d5 = P("employer-report-form-5020-5-days", "deadline_days")
@@ -1505,17 +1622,18 @@ def injury_reporting_deadlines(incident_datetime: str, serious: bool = False, fa
         res.next_steps.append("Call Cal/OSHA now; do not wait for medical details. Say whether the scene was "
                               "altered, and leave it as is except to help the injured or prevent further harm.")
     res.next_steps += ["Investigate the cause under your IIPP and correct the hazard (8 CCR 3203(a)(5)-(6)).",
-                       "Tell your workers' comp carrier the same day."]
+                       "Notify your workers' comp carrier promptly; Form 5020 is due to the insurer within "
+                       f"{P('employer-report-form-5020-5-days', 'deadline_days')} days if it applies."]
     res.penalties = [
         Penalty(item="Late or missing Cal/OSHA serious injury/death report",
-                detail="Minimum penalty, not reduced for good faith.",
+                detail="Minimum penalty for failing to report on time under 8 CCR 342(a) (8 CCR 336(a)(6)).",
                 min_usd=P("failure-to-report-min-penalty-5000", "minimum_penalty_usd"),
                 rule_ids=["failure-to-report-min-penalty-5000"]),
         Penalty(item="Log 300 / 300A recordkeeping or posting failures",
                 detail="Regulatory violation (8 CCR 334(a)), per violation.",
                 min_usd=P("calosha-penalty-amounts", "regulatory_min_proposed_usd"),
                 max_usd=P("calosha-penalty-amounts", "regulatory_max_usd"),
-                rule_ids=["calosha-penalty-amounts", "calosha-poster-posting"]),
+                rule_ids=["calosha-penalty-amounts"]),
         Penalty(item="Form 5020 not filed", detail=P("workers-comp-injury-report-5-days", "failure") + ".",
                 rule_ids=["workers-comp-injury-report-5-days"]),
     ]
@@ -1629,7 +1747,10 @@ def register(mcp) -> None:
             "Subcontractor does steel/member erection, decking, curtain wall/precast, concrete on steel or "
             "structural/roof framing"))] = True,
         has_annual_permit: Annotated[bool, Field(description="You already hold a Cal/OSHA annual permit")] = False,
-        exemption: Annotated[Exemption, Field(description="8 CCR 341(e) exemption that applies, if any")] = "none",
+        exemption: Annotated[Exemption, Field(description=(
+            "8 CCR 341(e) exemption that applies, if any. government_agency / puc_regulated_utility only when YOUR "
+            "company is that agency or utility (a contractor on public works or utility work is not exempt); "
+            "emergency_underground_repair, grave and swimming_pool_excavation exempt the trench permit only"))] = "none",
         asbestos_sqft: Annotated[float, Field(ge=0, description="Sq ft of asbestos-containing material disturbed")] = 0,
         has_asbestos_registration: Annotated[bool, Field(description="You hold a current Cal/OSHA asbestos registration")] = False,
         lead_disturbed_sqft: Annotated[float, Field(ge=0, description="Sq ft (or linear ft) of lead-containing material disturbed")] = 0,
@@ -1643,9 +1764,10 @@ def register(mcp) -> None:
         for the GC/project administrator, annual permit for structural trades), scaffold/falsework/shoring over
         36 ft or 3 stories (plus civil engineer design over 14 ft), demolition over 36 ft, tower cranes, asbestos
         registration at 100 sq ft, lead 24-hour notice, NESHAP/air district 10-working-day demolition notice and
-        811. Gives the fee per permit and total, lead times (project permit issued within 5 working days, annual
-        permit 24-hour site notice), and latest apply/notify date when planned_start is given, plus the minimum
-        penalty for working without a permit."""
+        811. Gives the fee per permit and total, lead times (project permit issued within 5 working days, so the
+        latest apply date is 6 working days before start; annual permit 24-hour site notice), and latest
+        apply/notify date when planned_start is given (deadline_passed if already late), plus the minimum penalty
+        for working without a permit. Government/utility exemptions apply only to the agency or utility itself."""
         return check_cal_osha_permits(
             excavation_max_depth_ft, workers_enter_trench, building_stories, building_height_ft, demolition=demolition,
             demolition_height_ft=demolition_height_ft, demolition_stories=demolition_stories,
@@ -1665,23 +1787,24 @@ def register(mcp) -> None:
         hospitalized: Annotated[bool, Field(description=(
             "Admitted as an inpatient for more than observation or diagnostic testing"))] = False,
         employer_knew_at: Annotated[Optional[str], Field(description=(
-            "When a supervisor/the employer learned of it, if later (default incident_datetime)"))] = None,
+            "When the employer (including a supervisor) knew, or with diligent inquiry would have known, if later "
+            "than the incident (default incident_datetime)"))] = None,
         beyond_first_aid_or_lost_time: Annotated[bool, Field(description=(
             "Medical treatment beyond first aid or time lost beyond the day of injury"))] = True,
         peak_employees_last_year: Annotated[Optional[int], Field(description=(
             "Company peak employees at any time last calendar year (Log 300 exemption and OSHA submission)"))] = None,
         exigent_circumstances: Annotated[bool, Field(description=(
-            "You can show exigent circumstances (extends the Cal/OSHA report to 24 hours)"))] = False,
+            "You can show exigent circumstances (allows the Cal/OSHA report up to 24 hours after the incident)"))] = False,
         public_road_outside_construction_zone: Annotated[bool, Field(description=(
             "Accident on a public street/highway outside a construction zone"))] = False,
         workplace_crime: Annotated[bool, Field(description="The employee was the victim of a crime at work")] = False,
         as_of: Annotated[Optional[str], Field(description="ISO date or datetime 'now'; default now in California")] = None,
     ) -> InjuryReportingResult:
         """Injury and death reporting deadlines for a California construction employer. Returns each deadline with
-        due date/time, status (overdue / due_today / upcoming / not_required), hours or days left and the math:
-        Cal/OSHA report within 8 hours of knowing of a death or serious injury (24 with exigent circumstances),
-        DWC-1 claim form within 1 working day, Form 5020 to the insurer within 5 days, Log 300/301 entry within 7
-        calendar days (unless size-exempt at 10 or fewer employees), Form 300A posting Feb 1-Apr 30, OSHA electronic
+        due date/time, status (overdue / due_today / upcoming / do_now / not_required), hours or days left and the
+        math: Cal/OSHA report within 8 hours of knowing of a death or serious injury (with exigent circumstances,
+        up to 24 hours after the incident), DWC-1 claim form within 1 working day, Form 5020 to the insurer within
+        5 days, Log 300/301 entry within 7 calendar days (unless size-exempt at 10 or fewer employees), Form 300A posting Feb 1-Apr 30, OSHA electronic
         submission by March 2, 5-year retention, and workplace-crime notices. Also returns what the Cal/OSHA report
         must contain, next steps and penalties ($5,000 minimum for a late serious-injury report, recordkeeping
         penalties, CSLB discipline, Labor Code 6425)."""
