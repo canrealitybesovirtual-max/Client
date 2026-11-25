@@ -73,6 +73,9 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
     if not rec and source == "CSLB master file":
         notes.append("Not in CSLB's current master file, which leaves out cancelled, revoked and long-expired "
                      "licenses. Treat as not licensed until confirmed on the CSLB site.")
+    elif not rec and source == "CSLB data loading":
+        notes.append("CSLB license data is still loading on this server (about a minute after a restart). This does "
+                     "NOT mean the contractor is unlicensed: try again shortly or check the number on the CSLB site.")
     elif not rec and source == "CSLB master file (partial copy)":
         notes.append("Not in our copy of CSLB data, which is incomplete (CSLB's download cuts off partway). This does "
                      "NOT mean the contractor is unlicensed: check the number on the CSLB site.")
@@ -332,7 +335,7 @@ def check_subcontractor(license_number: str, required_classification: Optional[s
                         will_have_employees_on_site: bool = True) -> SubComplianceResult:
     lic = verify_license(license_number)
     problems, blocking = [], False
-    partial_miss = not lic.found and lic.data_source == "CSLB master file (partial copy)"
+    partial_miss = not lic.found and lic.data_source in ("CSLB master file (partial copy)", "CSLB data loading")
     if partial_miss:
         problems.append("License not in our partial copy of CSLB data; confirm it on the CSLB site")
     elif not lic.found:

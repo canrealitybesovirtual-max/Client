@@ -159,15 +159,35 @@ SEED_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 
 
 def build_from_seed(db: str | None = None) -> int:
-    """Bundled snapshot (seed/cslb_master_YYYY-MM-DD.csv.gz) so a fresh host has data before any download works."""
+    """Bundled snapshot so a fresh host has real data at once. Prefers a prebuilt database
+    (seed/cslb_YYYY-MM-DD.sqlite.gz: seconds to unpack) over the raw CSV (seed/cslb_master_YYYY-MM-DD.csv.gz)."""
     import glob
     import gzip
+    import shutil
+    dbs = sorted(glob.glob(os.path.join(SEED_DIR, "cslb_*.sqlite.gz")))
+    if dbs:
+        path = db_path(db)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        tmp = path + ".building"
+        with gzip.open(dbs[-1], "rb") as src, open(tmp, "wb") as dst:
+            shutil.copyfileobj(src, dst, 1 << 20)
+        n = int(meta(tmp).get("rows", 0))
+        if n < 1000:
+            os.remove(tmp)
+            raise RuntimeError(f"seed database {os.path.basename(dbs[-1])} has only {n} rows")
+        os.replace(tmp, path)
+        return n
     files = sorted(glob.glob(os.path.join(SEED_DIR, "cslb_master_*.csv.gz")))
     if not files:
         return 0
     snap = os.path.basename(files[-1])[len("cslb_master_"):-len(".csv.gz")]
     with gzip.open(files[-1], "rt", encoding="utf-8", newline="") as f:
         return build(f, db, truncated=True, snapshot_date=snap)
+
+
+def loading() -> bool:
+    """True on a hosted server whose real license data is not ready yet (never fall back to demo records there)."""
+    return os.getenv("CSLB_AUTO_DOWNLOAD") == "1" and not meta()
 
 
 def is_complete(db: str | None = None) -> bool:
@@ -208,12 +228,13 @@ def start_auto_refresh(db: str | None = None, max_age_hours: float = 20):
     """Background thread for hosted servers: build the database on boot if missing/stale, then refresh daily."""
     path = db_path(db)
 
+    if not os.path.exists(path):      # synchronous, so the first request already sees real data
+        try:
+            log.info("CSLB seed snapshot loaded: %s licenses", build_from_seed(path))
+        except Exception:
+            log.exception("CSLB seed load failed")
+
     def loop():
-        if not os.path.exists(path):
-            try:
-                log.info("CSLB seed snapshot loaded: %s licenses", build_from_seed(path))
-            except Exception:
-                log.exception("CSLB seed load failed")
         while True:
             try:
                 age = time.time() - os.path.getmtime(path) if os.path.exists(path) else None

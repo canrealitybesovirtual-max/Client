@@ -126,8 +126,10 @@ def test_mcp_tools_and_resource():
             res = await c.read_resource("tradecomply://disclaimer")
             return names, res
     names, res = asyncio.run(run())
-    assert names == {"verify_contractor_license", "estimate_permit_fees", "lookup_safety_standard",
-                     "calculate_lien_deadline", "check_subcontractor_compliance"}
+    assert {"verify_contractor_license", "estimate_permit_fees", "lookup_safety_standard",
+            "calculate_lien_deadline", "check_subcontractor_compliance", "search_california_rules",
+            "check_payroll", "project_setup_checklist"} <= names
+    assert len(names) >= 30
     assert "UNVERIFIED" in res[0].text
 
 
@@ -253,3 +255,12 @@ def test_seed_snapshot_loads(tmp_path, monkeypatch):
     monkeypatch.setenv("LICENSE_DB", str(db))
     r = logic.verify_license("1067972")
     assert r.found and r.business_name == "BRAVO GROUP CONSTRUCTION CO" and "snapshot 2026-11-24" in r.data_source
+
+
+def test_hosted_never_falls_back_to_demo_records(monkeypatch, tmp_path):
+    monkeypatch.setenv("CSLB_AUTO_DOWNLOAD", "1")
+    monkeypatch.setenv("LICENSE_DB", str(tmp_path / "missing.sqlite"))
+    r = logic.verify_license("123456")                  # a demo fixture number
+    assert not r.found and r.data_source == "CSLB data loading"
+    s = logic.check_subcontractor("123456")
+    assert s.overall_risk == "high"                      # hold and confirm, not "do not use"
