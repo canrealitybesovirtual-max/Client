@@ -1,0 +1,67 @@
+"""Runtime settings (from environment variables) and the per-app platform context shared by every request."""
+import os
+from dataclasses import dataclass, field
+
+from .auth import RateLimiter, Signer, load_secret_key
+from .store import Store, default_data_dir
+
+
+def _flag(name: str) -> bool:
+    return (os.getenv(name) or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+@dataclass
+class Settings:
+    data_dir: str = field(default_factory=default_data_dir)
+    mcp_require_key: bool = False
+    stripe_secret_key: str | None = None
+    stripe_price_id: str | None = None
+    stripe_webhook_secret: str | None = None
+    stripe_api_base: str = "https://api.stripe.com"
+    app_url: str | None = None            # public base URL, e.g. https://tradecomply.onrender.com
+    cookie_secure: bool = False           # force the Secure cookie flag (it is also set automatically over https)
+    local_mode: bool = False              # python -m app.local: one company on a laptop
+    trial_days: int = 14
+    max_body_bytes: int = 8 * 1024 * 1024
+
+    @classmethod
+    def from_env(cls, **overrides) -> "Settings":
+        s = cls(
+            data_dir=default_data_dir(),
+            mcp_require_key=_flag("MCP_REQUIRE_KEY"),
+            stripe_secret_key=os.getenv("STRIPE_SECRET_KEY") or None,
+            stripe_price_id=os.getenv("STRIPE_PRICE_ID") or None,
+            stripe_webhook_secret=os.getenv("STRIPE_WEBHOOK_SECRET") or None,
+            stripe_api_base=os.getenv("STRIPE_API_BASE") or "https://api.stripe.com",
+            app_url=(os.getenv("APP_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/") or None,
+            cookie_secure=_flag("COOKIE_SECURE"),
+            local_mode=_flag("TC_LOCAL"),
+        )
+        for k, v in overrides.items():
+            setattr(s, k, v)
+        return s
+
+    @property
+    def stripe_enabled(self) -> bool:
+        return bool(self.stripe_secret_key and self.stripe_price_id)
+
+
+class Platform:
+    """Everything a request handler needs: settings, the database, the signing key, rate limiters, the MCP server."""
+
+    def __init__(self, settings: Settings, mcp):
+        self.settings = settings
+        self.store = Store(settings.data_dir)
+        self.signer = Signer(load_secret_key(self.store.data_dir))
+        self.mcp = mcp
+        self.login_limiter = RateLimiter(limit=5, window_s=15 * 60)       # failures per IP + email
+        self.email_limiter = RateLimiter(limit=20, window_s=15 * 60)      # failures per email, any IP
+        self.signup_limiter = RateLimiter(limit=10, window_s=60 * 60)     # signups per IP
+        self.signup_global_limiter = RateLimiter(limit=500, window_s=60 * 60)   # all signups (IPs can be spoofed)
+        self.mcp_anon_limiter = RateLimiter(limit=60, window_s=60)        # anonymous /mcp tool calls per IP
+        self.mcp_anon_global_limiter = RateLimiter(limit=300, window_s=60)    # all anonymous calls (IP spoofing)
+        self.mcp_key_limiter = RateLimiter(limit=600, window_s=60)        # /mcp tool calls per API key
+        self.local_login_token: str | None = None                        # one-time link printed by app.local
+        self.local_user_id: int | None = None
+        self.tool_cache: tuple[float, list] | None = None
+        self.anon_audit_writes = 0

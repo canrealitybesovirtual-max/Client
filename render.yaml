@@ -1,0 +1,32 @@
+# Render Blueprint for the hosted TradeComply CA platform (web app + API + MCP at /mcp).
+# The persistent disk keeps the app database, the CSLB license data and the signing key across deploys
+# (disks need a paid instance type and limit the service to one instance, which this app expects).
+services:
+  - type: web
+    name: tradecomply-ca
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    disk:
+      name: tradecomply-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.1"
+      - key: DATA_DIR
+        value: /var/data
+      - key: CSLB_AUTO_DOWNLOAD
+        value: "1"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MCP_REQUIRE_KEY
+        value: "0"            # "1" once customers use their own API keys; "0" keeps the public MCP demo open
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PRICE_ID
+        sync: false           # the $1,000/month recurring price id (price_...)
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false           # from the webhook endpoint https://<host>/api/billing/webhook

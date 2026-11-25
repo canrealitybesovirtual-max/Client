@@ -1,0 +1,1929 @@
+/* TradeComply CA web app. Vanilla JS, no build step, no CDN: works offline (app shell + field logs). */
+(() => {
+  'use strict';
+
+  // ======================================================================== helpers
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const $ = (s, r = document) => r.querySelector(s);
+
+  function icon(name, cls = 'icon') {
+    const s = document.createElementNS(SVGNS, 'svg');
+    s.setAttribute('class', cls);
+    s.setAttribute('aria-hidden', 'true');
+    s.setAttribute('focusable', 'false');
+    const u = document.createElementNS(SVGNS, 'use');
+    u.setAttribute('href', '#i-' + name);
+    s.appendChild(u);
+    return s;
+  }
+
+  function append(el, kids) {
+    for (const k of kids.flat(Infinity)) {
+      if (k === null || k === undefined || k === false) continue;
+      el.appendChild(k instanceof Node ? k : document.createTextNode(String(k)));
+    }
+    return el;
+  }
+
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    let value;
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v === undefined || v === null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k === 'html') el.innerHTML = v;              // only ever used with escaped markdown output
+      else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else if (k === 'value') value = v;
+      else if (k === 'checked') el.checked = !!v;
+      else if (v === true) el.setAttribute(k, '');
+      else el.setAttribute(k, String(v));
+    }
+    append(el, kids);
+    if (value !== undefined) el.value = value;
+    return el;
+  }
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const WORDS = { cal: 'Cal', usd: '($)', cslb: 'CSLB', coi: 'COI', noc: 'NOC', wc: "workers' comp", dir: 'DIR', osha: 'OSHA', ccr: 'CCR',
+    id: 'ID', iipp: 'IIPP', hers: 'HERS', pto: 'PTO', ca: 'CA', url: 'link', w9: 'W-9', ecpr: 'eCPR', ppe: 'PPE', smip: 'SMIP',
+    ft: '(ft)', pct: '(%)', kwh: '(kWh)', naics: 'NAICS', llc: 'LLC', rme: 'RME', rmo: 'RMO', cpr: 'CPR', pwcr: 'PWCR', das: 'DAS',
+    pwc: 'PWC', ui: 'UI', ett: 'ETT', sdi: 'SDI', edd: 'EDD', ein: 'EIN', fein: 'FEIN', gc: 'GC', cba: 'CBA', wvpp: 'WVPP', lc: 'LC', dob: 'date of birth',
+    csv: 'CSV', adu: 'ADU', jadu: 'JADU', calgreen: 'CALGreen', hvac: 'HVAC', sqft: '(sq ft)', ev: 'EV', pv: 'PV', ceqa: 'CEQA', swppp: 'SWPPP',
+    qsd: 'QSD', qsp: 'QSP', ahj: 'AHJ', mep: 'MEP', ada: 'ADA', hoa: 'HOA', ssn: 'SSN', itin: 'ITIN' };
+  function humanize(name) {
+    const words = String(name || '').replace(/(^|_)sq_ft(?=_|$)/g, '$1sqft').replace(/([a-z])([A-Z])/g, '$1 $2').split(/[_\s.]+/).filter(Boolean)
+      .map((w) => WORDS[w.toLowerCase()] || w.toLowerCase().replace(/^([a-z]{2,})(\d)/, '$1 $2'));     // log300 -> log 300
+    const s = words.join(' ').replace('Cal OSHA', 'Cal/OSHA').replace(/^lookup\b/, 'look up').replace(/^\(sq ft\)/, 'square feet').replace(/^\((.*?)\)/, '$1');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  const plural = (n, word, many) => `${n} ${n === 1 ? word : (many || word + 's')}`;
+  // Tool descriptions and hints are written for AI agents too: they name parameters in snake_case, show JSON shapes
+  // and say "ISO date". Rewrite them for people, using the labels the form actually shows.
+  function cleanHint(text, { params = {}, enumValues = [], boolean = false } = {}) {
+    let s = String(text || '');
+    if (!s) return '';
+    s = s.replace(/\s*\[\{[^\]]*\}\]/g, '').replace(/\s*\{[^{}]*\b\w+_\w+\b[^{}]*\}/g, '');       // JSON shapes
+    s = s.replace(/\{'([^']+)':\s*([^}]+)\}/g, '$1: $2').replace(/(^|\s)''(?=\s|$)/g, '$1blank');            // {'a': 1} -> a: 1
+    s = s.replace(/\(ISO [^)]*\)/g, '').replace(/\bISO[- ]date\b/gi, 'Date').replace(/\bISO\b\s*/g, '');
+    s = s.replace(/\(default ([a-z][a-z0-9_]*)\)/gi, (_, p) => `(leave blank to use ${params[p] ? `“${params[p]}”` : humanize(p).toLowerCase()})`);
+    s = s.replace(/\bdefault(?:s to)? ([a-z][a-z0-9]*_[a-z0-9_]+)\b/gi, (_, p) => `defaults to ${params[p] ? `“${params[p]}”` : humanize(p).toLowerCase()}`);
+    s = s.replace(/\b([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\b(=\{[^}]*\})?/g, (m, p) => (params[p] ? `“${params[p]}”` : humanize(p).toLowerCase()));
+    if (boolean) s = s.replace(/^True\b/, 'Yes').replace(/^False\b/, 'No').replace(/\btrue\b/g, 'yes').replace(/\bfalse\b/g, 'no');
+    if (enumValues.length) {
+      // a hint that only lists the choices adds nothing to the select
+      const rest = enumValues.reduce((acc, v) => acc.split(humanize(v).toLowerCase()).join('').split(String(v)).join(''), s.toLowerCase());
+      if (!rest.replace(/[\s,;:/.|]|\bor\b|\band\b/g, '')) return '';
+    }
+    s = s.replace(/\s{2,}/g, ' ').replace(/\s+([.,;:)])/g, '$1').replace(/\(\s*\)/g, '').replace(/(,\s*e\.g\.|[,;:])\s*$/, '').trim();
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  // Notes in tool output end with the rule ids they came from ("... [daily-weekly-overtime-1-5x]"); citations
+  // already list the sources, so drop the ids from what people read.
+  const stripRuleIds = (s) => String(s).replace(/\s*\[[a-z0-9]+(?:[-.][a-z0-9]+){2,}(?:,\s*[a-z0-9]+(?:[-.][a-z0-9]+)+)*\]/g, '');
+  function firstSentence(text) {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    const m = t.match(/^(.{20,}?[.!?])\s+[A-Z(]/);
+    return m && m[1].length < t.length ? m[1] : t;
+  }
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return String(iso);
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return d.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function fmtDateTime(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return isNaN(d) ? String(iso) : d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function daysText(n) {
+    if (n === 0) return 'today';
+    if (n === 1) return 'tomorrow';
+    if (n === -1) return 'yesterday';
+    return n > 0 ? `in ${n} days` : `${-n} days ago`;
+  }
+  const money = (n) => (typeof n === 'number' ? n.toLocaleString('en-US', { style: 'currency', currency: 'USD',
+    minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 }) : n);
+  function todayISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  function cookie(name) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function uuid() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+    const hex = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  let toastTimer;
+  function toast(msg, isError = false) {
+    const t = $('#toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = 'toast'; }, isError ? 6000 : 3500);
+  }
+  async function copyText(text, what = 'Copied') {
+    try { await navigator.clipboard.writeText(text); toast(what); } catch (e) {
+      const ta = h('textarea', { class: 'visually-hidden' }); ta.value = text; document.body.append(ta); ta.select();
+      try { document.execCommand('copy'); toast(what); } catch (e2) { toast('Copy failed. Select the text and copy it.', true); }
+      ta.remove();
+    }
+  }
+  function download(filename, text, type = 'text/plain') {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const a = h('a', { href: url, download: filename });
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  function copyBox(text, label, code = false) {
+    const pre = h('pre', { class: 'mono' + (code ? ' code' : ''), tabindex: code ? '0' : null }, text);
+    return h('div', { class: 'copy-box' }, pre, h('button', { type: 'button', class: 'btn secondary small', 'aria-label': 'Copy ' + (label || ''), onclick: () => copyText(text) }, 'Copy'));
+  }
+  function busy(btn, on, text) {
+    if (!btn) return;
+    if (on) { btn.dataset.label = btn.textContent; btn.disabled = true; btn.textContent = text || 'Working…'; } else { btn.disabled = false; if (btn.dataset.label) btn.textContent = btn.dataset.label; }
+  }
+
+  // ======================================================================== API
+  class ApiError extends Error {
+    constructor(status, message, data) { super(message); this.status = status; this.data = data; }
+  }
+  function errMessage(data, status) {
+    const d = data && data.detail !== undefined ? data.detail : data;
+    if (typeof d === 'string' && d) return d;
+    if (Array.isArray(d)) return d.map((e) => `${humanize((e.loc || []).filter((x) => x !== 'body').join(' ')) || 'Input'}: ${e.msg}`).join('. ');
+    if (d && typeof d === 'object' && d.message) return d.message;
+    return status === 0 ? 'You appear to be offline.' : `Something went wrong (${status}).`;
+  }
+  async function api(path, { method = 'GET', body, form, raw, contentType } = {}) {
+    const opts = { method, headers: {}, credentials: 'same-origin' };
+    if (method !== 'GET') opts.headers['X-CSRF-Token'] = cookie('tc_csrf');
+    if (form) opts.body = form;
+    else if (raw !== undefined) { opts.body = raw; opts.headers['Content-Type'] = contentType || 'text/plain'; }
+    else if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
+    let res;
+    try { res = await fetch(path, opts); } catch (e) { throw new ApiError(0, 'You appear to be offline. Try again when you have signal.'); }
+    const ct = res.headers.get('content-type') || '';
+    const data = ct.includes('json') ? await res.json().catch(() => null) : await res.text();
+    if (!res.ok) {
+      const err = new ApiError(res.status, errMessage(data, res.status), data);
+      if (res.status === 401 && !path.startsWith('/api/auth/') && state.me) { state.me = null; go('login'); }
+      if (res.status === 402 && state.me) { state.me.entitlement = { ...(state.me.entitlement || {}), ok: false, message: err.message }; renderBanner(); }
+      throw err;
+    }
+    return data;
+  }
+
+  // ======================================================================== state + router
+  const state = { me: null, config: null, tools: null, online: navigator.onLine, renderSeq: 0 };
+  const can = {
+    write: () => state.me && ['owner', 'office'].includes(state.me.user.role),
+    owner: () => state.me && state.me.user.role === 'owner',
+  };
+  const entitled = () => !state.me || !state.me.entitlement || state.me.entitlement.ok !== false;
+
+  async function loadMe() {
+    try {
+      const [me, config] = await Promise.all([api('/api/me'), state.config ? state.config : api('/api/config')]);
+      state.me = me; state.config = config;
+    } catch (e) {
+      state.me = null;
+      if (!state.config) { try { state.config = await api('/api/config'); } catch (e2) { /* offline */ } }
+    }
+    $('#company').textContent = state.me ? state.me.tenant.company_name : '';
+    $('#nav').hidden = !state.me;
+    return state.me;
+  }
+
+  function parseHash() {
+    const raw = location.hash.replace(/^#\/?/, '');
+    const [path, qs] = raw.split('?');
+    const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
+    return { name: parts[0] || '', args: parts.slice(1), query: new URLSearchParams(qs || '') };
+  }
+  const go = (path) => { if (location.hash === '#/' + path) render(); else location.hash = '#/' + path; };
+
+  const routes = {};
+  const PUBLIC = new Set(['login', 'signup']);
+  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial' };
+
+  async function render() {
+    const seq = ++state.renderSeq;
+    let { name, args, query } = parseHash();
+    if (!state.me && !PUBLIC.has(name)) await loadMe();
+    if (!state.me && !PUBLIC.has(name)) name = 'login';
+    if (state.me && PUBLIC.has(name)) name = 'dashboard';
+    if (!routes[name]) name = state.me ? 'dashboard' : 'login';
+    document.querySelectorAll('#nav a').forEach((a) => {
+      const r = a.dataset.route;
+      const cur = r === name || (r === 'projects' && name === 'project') || (r === 'documents' && name === 'document');
+      if (cur) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    renderBanner();
+    const main = $('#main');
+    main.replaceChildren(h('p', { class: 'loading' }, 'Loading…'));
+    let view;
+    try { view = await routes[name]({ args, query }); } catch (e) { view = errorCard(e); }
+    if (seq !== state.renderSeq) return;
+    main.replaceChildren(view);
+    document.title = `${TITLES[name] || 'TradeComply'} · TradeComply CA`;
+    main.focus({ preventScroll: true });
+    window.scrollTo(0, 0);
+  }
+
+  function errorCard(e) {
+    if (e && e.status === 402) return subscribeCard(e.message);
+    return h('div', { class: 'card' }, h('h1', {}, 'Something went wrong'), h('p', {}, e && e.message ? e.message : String(e)),
+      h('button', { class: 'btn secondary', type: 'button', onclick: () => render() }, 'Try again'));
+  }
+
+  // ======================================================================== banners + billing
+  async function subscribe(btn) {
+    busy(btn, true, 'Opening checkout…');
+    try { const r = await api('/api/billing/checkout', { method: 'POST' }); location.href = r.url; } catch (e) { toast(e.message, true); busy(btn, false); }
+  }
+  async function billingPortal(btn) {
+    busy(btn, true, 'Opening…');
+    try { const r = await api('/api/billing/portal', { method: 'POST' }); location.href = r.url; } catch (e) { toast(e.message, true); busy(btn, false); }
+  }
+  function subscribeCard(message) {
+    return h('div', { class: 'card' },
+      h('h1', {}, 'Subscribe to keep your compliance checks running'),
+      h('p', {}, message || 'Your free trial has ended.'),
+      h('p', { class: 'muted' }, `TradeComply Core is $${((state.config && state.config.price_usd_month) || 1000).toLocaleString('en-US')}/month: license and sub monitoring, lien calendar, Cal/OSHA programs, payroll checks, field logs and AI-agent access. Your projects, subs and documents stay available.`),
+      can.owner() ? h('button', { class: 'btn', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe now') : h('p', {}, 'Ask your account owner to subscribe.'));
+  }
+  function renderBanner() {
+    const slot = $('#banner');
+    slot.replaceChildren();
+    if (!state.me) return;
+    const ent = state.me.entitlement || {};
+    if (state.me.user.must_change_password) {
+      slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('alert'), h('p', {}, 'You are using a temporary password. Set your own password now.'),
+        h('a', { class: 'btn small secondary', href: '#/settings' }, 'Change password')));
+    }
+    if (ent.ok === false) {
+      slot.append(h('div', { class: 'banner error', role: 'alert' }, icon('stop'), h('p', {}, ent.message || 'Subscription required.'),
+        can.owner() ? h('button', { class: 'btn small', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null));
+    } else if (ent.warning) {
+      slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('alert'), h('p', {}, ent.message),
+        can.owner() ? h('button', { class: 'btn small secondary', type: 'button', onclick: (e) => billingPortal(e.currentTarget) }, 'Update card') : null));
+    } else if (ent.reason === 'trial' && ent.trial_days_left <= 7) {
+      slot.append(h('div', { class: 'banner info', role: 'status' }, h('p', {}, `${ent.message}.`),
+        can.owner() ? h('button', { class: 'btn small secondary', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null));
+    }
+  }
+
+  // ======================================================================== shared UI pieces
+  const RAG_TEXT = { red: 'Act now', amber: 'Coming up', green: 'On track' };
+  const RAG_ICON = { red: 'stop', amber: 'alert', green: 'check' };
+  const ragPill = (rag, text) => h('span', { class: `pill ${rag || 'gray'}` }, rag ? icon(RAG_ICON[rag]) : null, text || RAG_TEXT[rag] || 'Unknown');
+  const RISK_TEXT = { low: 'Low risk', medium: 'Medium risk', high: 'High risk', do_not_use: 'Do not use' };
+
+  function verifiedInfo(r) {
+    if (!r || r.verified !== true) return { ok: false };
+    const dates = [];
+    const walk = (v, depth) => {
+      if (!v || typeof v !== 'object' || depth > 4) return;
+      if (Array.isArray(v)) { v.forEach((x) => walk(x, depth + 1)); return; }
+      for (const [k, x] of Object.entries(v)) {
+        if (k === 'checked_on' && typeof x === 'string' && /^\d{4}-\d{2}-\d{2}/.test(x)) dates.push(x.slice(0, 10));
+        else if (typeof x === 'string') { const m = x.match(/snapshot (\d{4}-\d{2}-\d{2})/); if (m) dates.push(m[1]); } else walk(x, depth + 1);
+      }
+    };
+    walk(r, 0);
+    dates.sort();
+    return { ok: true, date: dates[0] };
+  }
+  function verifiedBadge(r) {
+    const v = verifiedInfo(r);
+    if (v.ok) return h('span', { class: 'verify yes' }, icon('check'), v.date ? `Verified against official source on ${fmtDate(v.date)}` : 'Verified against official source');
+    return h('span', { class: 'verify no' }, icon('alert'), 'Not yet verified');
+  }
+  function citationList(cites) {
+    if (!cites || !cites.length) return null;
+    return h('ul', { class: 'citations bullets' }, cites.map((c) => {
+      if (typeof c === 'string') return h('li', {}, c);
+      const src = c.source && /^https?:\/\//.test(c.source) ? h('a', { href: c.source, target: '_blank', rel: 'noopener noreferrer' }, c.citation || c.rule_id || c.source) : (c.citation || c.rule_id || '');
+      const ok = ['confirmed', 'corrected'].includes(c.status);
+      return h('li', {}, src, c.source && !/^https?:/.test(c.source) ? ` (${c.source})` : '', ' ',
+        c.status ? h('span', { class: `pill ${ok ? 'green' : 'amber'}` }, ok ? 'verified' : 'unverified') : null,
+        c.checked_on ? h('span', { class: 'muted small' }, ` checked ${fmtDate(c.checked_on)}`) : null);
+    }));
+  }
+  const disclaimerBox = (text) => text ? h('p', { class: 'disclaimer' }, text) : null;
+
+  function field(label, input, { hint, required, wide } = {}) {
+    const id = input.id || ('f' + Math.random().toString(36).slice(2, 9));
+    input.id = id;
+    if (required) input.required = true;
+    let hintEl = null;
+    if (hint) { hintEl = h('span', { class: 'hint', id: id + '-h' }, hint); input.setAttribute('aria-describedby', id + '-h'); }
+    return h('div', { class: 'field' + (wide ? ' wide' : '') }, h('label', { for: id }, label, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null), input, hintEl);
+  }
+  const input = (name, attrs = {}) => h('input', { name, type: 'text', ...attrs });
+  function select(name, options, value, attrs = {}) {
+    return h('select', { name, ...attrs, value: value ?? '' }, options.map(([v, label]) => h('option', { value: v }, label)));
+  }
+  function formData(form) {
+    const out = {};
+    for (const el of form.elements) {
+      if (!el.name) continue;
+      if (el.type === 'checkbox') out[el.name] = el.checked;
+      else if (el.type === 'number') out[el.name] = el.value === '' ? null : Number(el.value);
+      else out[el.name] = el.value.trim() === '' ? null : el.value.trim();
+    }
+    return out;
+  }
+  function openDialog(title, content) {
+    const dlg = h('dialog', { 'aria-labelledby': 'dlg-title' });
+    const close = () => { dlg.close(); dlg.remove(); };
+    dlg.append(h('div', { class: 'dialog-body' }, h('div', { class: 'card-head' }, h('h2', { id: 'dlg-title' }, title),
+      h('button', { type: 'button', class: 'btn ghost small', onclick: close, 'aria-label': 'Close' }, 'Close')), content));
+    dlg.addEventListener('cancel', () => setTimeout(() => dlg.remove(), 0));
+    document.body.append(dlg);
+    dlg.showModal();
+    return { close, el: dlg };
+  }
+  function table(columns, rows, { cards = true } = {}) {
+    return h('div', { class: 'table-wrap' }, h('table', { class: 'data' + (cards ? ' cards' : '') },
+      h('thead', {}, h('tr', {}, columns.map((c) => h('th', { scope: 'col' }, c.label)))),
+      h('tbody', {}, rows.map((r) => h('tr', {}, columns.map((c) => h('td', { 'data-label': c.bare ? null : c.label, class: c.bare ? 'cell-main' : null }, c.render ? c.render(r) : (r[c.key] ?? '—'))))))));
+  }
+
+  // ======================================================================== markdown (escaped first, then a small safe subset)
+  function inlineMd(s) {
+    // Code spans and links are swapped for opaque placeholders as soon as they are built, so no later rule
+    // (autolinks, emphasis) can ever run inside generated markup: earlier, "[a](https://b(https://x/onfocus=...)"
+    // nested a second <a> inside the first href and smuggled attributes into the tag.
+    const slots = [];
+    const keep = (html) => '\u0000' + (slots.push(html) - 1) + '\u0000';
+    const link = (href, text) => keep(`<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`);
+    s = esc(String(s ?? '').replace(/\u0000/g, ''));
+    s = s.replace(/`([^`]+)`/g, (_, c) => keep(`<code>${c}</code>`));
+    s = s.replace(/\[([^\]\u0000]+)\]\(((?:https?:\/\/|mailto:)[^\s()\u0000]+)\)/g, (_, text, href) => link(href, text));
+    s = s.replace(/(^|[\s(])(https?:\/\/[^\s()<\u0000]+?)([.,;:!?]*)(?=[\s()<\u0000]|$)/g, (_, pre, href, tail) => pre + link(href, href) + tail);
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s).,;:!?]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/(^|[\s(])_([^_\s][^_]*?)_(?=[\s).,;:!?]|$)/g, '$1<em>$2</em>');
+    s = s.replace(/\[ \]/g, '☐').replace(/\[x\]/gi, '☑');
+    return s.replace(/\u0000(\d+)\u0000/g, (_, i) => slots[+i]);
+  }
+  function splitRow(line) {
+    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'));
+  }
+  function md(src) {
+    const lines = String(src || '').replace(/\r\n?/g, '\n').split('\n');
+    const out = [];
+    let i = 0;
+    const isBlock = (l) => /^(#{1,6}\s|```|>|\s*([-*+]|\d+[.)])\s+|\s*\|.*\|\s*$|(-{3,}|\*{3,}|_{3,})\s*$)/.test(l);
+    while (i < lines.length) {
+      const line = lines[i];
+      if (!line.trim()) { i++; continue; }
+      let m;
+      if ((m = line.match(/^(#{1,6})\s+(.*)$/))) { out.push(`<h${m[1].length}>${inlineMd(m[2])}</h${m[1].length}>`); i++; continue; }
+      if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+      if (/^```/.test(line)) {
+        const buf = []; i++;
+        while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+        i++; out.push(`<pre><code>${esc(buf.join('\n'))}</code></pre>`); continue;
+      }
+      if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
+        const head = splitRow(line); i += 2;
+        const body = [];
+        while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) body.push(splitRow(lines[i++]));
+        out.push('<table><thead><tr>' + head.map((c) => `<th>${inlineMd(c)}</th>`).join('') + '</tr></thead><tbody>' +
+          body.map((r) => '<tr>' + r.map((c) => `<td>${inlineMd(c)}</td>`).join('') + '</tr>').join('') + '</tbody></table>');
+        continue;
+      }
+      if (/^>\s?/.test(line)) {
+        const buf = [];
+        while (i < lines.length && /^>\s?/.test(lines[i])) buf.push(lines[i++].replace(/^>\s?/, ''));
+        out.push(`<blockquote>${md(buf.join('\n'))}</blockquote>`); continue;
+      }
+      if (/^\s*([-*+]|\d+[.)])\s+/.test(line)) {
+        const ordered = /^\s*\d+[.)]\s+/.test(line);
+        const items = [];
+        while (i < lines.length && /^\s*([-*+]|\d+[.)])\s+/.test(lines[i])) {
+          let item = lines[i++].replace(/^\s*([-*+]|\d+[.)])\s+/, '');
+          while (i < lines.length && /^\s{2,}\S/.test(lines[i]) && !/^\s*([-*+]|\d+[.)])\s+/.test(lines[i])) item += ' ' + lines[i++].trim();
+          items.push(`<li>${inlineMd(item)}</li>`);
+        }
+        out.push(`<${ordered ? 'ol' : 'ul'}>${items.join('')}</${ordered ? 'ol' : 'ul'}>`); continue;
+      }
+      const buf = [];
+      while (i < lines.length && lines[i].trim() && !(buf.length && isBlock(lines[i]))) buf.push(lines[i++]);
+      out.push(`<p>${buf.map((l) => inlineMd(l.trim())).join('<br>')}</p>`);
+    }
+    return out.join('\n');
+  }
+
+  // ======================================================================== tools: discovery + schema forms
+  async function getTools(refresh = false) {
+    if (!state.tools || refresh) state.tools = await api('/api/tools');
+    return state.tools;
+  }
+  let fieldSeq = 0;
+  const omit = (o, ...keys) => Object.fromEntries(Object.entries(o).filter(([k]) => !keys.includes(k)));
+  const defined = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+  function resolveRef(s, root) {
+    let guard = 0;
+    while (s && s.$ref && guard++ < 20) {
+      const name = s.$ref.replace(/^#\/(\$defs|definitions)\//, '');
+      const target = (root.$defs || {})[name] || (root.definitions || {})[name] || {};
+      s = { ...target, ...omit(s, '$ref') };
+    }
+    return s || {};
+  }
+  function norm(schema, root) {
+    let s = resolveRef(schema, root);
+    if (s.allOf && s.allOf.length === 1) s = { ...resolveRef(s.allOf[0], root), ...omit(s, 'allOf') };
+    const alts = s.anyOf || s.oneOf;
+    if (alts) {
+      const opts = alts.map((a) => resolveRef(a, root));
+      const nonNull = opts.filter((a) => a.type !== 'null');
+      const meta = defined({ title: s.title, description: s.description, default: s.default });
+      let base;
+      if (nonNull.length && nonNull.every((a) => a.const !== undefined || a.enum)) base = { type: 'string', enum: nonNull.flatMap((a) => a.enum || [a.const]) };
+      else if (nonNull.length > 1) {
+        // e.g. "a list of rows, or CSV text": let the user pick how to enter it
+        const csvText = /\bCSV\b/.test(s.description || '');
+        return { ...meta, nullable: nonNull.length < opts.length,
+          alternatives: nonNull.map((a) => (a.type === 'string' && csvText ? { ...a, 'x-csv': true } : a)) };
+      } else base = nonNull[0] || { type: 'string' };
+      return { ...base, ...meta, nullable: nonNull.length < opts.length };
+    }
+    if (Array.isArray(s.type)) { const t = s.type.filter((x) => x !== 'null'); return { ...s, type: t[0] || 'string', nullable: t.length < s.type.length }; }
+    if (s.const !== undefined && !s.enum) return { ...s, enum: [s.const] };
+    return s;
+  }
+  const SIMPLE = ['number', 'integer', 'string', 'boolean'];
+  function kindOf(name, s, root) {
+    if (s.enum) return 'enum';
+    if (s.alternatives) return 'choice';
+    const t = s.type || (s.properties ? 'object' : 'string');
+    if (t === 'boolean') return s.default === undefined || s.default === null ? 'tristate' : 'bool';
+    if (t === 'integer' || t === 'number') return 'number';
+    if (t === 'array') {
+      const it = norm(s.items || {}, root);
+      if (it.enum) return 'multienum';
+      if (it.type === 'object' || it.properties) return it.properties ? 'rows' : 'json';
+      return 'list';
+    }
+    if (t === 'object') {
+      if (s.properties) return 'object';
+      const ap = s.additionalProperties && typeof s.additionalProperties === 'object' ? norm(s.additionalProperties, root) : null;
+      return ap && SIMPLE.includes(ap.type) ? 'map' : 'json';
+    }
+    if (s['x-csv']) return 'csv';
+    const desc = s.description || '';
+    if (s.format === 'time' || (/(^|_)(start|end|time|clock_in|clock_out|time_in|time_out)$/.test(name) && /\b\d{1,2}:\d{2}\b|\bclock\b/i.test(desc))) return 'time';
+    if (s.format === 'date' || /(^|_)(date|expiry|expiration|deadline|dob)$/.test(name) || /\bISO date\b/i.test(desc)) return 'date';
+    if (s.format === 'date-time') return 'datetime';
+    if (/csv/i.test(name) || /\bCSV\b/.test(desc)) return 'csv';
+    if ((s.maxLength || 0) > 300 || /(notes|text|markdown|description|body|details|comments|narrative)$/.test(name)) return 'textarea';
+    return 'text';
+  }
+  function enumLabel(v) {
+    const roles = (state.config && state.config.claimant_roles) || {};
+    if (roles[v]) return roles[v];
+    return typeof v === 'string' ? humanize(v) : String(v);
+  }
+  function labelFor(name, s, kind) {
+    const auto = String(name).split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    if (s.title && s.title !== auto) return s.title;
+    if ((kind === 'bool' || kind === 'tristate') && /^is_/.test(name)) return humanize(name.slice(3)) + '?';
+    return humanize(name);
+  }
+  // parameter name -> the label people see, for every property in the schema (top level and nested), so hints
+  // like "must match a key in hourly_rates" can say "Hourly rates" instead
+  const paramLabelCache = new WeakMap();
+  function paramLabels(root) {
+    if (paramLabelCache.has(root)) return paramLabelCache.get(root);
+    const out = {};
+    const visit = (s, depth) => {
+      if (!s || typeof s !== 'object' || depth > 6) return;
+      for (const [k, v] of Object.entries(s.properties || {})) { if (!out[k]) out[k] = humanize(k); visit(v, depth + 1); }
+      for (const key of ['items', 'additionalProperties']) if (s[key] && typeof s[key] === 'object') visit(s[key], depth + 1);
+      for (const key of ['anyOf', 'oneOf', 'allOf']) (s[key] || []).forEach((x) => visit(x, depth + 1));
+    };
+    visit(root, 0);
+    Object.values(root.$defs || root.definitions || {}).forEach((d) => visit(d, 1));
+    paramLabelCache.set(root, out);
+    return out;
+  }
+  const ADVANCED = /^(as_of|today|evaluation_date)$/;
+
+  function buildField(name, schema, root, required, prefix = '') {
+    const s = norm(schema, root);
+    const kind = kindOf(name, s, root);
+    const id = `tf-${++fieldSeq}`;
+    const label = labelFor(name, s, kind);
+    const enumValues = s.enum || (kind === 'multienum' ? (norm(s.items, root).enum || []) : []);
+    let desc = cleanHint(s.description, { params: paramLabels(root), enumValues, boolean: kind === 'bool' || kind === 'tristate' });
+    if (ADVANCED.test(name) && kind === 'date') desc = 'Leave blank to check as of today (California time).';
+    // A field that takes "rows or CSV" describes both formats at length; the radio buttons already explain the
+    // choice, so the format details go in a disclosure.
+    let formatDetails = null;
+    if (kind === 'choice' && desc.length > 140) { formatDetails = desc; desc = 'Enter the rows below, or paste CSV text.'; }
+    const hintText = [desc, kind === 'list' ? 'One per line.' : '', kind === 'csv' ? 'Paste CSV text or load a .csv file.' : ''].filter(Boolean).join(' ');
+    const hint = hintText ? h(formatDetails ? 'div' : 'span', { class: 'hint', id: id + '-h' }, hintText,
+      formatDetails ? h('details', { class: 'format-details' }, h('summary', {}, 'Format details'), formatDetails) : null) : null;
+    const err = h('span', { class: 'error-text', id: id + '-e' });
+    const described = [hint ? id + '-h' : '', id + '-e'].filter(Boolean).join(' ');
+    const lbl = () => h('label', { for: id }, label, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null);
+    const def = s.default !== undefined && s.default !== null ? s.default : undefined;
+    let el, get, isEmpty, wide = false;
+    const fail = (msg, target) => { err.textContent = msg; if (target) target.setAttribute('aria-invalid', 'true'); return msg; };
+    const ok = (target) => { err.textContent = ''; if (target) target.removeAttribute('aria-invalid'); return ''; };
+
+    const star = () => (required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null);
+    if (kind === 'choice') {
+      const altLabel = (a) => (a['x-csv'] ? 'Paste CSV' : a.type === 'array' ? 'Enter rows' : a.type === 'object' ? 'Fill in fields'
+        : a.type === 'string' ? 'Type text' : humanize(a.type || 'value'));
+      const subs = s.alternatives.map((a) => buildField(name, { ...a, title: altLabel(a), description: undefined }, root, required, prefix));
+      let active = Math.max(0, s.alternatives.findIndex((a) => a['x-csv']));
+      const show = () => subs.forEach((f, k) => { f.el.hidden = k !== active; });
+      const radios = s.alternatives.map((a, k) => h('label', {}, h('input', { type: 'radio', name: 'alt-' + id, value: String(k), checked: k === active,
+        onchange: () => { active = k; show(); } }), altLabel(a)));
+      el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, star()), hint,
+        h('div', { class: 'checks', role: 'radiogroup', 'aria-label': `How to enter ${label}` }, radios), subs.map((f) => f.el), err);
+      show();
+      wide = true;
+      get = () => subs[active].get();
+      isEmpty = () => subs[active].isEmpty();
+    } else if (kind === 'tristate') {
+      const cur = def === true ? 'true' : def === false ? 'false' : '';
+      const sel = select(name, [['', required ? 'Choose…' : 'Not answered'], ['true', 'Yes'], ['false', 'No']], cur, { id, 'aria-describedby': described });
+      el = h('div', { class: 'field' }, lbl(), sel, hint, err);
+      get = () => {
+        if (sel.value === '') return { value: undefined, error: required ? fail('Choose Yes or No', sel) : ok(sel) };
+        ok(sel); return { value: sel.value === 'true', error: '' };
+      };
+      isEmpty = () => sel.value === '';
+    } else if (kind === 'map') {
+      const vs = norm(s.additionalProperties, root);
+      const isNum = vs.type === 'number' || vs.type === 'integer';
+      const rows = [];
+      const list = h('div', {});
+      const addRow = (k = '', v = '') => {
+        const keyIn = h('input', { type: 'text', 'aria-label': `${label}: name`, placeholder: 'Name', value: k, autocomplete: 'off' });
+        const valIn = vs.type === 'boolean' ? h('input', { type: 'checkbox', 'aria-label': `${label}: yes or no`, checked: v === 'true' })
+          : h('input', { type: isNum ? 'number' : 'text', step: isNum ? 'any' : undefined, inputmode: isNum ? 'decimal' : undefined,
+            'aria-label': `${label}: value`, placeholder: isNum ? '0' : 'Value', value: v });
+        const row = h('div', { class: 'row map-row' }, keyIn, valIn);
+        const entry = { keyIn, valIn, row };
+        row.append(h('button', { type: 'button', class: 'btn ghost small', onclick: () => { rows.splice(rows.indexOf(entry), 1); row.remove(); } }, 'Remove'));
+        rows.push(entry); list.append(row);
+        return entry;
+      };
+      if (def && typeof def === 'object') Object.entries(def).forEach(([k, v]) => addRow(k, String(v))); else addRow();
+      el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, star()), hint, list,
+        h('button', { type: 'button', class: 'btn secondary small', onclick: () => addRow().keyIn.focus() }, '+ Add'), err);
+      wide = true;
+      const rawOf = (r) => (vs.type === 'boolean' ? r.valIn.checked : r.valIn.value.trim());
+      get = () => {
+        const out = {};
+        for (const r of rows) {
+          const k = r.keyIn.value.trim();
+          const raw = rawOf(r);
+          if (!k && (raw === '' || raw === false)) continue;
+          if (!k) return { value: undefined, error: fail('Each value needs a name') };
+          if (isNum) {
+            const n = Number(raw);
+            if (raw === '' || !isFinite(n)) return { value: undefined, error: fail(`Enter a number for ${k}`) };
+            out[k] = n;
+          } else out[k] = raw;
+        }
+        if (!Object.keys(out).length) return { value: undefined, error: required ? fail('Add at least one') : ok() };
+        ok(); return { value: out, error: '' };
+      };
+      isEmpty = () => rows.every((r) => !r.keyIn.value.trim() && (rawOf(r) === '' || rawOf(r) === false));
+    } else if (kind === 'bool') {
+      const cb = h('input', { type: 'checkbox', id, role: 'switch', checked: def === true, 'aria-describedby': described });
+      el = h('div', { class: 'field' }, h('label', { class: 'switch', for: id }, cb, h('span', {}, label)), hint, err);
+      get = () => ({ value: cb.checked, error: '' });
+      isEmpty = () => cb.checked === (def === true);
+    } else if (kind === 'enum') {
+      const opts = (required && def !== undefined ? [] : [['', required ? 'Choose…' : '— Not set —']]).concat(s.enum.map((v) => [String(v), enumLabel(v)]));
+      const sel = select(name, opts, def !== undefined ? String(def) : '', { id, 'aria-describedby': described });
+      el = h('div', { class: 'field' }, lbl(), sel, hint, err);
+      get = () => {
+        if (sel.value === '') return { value: undefined, error: required ? fail('Choose an option', sel) : ok(sel) };
+        ok(sel);
+        const orig = s.enum.find((v) => String(v) === sel.value);
+        return { value: orig !== undefined ? orig : sel.value, error: '' };
+      };
+      isEmpty = () => sel.value === '' || (def !== undefined && sel.value === String(def));
+    } else if (kind === 'multienum') {
+      const items = norm(s.items, root);
+      const boxes = items.enum.map((v) => h('input', { type: 'checkbox', value: String(v), checked: Array.isArray(def) && def.includes(v) }));
+      el = h('fieldset', { class: 'field wide', 'aria-describedby': described }, h('legend', {}, label), h('div', { class: 'checks' }, boxes.map((b, k) => h('label', {}, b, enumLabel(items.enum[k])))), hint, err);
+      wide = true;
+      get = () => {
+        const vals = boxes.filter((b) => b.checked).map((b) => items.enum.find((v) => String(v) === b.value));
+        if (!vals.length) return { value: undefined, error: required ? fail('Pick at least one') : ok() };
+        ok(); return { value: vals, error: '' };
+      };
+      isEmpty = () => !boxes.some((b) => b.checked);
+    } else if (kind === 'number') {
+      const inp = h('input', { type: 'number', id, inputmode: s.type === 'integer' ? 'numeric' : 'decimal', step: s.type === 'integer' ? '1' : 'any',
+        min: s.minimum ?? (s.exclusiveMinimum !== undefined ? s.exclusiveMinimum : undefined), max: s.maximum, value: def !== undefined ? String(def) : '', 'aria-describedby': described });
+      el = h('div', { class: 'field' }, lbl(), inp, hint, err);
+      get = () => {
+        if (inp.value === '') return { value: undefined, error: required ? fail('Required', inp) : ok(inp) };
+        const n = Number(inp.value);
+        if (!isFinite(n) || (s.type === 'integer' && !Number.isInteger(n))) return { value: undefined, error: fail(s.type === 'integer' ? 'Enter a whole number' : 'Enter a number', inp) };
+        if (s.exclusiveMinimum !== undefined && n <= s.exclusiveMinimum) return { value: undefined, error: fail(`Must be more than ${s.exclusiveMinimum}`, inp) };
+        if (s.minimum !== undefined && n < s.minimum) return { value: undefined, error: fail(`Must be at least ${s.minimum}`, inp) };
+        if (s.maximum !== undefined && n > s.maximum) return { value: undefined, error: fail(`Must be at most ${s.maximum}`, inp) };
+        ok(inp); return { value: n, error: '' };
+      };
+      isEmpty = () => inp.value === '' || (def !== undefined && inp.value === String(def));
+    } else if (kind === 'rows' || kind === 'object') {
+      const objSchema = kind === 'rows' ? norm(s.items, root) : s;
+      const props = objSchema.properties || {};
+      const req = new Set(objSchema.required || []);
+      const makeGroup = () => Object.entries(props).map(([n, ps]) => ({ name: n, ...buildField(n, ps, root, req.has(n), prefix + name + '.') }));
+      const blank = (group) => group.every((f) => f.isEmpty());
+      const collect = (group) => {
+        const out = {}; let error = '';
+        for (const f of group) {
+          const r = f.get();
+          if (r.error) error = error || r.error;
+          if (r.value !== undefined && r.value !== '') out[f.name] = r.value;
+        }
+        return { value: Object.keys(out).length ? out : undefined, error };
+      };
+      wide = true;
+      if (kind === 'object') {
+        const group = makeGroup();
+        el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null), hint, h('div', { class: 'form-grid' }, group.map((f) => f.el)), err);
+        get = () => {
+          if (blank(group)) return { value: undefined, error: required ? fail('Fill in this section') : ok() };
+          ok(); return collect(group);
+        };
+        isEmpty = () => blank(group);
+      } else {
+        const rows = [];
+        const list = h('div', {});
+        const addRow = () => {
+          const group = makeGroup();
+          const rowEl = h('div', { class: 'repeat-row' });
+          const remove = h('button', { type: 'button', class: 'btn ghost small', onclick: () => { rows.splice(rows.indexOf(entry), 1); rowEl.remove(); renumber(); } }, 'Remove');
+          const title = h('span', {});
+          rowEl.append(h('div', { class: 'repeat-row-head' }, title, remove), h('div', { class: 'form-grid' }, group.map((f) => f.el)));
+          const entry = { group, rowEl, title };
+          rows.push(entry); list.append(rowEl); renumber();
+          return entry;
+        };
+        const singular = humanize(name).replace(/s$/, '');
+        const renumber = () => rows.forEach((r, k) => { r.title.textContent = `${singular} ${k + 1}`; });
+        const addBtn = h('button', { type: 'button', class: 'btn secondary small', onclick: () => { const r = addRow(); const first = r.rowEl.querySelector('input,select,textarea'); if (first) first.focus(); } }, `+ Add ${singular.toLowerCase()}`);
+        el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null), hint, list, addBtn, err);
+        addRow();
+        get = () => {
+          const values = []; let error = '';
+          for (const r of rows) {
+            if (blank(r.group)) continue;
+            const res = collect(r.group);
+            if (res.error) error = error || res.error;
+            if (res.value) values.push(res.value);
+          }
+          if (!values.length) return { value: undefined, error: error || (required ? fail('Add at least one row') : ok()) };
+          ok(); return { value: values, error };
+        };
+        isEmpty = () => rows.every((r) => blank(r.group));
+      }
+    } else if (kind === 'json') {
+      const ta = h('textarea', { id, class: 'mono', rows: '5', placeholder: kind === 'json' && s.type === 'array' ? '[ ]' : '{ }', 'aria-describedby': described });
+      if (def !== undefined) ta.value = JSON.stringify(def, null, 2);
+      el = h('div', { class: 'field wide' }, lbl(), ta, h('span', { class: 'hint' }, 'JSON format.'), hint, err);
+      wide = true;
+      get = () => {
+        if (!ta.value.trim()) return { value: undefined, error: required ? fail('Required', ta) : ok(ta) };
+        try { const v = JSON.parse(ta.value); ok(ta); return { value: v, error: '' }; } catch (e) { return { value: undefined, error: fail('Not valid JSON', ta) }; }
+      };
+      isEmpty = () => !ta.value.trim();
+    } else {
+      let inp;
+      if (kind === 'textarea' || kind === 'csv' || kind === 'list') {
+        inp = h('textarea', { id, rows: kind === 'csv' ? '8' : '4', class: kind === 'csv' ? 'mono' : '', 'aria-describedby': described, spellcheck: kind === 'csv' ? 'false' : undefined });
+        wide = true;
+      } else {
+        inp = h('input', { id, type: { date: 'date', datetime: 'datetime-local', time: 'time' }[kind] || 'text', 'aria-describedby': described,
+          maxlength: s.maxLength, autocomplete: 'off' });
+      }
+      if (def !== undefined) inp.value = Array.isArray(def) ? def.join('\n') : String(def);
+      else if (!prefix && /^(company_name|employer_name|legal_company_name|business_name_on_documents)$/.test(name) && state.me) inp.value = state.me.tenant.company_name || '';
+      const extras = [];
+      if (kind === 'csv') {
+        const file = h('input', { type: 'file', accept: '.csv,text/csv,text/plain', class: 'visually-hidden', id: id + '-file' });
+        file.addEventListener('change', async () => { if (file.files[0]) { inp.value = await file.files[0].text(); toast(`Loaded ${file.files[0].name}`); } });
+        extras.push(file, h('label', { for: id + '-file', class: 'btn secondary small' }, 'Load CSV file…'));
+      }
+      el = h('div', { class: 'field' + (wide ? ' wide' : '') }, lbl(), inp, hint, extras.length ? h('div', { class: 'row' }, extras) : null, err);
+      get = () => {
+        const raw = inp.value;
+        if (!raw.trim()) return { value: undefined, error: required ? fail('Required', inp) : ok(inp) };
+        if (kind === 'list') {
+          const it = norm(s.items || {}, root);
+          const vals = raw.split(/\n/).map((x) => x.trim()).filter(Boolean).map((x) => (it.type === 'number' || it.type === 'integer' ? Number(x) : x));
+          ok(inp); return { value: vals, error: '' };
+        }
+        if (s.minLength && raw.trim().length < s.minLength) return { value: undefined, error: fail(`At least ${s.minLength} characters`, inp) };
+        if (s.pattern && kind === 'text') { try { if (!new RegExp(s.pattern).test(raw.trim())) return { value: undefined, error: fail('Check the format', inp) }; } catch (e) { /* ignore bad pattern */ } }
+        ok(inp); return { value: kind === 'csv' || kind === 'textarea' ? raw : raw.trim(), error: '' };
+      };
+      isEmpty = () => !inp.value.trim();
+    }
+    // setter for simple fields (used by "Fill in from a project")
+    const primary = el.querySelector(`#${id}`);
+    const set = primary && ['INPUT', 'SELECT', 'TEXTAREA'].includes(primary.tagName) ? (v) => {
+      if (primary.type === 'checkbox') primary.checked = !!v;
+      else if (primary.tagName === 'SELECT') { const o = [...primary.options].find((x) => x.value === String(v)); if (!o) return false; primary.value = o.value; } else primary.value = String(v);
+      primary.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    } : null;
+    return { el, get: () => get(), isEmpty, kind, wide, set };
+  }
+
+  function buildSchemaForm(spec) {
+    const root = spec.input_schema || {};
+    const props = root.properties || {};
+    const req = new Set(root.required || []);
+    const fields = Object.entries(props).map(([n, s]) => ({ name: n, ...buildField(n, s, root, req.has(n)) }));
+    const place = (f) => { if (f.wide) f.el.classList.add('wide'); return f.el; };
+    // "as of" dates (check against another day than today) are rarely needed: keep them out of the way
+    const advanced = fields.filter((f) => ADVANCED.test(f.name) && !req.has(f.name));
+    const grid = h('div', {}, h('div', { class: 'form-grid' }, fields.filter((f) => !advanced.includes(f)).map(place)),
+      advanced.length ? h('details', { class: 'advanced' }, h('summary', {}, 'Check as of a different date'), h('div', { class: 'form-grid' }, advanced.map(place))) : null);
+    return {
+      el: grid,
+      fields,
+      values() {
+        const out = {}; const errors = [];
+        for (const f of fields) {
+          const r = f.get();
+          if (r.error) errors.push(`${labelFor(f.name, norm(props[f.name], root), f.kind)}: ${r.error}`);
+          else if (r.value !== undefined) out[f.name] = r.value;
+        }
+        return { values: out, errors };
+      },
+    };
+  }
+
+  // ======================================================================== tool results
+  const MD_KEY = /markdown|(^|_)md$|^document$|^body$|_document$|^draft$|_text$|^letter$|^notice$/;
+  const SKIP_KEYS = new Set(['verified', 'citations', 'disclaimer']);
+  const HIDE_KEY = /^(rule_ids?|citation_ids|unverified_rule_ids|internal_\w+)$/;    // ids for machines; people get "Sources"
+  const hiddenKey = (k, v) => HIDE_KEY.test(k) || (k === 'unverified' && Array.isArray(v));   // lists of unverified rule keys
+  const HEADLINE_KEYS = new Set(['overall_risk', 'recommended_action', 'risk_level', 'rag']);     // shown as chips at the top
+  const NOT_MONEY = /(hours|days|count|pct|percent|periods?|weeks|months|years|(^|_)ft$|stories|employees|workers|ratio|multiplier|number|kwh|sq_ft|square|rate_per|(^|_)rate$|score|(^|_)mod$|minutes|age)/;
+  const MONEY = /(usd|amount|price|fee|cost|wage|penalt|premium|total|owed|shortfall|gross|bond|payment|deposit|retention|subsidy|valuation)/;
+  const MONEY_PARENT = /(_usd$|fees|line_items|costs|penalt|amounts|wages|premiums|exposure)/;
+  const isMoney = (key, ctx) => /(^|_)usd($|_)/.test(key) || ((MONEY.test(key) || ctx) && !NOT_MONEY.test(key));
+  let proseParams = {};      // parameter (and result field) labels of the tool whose result is being drawn
+  function resultKeyLabels(r) {
+    const out = {};
+    const walk = (o, depth) => {
+      if (!o || typeof o !== 'object' || depth > 3) return;
+      if (Array.isArray(o)) { o.slice(0, 3).forEach((x) => walk(x, depth + 1)); return; }
+      for (const [k, v] of Object.entries(o)) { if (k.includes('_')) out[k] = humanize(k); walk(v, depth + 1); }
+    };
+    walk(r, 0);
+    return out;
+  }
+  function prose(text) {
+    // Notes name the tool's own parameters ("pass local_minimum_wage_usd") and end with rule ids: say it in the
+    // form's words, keep links clickable (inlineMd escapes everything first).
+    const t = stripRuleIds(text).replace(/\b([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\b(=\{[^}]*\})?/g, (m, p) => (proseParams[p] ? `“${proseParams[p]}”` : m));
+    return h('span', { html: inlineMd(t) });
+  }
+  function linkText(url) {
+    try { return 'Open ' + new URL(url).hostname.replace(/^www\./, '') + ' ↗'; } catch (e) { return url; }
+  }
+  function statusRag(v) {
+    const s = String(v).toLowerCase();
+    if (/suspend|expired|revoked|inactive|cancel|not_found|denied|fail|overdue|violation|invalid|unregistered|not_registered|unlicensed|do_not_use|lapsed|late/.test(s)) return 'red';
+    if (/pending|warning|due_soon|review|unknown|partial|incomplete|at_risk/.test(s)) return 'amber';
+    if (/^(active|ok|clear|compliant|valid|current|registered|passed|on_time|paid|good)$/.test(s)) return 'green';
+    return null;
+  }
+  function markdownFields(r, prefix = '') {
+    const out = [];
+    for (const [k, v] of Object.entries(r || {})) {
+      if (typeof v === 'string' && MD_KEY.test(k) && (v.includes('\n') || v.startsWith('#'))) out.push({ key: prefix + k, label: humanize(k), value: v });
+      else if (v && typeof v === 'object' && !Array.isArray(v) && !prefix) out.push(...markdownFields(v, k + '.'));
+    }
+    return out;
+  }
+  function fmtValue(key, v, ctx = false) {
+    if (v === null || v === undefined || v === '') return '—';
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    if (typeof v === 'number') return isMoney(key, ctx) ? money(v) : v.toLocaleString('en-US');
+    if (typeof v === 'string') {
+      if (/^https?:\/\/\S+$/.test(v)) return h('a', { href: v, target: '_blank', rel: 'noopener noreferrer', title: v }, linkText(v));
+      if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return fmtDate(v);
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return fmtDateTime(v);
+      if (/^[a-z]+(_[a-z0-9]+)*$/.test(v) && v.length <= 40) return enumLabel(v);        // enum values like "new_single_family"
+      if (/^CSLB master file \(snapshot \d{4}-\d{2}-\d{2}\)$/.test(v)) return sourceText(v).replace(/^Source: /, '');
+      return prose(v);
+    }
+    return JSON.stringify(v);
+  }
+  const isEmptyVal = (v) => v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length);
+  const moneyLabel = (key, v, ctx) => { const l = humanize(key); return typeof v === 'number' && isMoney(key, ctx) ? l.replace(/ \(\$\)$/, '') : l; };
+  const singular = (key) => humanize(key).toLowerCase().replace(/ \(.*\)$/, '').replace(/ies$/, 'y').replace(/s$/, '');
+  function cellValue(key, v, ctx) {
+    if (key === 'verified' && typeof v === 'boolean') return h('span', { class: `pill ${v ? 'green' : 'amber'}` }, v ? 'Verified' : 'Not yet verified');
+    if (Array.isArray(v)) {
+      if (!v.length) return '—';
+      if (v.every((x) => x === null || typeof x !== 'object')) return v.map((x) => (typeof x === 'string' ? stripRuleIds(x) : fmtValue(key, x, ctx))).join(', ');
+      // e.g. the daily lines of a payroll check: collapsed, so the table stays readable
+      return h('details', { class: 'cell-details' }, h('summary', {}, `${v.length} ${v.length === 1 ? singular(key) : humanize(key).toLowerCase().replace(/ \(.*\)$/, '')}`),
+        v.map((x) => h('div', { class: 'cell-item' }, x && typeof x === 'object' ? renderObject(x, 2, new Set(), '', MONEY_PARENT.test(key)) : fmtValue(key, x, ctx))));
+    }
+    if (v && typeof v === 'object') return renderObject(v, 2, new Set(), '', ctx || MONEY_PARENT.test(key));
+    return fmtValue(key, v, ctx);
+  }
+  let resultCtx = null;      // {spec, result, project select} of the result being rendered
+  const mdKeysIn = (o) => Object.entries(o || {}).filter(([k, x]) => typeof x === 'string' && MD_KEY.test(k) && (x.includes('\n') || x.startsWith('#'))).map(([k]) => k);
+  const TITLE_KEYS = ['name', 'title', 'item', 'label'];
+  const itemTitle = (x, key, i) => x.name || x.title || x.item || x.label || `${humanize(key)} ${i + 1}`;
+  function saveFieldButton(fieldKey, title) {
+    if (!resultCtx || !can.write()) return null;
+    const ctx = resultCtx;
+    const btn = h('button', { type: 'button', class: 'btn secondary small no-print', onclick: async () => {
+      busy(btn, true, 'Saving…');
+      try {
+        const doc = await api('/api/documents/from_result', { method: 'POST', body: { tool: ctx.spec.name, result: ctx.result, result_sig: ctx.sig, field: fieldKey, title,
+          project_id: ctx.project && ctx.project.value ? Number(ctx.project.value) : null } });
+        toast(`Saved "${title}" to Documents`);
+        btn.replaceWith(h('a', { class: 'btn ghost small', href: `#/document/${doc.id}` }, 'Open saved document'));
+      } catch (e) { toast(e.message, true); busy(btn, false); }
+    } }, `Save “${title}” as a document`);
+    return btn;
+  }
+  function renderValue(key, v, depth, mdKeys, prefix = '', ctx = false) {
+    const mctx = ctx || MONEY_PARENT.test(key);
+    if (Array.isArray(v)) {
+      if (!v.length) return null;
+      if (v.some((x) => x && typeof x === 'object' && !Array.isArray(x) && mdKeysIn(x).length)) {
+        // one card per item (e.g. one per safety program): what it is and why up front, the document itself, and
+        // the element-by-element detail folded away (it repeats what the document says)
+        return h('div', { class: 'result-section' }, h('h4', {}, humanize(key)), v.map((x, i) => {
+          const mk = mdKeysIn(x);
+          const title = itemTitle(x, key, i);
+          const titleKey = TITLE_KEYS.find((k) => x[k] === title);
+          const rest = Object.fromEntries(Object.entries(x).filter(([k2]) => !mk.includes(k2) && k2 !== titleKey && k2 !== 'status' && k2 !== 'verified'));
+          const simpleRest = Object.fromEntries(Object.entries(rest).filter(([, x2]) => x2 === null || typeof x2 !== 'object'));
+          const complexRest = Object.fromEntries(Object.entries(rest).filter(([, x2]) => x2 !== null && typeof x2 === 'object' && !isEmptyVal(x2)));
+          const hasComplex = Object.entries(complexRest).some(([k2, x2]) => !hiddenKey(k2, x2));
+          return h('details', { class: 'item-card', open: i === 0 ? true : undefined },
+            h('summary', {}, h('strong', {}, title), ' ', x.status ? h('span', { class: `pill ${statusRag(x.status) || 'blue'}` }, humanize(x.status)) : null,
+              typeof x.verified === 'boolean' ? verifiedBadge({ verified: x.verified }) : null),
+            renderObject(simpleRest, depth + 1, new Set(), '', mctx),
+            mk.map((m) => h('div', {}, h('div', { class: 'md md-paper', html: md(x[m]) }), saveFieldButton(`${prefix}${key}.${i}.${m}`, title))),
+            hasComplex ? h('details', { class: 'more' }, h('summary', {}, 'Item-by-item detail'), renderObject(complexRest, depth + 1, new Set(), '', mctx)) : null);
+        }));
+      }
+      if (v.every((x) => x === null || typeof x !== 'object')) {
+        return h('div', { class: 'result-section' }, h('h4', {}, humanize(key)), h('ul', { class: 'bullets' + (key === 'problems' ? ' problems' : '') }, v.map((x) => h('li', {}, fmtValue(key, x, mctx)))));
+      }
+      if (key === 'citations') return null;
+      const cols = [...new Set(v.flatMap((x) => (x && typeof x === 'object' ? Object.keys(x) : [])))]
+        .filter((c) => !HIDE_KEY.test(c) && !(c === 'unverified' && v.some((x) => x && Array.isArray(x[c]))) && c !== 'disclaimer' && c !== 'citations' && v.some((x) => x && !isEmptyVal(x[c]))).slice(0, 10);
+      return h('div', { class: 'result-section' }, h('h4', {}, humanize(key).replace(/ \(\$\)$/, '')),
+        table(cols.map((c) => ({ label: isMoney(c, mctx) ? humanize(c).replace(/ \(\$\)$/, '') : humanize(c), render: (row) => cellValue(c, row ? row[c] : null, mctx) })), v));
+    }
+    if (v && typeof v === 'object') {
+      const inner = renderObject(v, depth + 1, mdKeys, prefix + key + '.', mctx);
+      return inner.childNodes.length ? h('div', { class: 'result-section' }, h('h4', {}, humanize(key).replace(mctx ? / \(\$\)$/ : /^$/, '')), inner) : null;
+    }
+    return null;
+  }
+  function renderObject(obj, depth = 0, mdKeys = new Set(), prefix = '', ctx = false) {
+    const simple = [], complex = [];
+    for (const [k, v] of Object.entries(obj)) {
+      if ((depth === 0 && (SKIP_KEYS.has(k) || HEADLINE_KEYS.has(k))) || mdKeys.has(prefix + k)) continue;
+      if (hiddenKey(k, v) || ((k === 'disclaimer' || k === 'citations') && depth > 0)) continue;
+      if (k === 'key' && typeof v === 'string' && /^[a-z0-9_-]+$/.test(v)) continue;
+      if (Array.isArray(v) && !v.length) continue;
+      if (v !== null && typeof v === 'object') complex.push([k, v]); else simple.push([k, v]);
+    }
+    const long = (v) => typeof v === 'string' && v.length > 80;
+    return h('div', {},
+      simple.length ? h('dl', { class: 'kv' }, simple.flatMap(([k, v]) => [h('dt', { class: long(v) ? 'full' : null }, moneyLabel(k, v, ctx)), h('dd', { class: long(v) ? 'full' : null }, fmtValue(k, v, ctx))])) : null,
+      complex.map(([k, v]) => renderValue(k, v, depth, mdKeys, prefix, ctx)));
+  }
+  function riskChips(r) {
+    const chips = [];
+    if (r.overall_risk) chips.push(ragPill({ low: 'green', medium: 'amber', high: 'red', do_not_use: 'red' }[r.overall_risk], RISK_TEXT[r.overall_risk] || humanize(r.overall_risk)));
+    if (r.risk_level) chips.push(ragPill({ normal: 'green', urgent: 'amber', critical: 'red', expired: 'red' }[r.risk_level], r.risk_level === 'normal' ? 'Not urgent' : humanize(r.risk_level)));
+    if (r.rag) chips.push(ragPill(r.rag));
+    if (r.status && typeof r.status === 'string') { const rag = statusRag(r.status); chips.push(rag ? ragPill(rag, humanize(r.status)) : h('span', { class: 'pill blue' }, humanize(r.status))); }
+    if (r.found === false || r.matched === false || r.supported === false) chips.push(h('span', { class: 'pill amber' }, r.found === false ? 'Not found' : r.matched === false ? 'No match' : 'Not supported'));
+    return chips;
+  }
+  async function projectOptions() {
+    try { return (await api('/api/projects')).map((p) => [String(p.id), p.name]); } catch (e) { return []; }
+  }
+  function renderToolResult(spec, out, { projectId = null } = {}) {
+    const raw = out.structured;
+    const card = h('section', { class: 'card result', 'aria-label': 'Result' });
+    if (!raw || typeof raw !== 'object') {
+      card.append(h('h2', {}, 'Result'), h('pre', {}, out.text || 'No output.'));
+      return card;
+    }
+    const r = Object.keys(raw).length === 1 && 'result' in raw ? (raw.result && typeof raw.result === 'object' && !Array.isArray(raw.result) ? raw.result : { result: raw.result }) : raw;
+    const mds = markdownFields(r);
+    const mdKeys = new Set(mds.map((m) => m.key));
+    const proj = can.write() ? select('project_id', [['', 'No project']], '', { 'aria-label': 'Link the saved document to a project' }) : null;
+    resultCtx = { spec, result: r, sig: out.result_sig, project: proj };
+    proseParams = { ...resultKeyLabels(r), ...paramLabels(spec.input_schema || {}) };
+    card.append(h('div', { class: 'card-head' }, h('h2', {}, `Result: ${spec.title}`), verifiedBadge(r)));
+    const chips = riskChips(r);
+    if (chips.length) card.append(h('div', { class: 'row' }, chips));
+    if (r.recommended_action) card.append(h('p', { class: 'notice' }, h('strong', {}, 'What to do: '), prose(r.recommended_action)));
+    card.append(renderObject(r, 0, mdKeys));
+    for (const m of mds) card.append(h('div', { class: 'result-section' }, h('h4', {}, m.label), h('div', { class: 'md md-paper', html: md(m.value) }),
+      mds.length > 1 ? saveFieldButton(m.key, `${m.label}`) : null));
+    resultCtx = null;
+    if (r.citations && r.citations.length) {
+      card.append(r.citations.length > 8
+        ? h('details', { class: 'result-section' }, h('summary', {}, h('strong', {}, `Sources (${r.citations.length})`)), citationList(r.citations))
+        : h('div', { class: 'result-section' }, h('h4', {}, 'Sources'), citationList(r.citations)));
+    }
+    card.append(disclaimerBox(r.disclaimer || 'Compliance information, not legal advice.'));
+    if (can.write()) {
+      projectOptions().then((opts) => { opts.forEach(([v, l]) => proj.append(h('option', { value: v }, l))); if (projectId) proj.value = String(projectId); });
+      const save = h('button', { type: 'button', class: 'btn', onclick: async () => {
+        busy(save, true, 'Saving…');
+        try {
+          const doc = await api('/api/documents/from_result', { method: 'POST', body: { tool: spec.name, result: r, result_sig: out.result_sig, title: `${spec.title} (${fmtDate(todayISO())})`, project_id: proj.value ? Number(proj.value) : null } });
+          toast('Saved to Documents');
+          save.replaceWith(h('a', { class: 'btn secondary', href: `#/document/${doc.id}` }, 'Open saved document'));
+        } catch (e) { toast(e.message, true); busy(save, false); }
+      } }, mds.length > 1 || r.programs ? 'Save everything as one document' : 'Save as document');
+      card.append(h('div', { class: 'save-row no-print' },
+        h('div', { class: 'field' }, h('label', { for: `save-proj-${fieldSeq + 1}` }, 'Project for the saved document'), Object.assign(proj, { id: `save-proj-${++fieldSeq}` })),
+        h('div', { class: 'row' }, save,
+          h('button', { type: 'button', class: 'btn ghost', onclick: () => window.print() }, 'Print / PDF'),
+          h('button', { type: 'button', class: 'btn ghost', onclick: () => copyText(JSON.stringify(raw, null, 2), 'Result copied as JSON') }, 'Copy as JSON'))));
+    } else {
+      card.append(h('div', { class: 'row no-print' }, h('button', { type: 'button', class: 'btn ghost', onclick: () => window.print() }, 'Print / PDF')));
+    }
+    return card;
+  }
+
+  // tool parameter -> value from a saved project, so nobody retypes a job's details into every check
+  const PROJECT_FIELDS = {
+    project_name: (p) => p.name, city: (p) => p.city, jurisdiction: (p) => p.city, county: (p) => p.county,
+    address: (p) => p.address, site_address: (p) => p.address, project_address: (p) => p.address,
+    owner_name: (p) => p.owner_name, property_owner: (p) => p.owner_name, lender_name: (p) => p.lender_name,
+    contract_price_usd: (p) => p.contract_price, contract_value_usd: (p) => p.contract_price, contract_amount_usd: (p) => p.contract_price,
+    prime_contract_usd: (p) => p.contract_price, project_value_usd: (p) => p.contract_price,
+    start_date: (p) => p.start_date, construction_start_date: (p) => p.start_date,
+    first_furnishing_date: (p) => p.first_furnishing_date, last_furnishing_date: (p) => p.last_furnishing_date,
+    completion_date: (p) => p.completion_date, notice_of_completion_date: (p) => p.noc_date, noc_recorded_date: (p) => p.noc_date, noc_date: (p) => p.noc_date,
+    claimant_role: (p) => (p.extra || {}).claimant_role, public_or_private: (p) => p.public_or_private,
+    is_public: (p) => p.public_or_private === 'public', public_project: (p) => p.public_or_private === 'public',
+  };
+  function toolPanel(spec, { onResult } = {}) {
+    const form = buildSchemaForm(spec);
+    let filledFrom = null;
+    const fillable = form.fields.filter((x) => x.set && PROJECT_FIELDS[x.name]);
+    const fillSlot = h('div', { class: 'fill-from' });
+    if (fillable.length >= 2) {
+      api('/api/projects').then((projects) => {
+        if (!projects.length) return;
+        const sel = select('fill_project', [['', 'Choose a project…'], ...projects.map((p) => [String(p.id), p.name])], '', { id: `fill-${++fieldSeq}` });
+        sel.addEventListener('change', () => {
+          const p = projects.find((x) => String(x.id) === sel.value);
+          if (!p) return;
+          let n = 0;
+          for (const fld of fillable) { const v = PROJECT_FIELDS[fld.name](p); if (v !== null && v !== undefined && v !== '' && fld.set(v)) n++; }
+          filledFrom = p.id;
+          toast(n ? `Filled ${plural(n, 'field')} from “${p.name}”. Check them before running.` : `“${p.name}” has none of these details yet.`);
+        });
+        fillSlot.append(h('div', { class: 'field' }, h('label', { for: sel.id }, 'Fill in from a project'), sel,
+          h('span', { class: 'hint' }, 'Copies the project\'s name, address, dates and contract price into the matching fields below.')));
+      }).catch(() => {});
+    }
+    const result = h('div', { 'aria-live': 'polite' });
+    const errBox = h('div', { role: 'alert' });
+    const run = h('button', { type: 'submit', class: 'btn' }, 'Run check');
+    const f = h('form', { novalidate: true, onsubmit: async (e) => {
+      e.preventDefault();
+      errBox.replaceChildren();
+      const { values, errors } = form.values();
+      if (errors.length) { errBox.append(h('div', { class: 'banner error' }, h('p', {}, 'Fix these first: ' + errors.join('; ')))); const bad = f.querySelector('[aria-invalid=true]'); if (bad) bad.focus(); else errBox.scrollIntoView({ block: 'center' }); return; }
+      busy(run, true, 'Checking…');
+      result.replaceChildren(h('p', { class: 'loading' }, 'Running…'));
+      try {
+        const out = await api(`/api/tools/${encodeURIComponent(spec.name)}`, { method: 'POST', body: values });
+        result.replaceChildren(renderToolResult(spec, out, { projectId: filledFrom }));
+        result.firstChild.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (onResult) onResult(out);
+      } catch (err) {
+        result.replaceChildren();
+        if (err.status === 402) result.append(subscribeCard(err.message));
+        else errBox.append(h('div', { class: 'banner error' }, h('p', {}, h('strong', {}, 'The check did not run. '), cleanHint(err.message, { params: paramLabels(spec.input_schema || {}) }))));
+      } finally { busy(run, false); }
+    } }, form.el, errBox, h('div', { class: 'row' }, run, h('button', { type: 'reset', class: 'btn ghost', onclick: () => setTimeout(() => result.replaceChildren(), 0) }, 'Clear')));
+    const ann = spec.annotations || {};
+    // Tool descriptions are also read by AI agents, so they run long and list every output field. People get the
+    // first sentence; the rest is one tap away.
+    const desc = String(spec.description || '').trim();
+    const leadRaw = firstSentence(desc);
+    const lead = cleanHint(leadRaw, { params: paramLabels(spec.input_schema || {}) });
+    const more = desc.length > leadRaw.length + 1 ? cleanHint(desc.slice(leadRaw.length).trim(), { params: paramLabels(spec.input_schema || {}) }) : '';
+    return h('div', {},
+      h('section', { class: 'card no-print' },
+        desc ? h('p', { class: 'tool-lead' }, lead) : null,
+        more ? h('details', { class: 'tool-more' }, h('summary', {}, 'What this check covers'), h('p', { class: 'small muted' }, more)) : null,
+        ann.readOnlyHint ? null : h('p', { class: 'small muted' }, 'This tool may create or change records.'),
+        fillSlot,
+        h('p', { class: 'small muted req-note' }, h('span', { class: 'req', 'aria-hidden': 'true' }, '*'), ' Required. Everything else is optional.'),
+        f),
+      result);
+  }
+
+  // ======================================================================== offline outbox (IndexedDB)
+  const Outbox = {
+    db: null,
+    open() {
+      if (this.db) return Promise.resolve(this.db);
+      return new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) { reject(new Error('This browser cannot store logs offline.')); return; }
+        const req = indexedDB.open('tradecomply', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('outbox', { keyPath: 'client_uuid' });
+        req.onsuccess = () => { this.db = req.result; resolve(req.result); };
+        req.onerror = () => reject(req.error);
+      });
+    },
+    async run(mode, fn) {
+      const db = await this.open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('outbox', mode);
+        const req = fn(tx.objectStore('outbox'));
+        tx.oncomplete = () => resolve(req ? req.result : undefined);
+        tx.onerror = () => reject(tx.error);
+      });
+    },
+    async all() { const tid = state.me && state.me.tenant.id; return (await this.run('readonly', (s) => s.getAll())).filter((x) => x._tenant === tid); },
+    put(v) { return this.run('readwrite', (s) => s.put(v)); },
+    del(k) { return this.run('readwrite', (s) => s.delete(k)); },
+  };
+  let syncing = false;
+  async function syncOutbox({ quiet = true } = {}) {
+    if (syncing || !state.me || !navigator.onLine) return null;
+    syncing = true;
+    try {
+      const items = await Outbox.all();
+      if (!items.length) return { created: 0 };
+      const logs = items.map((x) => Object.fromEntries(Object.entries(x).filter(([k]) => !k.startsWith('_'))));
+      const res = await api('/api/field_logs/sync', { method: 'POST', body: { logs } });
+      for (const r of res.results) {
+        if (r.status === 'created' || r.status === 'duplicate') await Outbox.del(r.client_uuid);
+        else { const it = items.find((x) => x.client_uuid === r.client_uuid); if (it) { it._error = r.error; await Outbox.put(it); } }
+      }
+      if (!quiet || res.created) toast(`${plural(res.created, 'field log')} synced${res.errors ? `, ${res.errors} need fixing` : ''}`, !!res.errors);
+      updateQueueBadge();
+      return res;
+    } catch (e) {
+      if (!quiet) toast(e.message, true);
+      return null;
+    } finally { syncing = false; }
+  }
+  async function updateQueueBadge() {
+    const el = document.getElementById('queue-count');
+    if (!el) return;
+    try { const n = (await Outbox.all()).length; el.textContent = n ? `${n} waiting to sync` : 'All field logs synced'; el.className = `pill ${n ? 'amber' : 'green'}`; } catch (e) { el.textContent = ''; }
+  }
+
+  // ======================================================================== auth views
+  routes.login = async () => {
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'submit', class: 'btn block' }, 'Log in');
+    const form = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren(); busy(btn, true, 'Logging in…');
+      try {
+        const r = await api('/api/auth/login', { method: 'POST', body: formData(form) });
+        state.config = null; await loadMe();
+        go(r.must_change_password ? 'settings' : 'dashboard');
+      } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+    } },
+    field('Work email', input('email', { type: 'email', autocomplete: 'username', inputmode: 'email' }), { required: true }),
+    field('Password', input('password', { type: 'password', autocomplete: 'current-password' }), { required: true }),
+    err, btn);
+    return h('div', { class: 'auth-wrap' },
+      h('div', { class: 'auth-hero' }, h('h1', {}, 'Log in to TradeComply'), h('p', {}, 'California construction compliance for your company')),
+      navigator.onLine ? null : h('div', { class: 'banner warn' }, h('p', {}, 'You are offline. Log in once with signal; after that the Field screen works offline.')),
+      h('div', { class: 'card' }, form, h('p', { class: 'small muted' }, 'New here? ', h('a', { href: '#/signup' }, 'Start a 14-day free trial'))),
+      mcpDemoNote());
+  };
+
+  function mcpDemoNote() {
+    const url = state.config ? state.config.mcp_url : location.origin + '/mcp';
+    return h('div', { class: 'card small' }, h('h2', {}, 'Using an AI assistant?'),
+      h('p', { class: 'muted' }, state.config && state.config.mcp_require_key ? 'Connect it to this MCP server with an API key from Settings:' : 'Point it at this MCP server to try the checks:'),
+      copyBox(url, 'MCP URL'));
+  }
+
+  routes.signup = async () => {
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'submit', class: 'btn block' }, 'Start free trial');
+    const form = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren();
+      const data = formData(form);
+      if ((data.password || '').length < 10) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Use a password of at least 10 characters.'))); return; }
+      busy(btn, true, 'Creating your account…');
+      try { await api('/api/auth/signup', { method: 'POST', body: data }); state.config = null; await loadMe(); go('welcome'); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+    } },
+    field('Company name', input('company_name', { autocomplete: 'organization' }), { required: true }),
+    field('Your name', input('name', { autocomplete: 'name' })),
+    field('Work email', input('email', { type: 'email', autocomplete: 'email', inputmode: 'email' }), { required: true }),
+    field('Password', input('password', { type: 'password', autocomplete: 'new-password', minlength: '10' }), { required: true, hint: 'At least 10 characters.' }),
+    field('CSLB license number', input('cslb_license', { inputmode: 'numeric', autocomplete: 'off' }), { hint: 'Optional. We check your own license first.' }),
+    err, btn);
+    return h('div', { class: 'auth-wrap' },
+      h('div', { class: 'auth-hero' }, h('h1', {}, 'Start your free trial'), h('p', {}, '14 days free, then $1,000/month. No card needed to start.')),
+      h('div', { class: 'card' }, form, h('p', { class: 'small muted' }, 'Already have an account? ', h('a', { href: '#/login' }, 'Log in'))),
+      h('div', { class: 'card small' }, h('h2', {}, 'In the first 15 minutes'), h('ul', { class: 'value-list' },
+        h('li', {}, 'License health check on your own CSLB license'), h('li', {}, 'Risk report on your sub list'),
+        h('li', {}, 'Lien deadline calendar for a project'), h('li', {}, 'Draft Cal/OSHA safety programs'), h('li', {}, 'Connect your AI assistant'))));
+  };
+
+  // ======================================================================== license + alerts components
+  // CSLB classification names (cslb.ca.gov), so "C10" reads as "C-10 Electrical"
+  const CSLB_CLASSES = { A: 'General Engineering', B: 'General Building', B2: 'Residential Remodeling', C2: 'Insulation and Acoustical',
+    C4: 'Boiler, Hot Water Heating and Steam Fitting', C5: 'Framing and Rough Carpentry', C6: 'Cabinet, Millwork and Finish Carpentry',
+    C7: 'Low Voltage Systems', C8: 'Concrete', C9: 'Drywall', C10: 'Electrical', C11: 'Elevator', C12: 'Earthwork and Paving', C13: 'Fencing',
+    C15: 'Flooring and Floor Covering', C16: 'Fire Protection', C17: 'Glazing', C20: 'Warm-Air Heating, Ventilating and Air-Conditioning',
+    C21: 'Building Moving/Demolition', C22: 'Asbestos Abatement', C23: 'Ornamental Metal', C27: 'Landscaping', C28: 'Lock and Security Equipment',
+    C29: 'Masonry', C31: 'Construction Zone Traffic Control', C32: 'Parking and Highway Improvement', C33: 'Painting and Decorating',
+    C34: 'Pipeline', C35: 'Lathing and Plastering', C36: 'Plumbing', C38: 'Refrigeration', C39: 'Roofing', C42: 'Sanitation System',
+    C43: 'Sheet Metal', C45: 'Sign', C46: 'Solar', C47: 'General Manufactured Housing', C49: 'Tree and Palm', C50: 'Reinforcing Steel',
+    C51: 'Structural Steel', C53: 'Swimming Pool', C54: 'Ceramic and Mosaic Tile', C55: 'Water Conditioning', C57: 'Well Drilling',
+    C60: 'Welding', C61: 'Limited Specialty' };
+  function className(code) {
+    const raw = String(code || '').trim();
+    const m = raw.match(/^([A-D])-?(\d*)\b\s*(.*)$/i);
+    if (!m) return raw;
+    const key = (m[1] + m[2]).toUpperCase();
+    const label = m[2] ? `${m[1].toUpperCase()}-${m[2].replace(/^0+(?=\d)/, '')}` : m[1].toUpperCase();
+    const name = m[3] || CSLB_CLASSES[key] || (m[1].toUpperCase() === 'D' ? 'Limited Specialty' : '');
+    return name ? `${label} ${name}` : label;
+  }
+  const LICENSE_RAG = { red: 'Problem', amber: 'Check this', green: 'Good standing' };
+  function licenseCardView(card) {
+    const lic = card.license;
+    const el = h('section', { class: 'card rag-bar ' + card.rag, 'aria-labelledby': 'lic-h' },
+      h('div', { class: 'card-head' }, h('h2', { id: 'lic-h' }, 'Your license health'), ragPill(card.rag, LICENSE_RAG[card.rag])));
+    if (lic && !lic.found) {
+      el.append(h('dl', { class: 'kv' }, h('dt', {}, 'License #'), h('dd', {}, lic.license_number || card.license_number || '—'), h('dt', {}, 'Status'), h('dd', {}, 'Not found')),
+        h('ul', { class: 'bullets problems' }, card.problems.map((p) => h('li', {}, p))),
+        h('p', { class: 'small muted' }, 'Check the number on your pocket card. ', sourceText(lic.data_source)),
+        lic.official_lookup_url ? h('p', { class: 'small' }, h('a', { href: lic.official_lookup_url, target: '_blank', rel: 'noopener noreferrer' }, 'Look it up on the CSLB website')) : null);
+      return el;
+    }
+    if (!lic) {
+      el.append(h('ul', { class: 'bullets' }, card.problems.map((p) => h('li', {}, p))), can.write() ? h('a', { class: 'btn secondary small', href: '#/settings' }, 'Add license number') : null);
+      return el;
+    }
+    el.append(h('dl', { class: 'kv' },
+      h('dt', {}, 'Business'), h('dd', {}, lic.business_name || '—'),
+      h('dt', {}, 'License #'), h('dd', {}, lic.license_number),
+      h('dt', {}, 'Status'), h('dd', {}, lic.found ? humanize(lic.status) : 'Not found'),
+      h('dt', {}, 'Classes'), h('dd', {}, (lic.classifications || []).map(className).join('; ') || '—'),
+      h('dt', {}, 'Expires'), h('dd', {}, lic.expiration_date ? `${fmtDate(lic.expiration_date)} (${daysText(lic.expires_in_days)})` : '—'),
+      h('dt', {}, "Workers' comp"), h('dd', {}, humanize(lic.workers_comp)),
+      h('dt', {}, 'Contractor bond'), h('dd', {}, lic.contractor_bond_on_file ? 'On file' : 'Not on file')));
+    if (card.problems.length) el.append(h('ul', { class: 'bullets problems' }, card.problems.map((p) => h('li', {}, p))));
+    el.append(h('div', { class: 'row' }, verifiedBadge(lic), h('span', { class: 'small muted' }, sourceText(lic.data_source))),
+      h('p', { class: 'small' }, h('a', { href: lic.official_lookup_url, target: '_blank', rel: 'noopener noreferrer' }, 'Confirm on the CSLB website')));
+    return el;
+  }
+  function sourceText(src) {
+    const m = String(src || '').match(/snapshot (\d{4}-\d{2}-\d{2})/);
+    if (m) return `Source: CSLB public license data as of ${fmtDate(m[1])}`;
+    if (/demo/.test(src || '')) return 'Source: demo data (no CSLB data loaded on this server)';
+    if (/partial/.test(src || '')) return 'Source: CSLB public license data (this server has a partial copy).';
+    return src ? `Source: ${src}` : '';
+  }
+  function alertList(items, { empty = 'Nothing due. Nice work.', inProject = false } = {}) {
+    if (!items.length) return h('p', { class: 'empty' }, empty);
+    const thisYear = todayISO().slice(0, 4);
+    return h('ul', { class: 'alerts' }, items.map((i) => {
+      const cites = (i.citations || []).map((c) => c.citation).filter(Boolean);
+      return h('li', { class: 'alert-item' },
+        h('div', { class: 'alert-date' }, String(i.date).startsWith(thisYear) ? fmtDate(i.date).replace(/, \d{4}$/, '') : fmtDate(i.date), h('span', { class: 'days' }, daysText(i.days_left))),
+        h('div', { class: 'alert-body' },
+          h('div', { class: 'row' }, ragPill(i.rag), i.project_id && !inProject ? h('a', { class: 'small', href: `#/project/${i.project_id}` }, i.project_name) : null,
+            i.sub_name ? h('a', { class: 'small', href: '#/subs' }, i.sub_name) : null),
+          h('h3', {}, i.title),
+          i.detail ? h('p', {}, i.detail) : null,
+          // Only rule-based dates carry a verified flag; a sub's COI date comes from your own records.
+          cites.length ? h('div', { class: 'row small' }, verifiedBadge(i), h('span', { class: 'muted' }, [...new Set(cites)].join('; '))) : null));
+    }));
+  }
+  const RISK_ORDER = { do_not_use: 0, high: 1, medium: 2, low: 3 };
+  const RAG_SORT = { red: 0, amber: 1, green: 2 };
+  const worstFirst = (list, risk = (s) => s.overall_risk, rag = (s) => s.rag) => [...list].sort((a, b) =>
+    ((RISK_ORDER[risk(a)] ?? RAG_SORT[rag(a)] ?? 4) - (RISK_ORDER[risk(b)] ?? RAG_SORT[rag(b)] ?? 4)) || String(a.name).localeCompare(String(b.name)));
+  function subRiskTable(rows) {
+    return table([
+      { label: 'Subcontractor', bare: true, render: (s) => h('div', {}, h('strong', {}, s.name), s.license && s.license.business_name && s.license.business_name.toLowerCase() !== String(s.name).toLowerCase() ? h('div', { class: 'small muted' }, `CSLB: ${s.license.business_name}`) : null) },
+      { label: 'License', render: (s) => s.license_number ? `${s.license_number}${s.license ? ' · ' + humanize(s.license.status) : ''}` : 'None given' },
+      { label: 'Risk', render: (s) => ragPill(s.rag, RISK_TEXT[s.overall_risk] || RAG_TEXT[s.rag]) },
+      { label: 'Problems', render: (s) => s.problems && s.problems.length ? h('ul', { class: 'bullets small' }, s.problems.map((p) => h('li', {}, p))) : 'None' },
+      { label: 'What to do', render: (s) => s.recommended_action || '—' },
+    ], worstFirst(rows));
+  }
+
+  // ======================================================================== dashboard
+  routes.dashboard = async () => {
+    if (!entitled()) return subscribeCard(state.me.entitlement.message);
+    const d = await api('/api/dashboard');
+    const filter = { rag: null };
+    const listSlot = h('div', {});
+    const subSlot = h('div', {});
+    const draw = () => {
+      const items = filter.rag ? d.items.filter((i) => i.rag === filter.rag) : d.items;
+      const subs = filter.rag ? d.subs.filter((s) => s.rag === filter.rag) : d.subs;
+      listSlot.replaceChildren(alertList(items, { empty: filter.rag ? 'Nothing in this group.' : 'No deadlines or alerts. Add projects and subs to fill this in.' }));
+      subSlot.replaceChildren(d.subs.length ? (subs.length ? subRiskTable(subs) : h('p', { class: 'empty' }, 'No subs in this group.')) :
+        h('div', { class: 'empty' }, h('p', {}, 'No subcontractors yet.'), can.write() ? h('a', { class: 'btn secondary', href: '#/subs' }, 'Import your sub list') : null));
+      tiles.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.rag === filter.rag)));
+    };
+    const tiles = ['red', 'amber', 'green'].map((rag) => h('button', { type: 'button', class: `tile ${rag}`, 'data-rag': rag, 'aria-pressed': 'false',
+      onclick: () => { filter.rag = filter.rag === rag ? null : rag; draw(); } },
+    h('span', { class: 'n' }, d.overall[rag]), h('span', { class: 't' }, RAG_TEXT[rag])));
+    const setupDone = (((state.me.tenant.settings || {}).onboarding || {}).done || []).length >= 3;
+    const wrap = h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Compliance today'), h('p', {}, `As of ${fmtDate(d.today)} (California time). Select a box to show only those items.`)),
+        h('div', { class: 'row no-print' }, h('a', { class: 'btn secondary small', href: '/api/calendar.ics', download: 'tradecomply.ics' }, 'Download calendar'),
+          h('button', { type: 'button', class: 'btn ghost small', onclick: () => window.print() }, 'Print'))),
+      !setupDone && can.write() ? h('div', { class: 'banner info no-print' }, h('p', {}, 'Finish setup to see your full picture: license, subs, projects, safety, AI assistant.'), h('a', { class: 'btn small', href: '#/welcome' }, 'Continue setup')) : null,
+      h('div', { class: 'tiles', role: 'group', 'aria-label': 'Filter by status' }, tiles),
+      h('div', { class: 'grid grid-2' },
+        h('section', { class: 'card', 'aria-labelledby': 'dl-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'dl-h' }, 'Deadlines and alerts'), h('span', { class: 'small muted' }, `${d.counts.red} act now · ${d.counts.amber} coming up`)), listSlot),
+        h('div', {}, licenseCardView(d.company),
+          h('section', { class: 'card' }, h('h2', {}, 'Projects'), d.projects.length ? h('ul', { class: 'clean' }, d.projects.map((p) => h('li', { class: 'row' }, h('a', { href: `#/project/${p.id}` }, p.name), h('span', { class: 'pill gray' }, humanize(p.status)), p.public_or_private === 'public' ? h('span', { class: 'pill blue' }, 'Public') : null))) :
+            h('div', { class: 'empty' }, h('p', {}, 'No projects yet.'), can.write() ? h('a', { class: 'btn secondary', href: '#/project/new' }, 'Add a project') : null)))),
+      h('section', { class: 'card', 'aria-labelledby': 'subs-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'subs-h' }, 'Subcontractors'), h('span', { class: 'small muted' }, `${d.sub_counts.red} high risk · ${d.sub_counts.amber} need documents · ${d.sub_counts.green} clear`)), subSlot));
+    draw();
+    return wrap;
+  };
+
+  // ======================================================================== projects
+  function projectForm(p, onSaved) {
+    const roles = Object.entries((state.config && state.config.claimant_roles) || { direct_contractor: 'Prime / general contractor' });
+    const x = (p && p.extra) || {};
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'submit', class: 'btn' }, p ? 'Save changes' : 'Add project');
+    const dateIn = (name) => input(name, { type: 'date', value: (p && p[name]) || '' });
+    const form = h('form', { novalidate: true, onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren();
+      const data = formData(form);
+      if (!data.name) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Give the project a name.'))); return; }
+      busy(btn, true, 'Saving…');
+      try {
+        const saved = await api(p ? `/api/projects/${p.id}` : '/api/projects', { method: p ? 'PATCH' : 'POST', body: data });
+        toast(p ? 'Project saved' : 'Project added'); onSaved(saved);
+      } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+    } },
+    h('div', { class: 'form-grid' },
+      field('Project name', input('name', { value: (p && p.name) || '' }), { required: true, wide: true }),
+      field('Your role on this job', select('claimant_role', roles, x.claimant_role || 'direct_contractor'), { hint: 'Sets which lien and notice deadlines apply to you.' }),
+      field('Public or private job', select('public_or_private', [['private', 'Private'], ['public', 'Public (government agency)']], (p && p.public_or_private) || 'private'),
+        { hint: 'Public = a city, county, state agency, school or other public owner.' }),
+      field('Street address', input('address', { value: (p && p.address) || '', autocomplete: 'street-address' })),
+      field('City', input('city', { value: (p && p.city) || '' })),
+      field('County', input('county', { value: (p && p.county) || '' })),
+      field('Property owner', input('owner_name', { value: (p && p.owner_name) || '' })),
+      field('Construction lender', input('lender_name', { value: (p && p.lender_name) || '' }), { hint: 'If there is a construction loan.' }),
+      field('Contract price ($)', input('contract_price', { type: 'number', min: '0', step: 'any', inputmode: 'decimal', value: p && p.contract_price != null ? String(p.contract_price) : '' })),
+      h('h3', { class: 'wide form-section' }, 'Dates for the lien calendar', h('span', { class: 'hint' }, ' Leave blank what you don\'t know yet; add it later.')),
+      field('Construction start date', dateIn('start_date')),
+      field('First day you furnished labor or materials', dateIn('first_furnishing_date'), { hint: 'Starts the 20-day preliminary notice clock.' }),
+      field('Last day you furnished labor or materials', dateIn('last_furnishing_date')),
+      field('Project completion date', dateIn('completion_date'), { hint: 'When the whole project was finished, if known.' }),
+      field('Notice of completion recorded on', dateIn('noc_date'), { hint: 'Shortens lien deadlines if recorded on time.' }),
+      field('Status', select('status', [['active', 'Active'], ['planned', 'Planned'], ['completed', 'Completed'], ['closed', 'Closed (stop tracking)']], (p && p.status) || 'active'))),
+    err, h('div', { class: 'row' }, btn));
+    return form;
+  }
+
+  routes.projects = async () => {
+    const rows = await api('/api/projects');
+    return h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Projects'), h('p', {}, 'Each project gets a lien calendar and a toolbox-talk schedule.')),
+        can.write() ? h('a', { class: 'btn', href: '#/project/new' }, '+ Add project') : null),
+      rows.length ? h('div', { class: 'grid grid-2' }, rows.map((p) => h('a', { class: 'card', href: `#/project/${p.id}` },
+        h('div', { class: 'card-head' }, h('h2', {}, p.name), h('span', { class: 'pill gray' }, humanize(p.status))),
+        h('p', { class: 'muted small' }, [p.address, p.city, p.county].filter(Boolean).join(', ') || 'No address yet'),
+        h('div', { class: 'row small' }, h('span', { class: 'pill blue' }, p.public_or_private === 'public' ? 'Public' : 'Private'),
+          h('span', {}, ((state.config && state.config.claimant_roles) || {})[(p.extra || {}).claimant_role || 'direct_contractor'] || ''))))) :
+        h('div', { class: 'card empty' }, h('p', {}, 'No projects yet. Add one to build its lien calendar.'), can.write() ? h('a', { class: 'btn', href: '#/project/new' }, 'Add a project') : null));
+  };
+
+  routes.project = async ({ args }) => {
+    const id = args[0];
+    if (id === 'new') {
+      if (!can.write()) return h('div', { class: 'card' }, h('p', {}, 'Ask the office to add projects.'));
+      return h('div', {}, h('div', { class: 'page-head' }, h('h1', {}, 'Add a project')), h('div', { class: 'card' }, projectForm(null, (p) => go(`project/${p.id}`))));
+    }
+    const p = await api(`/api/projects/${encodeURIComponent(id)}`);
+    const [dl, logs, docs, subs] = await Promise.all([
+      api(`/api/projects/${p.id}/deadlines`).catch((e) => ({ error: e })),
+      api(`/api/field_logs?project_id=${p.id}`).catch(() => []),
+      api(`/api/documents?project_id=${p.id}`).catch(() => []),
+      api(`/api/subs?project_id=${p.id}`).catch(() => [])]);
+    const role = ((state.config && state.config.claimant_roles) || {})[(p.extra || {}).claimant_role || 'direct_contractor'];
+    const edit = () => { const d = openDialog('Edit project', projectForm(p, () => { d.close(); render(); })); };
+    const del = async () => { if (!confirm(`Delete project "${p.name}"? Its field logs and documents stay but lose the project link.`)) return; await api(`/api/projects/${p.id}`, { method: 'DELETE' }); toast('Project deleted'); go('projects'); };
+    return h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('p', {}, h('a', { href: '#/projects' }, '← Projects')), h('h1', {}, p.name), h('p', {}, [p.address, p.city, p.county].filter(Boolean).join(', '))),
+        can.write() ? h('div', { class: 'row no-print' }, h('button', { type: 'button', class: 'btn secondary', onclick: edit }, 'Edit'), h('button', { type: 'button', class: 'btn danger', onclick: del }, 'Delete')) : null),
+      h('div', { class: 'grid grid-2' },
+        h('section', { class: 'card', 'aria-labelledby': 'lc-h' }, h('h2', { id: 'lc-h' }, 'Lien and safety calendar'),
+          dl.error ? (dl.error.status === 402 ? subscribeCard(dl.error.message) : h('p', {}, dl.error.message)) : [alertList(dl.items, { empty: 'Add dates to this project to see its deadlines.', inProject: true }),
+            dl.notes && dl.notes.length ? h('details', {}, h('summary', {}, 'How these dates were worked out'), h('ul', { class: 'bullets small' }, dl.notes.map((n) => h('li', {}, n)))) : null]),
+        h('section', { class: 'card' }, h('h2', {}, 'Details'), h('dl', { class: 'kv' },
+          h('dt', {}, 'Your role'), h('dd', {}, role || '—'),
+          h('dt', {}, 'Job type'), h('dd', {}, p.public_or_private === 'public' ? 'Public' : 'Private'),
+          h('dt', {}, 'Status'), h('dd', {}, humanize(p.status)),
+          h('dt', {}, 'Owner'), h('dd', {}, p.owner_name || '—'),
+          h('dt', {}, 'Lender'), h('dd', {}, p.lender_name || '—'),
+          h('dt', {}, 'Contract price'), h('dd', {}, p.contract_price != null ? money(p.contract_price) : '—'),
+          h('dt', {}, 'Start'), h('dd', {}, fmtDate(p.start_date)),
+          h('dt', {}, 'First furnished'), h('dd', {}, fmtDate(p.first_furnishing_date)),
+          h('dt', {}, 'Last furnished'), h('dd', {}, fmtDate(p.last_furnishing_date)),
+          h('dt', {}, 'Completed'), h('dd', {}, fmtDate(p.completion_date)),
+          h('dt', {}, 'Notice of completion'), h('dd', {}, fmtDate(p.noc_date))))),
+      h('div', { class: 'grid grid-3' },
+        h('section', { class: 'card' }, h('h2', {}, 'Subs on this job'), subs.length ? h('ul', { class: 'bullets' }, subs.map((s) => h('li', {}, s.name, s.scope ? ` (${s.scope})` : ''))) : h('p', { class: 'muted' }, 'None linked.')),
+        h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Field logs'), h('a', { class: 'btn secondary small', href: `#/field?project=${p.id}` }, 'New log')),
+          logs.length ? h('ul', { class: 'bullets' }, logs.slice(0, 8).map((l) => h('li', {}, `${fmtDate(l.date)}: ${humanize(l.kind)}${l.topic ? ' – ' + l.topic : ''}`))) : h('p', { class: 'muted' }, 'No logs yet.')),
+        h('section', { class: 'card' }, h('h2', {}, 'Documents'), docs.length ? h('ul', { class: 'bullets' }, docs.map((d) => h('li', {}, h('a', { href: `#/document/${d.id}` }, d.title)))) : h('p', { class: 'muted' }, 'None yet. Save tool results here.'))));
+  };
+
+  // ======================================================================== subcontractors
+  const CSV_TEMPLATE = 'name,license_number,scope,required_class,coi_expiry,wc_required,w9_on_file,dir_number\nExample Plumbing,123456,Plumbing rough-in,C-36,2027-06-30,yes,yes,\n';
+  function subForm(s, onSaved, projects) {
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'submit', class: 'btn' }, s ? 'Save' : 'Add subcontractor');
+    const form = h('form', { novalidate: true, onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren();
+      const data = formData(form);
+      data.project_id = data.project_id ? Number(data.project_id) : null;
+      if (!data.name) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Enter the company name.'))); return; }
+      busy(btn, true, 'Saving…');
+      try { await api(s ? `/api/subs/${s.id}` : '/api/subs', { method: s ? 'PATCH' : 'POST', body: data }); toast('Saved'); onSaved(); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+    } },
+    h('div', { class: 'form-grid' },
+      field('Company name', input('name', { value: (s && s.name) || '' }), { required: true }),
+      field('CSLB license number', input('license_number', { value: (s && s.license_number) || '', inputmode: 'numeric' })),
+      field('Scope of work', input('scope', { value: (s && s.scope) || '' })),
+      field('License class the work needs', input('required_class', { value: (s && s.required_class) || '', placeholder: 'e.g. C-10' })),
+      field('Insurance certificate (COI) expires', input('coi_expiry', { type: 'date', value: (s && s.coi_expiry) || '' })),
+      field('DIR registration # (public works)', input('dir_number', { value: (s && s.dir_number) || '' })),
+      field('Email', input('email', { type: 'email', value: (s && s.email) || '' })),
+      field('Phone', input('phone', { type: 'tel', value: (s && s.phone) || '' })),
+      field('Project', select('project_id', [['', 'Not linked'], ...projects], s && s.project_id ? String(s.project_id) : '')),
+      h('div', { class: 'field' }, h('label', { class: 'switch' }, h('input', { type: 'checkbox', name: 'wc_required', checked: s ? s.wc_required : true }), h('span', {}, 'They will have employees on site'))),
+      h('div', { class: 'field' }, h('label', { class: 'switch' }, h('input', { type: 'checkbox', name: 'w9_on_file', checked: s ? s.w9_on_file : false }), h('span', {}, 'W-9 on file')))),
+    err, btn);
+    return form;
+  }
+  function importPanel(onDone) {
+    const file = h('input', { type: 'file', accept: '.csv,text/csv,text/plain', id: 'sub-csv', class: 'file-input' });
+    const fileName = h('span', { class: 'small muted', 'aria-live': 'polite' }, 'No file chosen');
+    file.addEventListener('change', () => { fileName.textContent = file.files[0] ? file.files[0].name : 'No file chosen'; });
+    const paste = h('textarea', { id: 'sub-paste', rows: '5', class: 'mono', placeholder: CSV_TEMPLATE, spellcheck: 'false' });
+    const out = h('div', { 'aria-live': 'polite' });
+    const btn = h('button', { type: 'submit', class: 'btn' }, 'Import and check');
+    const form = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); out.replaceChildren();
+      let opts;
+      if (file.files[0]) { const fd = new FormData(); fd.append('file', file.files[0]); opts = { method: 'POST', form: fd }; } else if (paste.value.trim()) opts = { method: 'POST', raw: paste.value, contentType: 'text/csv' };
+      else { out.append(h('div', { class: 'banner error' }, h('p', {}, 'Choose a CSV file or paste your list.'))); return; }
+      busy(btn, true, 'Checking every license…');
+      try {
+        const r = await api('/api/subs/import', opts);
+        out.append(h('div', { class: 'banner info' }, h('p', {}, `${r.created} added, ${r.updated} updated${r.skipped.length ? `, ${r.skipped.length} skipped` : ''}.`)));
+        if (r.skipped.length) out.append(h('p', { class: 'small' }, h('strong', {}, 'Not imported:')), h('ul', { class: 'bullets small' }, r.skipped.map((s) => h('li', {}, `Line ${s.line}: ${s.reason}`))));
+        if (r.report_available) {
+          out.append(h('div', { class: 'tiles static' }, ['red', 'amber', 'green'].map((k) => h('div', { class: `tile ${k}` }, h('span', { class: 'n' }, r.counts[k]), h('span', { class: 't' }, { red: 'High risk', amber: 'Need documents', green: 'Clear' }[k])))), subRiskTable(r.report));
+        } else if (r.message) out.append(h('p', {}, r.message));
+        file.value = ''; fileName.textContent = 'No file chosen'; if (onDone) onDone(r);
+      } catch (ex) { out.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); } finally { busy(btn, false); }
+    } },
+    h('div', { class: 'grid grid-2' },
+      h('div', { class: 'field' }, h('span', { class: 'label' }, 'CSV file'),
+        h('div', { class: 'row' }, file, h('label', { for: 'sub-csv', class: 'btn secondary small' }, 'Choose CSV file…'), fileName),
+        h('span', { class: 'hint' }, 'Export your vendor list from QuickBooks, Excel or Google Sheets as CSV. We read common headings such as Vendor, License #, Trade, Class, COI expiration and W-9. A license number is enough: we fill in the name from CSLB.')),
+      field('…or paste the list', paste)),
+    h('div', { class: 'row' }, btn, h('button', { type: 'button', class: 'btn ghost', onclick: () => download('tradecomply-subs-template.csv', CSV_TEMPLATE, 'text/csv') }, 'Download template')));
+    return h('div', {}, form, out);
+  }
+
+  async function loadSubs() {
+    try { return await api('/api/subs?check=1'); } catch (e) { if (e.status !== 402) throw e; return api('/api/subs'); }
+  }
+  routes.subs = async () => {
+    const rows = await loadSubs();
+    const projects = await projectOptions();
+    const add = () => { const d = openDialog('Add subcontractor', subForm(null, () => { d.close(); render(); }, projects)); };
+    const cols = [
+      { label: 'Subcontractor', bare: true, render: (s) => h('div', {}, h('strong', {}, s.name), s.scope ? h('div', { class: 'small muted' }, s.scope) : null) },
+      { label: 'License', render: (s) => s.license_number ? h('div', {}, s.license_number, s.check && s.check.license ? h('div', { class: 'small muted' }, `${humanize(s.check.license.status)}${s.check.license.classifications.length ? ' · ' + s.check.license.classifications.join(', ') : ''}`) : null) : '—' },
+      { label: 'Risk', render: (s) => s.check ? ragPill(s.check.rag, RISK_TEXT[s.check.overall_risk]) : h('span', { class: 'pill gray' }, 'Not checked') },
+      { label: 'Problems', render: (s) => s.check && s.check.problems.length ? h('ul', { class: 'bullets small' }, s.check.problems.map((p) => h('li', {}, p))) : (s.check ? 'None' : '—') },
+      { label: 'COI expires', render: (s) => s.coi_expiry && s.coi_expiry < todayISO() ? h('span', { class: 'error-text' }, `${fmtDate(s.coi_expiry)} (expired)`) : fmtDate(s.coi_expiry) },
+      { label: 'Actions', bare: true, render: (s) => can.write() ? h('div', { class: 'row' },
+        h('button', { type: 'button', class: 'btn ghost small', onclick: () => { const d = openDialog(`Edit ${s.name}`, subForm(s, () => { d.close(); render(); }, projects)); } }, 'Edit'),
+        h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Remove ${s.name}?`)) { await api(`/api/subs/${s.id}`, { method: 'DELETE' }); toast('Removed'); render(); } } }, 'Remove')) : null },
+    ];
+    const tableSlot = h('section', { class: 'card', 'aria-label': 'Subcontractor list' });
+    const drawTable = (list) => tableSlot.replaceChildren(list.length ? table(cols, worstFirst(list, (x) => x.check && x.check.overall_risk, (x) => x.check && x.check.rag))
+      : h('div', { class: 'empty' }, h('p', {}, 'No subcontractors yet.'), h('p', { class: 'small' }, 'Import your list above, or add them one at a time.')));
+    drawTable(rows);
+    return h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Subcontractors'), h('p', {}, 'License, classification, insurance, workers\' comp and bond, checked against CSLB data.')),
+        can.write() ? h('button', { type: 'button', class: 'btn', onclick: add }, '+ Add subcontractor') : null),
+      can.write() ? h('details', { class: 'card', open: rows.length ? undefined : true }, h('summary', {}, h('strong', {}, 'Import your sub list (CSV)')),
+        h('div', { class: 'result-section' }, importPanel(async () => { drawTable(await loadSubs()); }))) : null,
+      tableSlot);
+  };
+
+  // ======================================================================== tools
+  routes.tools = async ({ args }) => {
+    const data = await getTools();
+    const current = args[0] ? data.tools.find((t) => t.name === args[0]) : null;
+    const search = h('input', { type: 'search', placeholder: 'Search tools', 'aria-label': 'Search tools' });
+    const list = h('div', {});
+    const drawList = () => {
+      const q = search.value.trim().toLowerCase();
+      list.replaceChildren(...data.modules.map((m) => {
+        const tools = m.tools.filter((t) => !q || (t.title + ' ' + t.name + ' ' + t.description).toLowerCase().includes(q));
+        if (!tools.length) return null;
+        return h('details', { open: q || !current || (current && current.module === m.id) ? true : undefined },
+          h('summary', {}, m.label, ' ', h('span', { class: 'count' }, `(${tools.length})`)),
+          tools.map((t) => h('a', { href: `#/tools/${encodeURIComponent(t.name)}`, 'aria-current': current && current.name === t.name ? 'page' : undefined },
+            t.title, h('span', { class: 'desc' }, firstSentence(t.description)))));
+      }).filter(Boolean));
+      if (!list.children.length) list.append(h('p', { class: 'muted' }, 'No tools match.'));
+    };
+    search.addEventListener('input', drawList);
+    drawList();
+    const panel = current ? toolPanel(current) : h('div', { class: 'card tool-intro' }, h('h2', {}, 'Pick a check'),
+      h('p', {}, `${data.count} checks, grouped by topic. Each result shows its official source, whether that source has been verified, and a disclaimer. Save any result to Documents or print it.`),
+      h('p', { class: 'muted small' }, 'Your AI assistant can run the same checks (Settings → AI assistant).'));
+    return h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, current ? current.title : 'Tools'), h('p', {}, current ? current.module_label : 'Checks and calculators built on California rules')),
+        current ? h('a', { class: 'btn ghost small no-print', href: '#/tools' }, '← All tools') : null),
+      h('div', { class: 'tool-layout' + (current ? ' has-tool' : '') }, h('aside', { class: 'card tool-list', 'aria-label': 'Tool list' }, search, list), panel));
+  };
+
+  // ======================================================================== documents
+  function docEditor(doc, onSaved) {
+    const err = h('div', { role: 'alert' });
+    const ta = h('textarea', { name: 'body_markdown', rows: '14', class: 'mono', value: (doc && doc.body_markdown) || '' });
+    const preview = h('div', { class: 'md md-paper' });
+    const btn = h('button', { type: 'submit', class: 'btn' }, 'Save');
+    const form = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren();
+      const data = formData(form);
+      if (!data.title) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Add a title.'))); return; }
+      busy(btn, true, 'Saving…');
+      try { const saved = await api(doc ? `/api/documents/${doc.id}` : '/api/documents', { method: doc ? 'PATCH' : 'POST', body: { title: data.title, body_markdown: ta.value } }); toast('Saved'); onSaved(saved); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+    } },
+    field('Title', input('title', { value: (doc && doc.title) || '' }), { required: true }),
+    field('Text', ta, { hint: 'Markdown: # Heading, - bullet, **bold**, | table |.' }),
+    h('details', { ontoggle: () => { preview.innerHTML = md(ta.value); } }, h('summary', {}, 'Preview'), preview),
+    err, h('div', { class: 'row' }, btn));
+    return form;
+  }
+  const DOC_KIND = { tool_result: 'Check result', note: 'Note', program: 'Safety program' };
+  function docExcerpt(d) {
+    // skip the title line and the "verified" line: the card already shows both
+    const lines = String(d.excerpt || '').split('\n').map((l) => l.trim())
+      .filter((l) => l && !/^#\s/.test(l) && !/^\*\*(Not yet verified|Verified against)/.test(l) && !/^(-{3,}|\|[-| :]+\|)$/.test(l))
+      .map((l) => l.replace(/^#+\s*/, '').replace(/^([-*+]|\d+[.)])\s+/, '').replace(/\*\*|__|`|\|/g, ' ').trim());
+    return lines.join(' · ').replace(/\s+/g, ' ').slice(0, 170) || 'No text yet.';
+  }
+  routes.documents = async () => {
+    const rows = await api('/api/documents');
+    const add = () => { const d = openDialog('New document', docEditor(null, (doc) => { d.close(); go(`document/${doc.id}`); })); };
+    return h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Documents'), h('p', {}, 'Safety programs, notices, prequal reports and saved tool results.')),
+        can.write() ? h('button', { type: 'button', class: 'btn', onclick: add }, '+ New document') : null),
+      rows.length ? h('div', { class: 'grid grid-2' }, rows.map((d) => h('a', { class: 'card card-link', href: `#/document/${d.id}` },
+        h('div', { class: 'card-head' }, h('h2', {}, d.title), d.verified === null || d.verified === undefined ? null : verifiedBadge({ verified: !!d.verified })),
+        h('p', { class: 'small muted' }, `${DOC_KIND[d.kind] || humanize(d.kind)} · ${fmtDateTime(d.created)}${d.source_tool ? ' · from ' + humanize(d.source_tool) : ''}`),
+        h('p', { class: 'small excerpt' }, docExcerpt(d))))) :
+        h('div', { class: 'card empty' }, h('p', {}, 'No documents yet. Run a tool and choose "Save as document".'), h('a', { class: 'btn secondary', href: '#/tools' }, 'Open tools')));
+  };
+  // the page already shows the title (and the print header repeats it), so drop a matching first heading
+  const stripTitle = (body, title) => String(body || '').replace(/^\s*#\s+(.+)\n+/, (m, t) => (t.trim() === String(title).trim() ? '' : m));
+  routes.document = async ({ args }) => {
+    const d = await api(`/api/documents/${encodeURIComponent(args[0])}`);
+    const edit = () => { const dlg = openDialog('Edit document', docEditor(d, () => { dlg.close(); render(); })); };
+    const del = async () => { if (!confirm(`Delete "${d.title}"?`)) return; await api(`/api/documents/${d.id}`, { method: 'DELETE' }); toast('Deleted'); go('documents'); };
+    return h('div', {},
+      h('div', { class: 'page-head no-print' }, h('div', {}, h('p', {}, h('a', { href: '#/documents' }, '← Documents')), h('h1', {}, d.title),
+        h('p', {}, `${humanize(d.kind)} · created ${fmtDateTime(d.created)}${d.created_by ? ' by ' + d.created_by : ''}`)),
+      h('div', { class: 'row' }, d.verified === null || d.verified === undefined ? null : verifiedBadge({ verified: !!d.verified }),
+        h('button', { type: 'button', class: 'btn secondary', onclick: () => window.print() }, 'Print / PDF'),
+        h('button', { type: 'button', class: 'btn ghost', onclick: () => download(`${d.title.replace(/[^\w.-]+/g, '_').slice(0, 80)}.md`, d.body_markdown, 'text/markdown') }, 'Download'),
+        can.write() ? h('button', { type: 'button', class: 'btn ghost', onclick: edit }, 'Edit') : null,
+        can.write() ? h('button', { type: 'button', class: 'btn danger', onclick: del }, 'Delete') : null)),
+      h('div', { class: 'print-only print-head' }, h('div', { class: 'small' }, h('strong', {}, state.me.tenant.company_name), state.me.tenant.cslb_license ? ` · CSLB license #${state.me.tenant.cslb_license}` : '',
+        ` · printed ${fmtDate(todayISO())}`), h('h1', {}, d.title)),
+      h('article', { class: 'card' }, h('div', { class: 'md', html: md(stripTitle(d.body_markdown, d.title)) }),
+        h('p', { class: 'print-only small muted' }, 'Prepared with TradeComply CA. Compliance information, not legal advice.')));
+  };
+
+  // ======================================================================== field (offline-first)
+  function signaturePad() {
+    const canvas = h('canvas', { class: 'sig-pad', role: 'img', 'aria-label': 'Signature area. Sign with a finger, pen or mouse.' });
+    let ctx = null, drawing = false, signed = false, last = null;
+    const setup = () => {
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(rect.width * ratio)); canvas.height = Math.max(1, Math.round(rect.height * ratio));
+      ctx = canvas.getContext('2d'); ctx.scale(ratio, ratio);
+      ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111';
+    };
+    const pos = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+    canvas.addEventListener('pointerdown', (e) => {
+      if (!ctx) setup();
+      drawing = true; last = pos(e); canvas.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing) return;
+      const p = pos(e);
+      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      last = p;
+      if (!signed) { signed = true; canvas.classList.add('signed'); canvas.setAttribute('aria-label', 'Signed'); }
+    });
+    const end = () => { drawing = false; };
+    canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+    return {
+      el: canvas,
+      signed: () => signed,
+      data: () => (signed ? canvas.toDataURL('image/png') : null),
+      clear: () => { if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height); signed = false; canvas.classList.remove('signed'); canvas.setAttribute('aria-label', 'Signature area. Sign with a finger, pen or mouse.'); },
+    };
+  }
+  const TOPICS = ['Fall protection', 'Heat illness prevention', 'Ladder safety', 'Trenching and excavation', 'Silica dust', 'Electrical safety / lockout', 'Scaffolds', 'Housekeeping and slips', 'PPE', 'Hand and power tools', 'Struck-by hazards', 'Fire prevention', 'Emergency action plan'];
+  routes.field = async ({ query }) => {
+    let projects = [];
+    try { projects = (await api('/api/projects')).filter((p) => p.status !== 'closed'); } catch (e) { /* offline with no cache */ }
+    const attendees = [];
+    const list = h('div', {});
+    const addAttendee = (name = '') => {
+      const pad = signaturePad();
+      const nameIn = h('input', { type: 'text', class: 'attendee-name', placeholder: 'e.g. Luis Ramirez', value: name, autocomplete: 'off' });
+      const ack = h('input', { type: 'checkbox' });
+      const row = h('div', { class: 'sig-row' });
+      const entry = { pad, nameIn, ack, row };
+      const n = attendees.length + 1;
+      row.append(h('div', { class: 'field' }, h('label', {}, `Person ${n}: full name`, nameIn)),
+        h('div', { class: 'sig-label' }, h('span', { class: 'label' }, 'Signature'), h('span', { class: 'hint' }, 'Sign in the box with a finger or stylus.')),
+        pad.el, h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn ghost small', onclick: () => pad.clear() }, 'Clear signature'),
+          h('button', { type: 'button', class: 'btn ghost small', onclick: () => { attendees.splice(attendees.indexOf(entry), 1); row.remove(); } }, 'Remove person')),
+        h('label', { class: 'switch small-switch' }, ack, h('span', {}, 'Was there but can\'t sign (mark as attended)')));
+      attendees.push(entry); list.append(row);
+      return entry;
+    };
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'submit', class: 'btn' }, 'Save log');
+    const kind = select('kind', [['toolbox_talk', 'Toolbox / tailgate talk'], ['inspection', 'Daily inspection'], ['incident', 'Incident first report']], 'toolbox_talk');
+    const form = h('form', { novalidate: true, onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren();
+      const data = formData(form);
+      if (!data.date) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Pick a date.'))); return; }
+      const people = attendees.map((a) => ({ name: a.nameIn.value.trim(), signature: a.pad.data(), acknowledged: a.ack.checked, signed_at: a.pad.signed() ? new Date().toISOString().slice(0, 16) : null })).filter((a) => a.name);
+      if (data.kind === 'toolbox_talk' && !people.length) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Add at least one attendee.'))); return; }
+      const log = { client_uuid: uuid(), project_id: data.project_id ? Number(data.project_id) : null, kind: data.kind, date: data.date, topic: data.topic, notes: data.notes, attendees: people, _tenant: state.me.tenant.id, _saved: new Date().toISOString() };
+      busy(btn, true, 'Saving…');
+      try {
+        await Outbox.put(log);
+        const res = navigator.onLine ? await syncOutbox({ quiet: true }) : null;
+        toast(res && res.created ? 'Saved and synced' : 'Saved on this device. It will sync when you have signal.');
+        render();
+      } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+    } },
+    h('div', { class: 'form-grid' },
+      field('Type', kind),
+      field('Project', select('project_id', [['', 'No project'], ...projects.map((p) => [String(p.id), p.name])],
+        query && query.get('project') && projects.some((p) => String(p.id) === query.get('project')) ? query.get('project') : projects.length === 1 ? String(projects[0].id) : '')),
+      field('Date', input('date', { type: 'date', value: todayISO() }), { required: true }),
+      field('Topic', input('topic', { list: 'topic-list', autocomplete: 'off' }), { hint: 'What you covered or inspected.' }),
+      h('datalist', { id: 'topic-list' }, TOPICS.map((t) => h('option', { value: t }))),
+      field('Notes', h('textarea', { name: 'notes', rows: '3' }), { wide: true })),
+    h('fieldset', {}, h('legend', {}, 'Attendees and signatures'), list,
+      h('button', { type: 'button', class: 'btn secondary small', onclick: () => { const a = addAttendee(); a.nameIn.focus(); } }, '+ Add person')),
+    err, h('div', { class: 'row' }, btn));
+    addAttendee();
+    const queue = await Outbox.all().catch(() => []);
+    let recent = [];
+    try { recent = await api('/api/field_logs'); } catch (e) { /* offline */ }
+    const projName = (id) => (projects.find((p) => p.id === id) || {}).name || '';
+    const syncBtn = h('button', { type: 'button', class: 'btn secondary small', onclick: async () => { busy(syncBtn, true, 'Syncing…'); await syncOutbox({ quiet: false }); busy(syncBtn, false); render(); } }, 'Sync now');
+    return h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Field log'), h('p', {}, 'Toolbox talks, inspections and incident reports. Works without signal.')),
+        h('div', { class: 'queue' }, h('span', { id: 'queue-count', class: `pill ${queue.length ? 'amber' : 'green'}` }, queue.length ? `${queue.length} waiting to sync` : 'All field logs synced'), queue.length && navigator.onLine ? syncBtn : null)),
+      h('section', { class: 'card' }, form),
+      h('section', { class: 'card' }, h('h2', {}, 'Recent logs'),
+        queue.length ? h('ul', { class: 'bullets' }, queue.map((q) => h('li', {}, `${fmtDate(q.date)} · ${humanize(q.kind)}${q.topic ? ' – ' + q.topic : ''} `, h('span', { class: 'pill amber' }, q._error ? `Needs fixing: ${q._error}` : 'Waiting to sync')))) : null,
+        recent.length ? table([
+          { label: 'Date', render: (l) => fmtDate(l.date) }, { label: 'Type', render: (l) => humanize(l.kind) },
+          { label: 'Project', render: (l) => projName(l.project_id) || '—' }, { label: 'Topic', key: 'topic' },
+          { label: 'People', render: (l) => { const a = l.attendees || []; const att = a.filter((x) => x.signed).length; return `${plural(a.length, 'person', 'people')}: ${l.signature_count || 0} signed${att > (l.signature_count || 0) ? `, ${att - (l.signature_count || 0)} marked attended` : ''}`; } },
+          { label: 'By', key: 'created_by' }], recent.slice(0, 30)) :
+          (queue.length ? null : h('p', { class: 'muted' }, navigator.onLine ? 'No logs yet.' : 'Connect to see logs from the office.'))));
+  };
+
+  // ======================================================================== AI agent connection (settings + onboarding)
+  function agentSnippets(url, key) {
+    const k = key || '<YOUR_API_KEY>';
+    return {
+      code: `claude mcp add --transport http tradecomply ${url} --header "Authorization: Bearer ${k}"`,
+      desktop: JSON.stringify({ mcpServers: { tradecomply: { command: 'npx', args: ['-y', 'mcp-remote', url, '--header', 'Authorization:${TC_AUTH}'], env: { TC_AUTH: `Bearer ${k}` } } } }, null, 2),
+      local: JSON.stringify({ mcpServers: { tradecomply: { command: 'python', args: ['/path/to/TradeComply/server.py'] } } }, null, 2),
+    };
+  }
+  function agentConnect() {
+    const url = (state.me && state.me.mcp_url) || (state.config && state.config.mcp_url) || location.origin + '/mcp';
+    const snippetSlot = h('div', {});
+    const keySlot = h('div', { 'aria-live': 'polite' });
+    const drawSnippets = (key) => {
+      const s = agentSnippets(url, key);
+      snippetSlot.replaceChildren(
+        h('h3', {}, key ? '2. Paste it into your assistant' : 'Set up your assistant'),
+        h('details', { class: 'snippet', open: true }, h('summary', {}, 'Claude Desktop'),
+          h('p', { class: 'small muted' }, 'In Claude Desktop: Settings → Developer → Edit config. Paste this into claude_desktop_config.json, save, then restart Claude Desktop. Needs Node.js installed.'), copyBox(s.desktop, 'Claude Desktop config', true)),
+        h('details', { class: 'snippet' }, h('summary', {}, 'Claude Code (terminal)'), copyBox(s.code, 'Claude Code command', true)),
+        h('details', { class: 'snippet' }, h('summary', {}, 'Other assistants (ChatGPT, Copilot, Procore, Autodesk)'),
+          h('p', { class: 'small muted' }, 'Add a remote MCP server with the URL above and this header:'), copyBox(`Authorization: Bearer ${key || '<YOUR_API_KEY>'}`, 'header', true)),
+        h('details', { class: 'snippet' }, h('summary', {}, 'Without internet, on a computer with TradeComply installed'),
+          h('p', { class: 'small muted' }, 'Runs the checks from a local copy over stdio. Change the path to where TradeComply is installed.'), copyBox(s.local, 'local config', true)));
+    };
+    drawSnippets(null);
+    const nameIn = input('key_name', { value: 'Claude Desktop', id: 'key-name-' + (++fieldSeq) });
+    const btn = h('button', { type: 'button', class: 'btn', onclick: async () => {
+      busy(btn, true, 'Creating…');
+      try {
+        const k = await api('/api/keys', { method: 'POST', body: { name: nameIn.value.trim() || 'AI assistant' } });
+        keySlot.replaceChildren(h('div', { class: 'secret' }, h('p', {}, h('strong', {}, 'Your new API key. Copy it now: it will not be shown again.'), ' The setup below already includes it.'), copyBox(k.key, 'API key')));
+        drawSnippets(k.key);
+        if (state.onKeysChanged) state.onKeysChanged().catch(() => {});
+      } catch (e) { toast(e.message, true); } finally { busy(btn, false); }
+    } }, 'Create API key');
+    return h('div', {},
+      h('p', {}, 'Your AI assistant (Claude, ChatGPT, Copilot or a Procore/Autodesk agent) can run the same California checks. It connects over MCP, the standard way assistants plug into tools. Every call is logged in your activity log.'),
+      h('div', { class: 'field' }, h('span', { class: 'label' }, 'Server address (MCP URL)'), copyBox(url, 'MCP URL')),
+      can.write() ? h('div', { class: 'key-create' }, h('h3', {}, '1. Create a key for your assistant'),
+        h('p', { class: 'small muted' }, state.config && state.config.mcp_require_key ? 'An API key is required. It acts with office permissions; revoke it any time below.' : 'With a key, your assistant\'s checks count toward your account and show in your activity log. It acts with office permissions; revoke it any time.'),
+        h('div', { class: 'field' }, h('label', { for: nameIn.id }, 'Name this key (so you know where it is used)'), h('div', { class: 'row' }, nameIn, btn))) : null,
+      keySlot, snippetSlot);
+  }
+
+  // ======================================================================== onboarding
+  const STEPS = ['Your license', 'Sub list', 'First project', 'Safety programs', 'AI assistant'];
+  routes.welcome = async ({ query }) => {
+    if (!can.write()) return h('div', { class: 'card' }, h('h1', {}, 'Welcome'), h('p', {}, 'Your office has set things up. Use the Field tab for toolbox talks and inspections.'), h('a', { class: 'btn', href: '#/field' }, 'Open Field'));
+    const settings = state.me.tenant.settings || {};
+    const ob = settings.onboarding || { done: [] };
+    let step = Math.min(5, Math.max(1, Number(query.get('step')) || ob.step || 1));
+    const saveProgress = async (done) => {
+      const set = new Set(ob.done || []); if (done) set.add(step);
+      ob.done = [...set]; ob.step = step;
+      try { const t = await api('/api/tenant', { method: 'PATCH', body: { settings: { onboarding: ob } } }); state.me.tenant = { ...state.me.tenant, ...t }; } catch (e) { /* non-fatal */ }
+    };
+    const body = h('div', {});
+    const stepper = h('ol', { class: 'stepper' });
+    const drawStepper = () => stepper.replaceChildren(...STEPS.map((label, k) => h('li', { class: (ob.done || []).includes(k + 1) ? 'done' : '' },
+      h('button', { type: 'button', 'aria-current': step === k + 1 ? 'step' : undefined, onclick: () => { step = k + 1; draw(); } }, h('span', { class: 'num' }, k + 1), label))));
+    // A step's "Next step" button appears once that step has produced something (license checked, list imported,
+    // project added, programs generated), so nobody taps Next and loses a filled-in form; "Skip for now" is always there.
+    let navSlot = null;
+    const gate = { ready: true, open() { if (!this.ready) { this.ready = true; if (navSlot) navSlot.replaceChildren(nav(true)); } } };
+    const nav = (canNext = true) => h('div', { class: 'row' },
+      step > 1 ? h('button', { type: 'button', class: 'btn ghost', onclick: () => { step -= 1; draw(); } }, 'Back') : null,
+      h('button', { type: 'button', class: 'btn ghost', onclick: async () => { await saveProgress(false); if (step < 5) { step += 1; draw(); } else go('dashboard'); } }, step < 5 ? 'Skip for now' : 'Finish later'),
+      canNext ? h('button', { type: 'button', class: 'btn', onclick: async () => { await saveProgress(true); if (step < 5) { step += 1; draw(); } else { toast('Setup complete'); go('dashboard'); } } }, step < 5 ? 'Next step' : 'Go to dashboard') : null);
+
+    const steps = {
+      1: async () => {
+        const out = h('div', { 'aria-live': 'polite' });
+        const lic = input('cslb_license', { inputmode: 'numeric', value: state.me.tenant.cslb_license || '', autocomplete: 'off' });
+        const btn = h('button', { type: 'submit', class: 'btn' }, 'Check my license');
+        const check = async () => {
+          out.replaceChildren();
+          const num = lic.value.replace(/\D/g, '');
+          if (!num) { out.append(h('div', { class: 'banner error' }, h('p', {}, 'Enter your CSLB license number (digits only).'))); lic.focus(); return; }
+          busy(btn, true, 'Checking CSLB data…');
+          try {
+            if (num !== state.me.tenant.cslb_license) {
+              const t = await api('/api/tenant', { method: 'PATCH', body: { cslb_license: num } });
+              state.me.tenant = { ...state.me.tenant, ...t };
+            }
+            out.append(licenseCardView(await api(`/api/license/${encodeURIComponent(num)}`)));
+            gate.open();
+          } catch (ex) { out.append(ex.status === 402 ? subscribeCard(ex.message) : h('div', { class: 'banner error' }, h('p', {}, ex.message))); } finally { busy(btn, false); }
+        };
+        const form = h('form', { novalidate: true, onsubmit: (e) => { e.preventDefault(); check(); } },
+          field('Your CSLB license number', lic, { required: true, hint: 'Find it on your pocket card or at cslb.ca.gov.' }), btn);
+        if (state.me.tenant.cslb_license) check();        // entered at sign-up: show the result right away
+        return [h('h2', {}, 'Step 1: Check your own license'), h('p', { class: 'muted' }, 'A lapsed bond or workers\' comp policy suspends your license automatically, and work done while suspended can mean giving back what you were paid.'), form, h('div', { class: 'step-out' }, out)];
+      },
+      2: async () => [h('h2', {}, 'Step 2: Upload your sub list'), h('p', { class: 'muted' }, 'We check each license, class, workers\' comp and bond. Most firms with 20+ subs find at least one problem.'), importPanel(() => gate.open())],
+      3: async () => {
+        const out = h('div', { 'aria-live': 'polite' });
+        const form = projectForm(null, async (p) => {
+          form.replaceWith(h('div', { class: 'banner info' }, h('p', {}, `Added "${p.name}".`), h('a', { class: 'btn small secondary', href: `#/project/${p.id}` }, 'Open project')));
+          gate.open();
+          try { const dl = await api(`/api/projects/${p.id}/deadlines`); out.replaceChildren(h('h3', {}, 'Lien and safety calendar'), alertList(dl.items, { empty: 'Add furnishing dates to see deadlines.', inProject: true }), dl.notes.length ? h('ul', { class: 'bullets small muted' }, dl.notes.map((n) => h('li', {}, n))) : null); } catch (e) { out.replaceChildren(h('p', {}, e.message)); }
+        });
+        return [h('h2', {}, 'Step 3: Add an active project'), h('p', { class: 'muted' }, 'We build the lien calendar: 20-day preliminary notice, lien recording and foreclosure deadlines.'), form, out];
+      },
+      4: async () => {
+        let tools = [];
+        try { tools = (await getTools()).tools; } catch (e) { /* offline */ }
+        const pick = tools.filter((t) => t.module === 'safety_programs' && /program|iipp|plan|questionnaire|generate/.test(t.name))
+          .sort((a, b) => (/generate|program/.test(b.name) ? 1 : 0) - (/generate|program/.test(a.name) ? 1 : 0));
+        if (!pick.length) {
+          const lookup = tools.find((t) => t.module === 'safety_programs');
+          return [h('h2', {}, 'Step 4: Safety programs'), h('p', {}, 'The Cal/OSHA program generator is not installed on this server yet.'),
+            lookup ? h('a', { class: 'btn secondary', href: `#/tools/${lookup.name}` }, `Open ${lookup.title}`) : null];
+        }
+        return [h('h2', {}, 'Step 4: Answer the safety questionnaire'), h('p', { class: 'muted' }, 'About 10 minutes. You get draft programs (IIPP, Code of Safe Practices, heat plan and more) to review and sign. Save them to Documents.'),
+          pick.length > 1 ? h('p', { class: 'small' }, 'Also available: ', pick.slice(1).map((t, k) => [k ? ', ' : '', h('a', { href: `#/tools/${t.name}` }, t.title)])) : null,
+          toolPanel(pick[0], { onResult: () => gate.open() })];
+      },
+      5: async () => [h('h2', {}, 'Step 5: Connect your AI assistant'), agentConnect()],
+    };
+    const draw = async () => {
+      drawStepper();
+      body.replaceChildren(h('p', { class: 'loading' }, 'Loading…'));
+      gate.ready = step === 5 || (ob.done || []).includes(step);
+      navSlot = null;
+      const content = await steps[step]();
+      navSlot = h('div', {}, nav(gate.ready));
+      body.replaceChildren(h('section', { class: 'card' }, content, h('hr'), navSlot));
+      history.replaceState(null, '', `#/welcome?step=${step}`);
+    };
+    await draw();
+    return h('div', {}, h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, `Welcome, ${state.me.tenant.company_name}`), h('p', {}, 'Five steps, about 15 minutes. You can skip any step and come back.'))), stepper, body);
+  };
+
+  // ======================================================================== settings
+  routes.settings = async ({ query }) => {
+    if (query.get('billing') === 'success') { toast('Thanks! Your subscription is being activated.'); setTimeout(async () => { await loadMe(); renderBanner(); }, 2500); }
+    const me = state.me;
+    const sections = [];
+    // account
+    const pwErr = h('div', { role: 'alert' });
+    const pwForm = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); pwErr.replaceChildren();
+      const d = formData(pwForm);
+      if ((d.new_password || '').length < 10) { pwErr.append(h('div', { class: 'banner error' }, h('p', {}, 'Use at least 10 characters.'))); return; }
+      try { await api('/api/auth/password', { method: 'POST', body: d }); toast('Password changed. Other devices were logged out.'); pwForm.reset(); await loadMe(); renderBanner(); } catch (ex) { pwErr.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); }
+    } },
+    h('div', { class: 'form-grid' }, field('Current password', input('current_password', { type: 'password', autocomplete: 'current-password' }), { required: true }),
+      field('New password', input('new_password', { type: 'password', autocomplete: 'new-password', minlength: '10' }), { required: true, hint: 'At least 10 characters.' })),
+    pwErr, h('button', { type: 'submit', class: 'btn secondary' }, 'Change password'));
+    const logout = async () => {
+      await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage('clear-api-cache');
+      if (window.caches) caches.delete('tc-api-v1').catch(() => {});
+      state.me = null; state.tools = null; $('#nav').hidden = true; $('#company').textContent = ''; go('login');
+    };
+    sections.push(h('section', { class: 'card', 'aria-labelledby': 'acct-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'acct-h' }, 'Your account'), h('button', { type: 'button', class: 'btn ghost', onclick: logout }, 'Log out')),
+      h('dl', { class: 'kv' }, h('dt', {}, 'Email'), h('dd', {}, me.user.email || '—'), h('dt', {}, 'Role'), h('dd', {}, humanize(me.user.role))), pwForm));
+    if (can.write()) {
+      // company
+      const cErr = h('div', { role: 'alert' });
+      const cForm = h('form', { onsubmit: async (e) => {
+        e.preventDefault(); cErr.replaceChildren();
+        try { const t = await api('/api/tenant', { method: 'PATCH', body: formData(cForm) }); state.me.tenant = { ...state.me.tenant, ...t }; $('#company').textContent = t.company_name; toast('Company saved'); } catch (ex) { cErr.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); }
+      } }, h('div', { class: 'form-grid' }, field('Company name', input('company_name', { value: me.tenant.company_name }), { required: true }),
+        field('CSLB license number', input('cslb_license', { value: me.tenant.cslb_license || '', inputmode: 'numeric' }))), cErr, h('button', { type: 'submit', class: 'btn secondary' }, 'Save company'));
+      sections.unshift(h('section', { class: 'card' }, h('h2', {}, 'Company'), cForm));
+      // team
+      const team = h('div', {});
+      const drawTeam = async () => {
+        const users = await api('/api/users');
+        team.replaceChildren(table([
+          { label: 'Person', bare: true, render: (u) => h('div', {}, h('strong', {}, u.name || u.email, u.id === me.user.id ? ' (you)' : ''), u.name ? h('div', { class: 'small muted' }, u.email) : null) },
+          { label: 'Role', render: (u) => can.owner() && u.id !== me.user.id ? (() => { const s = select('role', [['owner', 'Owner'], ['office', 'Office'], ['field', 'Field']], u.role, { 'aria-label': `Role for ${u.email}` }); s.addEventListener('change', async () => { try { await api(`/api/users/${u.id}`, { method: 'PATCH', body: { role: s.value } }); toast('Role updated'); } catch (e) { toast(e.message, true); } }); return s; })() : humanize(u.role) },
+          { label: 'Last login', render: (u) => fmtDateTime(u.last_login) },
+          { label: 'Actions', bare: true, render: (u) => can.owner() && u.id !== me.user.id ? h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Remove ${u.email}?`)) { await api(`/api/users/${u.id}`, { method: 'DELETE' }); drawTeam(); } } }, 'Remove') : null }], users));
+      };
+      await drawTeam();
+      let invite = null;
+      if (can.owner()) {
+        const out = h('div', { 'aria-live': 'polite' });
+        const iForm = h('form', { onsubmit: async (e) => {
+          e.preventDefault(); out.replaceChildren();
+          try {
+            const r = await api('/api/users', { method: 'POST', body: formData(iForm) });
+            out.append(h('div', { class: 'secret' }, h('p', {}, h('strong', {}, `Temporary password for ${r.email}`), ` (${humanize(r.role)}). ${r.message}`), copyBox(r.temporary_password, 'temporary password')));
+            iForm.reset(); drawTeam();
+          } catch (ex) { out.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); }
+        } }, h('div', { class: 'form-grid' }, field('Email', input('email', { type: 'email' }), { required: true }),
+          field('Role', select('role', [['field', 'Field (logs only)'], ['office', 'Office (everything but billing)'], ['owner', 'Owner (everything)']], 'field'))),
+        h('button', { type: 'submit', class: 'btn secondary' }, 'Invite'));
+        invite = h('div', {}, h('h3', {}, 'Invite someone'), iForm, out);
+      }
+      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Team'), team, invite));
+      // AI + keys
+      const keys = h('div', {});
+      const drawKeys = async () => {
+        const rows = await api('/api/keys');
+        keys.replaceChildren(rows.length ? table([
+          { label: 'Name', key: 'name' }, { label: 'Key', render: (k) => h('code', {}, `${k.prefix}…`) }, { label: 'Created', render: (k) => fmtDateTime(k.created) },
+          { label: 'Last used', render: (k) => fmtDateTime(k.last_used) }, { label: 'Status', render: (k) => k.revoked ? h('span', { class: 'pill gray' }, 'Revoked') : h('span', { class: 'pill green' }, 'Active') },
+          { label: 'Actions', bare: true, render: (k) => k.revoked ? null : h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Revoke "${k.name}"? Anything using it stops working.`)) { await api(`/api/keys/${k.id}`, { method: 'DELETE' }); toast('Key revoked'); drawKeys(); } } }, 'Revoke') }], rows) : h('p', { class: 'muted' }, 'No API keys yet.'));
+      };
+      await drawKeys();
+      state.onKeysChanged = drawKeys;
+      sections.push(h('section', { class: 'card', id: 'ai' }, h('h2', {}, 'AI assistant (MCP)'), agentConnect(), h('h3', {}, 'API keys'), keys));
+      // calendar
+      const cal = h('div', {});
+      try {
+        const f = await api('/api/calendar/feed');
+        const rotate = h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (!confirm('Make a new link? The old one stops working.')) return; const r = await api('/api/calendar/feed/rotate', { method: 'POST' }); cal.replaceChildren(copyBox(r.url, 'calendar link'), rotate); toast('New calendar link created'); } }, 'Make a new link');
+        cal.append(copyBox(f.url, 'calendar link'), rotate);
+      } catch (e) { cal.append(h('p', { class: 'muted' }, e.message)); }
+      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Calendar'), h('p', { class: 'muted' }, 'Subscribe in Google Calendar, Outlook or Apple Calendar (Add calendar → From URL). Keep this link private.'), cal));
+      // activity log
+      const auditSlot = h('div', {});
+      let auditShown = 10;
+      const loadAudit = async () => {
+        const all = await api('/api/audit?limit=200');
+        const rows = all.slice(0, auditShown);
+        const moreBtn = all.length > auditShown ? h('button', { type: 'button', class: 'btn secondary small', onclick: () => { auditShown += 25; loadAudit(); } }, `Show more (${all.length - auditShown} older)`) : null;
+        auditSlot.replaceChildren(rows.length ? table([
+          { label: 'When', render: (r) => fmtDateTime(r.created) }, { label: 'Who', key: 'user' }, { label: 'Check', render: (r) => humanize(r.tool) },
+          { label: 'Via', render: (r) => r.source === 'mcp' ? 'AI assistant' : 'Web/API' },
+          { label: 'Result', render: (r) => r.ok ? (r.verified === true ? h('span', { class: 'pill green' }, 'Verified') : r.verified === false ? h('span', { class: 'pill amber' }, 'Not yet verified') : h('span', { class: 'pill gray' }, 'Done')) : h('span', { class: 'pill red' }, 'Error') }], rows) : h('p', { class: 'muted' }, 'No checks run yet.'), moreBtn);
+      };
+      sections.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Activity log'), h('button', { type: 'button', class: 'btn ghost small', onclick: loadAudit }, 'Refresh')), auditSlot));
+      loadAudit().catch((e) => auditSlot.replaceChildren(h('p', {}, e.message)));
+    }
+    if (can.owner()) {
+      const b = await api('/api/billing/status').catch(() => null);
+      const ent = me.entitlement || {};
+      const items = [h('dl', { class: 'kv' }, h('dt', {}, 'Plan'), h('dd', {}, me.tenant.plan === 'local' ? 'Local install' : `Core, $${((b && b.price_usd_month) || 1000).toLocaleString('en-US')}/month`),
+        h('dt', {}, 'Status'), h('dd', {}, h('span', { class: `pill ${ent.ok === false ? 'red' : ent.warning ? 'amber' : 'green'}` }, ent.message || humanize(me.tenant.status))))];
+      if (me.tenant.plan !== 'local') {
+        if (b && !b.configured) items.push(h('p', { class: 'muted' }, 'Online billing is not set up on this server yet. Contact TradeComply to subscribe.'));
+        items.push(h('div', { class: 'row' },
+          me.tenant.status !== 'active' && b && b.configured ? h('button', { type: 'button', class: 'btn', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null,
+          me.tenant.has_billing_account ? h('button', { type: 'button', class: 'btn secondary', onclick: (e) => billingPortal(e.currentTarget) }, 'Manage billing and invoices') : null));
+      }
+      sections.push(h('section', { class: 'card', id: 'billing' }, h('h2', {}, 'Billing'), items));
+    }
+    // a long page on a phone: jump links to each section
+    sections.forEach((sec, k) => { if (!sec.id) sec.id = `set-${k}`; });
+    const jump = sections.length < 3 ? null : h('nav', { class: 'jump no-print', 'aria-label': 'Settings sections' }, sections.map((sec) => {
+      const t = sec.querySelector('h2'); return t ? h('a', { href: '#', class: 'pill gray', onclick: (e) => { e.preventDefault(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, t.textContent.replace(/ \(MCP\)$/, '')) : null;
+    }));
+    return h('div', {}, h('div', { class: 'page-head' }, h('h1', {}, 'Settings')), jump, h('div', { class: 'stack' }, sections));
+  };
+
+  // ======================================================================== boot
+  function setOnline(on) {
+    state.online = on;
+    $('#net').hidden = on;
+    if (on) syncOutbox({ quiet: true });
+  }
+  window.addEventListener('online', () => setOnline(true));
+  window.addEventListener('offline', () => setOnline(false));
+  window.addEventListener('hashchange', render);
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+  setInterval(() => syncOutbox({ quiet: true }), 60000);
+  document.addEventListener('DOMContentLoaded', async () => {
+    setOnline(navigator.onLine);
+    await loadMe();
+    if (!location.hash) location.replace(state.me ? '#/dashboard' : '#/login');
+    await render();
+    syncOutbox({ quiet: true });
+  });
+})();

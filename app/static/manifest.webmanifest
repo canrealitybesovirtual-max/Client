@@ -1,0 +1,15 @@
+{
+  "name": "TradeComply CA",
+  "short_name": "TradeComply",
+  "description": "California construction compliance: licenses, subs, lien deadlines, Cal/OSHA safety, field logs.",
+  "start_url": "/#/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f6f9",
+  "theme_color": "#0f3d6e",
+  "icons": [
+    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable"}
+  ]
+}

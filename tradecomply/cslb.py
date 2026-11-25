@@ -186,6 +186,13 @@ def lookup(license_number: str, db: str | None = None) -> dict | None:
         con.close()
 
 
+def snapshot_date(db: str | None = None) -> str | None:
+    """Date of the CSLB data in use: the snapshot date, or (for databases built before that was recorded) the day
+    the database was built."""
+    m = meta(db)
+    return m.get("snapshot_date") or ((m.get("built_at") or "")[:10] or None)
+
+
 def meta(db: str | None = None) -> dict:
     path = db_path(db)
     if not os.path.exists(path):
