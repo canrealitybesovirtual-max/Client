@@ -7,17 +7,20 @@ below and any result that uses it has verified=False.
 from __future__ import annotations
 
 import re
-from datetime import date, timedelta
-from decimal import ROUND_DOWN, Decimal
+from datetime import date, datetime, timedelta
+from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal
 from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from . import core, logic
 
 R = core.rule
 READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 CENT = Decimal("0.01")
+MAX_USD = Decimal("1000000000")  # input sanity limit ($1 billion), not a legal value
+Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+STRICT = ConfigDict(extra="forbid")  # a misspelled checklist key must fail loudly, not read as "not checked"
 
 UNVERIFIED = {
     "business_day": {
@@ -117,6 +120,7 @@ class Finding(BaseModel):
 
 
 class ProgressPayment(BaseModel):
+    model_config = STRICT
     amount_usd: float = Field(ge=0, description="Payment amount in dollars and cents")
     for_work: str = Field("", description="The work, services, materials or equipment this payment is for, e.g. "
                                           "'Rough plumbing complete and inspected'")
@@ -153,7 +157,9 @@ class CancellationPeriod(BaseModel):
     business_days: Optional[int] = None
     received_signed_copy_on: Optional[str] = None
     last_day_to_cancel: Optional[str] = Field(None, description="The buyer may cancel until midnight at the end of this date")
-    earliest_safe_start_date: Optional[str] = None
+    earliest_safe_start_date: Optional[str] = Field(None, description="First date work can start without the "
+                                                    "cancellation risk (service and repair: the day the buyer has the "
+                                                    "signed copy)")
     open_as_of: Optional[bool] = None
     days_counted: list[str] = Field(default_factory=list)
     days_skipped: list[str] = Field(default_factory=list)
@@ -172,6 +178,7 @@ class CancellationResult(core.Result):
 
 class ContractIncludes(BaseModel):
     """What the written contract contains. True = present, False = missing, None/omitted = not checked."""
+    model_config = STRICT
     type_size_10pt_text_and_bold_headings: Optional[bool] = Field(None, description=f"Legible; text >= {BODY_PT}-pt, headings >= {HEAD_PT}-pt bold")
     signed_dated_copy_to_buyer_before_work: Optional[bool] = Field(None, description="Buyer gets a copy signed and dated by both sides before work starts")
     first_page_buyer_sign_date: Optional[bool] = Field(None, description="First page shows the date the buyer signed")
@@ -235,18 +242,36 @@ class ContractValidation(core.Result):
 
 
 # ---------------------------------------------------------------- helpers
+DATE_RANGE = (date(1990, 1, 1), date(2100, 12, 31))  # input sanity limit, not a legal value
+
+
 def _dt(value, field: str) -> Optional[date]:
     if value is None or value == "":
         return None
-    return value if isinstance(value, date) else logic._date(str(value), field)
+    if isinstance(value, datetime):
+        value = value.date()
+    d = value if isinstance(value, date) else logic._date(str(value), field)
+    if not DATE_RANGE[0] <= d <= DATE_RANGE[1]:
+        raise ValueError(f"{field} must be between {DATE_RANGE[0]} and {DATE_RANGE[1]}, got {d}")
+    return d
 
 
-def _money(x) -> Decimal:
-    return Decimal(str(x)).quantize(CENT)
+def _money(x, field: str = "amount") -> Decimal:
+    """Dollars to cents, half up (the usual commercial rounding). Rejects NaN, infinity and absurd sizes."""
+    d = Decimal(str(x))
+    if not d.is_finite() or abs(d) > MAX_USD:
+        raise ValueError(f"{field} must be a dollar amount up to {MAX_USD:,}, got {x!r}")
+    return d.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
 def _usd(x) -> str:
-    return f"${Decimal(x):,.2f}"
+    d = _money(x)
+    return f"{'-' if d < 0 else ''}${abs(d):,.2f}"
+
+
+def _long(d: Optional[date]) -> Optional[str]:
+    """'November 27, 2026': how dates are written on the homeowner's copy (no platform-specific strftime flags)."""
+    return f"{d:%B} {d.day}, {d.year}" if d else None
 
 
 def _f(item: str, status: Status, detail: str, rule_id: str) -> Finding:
@@ -373,12 +398,22 @@ def _cancellation(received: Optional[date], senior: bool, disaster: bool, at_pla
             f"({received.isoformat()}). Business days are every day except Sundays and the nine Civil Code 1689.5(e) "
             "holidays, so Saturdays count. When a fixed-date holiday falls on a weekend we also skip the nearby "
             f"weekday, which can only make the deadline later. Deadline: midnight at the end of {last.isoformat()}.")
-        p.explanation.append(
-            f"If the buyer cancels on time you must return everything they paid within {refund} days of receiving "
-            "the notice; if they make delivered goods available and you do not pick them up within "
-            f"{pickup} days of the date of their notice, they may keep them. Starting work or delivering goods before "
-            f"{p.earliest_safe_start_date} puts that at risk; Civil Code 1689.5-1689.15 (not in our rulebook) govern "
-            "early starts, so ask your attorney before starting early.")
+        refund_text = (f"If the buyer cancels on time you must return everything they paid within {refund} days of "
+                       "receiving the notice; if they make delivered goods available and you do not pick them up "
+                       f"within {pickup} days of the date of their notice, they may keep them.")
+        if service_and_repair:
+            # 7159.10(e)(12)(A): the before-work right ends once the buyer has the signed copy AND work starts
+            p.earliest_safe_start_date = received.isoformat()
+            p.explanation.append(
+                f"You may start work as soon as the buyer has the signed copy ({received.isoformat()}); starting "
+                f"ends the before-work right to cancel. The after-start right through {last.isoformat()} exists only "
+                "if one of the four reasons above occurred, which means the job was not a true service and repair "
+                f"job. {refund_text}")
+        else:
+            p.explanation.append(
+                f"{refund_text} Starting work or delivering goods before {p.earliest_safe_start_date} puts that at "
+                "risk; Civil Code 1689.5-1689.15 (not in our rulebook) govern early starts, so ask your attorney "
+                "before starting early.")
         p.explanation.append("Before you mobilize, check email, fax and mail: a notice the buyer sent by the deadline "
                              "can reach you after it (when a mailed notice takes effect is a Civil Code question not "
                              "in our rulebook).")
@@ -402,7 +437,9 @@ def cancellation_deadline(received_signed_copy_on: Optional[str] = None, buyer_a
 def down_payment_limit(contract_price_usd: float, down_payment_usd: float = 0.0,
                        bonded_or_joint_control: bool = False) -> DownPaymentCheck:
     """B&P 7159.5(a)(3): down payment <= the lesser of the fixed cap or the percentage of the contract price."""
-    price, down = _money(contract_price_usd), _money(down_payment_usd)
+    price, down = _money(contract_price_usd, "contract_price_usd"), _money(down_payment_usd, "down_payment_usd")
+    if price < 0 or down < 0:
+        raise ValueError("contract_price_usd and down_payment_usd must not be negative")
     pct = (price * DOWN_CAP_PCT / 100).quantize(CENT, rounding=ROUND_DOWN)  # round down: never overstate the cap
     cap = min(DOWN_CAP_USD, pct)
     excess = max(Decimal(0), down - cap)
@@ -417,10 +454,17 @@ def down_payment_limit(contract_price_usd: float, down_payment_usd: float = 0.0,
                             ok=bonded_or_joint_control or not excess, math=math)
 
 
-_ADVANCE = re.compile(r"\b(sign\w*|execut\w*|start\w*|commenc\w*|mobiliz\w*|before|prior to|in advance|advance|"
-                      r"deposit|up ?front|retainer|order\w*|booking|reserv\w*)\b", re.I)
+# Wording that reads like money before the work. Not "sign-off"/"signed off" (an inspector's approval), not
+# "start-up" (equipment commissioning), not "change order"/"work order", and "before"/"prior to" only before the work.
+_ADVANCE = re.compile(r"\b(sign(?:ing|ed|ature|s)?(?![\s-]*off)|execut\w*|start(?![\s-]?up\b)\w*|commenc\w*|mobiliz\w*|"
+                      r"(?:before|prior to)\s+(?:any\s+|the\s+)?(?:work|start|job|project|delivery|install\w*)|"
+                      r"in advance|advance|deposit|up ?front|retainer|(?<!change )(?<!change-)(?<!work )order\w*|booking|reserv\w*)\b",
+                      re.I)
 _CALENDAR = re.compile(r"\b(\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}(/\d{2,4})?|january|february|march|april|may \d{1,2}|june|"
                        r"july|august|september|october|november|december|week\w*|month\w*|days? after|every)\b", re.I)
+# A date next to a finished-work milestone ("10 days after final completion") is still tied to the work.
+_WORK_DONE = re.compile(r"\b(complet\w*|finish\w*|installed|delivered|inspect\w*|passed|done|signed off|sign-?off)\b",
+                        re.I)
 
 
 def check_payment_schedule(contract_price_usd: float, down_payment_usd: float, payments: list[ProgressPayment],
@@ -429,13 +473,17 @@ def check_payment_schedule(contract_price_usd: float, down_payment_usd: float, p
     price, down = _money(contract_price_usd), _money(down_payment_usd)
     findings, lines, cum_paid, cum_value = [], [], Decimal(0), Decimal(0)
     have_values = bool(payments) and all(p.value_of_work_usd is not None for p in payments)
+    if not bonded_or_joint_control and not have_values and any(p.value_of_work_usd is not None for p in payments):
+        findings.append(_f("Payments vs. value of work", "not_checked", "value_of_work_usd is given for only some "
+                           "payments; give it for every payment to test that payments never run ahead of the work.",
+                           "no-payment-ahead-of-work"))
     if bonded_or_joint_control and payments:
         findings.append(_f("Progress payments", "not_applicable", "You furnish a qualifying bond or joint control, so "
                            "the schedule and no-payment-ahead-of-work rules do not apply and you may take payment "
                            "before completion. The contractor may not have any interest in the joint control.",
                            "bonded-contractor-payment-exemption"))
     for i, p in enumerate(payments, 1):
-        amt = _money(p.amount_usd)
+        amt = _money(p.amount_usd, f"progress payment #{i} amount_usd")
         cum_paid += amt
         status, why = "ok", []
         work = (p.for_work or "").strip()
@@ -447,11 +495,11 @@ def check_payment_schedule(contract_price_usd: float, down_payment_usd: float, p
                 status = "warning"
                 why.append(f"'{work}' reads like payment before the work is done or materials are delivered; tie it "
                            "to finished work or delivered materials")
-            elif _CALENDAR.search(work):
+            elif _CALENDAR.search(work) and not _WORK_DONE.search(work):
                 status = "warning"
                 why.append(f"'{work}' is tied to a date, not to finished work")
             if have_values:
-                cum_value += _money(p.value_of_work_usd)
+                cum_value += _money(p.value_of_work_usd, f"progress payment #{i} value_of_work_usd")
                 if cum_paid > cum_value:
                     status = "violation"
                     why.append(f"progress payments through #{i} total {_usd(cum_paid)} but the work finished by then "
@@ -565,9 +613,9 @@ def _checklist(items, inc: ContractIncludes, cond: dict[str, tuple]) -> list[Fin
 
 
 def _license_codes(classifications) -> set[str]:
-    """'C-39 Roofing', 'c39', 'C-61/D-49' -> {'C-39'}, {'C-39'}, {'C-61', 'D-49'}."""
+    """'C-39 Roofing', 'c39', 'C 39', 'C-61/D-49' -> {'C-39'}, {'C-39'}, {'C-39'}, {'C-61', 'D-49'}."""
     return {f"{m.group(1).upper()}-{int(m.group(2))}"
-            for c in classifications or [] for m in re.finditer(r"\b([abcd])-?(\d{1,2})\b", str(c), re.I)}
+            for c in classifications or [] for m in re.finditer(r"\b([abcd])[-\s]?(\d{1,2})\b", str(c), re.I)}
 
 
 def _wc_exemption_problem(classifications, on: date) -> Optional[tuple[str, str]]:
@@ -582,6 +630,17 @@ def _wc_exemption_problem(classifications, on: date) -> Optional[tuple[str, str]
                 f"(only licenses without {', '.join(WC_ALWAYS_CLASSES)} can): carry workers' comp and use the "
                 "'carries workers' compensation insurance' statement.", "workers-comp-exemption-until-2028")
     return None
+
+
+def _sr_total_problem(price: Decimal, service_charge_usd: float) -> Optional[str]:
+    """B&P 7159.14(a)(3): the service and repair amount is the entire cost, so price + service charge must fit."""
+    total = price + _money(service_charge_usd, "service_charge_usd")
+    if total <= SR_MAX_USD:
+        return None
+    return (f"{_usd(price)} + {_usd(service_charge_usd)} service charge = {_usd(total)}, over {_usd(SR_MAX_USD)}. "
+            "The contract amount must include the entire cost (B&P 7159.14(a)(3)); if the service charge is billed on "
+            "top of the price, the job may not qualify as service and repair. Include it in the price or use a full "
+            "home improvement contract.")
 
 
 def validate_home_improvement_contract(
@@ -600,18 +659,27 @@ def validate_home_improvement_contract(
         workers_comp_notice_says_no_employees: bool = False,
         license_classifications: Optional[list[str]] = None) -> ContractValidation:
     """Check a California home improvement (or service and repair) contract against B&P 7159-7159.14 and 7191."""
-    if contract_price_usd < 0 or down_payment_usd < 0 or finance_charge_usd < 0 or service_charge_usd < 0:
-        raise ValueError("amounts must not be negative")
+    amounts = {k: _money(v, k) for k, v in (("contract_price_usd", contract_price_usd),
+                                            ("down_payment_usd", down_payment_usd),
+                                            ("finance_charge_usd", finance_charge_usd),
+                                            ("service_charge_usd", service_charge_usd))}
+    if negative := [k for k, v in amounts.items() if v < 0]:
+        raise ValueError(f"{', '.join(negative)} must not be negative")
+    price, down = amounts["contract_price_usd"], amounts["down_payment_usd"]
+    if price == 0:
+        raise ValueError("contract_price_usd must be more than $0.00: give the contract price in dollars and cents")
     if residential_units < 1:
         raise ValueError("residential_units must be at least 1 (home improvement rules cover residential property)")
     today = _dt(as_of, "as_of") or logic.today_ca()
     received = _dt(buyer_received_signed_copy_on, "buyer_received_signed_copy_on")
     start, finish = _dt(start_date, "start_date"), _dt(completion_date, "completion_date")
     signed = _dt(contract_signed_on, "contract_signed_on")
+    if signed and received and received < signed:
+        raise ValueError(f"buyer_received_signed_copy_on ({received}) is before contract_signed_on ({signed}): the "
+                         "buyer cannot receive a signed copy before the contract is signed; check both dates")
     contract_date = signed or received or today
     payments = [p if isinstance(p, ProgressPayment) else ProgressPayment(**p) for p in progress_payments or []]
     inc = includes if isinstance(includes, ContractIncludes) else ContractIncludes(**(includes or {}))
-    price, down = _money(contract_price_usd), _money(down_payment_usd)
     bonded = contractor_has_payment_bond_or_joint_control
     findings, notes, rids = [], [], []
     pros = [ATTORNEY]
@@ -720,7 +788,16 @@ def validate_home_improvement_contract(
         if start and finish and finish < start:
             findings.append(_f("Dates", "violation", f"Completion {finish} is before start {start}.",
                                "hic-approximate-completion-date"))
-        if start and cancel.last_day_to_cancel and start.isoformat() <= cancel.last_day_to_cancel:
+        has_copy = received or signed
+        if start and has_copy and start < has_copy:
+            findings.append(_f("Work before the buyer has the signed copy", "violation",
+                               f"Work is set to start {start}, before the buyer "
+                               + ("received the signed copy" if received else "signed") + f" ({has_copy}). No work "
+                               "may start until the buyer has a copy signed and dated by both of you"
+                               + (f"; to also clear the cancellation period, start on or after "
+                                  f"{cancel.earliest_safe_start_date}." if cancel.earliest_safe_start_date else "."),
+                               "lawbook_p381-430:hic-signed-copy-before-work"))
+        elif start and cancel.last_day_to_cancel and start.isoformat() <= cancel.last_day_to_cancel:
             findings.append(_f("Start date vs. cancellation period", "warning",
                                f"Work is set to start {start} while the buyer can still cancel (through "
                                f"{cancel.last_day_to_cancel}). Start on or after {cancel.earliest_safe_start_date}.",
@@ -753,14 +830,8 @@ def validate_home_improvement_contract(
             notes.append("Only one service charge (trip and inspection fees included); disclose it in every ad and "
                          "state the amount when the customer calls.")
             rids.append("service-repair-one-service-charge")
-            total = price + _money(service_charge_usd)
-            if total > SR_MAX_USD:
-                findings.append(_f("Price plus service charge", "warning",
-                                   f"{_usd(price)} + {_usd(service_charge_usd)} service charge = {_usd(total)}, over "
-                                   f"{_usd(SR_MAX_USD)}. The contract amount must include the entire cost (B&P "
-                                   "7159.14(a)(3)); if the service charge is billed on top of the price, the job may "
-                                   "not qualify as service and repair. Include it in the price or use a full home "
-                                   "improvement contract.", "service-repair-substantive-rules"))
+            if over := _sr_total_problem(price, service_charge_usd):
+                findings.append(_f("Price plus service charge", "warning", over, "service-repair-substantive-rules"))
     if ctype != "under_7159_threshold" and workers_comp_notice_says_no_employees:
         why = _wc_exemption_problem(license_classifications, contract_date)
         if why:
@@ -833,8 +904,9 @@ def validate_home_improvement_contract(
         required_professionals=pros, notes=notes, as_of=today.isoformat(),
         unverified_sources=[UNVERIFIED["business_day"]] if unverified else [])
     if counts["not_checked"]:
-        res.notes.append(f"{counts['not_checked']} checklist items were not confirmed; compliant=true only means no "
-                         "violation was found among what was checked.")
+        res.summary.append(f"NOT CHECKED: {counts['not_checked']} items were not confirmed (status not_checked in "
+                           "findings), so compliant covers only what was checked. Confirm each one (most are "
+                           "`includes` items: true/false) for a full check.")
     if not (signed or received):
         res.notes.append(f"No contract date given: date-dependent rules (AB 1327 email and phone, SB 517 subcontractor "
                          f"box, senior five-day period) were applied as if the contract was signed {today}. Give "
@@ -844,16 +916,17 @@ def validate_home_improvement_contract(
 
 # ---------------------------------------------------------------- generator
 class ContractFields(BaseModel):
-    contractor_name: str = Field(description="Business name exactly as on the CSLB license")
-    contractor_business_address: str
-    contractor_license_number: str
-    contractor_email: str = Field(description="Email where the buyer may send the Notice of Cancellation")
-    contractor_phone: str = Field(description="Phone the buyer can call for help with the Notice of Cancellation")
-    buyer_names: list[str] = Field(min_length=1)
-    project_address: str
+    model_config = STRICT
+    contractor_name: Text = Field(description="Business name exactly as on the CSLB license")
+    contractor_business_address: Text
+    contractor_license_number: Text
+    contractor_email: Text = Field(description="Email where the buyer may send the Notice of Cancellation")
+    contractor_phone: Text = Field(description="Phone the buyer can call for help with the Notice of Cancellation")
+    buyer_names: list[Text] = Field(min_length=1, description="Every buyer who signs; each gets a signature line")
+    project_address: Text
     contract_price_usd: float = Field(gt=0, description="Entire price incl. profit, labor and materials; no finance charges")
-    project_description: str
-    materials_and_equipment: str = Field(description="Significant materials to be used and equipment to be installed (brand/model/grade)")
+    project_description: Text
+    materials_and_equipment: Text = Field(description="Significant materials to be used and equipment to be installed (brand/model/grade)")
     down_payment_usd: float = Field(0, ge=0)
     progress_payments: list[ProgressPayment] = Field(default_factory=list)
     finance_charge_usd: float = Field(0, ge=0)
@@ -875,17 +948,19 @@ class ContractFields(BaseModel):
     contractor_has_payment_bond_or_joint_control: bool = False
     include_arbitration_clause: bool = False
     residential_units: int = Field(1, ge=1)
-    disaster_repair: bool = Field(False, description="Repairing damage from a declared state or local emergency (7-day cancel)")
+    disaster_repair: bool = Field(False, description="Repairing damage from a declared state or local emergency "
+                                  f"({HIC_DAYS['seven_day_disaster']}-business-day right to cancel)")
     negotiated_at_contractor_place_of_business: bool = False
     sales_language: str = Field("English", description="Language principally used in the oral sales presentation")
-    signing_date: Optional[str] = Field(None, description="Date of transaction / date the buyer gets the signed copy (ISO)")
+    signing_date: Optional[str] = Field(None, description="Date of transaction / date the buyer gets the signed copy "
+                                        "(ISO); starts the cancellation clock")
     is_swimming_pool: bool = False
     service_and_repair: bool = Field(False, description="Ask for a B&P 7159.10 service and repair form (used only if all four conditions hold)")
     buyer_initiated_contact: Optional[bool] = None
     only_work_needed_for_the_problem: Optional[bool] = None
     time_and_materials: bool = False
-    hourly_rate_usd: Optional[float] = None
-    estimated_materials_usd: Optional[float] = None
+    hourly_rate_usd: Optional[float] = Field(None, ge=0, description="Service and repair, time and materials: set rate per hour")
+    estimated_materials_usd: Optional[float] = Field(None, ge=0, description="Service and repair, time and materials: estimated materials cost")
     time_increment: Optional[str] = Field(None, description="e.g. 'quarter hours'")
     service_charge_usd: float = Field(0, ge=0)
 
@@ -957,17 +1032,17 @@ def _form_872(f: ContractFields) -> str:
     return t.strip()
 
 
-def _notice_of_cancellation(f: ContractFields, kind: str, deadline: Optional[str]) -> str:
+def _notice_of_cancellation(f: ContractFields, kind: str, signed: Optional[date], deadline: Optional[date]) -> str:
     r = R("notice-of-cancellation-form-duplicate")
     t = r.param("required_text")
     if kind == "five_day_senior":
         t = t.replace("three", "five")
     elif kind == "seven_day_disaster":
         t = t.replace("three business days", "seven business days")
-    t = (t.replace("[enter date of transaction]", f.signing_date or "[[FILL IN: date of transaction]]")
+    t = (t.replace("[enter date of transaction]", _long(signed) or "[[FILL IN: date of transaction]]")
          .replace("[name of seller]", f.contractor_name)
          .replace("[address of seller’s place of business]", f.contractor_business_address)
-         .replace("midnight of [Date]", f"midnight of {deadline or '[[FILL IN: last day to cancel]]'}")
+         .replace("midnight of [Date]", f"midnight of {_long(deadline) or '[[FILL IN: last day to cancel]]'}")
          .replace("I hereby cancel this transaction. [Date]", "I hereby cancel this transaction. Date: ____________")
          .replace("[Buyer’s signature]", "Buyer’s signature: ______________________________"))
     return t
@@ -1004,7 +1079,8 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
     today = _dt(as_of, "as_of") or logic.today_ca()
     signed = _dt(f.signing_date, "signing_date")
     start, finish = _dt(f.start_date, "start_date"), _dt(f.completion_date, "completion_date")
-    price, down, fin = _money(f.contract_price_usd), _money(f.down_payment_usd), _money(f.finance_charge_usd)
+    price, down = _money(f.contract_price_usd, "contract_price_usd"), _money(f.down_payment_usd, "down_payment_usd")
+    fin = _money(f.finance_charge_usd, "finance_charge_usd")
     bonded = f.contractor_has_payment_bond_or_joint_control
     problems, notes, rids, types = [], [], [], []
     pros = [ATTORNEY]
@@ -1050,7 +1126,7 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
         heading = R("service-repair-heading")
         md += [f"# {heading.param('required_heading')}", _pc("service-repair-heading", f"at least {heading.param('min_font_pt')}-pt bold"),
                lic_line, f"**Buyer(s):** {buyers} · **Service address:** {f.project_address}",
-               f"**Date this contract was signed:** {f.signing_date or '[[FILL IN: date signed]]'}"]
+               f"**Date this contract was signed:** {_long(signed) or '[[FILL IN: date signed]]'}"]
         rids += ["service-repair-contractor-info-and-date"]
         n = R("service-repair-buyer-requirements-notice")
         md += [_pc(n.id, f"at least {n.param('min_font_pt')}-pt bold"), f"**{n.param('required_text')}**",
@@ -1084,12 +1160,8 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
             s = R("service-repair-one-service-charge")
             md += [f"## {s.param('required_heading')}", _usd(f.service_charge_usd), s.param("required_text")]
             rids.append(s.id)
-            total = price + _money(f.service_charge_usd)
-            if total > SR_MAX_USD:
-                problems.append(f"Price {_usd(price)} + service charge {_usd(f.service_charge_usd)} = {_usd(total)}, "
-                                f"over {_usd(SR_MAX_USD)}. The contract amount must include the entire cost (B&P "
-                                "7159.14(a)(3)); if the service charge is billed on top, the job may not qualify as "
-                                "service and repair.")
+            if over := _sr_total_problem(price, f.service_charge_usd):
+                problems.append(over)
                 rids.append("service-repair-substantive-rules")
         md += ["## Commercial General Liability Insurance (CGL)", _cgl_text(f, True)] + wc_block(True)
         rids.append("service-repair-cgl-wc-notices")
@@ -1120,7 +1192,7 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
             rids.append("hic-salesperson-name-registration")
         md += [f"**Buyer(s):** {buyers} · **Project address:** {f.project_address}",
                _pc("hic-first-page-cancellation-contact", "first page, no smaller than the body text"),
-               f"**Date buyer signed this contract:** {f.signing_date or '[[FILL IN: date buyer signed]]'}",
+               f"**Date buyer signed this contract:** {_long(signed) or '[[FILL IN: date buyer signed]]'}",
                "The “Notice of Cancellation” may be sent to the contractor at the address or email address noted "
                "below:", f"{f.contractor_name}, {f.contractor_business_address}, {f.contractor_email}",
                f"For help locating and filling out the “Notice of Cancellation,” call {f.contractor_phone}."]
@@ -1176,12 +1248,16 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
         md += ["## Substantial Commencement of Work", "Substantial commencement of work under this contract means: "
                + (f.substantial_commencement or "[[FILL IN: e.g. 'the day demolition or other physical work begins "
                                                 "at the project address']]"),
-               "## Approximate Start Date", f.start_date or "[[FILL IN: approximate start date]]",
+               "## Approximate Start Date", _long(start) or "[[FILL IN: approximate start date]]",
                f"## {R('hic-approximate-completion-date').param('required_heading')}",
-               f.completion_date or "[[FILL IN: approximate completion date]]"]
+               _long(finish) or "[[FILL IN: approximate completion date]]"]
         rids += [sc.id, "hic-approximate-completion-date"]
         if start and finish and finish < start:
             problems.append("Completion date is before the start date.")
+        if start and signed and start < signed:
+            problems.append(f"Start date {start} is before the signing date {signed}: no work may start until the "
+                            "buyer has a copy signed and dated by both of you.")
+            rids.append("lawbook_p381-430:hic-signed-copy-before-work")
         if start and cancel.earliest_safe_start_date and start.isoformat() < cancel.earliest_safe_start_date:
             problems.append(f"Start date {start} is inside the cancellation period; start on or after "
                             f"{cancel.earliest_safe_start_date}.")
@@ -1285,7 +1361,7 @@ def generate_home_improvement_contract(fields: ContractFields, as_of=None) -> Ge
 
     # ---- attachments
     if not sr and cancel.applies:
-        noc = _notice_of_cancellation(f, cancel.kind, cancel.last_day_to_cancel)
+        noc = _notice_of_cancellation(f, cancel.kind, signed, _dt(cancel.last_day_to_cancel, "last_day_to_cancel"))
         for i in (1, 2):
             md += ["---", f"# Attachment A-{i}: Notice of Cancellation (copy {i} of 2, detach and keep)",
                    "\n\n".join(x for x in noc.split("\n") if x.strip())]
@@ -1347,6 +1423,16 @@ def check_change_order(
         as_of=None) -> ChangeOrderResult:
     """B&P 7159.6 / 7159(c)(5), (c)(7): is a home improvement change order enforceable and compliant?"""
     today = _dt(as_of, "as_of") or logic.today_ca()
+    change = _money(amount_change_usd, "amount_change_usd") if amount_change_usd is not None else None
+    prior = _money(prior_change_orders_total_usd, "prior_change_orders_total_usd")
+    early = _money(payment_requested_before_work_usd, "payment_requested_before_work_usd")
+    original = (_money(original_contract_price_usd, "original_contract_price_usd")
+                if original_contract_price_usd is not None else None)
+    if original is not None and original <= 0:
+        raise ValueError(f"original_contract_price_usd must be more than $0.00, got {original_contract_price_usd!r}")
+    if early < 0:
+        raise ValueError("payment_requested_before_work_usd must not be negative")
+    scope_of_work, effect_on_payments_or_completion = scope_of_work or "", effect_on_payments_or_completion or ""
     b, c = _dt(buyer_signed_on, "buyer_signed_on"), _dt(contractor_signed_on, "contractor_signed_on")
     work = _dt(changed_work_starts_on, "changed_work_starts_on")
     co = "change-order-enforceability"
@@ -1355,9 +1441,9 @@ def check_change_order(
              "work without written authorization.", co),
           _f("Scope of work", "ok" if scope_of_work.strip() else "violation",
              "stated" if scope_of_work.strip() else "The change order must state the scope of work it covers.", co),
-          _f("Amount added or subtracted", "ok" if amount_change_usd is not None else "violation",
-             _usd(amount_change_usd) if amount_change_usd is not None else "State the dollar amount added or "
-             "subtracted (write $0.00 if none).", co),
+          _f("Amount added or subtracted", "ok" if change is not None else "violation",
+             _usd(change) if change is not None else "State the dollar amount added or subtracted (write $0.00 if "
+             "none).", co),
           _f("Effect on progress payments or completion date", "ok" if effect_on_payments_or_completion.strip()
              else "violation", "stated" if effect_on_payments_or_completion.strip() else "State how the order changes "
              "the progress payments or completion date (say 'no change' if none).", co)]
@@ -1386,20 +1472,23 @@ def check_change_order(
                      "present" if includes_subcontractor_disclaimer else "The contract says subcontractors will be "
                      "used, so the subcontractor-list disclaimer must be repeated on this change order.",
                      "hic-subcontractor-disclaimer-on-each-change-order"))
-    if payment_requested_before_work_usd > 0:
+    if early > 0:
         if contractor_has_payment_bond_or_joint_control:
             fs.append(_f("Payment before the changed work", "not_applicable", "Bonded/joint-control contractor may "
                          "accept payment before completion.", "bonded-contractor-payment-exemption"))
         else:
             fs.append(_f("Payment before the changed work", "violation",
-                         f"{_usd(payment_requested_before_work_usd)} requested before the changed work is done. Bill "
+                         f"{_usd(early)} requested before the changed work is done. Bill "
                          "the change order as the work is performed or materials are delivered.",
                          "no-payment-ahead-of-work"))
     revised = math = None
-    if original_contract_price_usd is not None and amount_change_usd is not None:
-        o, p, a = _money(original_contract_price_usd), _money(prior_change_orders_total_usd), _money(amount_change_usd)
-        revised = o + p + a
-        math = f"{_usd(o)} original + {_usd(p)} prior change orders + {_usd(a)} this order = {_usd(revised)}"
+    if original is not None and change is not None:
+        revised = original + prior + change
+        math = (f"{_usd(original)} original + {_usd(prior)} prior change orders + {_usd(change)} this order = "
+                f"{_usd(revised)}")
+        if revised < 0:
+            raise ValueError(f"revised contract price would be {_usd(revised)} ({math}): check the amounts; a "
+                             "deductive change order cannot take the price below $0.00")
         if is_service_and_repair and revised > SR_MAX_USD:
             fs.append(_f("Service and repair limit", "violation", f"Revised price {_usd(revised)} is over "
                          f"{_usd(SR_MAX_USD)}: the job no longer qualifies as service and repair and the full home "
@@ -1417,13 +1506,37 @@ def check_change_order(
 
 
 # ---------------------------------------------------------------- MCP tools
+_DAYS = (f"{HIC_DAYS['three_day']} business days, {HIC_DAYS['five_day_senior']} if a buyer is {SENIOR_AGE}+, "
+         f"{HIC_DAYS['seven_day_disaster']} for declared-disaster repairs")
+VALIDATE_DOC = (
+    "Check a California home improvement contract (B&P 7159, 7159.5) or service and repair contract (B&P 7159.10) "
+    "against every required heading, notice and payment rule, plus B&P 7191 arbitration format. Returns `summary` "
+    "(violations, warnings and a count of unchecked items: read this first), `findings` (ok / violation / warning / "
+    "not_checked / not_applicable, each with its citation), the down payment cap math (lesser of "
+    f"{_usd(DOWN_CAP_USD)} or {DOWN_CAP_PCT}% of price), a payment-by-payment schedule check, the cancellation "
+    f"period with the exact last day to cancel ({_DAYS}), whether a no-employee workers' comp statement is allowed "
+    f"(never for {', '.join(WC_ALWAYS_CLASSES)}; for no one but joint ventures from {WC_EXEMPTION_ENDS}) and the "
+    "licensed professionals the contract needs. Items left out of `includes` are reported as not_checked, so "
+    "compliant=true with unchecked items is not a clean bill of health. verified is false whenever a deadline uses "
+    "the unverified Civil Code business-day definition. Invalid dates (not ISO) or amounts give an error naming the "
+    "field.")
+CANCEL_DOC = (
+    "Last day a California home improvement buyer can cancel (midnight at the end of last_day_to_cancel): "
+    f"{_DAYS}, counted from the day after the buyer received the signed copy, skipping Sundays and the Civil Code "
+    "1689.5 holidays (Saturdays count). Lists each day counted and skipped, the earliest safe start date, whether "
+    f"the period is still open, and the refund ({REFUND_DAYS} days) and goods pickup ({PICKUP_DAYS} days) periods. "
+    "For service and repair (service_and_repair=true) work may start once the buyer has the signed copy; the "
+    "deadline is the after-start window that applies only if a disqualifying reason occurred. verified is false: the "
+    "business-day definition is not yet checked against official text.")
+
+
 def register(mcp) -> None:
-    @mcp.tool(name="validate_home_improvement_contract", annotations=READ_ONLY)
+    @mcp.tool(name="validate_home_improvement_contract", annotations=READ_ONLY, description=VALIDATE_DOC)
     def _validate(
-        contract_price_usd: Annotated[float, Field(ge=0, description="Contract price: entire cost incl. profit, labor and materials, EXCLUDING finance charges")],
+        contract_price_usd: Annotated[float, Field(gt=0, description="Contract price: entire cost incl. profit, labor and materials, EXCLUDING finance charges")],
         down_payment_usd: Annotated[float, Field(ge=0, description="Down payment in the contract (0 if none)")] = 0.0,
         progress_payments: Annotated[Optional[list[ProgressPayment]], Field(description="Payments due before completion, each with amount_usd, for_work (what finished work/delivered materials it pays for) and optional value_of_work_usd")] = None,
-        buyer_age_65_or_older: Annotated[bool, Field(description="Any buyer is 65 or older (five-day cancellation)")] = False,
+        buyer_age_65_or_older: Annotated[bool, Field(description=f"Any buyer is {SENIOR_AGE} or older ({HIC_DAYS['five_day_senior']}-business-day cancellation)")] = False,
         has_salesperson: Annotated[bool, Field(description="A home improvement salesperson solicited or negotiated the deal")] = False,
         salesperson_his_number: Annotated[Optional[str], Field(description="Salesperson's CSLB HIS registration number")] = None,
         includes_arbitration_clause: Annotated[bool, Field(description="Contract has an arbitration clause")] = False,
@@ -1431,7 +1544,7 @@ def register(mcp) -> None:
         contractor_has_payment_bond_or_joint_control: Annotated[bool, Field(description="You furnish a registrar-approved performance and payment bond, lien and completion bond, bond equivalent or joint control covering full performance and payment")] = False,
         includes: Annotated[Optional[ContractIncludes], Field(description="Checklist of what the written contract contains; true=present, false=missing, omit=not checked")] = None,
         is_service_and_repair: Annotated[bool, Field(description="Contract is presented as a service and repair contract (B&P 7159.10)")] = False,
-        residential_units: Annotated[int, Field(ge=1, description="Dwelling units in the building (arbitration rules cover 1-4)")] = 1,
+        residential_units: Annotated[int, Field(ge=1, description=f"Dwelling units in the building (B&P 7191 arbitration rules cover 1-{ARB_MAX_UNITS})")] = 1,
         start_date: Annotated[Optional[str], Field(description="Approximate start date in the contract (ISO)")] = None,
         completion_date: Annotated[Optional[str], Field(description="Approximate completion date in the contract (ISO)")] = None,
         buyer_received_signed_copy_on: Annotated[Optional[str], Field(description="Date the buyer received the signed, dated copy (ISO); starts the cancellation clock")] = None,
@@ -1444,19 +1557,11 @@ def register(mcp) -> None:
         only_work_needed_for_the_problem: Annotated[Optional[bool], Field(description="Service and repair: you sell only what the problem needs")] = None,
         time_and_materials: Annotated[bool, Field(description="Service and repair priced by time and materials")] = False,
         service_charge_usd: Annotated[float, Field(ge=0, description="Service and repair: service/trip/inspection charge")] = 0.0,
-        contract_signed_on: Annotated[Optional[str], Field(description="Date the contract was signed (ISO); decides which version of the law applies (AB 1327 / SB 517 items from 2026-01-01, senior five-day from 2021-01-01). Defaults to the received date, else as_of")] = None,
+        contract_signed_on: Annotated[Optional[str], Field(description=f"Date the contract was signed (ISO); decides which version of the law applies (AB 1327 items from {AB1327_FROM}, SB 517 items from {SB517_FROM}, senior five-day from {SENIOR_FROM}). Defaults to the received date, else as_of")] = None,
         workers_comp_notice_says_no_employees: Annotated[bool, Field(description="The Workers' Compensation notice says the contractor has no employees and is exempt")] = False,
         license_classifications: Annotated[Optional[list[str]], Field(description="CSLB classifications on the license, e.g. ['B', 'C-39']; used to check a no-employee workers' comp claim")] = None,
         as_of: Annotated[Optional[str], Field(description="Evaluate as of this ISO date (default today in California)")] = None,
     ) -> ContractValidation:
-        """Check a California home improvement contract (B&P 7159, 7159.5) or service and repair contract
-        (B&P 7159.10) against every required heading, notice and payment rule, plus B&P 7191 arbitration format.
-        Returns findings (ok / violation / warning / not_checked / not_applicable, each with its citation), the
-        down payment cap math (lesser of $1,000 or 10% of price), a payment-by-payment schedule check, the
-        cancellation period with the exact last day to cancel (3 business days, 5 if a buyer is 65+, 7 for declared
-        disaster repairs), whether a no-employee workers' comp statement is allowed (never for C-8, C-20, C-22,
-        C-39, D-49; for no one but joint ventures from 2028-01-01) and the licensed professionals the contract
-        needs. verified is false whenever a deadline uses the unverified Civil Code business-day definition."""
         return validate_home_improvement_contract(
             contract_price_usd, down_payment_usd, progress_payments, buyer_age_65_or_older, has_salesperson,
             salesperson_his_number, includes_arbitration_clause, arbitration_formatted_per_7191,
@@ -1480,8 +1585,10 @@ def register(mcp) -> None:
         notice, right-to-cancel notice, Notice of Cancellation in duplicate, B&P 7191 arbitration notice, 16 CCR 872
         CGL form, change-order form). Produces a service and repair form (B&P 7159.10) instead when requested and all
         four conditions hold. [[ATTORNEY: ...]] marks text a California attorney must supply; [[FILL IN: ...]] marks
-        facts still needed; HTML comments and type_size_notes give the minimum print sizes. Also returns problems
-        found (e.g. down payment over the cap) and the computed cancellation deadline."""
+        facts still needed; HTML comments and type_size_notes give the minimum print sizes. `problems` lists what
+        must be fixed before the buyer signs (e.g. down payment over the cap, start date inside the cancellation
+        period); [[FIX BEFORE USE: ...]] marks the same spots in the text. Also returns the computed cancellation
+        deadline. Dates go in as ISO (2026-11-23) and print as 'November 23, 2026'; unknown keys are rejected."""
         return generate_home_improvement_contract(contract, as_of)
 
     @mcp.tool(name="check_change_order", annotations=READ_ONLY)
@@ -1492,7 +1599,7 @@ def register(mcp) -> None:
         buyer_signed_on: Annotated[Optional[str], Field(description="Date the buyer signed (ISO)")] = None,
         contractor_signed_on: Annotated[Optional[str], Field(description="Date the contractor signed (ISO)")] = None,
         changed_work_starts_on: Annotated[Optional[str], Field(description="Date the changed work starts or started (ISO)")] = None,
-        original_contract_price_usd: Annotated[Optional[float], Field(description="Original contract price, to compute the revised price")] = None,
+        original_contract_price_usd: Annotated[Optional[float], Field(gt=0, description="Original contract price, to compute the revised price")] = None,
         prior_change_orders_total_usd: Annotated[float, Field(description="Net total of earlier change orders")] = 0.0,
         contract_says_subcontractors_used: Annotated[Optional[bool], Field(description="The contract's subcontractor box is Yes")] = None,
         includes_subcontractor_disclaimer: Annotated[bool, Field(description="This change order repeats the subcontractor-list disclaimer")] = False,
@@ -1505,25 +1612,22 @@ def register(mcp) -> None:
         """Check a home improvement change order under B&P 7159.6 and 7159(c)(5), (c)(7): written, scope, dollar
         amount added or subtracted, effect on progress payments or completion date, signed by both parties before the
         changed work starts, subcontractor disclaimer, and no payment ahead of the work. Returns
-        enforceable_against_buyer, each finding with its citation, and the revised contract price math."""
+        enforceable_against_buyer, compliant, each finding with its citation, and the revised contract price math
+        (original + prior change orders + this order). A change that would take the price below $0 is an error."""
         return check_change_order(scope_of_work, amount_change_usd, effect_on_payments_or_completion, buyer_signed_on,
                                   contractor_signed_on, changed_work_starts_on, original_contract_price_usd,
                                   prior_change_orders_total_usd, contract_says_subcontractors_used,
                                   includes_subcontractor_disclaimer, in_writing, payment_requested_before_work_usd,
                                   contractor_has_payment_bond_or_joint_control, is_service_and_repair, as_of)
 
-    @mcp.tool(name="home_improvement_cancellation_deadline", annotations=READ_ONLY)
+    @mcp.tool(name="home_improvement_cancellation_deadline", annotations=READ_ONLY, description=CANCEL_DOC)
     def _cancel(
         received_signed_copy_on: Annotated[str, Field(description="Date the buyer received the signed, dated contract (ISO)")],
-        buyer_age_65_or_older: Annotated[bool, Field(description="Any buyer is 65 or older")] = False,
+        buyer_age_65_or_older: Annotated[bool, Field(description=f"Any buyer is {SENIOR_AGE} or older")] = False,
         disaster_repair: Annotated[bool, Field(description="Repairing damage from a declared state or local emergency")] = False,
         negotiated_at_contractor_place_of_business: Annotated[bool, Field(description="Deal negotiated at your place of business")] = False,
         service_and_repair: Annotated[bool, Field(description="Conforming service and repair contract (B&P 7159.10)")] = False,
         as_of: Annotated[Optional[str], Field(description="Evaluate as of this ISO date")] = None,
     ) -> CancellationResult:
-        """Last day a California home improvement buyer can cancel (midnight at the end of last_day_to_cancel):
-        3 business days, 5 if a buyer is 65+, 7 for declared-disaster repairs, counted from the day after the buyer
-        received the signed copy, skipping Sundays and the Civil Code 1689.5 holidays (Saturdays count). Lists each
-        day counted and skipped, the earliest safe start date, and whether the period is still open."""
         return cancellation_deadline(received_signed_copy_on, buyer_age_65_or_older, disaster_repair,
                                      negotiated_at_contractor_place_of_business, service_and_repair, as_of)

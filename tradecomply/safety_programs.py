@@ -13,7 +13,7 @@ any result that uses them verified=False. Working days are counted Monday-Friday
 """
 import math
 from datetime import date, datetime, time, timedelta
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal, Optional, get_args
 
 from pydantic import BaseModel, Field
 
@@ -117,12 +117,9 @@ def _ok(rule_ids, unverified=()) -> bool:
 
 
 def _date(value, field: str) -> date:
-    if isinstance(value, datetime):
-        return value.date()
-    if isinstance(value, date):
-        return value
+    """ISO date, or a datetime (a UTC/offset time is converted to the California calendar date first)."""
     try:
-        return date.fromisoformat(str(value).strip()[:10])
+        return _dt(value, field)[0].date()
     except ValueError:
         raise ValueError(f"{field} must be an ISO date like 2026-03-15, got {value!r}") from None
 
@@ -164,6 +161,23 @@ def _md(month_day: str, year: int) -> date:
 
 def _fmt(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%dT%H:%M")
+
+
+def _n(x: float) -> str:
+    """Number for display: thousands separators, at most 2 decimals, no trailing zeros (never 1.2e+08)."""
+    return f"{x:,.2f}".rstrip("0").rstrip(".")
+
+
+def _check_nonneg(**values) -> None:
+    """Clear errors for direct callers (web/offline app); the MCP schema enforces the same bounds."""
+    for name, v in values.items():
+        if v is not None and v < 0:
+            raise ValueError(f"{name} cannot be negative, got {v!r}")
+
+
+def _check_choice(name: str, value, choices) -> None:
+    if value not in get_args(choices):
+        raise ValueError(f"{name} must be one of {', '.join(get_args(choices))}; got {value!r}")
 
 
 # ================================================================ models
@@ -255,7 +269,9 @@ def _outline(p: Program, company: str, as_of: date) -> str:
     for i, e in enumerate(p.elements, 1):
         out += [f"## {i}. {e.item}", e.requirement]
         out += [f"- [ ] {f}: __________" for f in e.fill_in]
-        cites = "; ".join(dict.fromkeys(part for r in e.rule_ids for part in _cit(r).split("; ")))
+        # The rulebook writes the same statute as "Gov Code" and "Gov. Code"; print it once.
+        cites = "; ".join(dict.fromkeys(part.replace("Gov. Code", "Gov Code") for r in e.rule_ids
+                                        for part in _cit(r).split("; ")))
         if e.unverified:
             cites = "; ".join(filter(None, [cites, "unverified: " + ", ".join(UNVERIFIED[k]["source"]
                                                                               for k in e.unverified)]))
@@ -401,6 +417,14 @@ def _csp(company, as_of, hazards: list[str]) -> Program:
                     "Superintendent / foreman at each jobsite", els, company=company, as_of=as_of)
 
 
+def _plan_languages(language: Optional[str]) -> str:
+    """Heat plans must be in English and the language most employees understand (3395(i), 3396(i))."""
+    lang = (language or "").strip()
+    if lang.lower() == "english":
+        return "English"
+    return f"English and {lang}" if lang else "English and the language most of your employees understand"
+
+
 def _heat_outdoor(company, site_n, shift_h, language, as_of) -> Program:
     qph = P("heat-water-one-quart-per-hour", "quarts_per_employee_per_hour")
     quarts = site_n * qph * shift_h
@@ -411,13 +435,11 @@ def _heat_outdoor(company, site_n, shift_h, language, as_of) -> Program:
     rest = P("heat-cool-down-rest-5-minutes", "min_rest_minutes")
     acc = P("heat-acclimatization-14-days", "new_employee_observation_days")
     hw = P("heat-acclimatization-14-days", "heat_wave_definition")
-    langs = P("heat-written-plan-outdoor", "languages")
-    lang = f"English and {language}" if language and language.lower() != "english" else \
-        " and ".join(langs)
+    lang = _plan_languages(language)
     els = [
         _el("Water", f"Fresh, pure, suitably cool water, free, as close as practicable to the work. If not plumbed, "
-            f"bring {qph} quart per employee per hour at shift start: {site_n} workers x {qph} qt x {shift_h:g} h = "
-            f"{quarts:g} quarts ({quarts / 4:g} gallons) per site per shift, unless you have effective refill "
+            f"bring {qph} quart per employee per hour at shift start: {site_n:,} workers x {qph} qt x {_n(shift_h)} h "
+            f"= {_n(quarts)} quarts ({_n(quarts / 4)} gallons) per site per shift, unless you have effective refill "
             "procedures. Encourage frequent drinking.", ["heat-water-one-quart-per-hour"],
             ["Water source and refill procedure", "Who checks water levels"]),
         _el("Shade", f"Above {shade_f}F keep shade up at all times while employees are present, large enough for "
@@ -457,7 +479,7 @@ def _heat_outdoor(company, site_n, shift_h, language, as_of) -> Program:
                     company=company, as_of=as_of)
 
 
-def _heat_indoor(company, as_of) -> Program:
+def _heat_indoor(company, language, as_of) -> Program:
     sc = core.rule("indoor-heat-scope-82f").parameters
     full = sc["full_controls_triggers"]
     cool = P("indoor-heat-cool-down-area", "cool_down_area_temp_f_lt")
@@ -497,8 +519,8 @@ def _heat_indoor(company, as_of) -> Program:
         _el("Emergency response and training", UNVERIFIED["indoor_heat_response_training"]["text"],
             ["indoor-heat-written-plan"], ["EMS caller", "Training date and trainer"],
             unverified=["indoor_heat_response_training"]),
-        _el("Written plan", "Written in English and the language of most employees, available at the worksite; may be "
-            "combined with the IIPP or the outdoor heat plan.", ["indoor-heat-written-plan"], ["Plan location"]),
+        _el("Written plan", f"Written in {_plan_languages(language)}, available at the worksite; may be combined "
+            "with the IIPP or the outdoor heat plan.", ["indoor-heat-written-plan"], ["Plan location"]),
     ]
     return _program("heat_illness_indoor", "Indoor Heat Illness Prevention Plan (8 CCR 3396)", "required",
                     f"You reported indoor work areas that reach {sc['scope_temperature_f_gte']}F or more.",
@@ -828,10 +850,13 @@ def _log300(peak: int, naics: Optional[str], as_of: date) -> tuple[bool, list[Li
     ex = core.rule("log300-size-exemption-10-or-fewer").parameters
     lim = ex["exempt_if_peak_employees_lte"]
     required = peak > lim
-    construction = not naics or str(naics).startswith("23")
+    construction = not naics or naics.startswith("23")
+    industry = ("Construction (NAICS 23) is not a partially exempt industry. " if construction else
+                f"NAICS {naics} is not construction: check whether it is partially exempt (8 CCR 14300.2 Appendix A) "
+                "and whether it is listed for electronic submission (14300.48 Appendices H and I). ")
     lines = [_line("Cal/OSHA Log 300 / 301 / 300A",
                    f"Peak employment last calendar year {peak}; records are required above {lim} (company-wide "
-                   f"peak). Construction (NAICS 23) is not a partially exempt industry. "
+                   f"peak). " + industry
                    + ("REQUIRED." if required else "Size-exempt, but you must still report serious injuries "
                                                    "and deaths to Cal/OSHA. "
                                                    + UNVERIFIED["log300_survey_and_5020"]["text"]),
@@ -859,7 +884,9 @@ def _log300(peak: int, naics: Optional[str], as_of: date) -> tuple[bool, list[Li
               "hours worked, certified by a company executive (owner, corporate officer or highest-ranking official).",
               ["log300a-annual-summary-certification"]),
         _line("Post 300A", f"Post from {start.isoformat()} through {end.isoformat()} where notices are posted; hand "
-              "or mail a copy to employees paid in that period who do not report weekly to the posting location.",
+              "or mail a copy to employees paid in that period who do not report weekly to the posting location."
+              + (f" The posting window is open now ({as_of.isoformat()}): if last year's 300A is not up, post it "
+                 "today." if start <= as_of <= end else ""),
               ["log300a-posting-feb1-apr30", "log300a-mail-to-field-employees"], due=start.isoformat()),
         _line("Retention", f"Keep Forms 300, 301 and 300A {P('log300-retention-5-years', 'retention_years')} years "
               "after the end of the year they cover.", ["log300-retention-5-years"]),
@@ -869,12 +896,15 @@ def _log300(peak: int, naics: Optional[str], as_of: date) -> tuple[bool, list[Li
     ]
     if construction and (lo <= peak <= hi or peak >= big):
         extra = ""
-        if peak >= ita["form_300_301_if_employees_gte"] and naics and any(
-                str(naics).startswith(c) for c in ita["form_300_301_construction_naics_in_appendix_i"]):
-            extra = " Your NAICS is in Appendix I with 100+ employees, so also submit Form 300 and 301 data."
-        lines.append(_line("Electronic submission (OSHA ITA)", f"Peak {peak} is in the {lo}-{hi} construction range "
-                           f"or {big}+: submit Form 300A data electronically by {sub.isoformat()} (OSHA counts the "
-                           f"establishment's peak in the year covered; last year's peak is the estimate).{extra}", ["osha-ita-electronic-submission-march-2"], due=sub.isoformat()))
+        n300 = ita["form_300_301_if_employees_gte"]
+        appendix_i = ita["form_300_301_construction_naics_in_appendix_i"]
+        if peak >= n300 and naics and any(naics.startswith(c) for c in appendix_i):
+            extra = f" Your NAICS is in Appendix I with {n300}+ employees, so also submit Form 300 and 301 data."
+        where = f"in the {lo}-{hi} construction range" if lo <= peak <= hi else f"{big} or more"
+        lines.append(_line("Electronic submission (OSHA ITA)", f"Peak {peak} is {where}: submit Form 300A data "
+                           f"electronically by {sub.isoformat()} (OSHA counts the establishment's peak in the year "
+                           f"covered; last year's peak is the estimate).{extra}",
+                           ["osha-ita-electronic-submission-march-2"], due=sub.isoformat()))
     elif construction:
         lines.append(_line("Electronic submission (OSHA ITA)", f"Peak {peak} is under {lo}: no electronic submission "
                            "for construction establishments.", ["osha-ita-electronic-submission-march-2"]))
@@ -895,9 +925,24 @@ def generate_safety_programs(company_name: str, employee_count: int, worksites_h
                              conventional_fall_protection_infeasible: bool = False, naics_code: Optional[str] = None,
                              majority_language: Optional[str] = None, shift_hours: float = 8,
                              last_toolbox_meeting: Optional[str] = None) -> SafetyProgramsResult:
+    if not (company_name or "").strip():
+        raise ValueError("company_name is required (it is printed on every program)")
     if employee_count < 1:
         raise ValueError("employee_count must be at least 1")
+    _check_nonneg(excavation_max_depth_ft=excavation_max_depth_ft, building_stories=building_stories,
+                  building_height_ft=building_height_ft, max_fall_height_ft=max_fall_height_ft,
+                  scaffold_or_falsework_height_stories=scaffold_or_falsework_height_stories,
+                  peak_employees_last_year=peak_employees_last_year)
+    if max_employees_at_one_site is not None and not 1 <= max_employees_at_one_site <= employee_count:
+        raise ValueError(f"max_employees_at_one_site must be between 1 and employee_count ({employee_count}), got "
+                         f"{max_employees_at_one_site}")
+    if not 0 < shift_hours <= 24:
+        raise ValueError(f"shift_hours must be more than 0 and at most 24, got {shift_hours}")
+    naics = str(naics_code).strip() if naics_code is not None else ""
+    if naics and not (naics.isdigit() and 2 <= len(naics) <= 6):
+        raise ValueError(f"naics_code must be 2-6 digits like 238160, got {naics_code!r}")
     today = _date(as_of, "as_of") if as_of else logic.today_ca()
+    company_name = company_name.strip()
     site_n = max_employees_at_one_site or employee_count
     peak = employee_count if peak_employees_last_year is None else peak_employees_last_year
     hazards = [h for h, on in [("fall protection", (max_fall_height_ft or 0) > 0 or building_stories >= 2),
@@ -910,7 +955,7 @@ def generate_safety_programs(company_name: str, employee_count: int, worksites_h
     if outdoor_work:
         progs.append(_heat_outdoor(c, site_n, shift_hours, majority_language, today))
     if heat_exposure:
-        progs.append(_heat_indoor(c, today))
+        progs.append(_heat_indoor(c, majority_language, today))
     progs.append(_wvpp(c, site_n, worksites_have_public_access, today))
     if hazardous_chemicals:
         progs.append(_hazcom(c, today))
@@ -929,17 +974,23 @@ def generate_safety_programs(company_name: str, employee_count: int, worksites_h
 
     # ---- training schedule
     wd = P("toolbox-tailgate-meetings-10-working-days", "max_interval_working_days")
-    tb_due = None
+    tb_due, tb_text = None, ""
     if last_toolbox_meeting:
-        tb_due = _add_working_days(_date(last_toolbox_meeting, "last_toolbox_meeting"), wd).isoformat()
+        last_tb = _date(last_toolbox_meeting, "last_toolbox_meeting")
+        if last_tb > today:
+            raise ValueError(f"last_toolbox_meeting {last_tb} is after as_of {today}; give the date of the last "
+                             "meeting already held")
+        due_tb = _add_working_days(last_tb, wd)
+        tb_due = due_tb.isoformat()
+        tb_text = (f" Last meeting {last_tb.isoformat()} -> next due by {tb_due} ({wd} working days later)"
+                   + (f"; OVERDUE as of {today.isoformat()}, hold one now. " if due_tb < today else ". ")
+                   + WORKING_DAY_NOTE)
     training = [
         _line("New-hire safety orientation", "At hire: hazards and precautions of the work, read the Code of Safe "
               "Practices; also on new assignments and new hazards.", ["new-worker-safety-instruction",
                                                                        "iipp-training-triggers"]),
         _line("Toolbox / tailgate meeting", f"Every crew, at least every {wd} working days, led by its supervisor."
-              + (f" Last meeting {last_toolbox_meeting} -> next due by {tb_due} ({wd} working days later)"
-                 + (f"; OVERDUE as of {today.isoformat()}, hold one now. " if tb_due < today.isoformat() else ". ")
-                 + WORKING_DAY_NOTE if tb_due else ""), ["toolbox-tailgate-meetings-10-working-days"], due=tb_due),
+              + tb_text, ["toolbox-tailgate-meetings-10-working-days"], due=tb_due),
         _line("Supervisor safety meeting", "Periodic, led by management (no fixed interval).",
               ["supervisor-safety-meetings"]),
     ]
@@ -970,7 +1021,7 @@ def generate_safety_programs(company_name: str, employee_count: int, worksites_h
                               f"{ms['periodic_interval_years']} years.", ["silica-medical-surveillance-30-days"]))
 
     # ---- recordkeeping
-    log_req, records = _log300(peak, naics_code, today)
+    log_req, records = _log300(peak, naics or None, today)
     records += [
         _line("IIPP inspection and training records", f"Keep at least "
               f"{P('iipp-inspection-records-1-year', 'retention_years_min')} year.",
@@ -1020,8 +1071,9 @@ def generate_safety_programs(company_name: str, employee_count: int, worksites_h
                                training=training, recordkeeping=records, log300_required=log_req, postings=postings,
                                permits_to_check=permits)
     if permits:
-        res.notes.append("Cal/OSHA permits likely needed (assumes you are the GC/project administrator; subs need "
-                         "annual permits instead). Run check_cal_osha_permits per project for fees and dates.")
+        res.notes.append("Cal/OSHA permits likely needed. This screen assumes you are the GC/project administrator; "
+                         "a subcontractor doing covered structural or demolition work over 36 ft needs an annual "
+                         "permit instead. Run check_cal_osha_permits per project for fees and dates.")
     if asbestos_or_lead or silica_tasks:
         if not respirators_used:
             res.notes.append("If any silica, lead or asbestos task requires respirators, a written Respiratory "
@@ -1084,7 +1136,8 @@ def _tall(height_ft, stories, gt_ft) -> tuple[bool, str, list[str]]:
         hit = height_ft > gt_ft
         parts.append(f"{height_ft:g} ft {'>' if hit else '<='} {gt_ft} ft")
     if stories and stories > lc["stories_gt"]:
-        hit, unv = True, ["lc6500_three_stories"]
+        if not hit:            # the unverified stories test matters only when the 36 ft test alone does not trigger
+            hit, unv = True, ["lc6500_three_stories"]
         parts.append(f"{stories:g} stories > {lc['stories_gt']} (Labor Code 6500 'or the equivalent height')")
     elif stories:
         parts.append(f"{stories:g} stories (not more than {lc['stories_gt']})")
@@ -1102,6 +1155,13 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                            asbestos_sqft: float = 0, has_asbestos_registration: bool = False,
                            lead_disturbed_sqft: float = 0, planned_start: Optional[str] = None,
                            as_of=None) -> PermitsResult:
+    _check_choice("role", role, Role)
+    _check_choice("exemption", exemption, Exemption)
+    _check_nonneg(excavation_max_depth_ft=excavation_max_depth_ft, building_stories=building_stories,
+                  building_height_ft=building_height_ft, demolition_height_ft=demolition_height_ft,
+                  demolition_stories=demolition_stories, scaffold_or_falsework_height_ft=scaffold_or_falsework_height_ft,
+                  scaffold_or_falsework_height_stories=scaffold_or_falsework_height_stories,
+                  asbestos_sqft=asbestos_sqft, lead_disturbed_sqft=lead_disturbed_sqft)
     today = _date(as_of, "as_of") if as_of else logic.today_ca()
     start, start_date_only = _dt(planned_start, "planned_start") if planned_start else (None, True)
     fees = core.rule("permit-fees").parameters
@@ -1151,9 +1211,12 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
         if deep and workers_enter_trench and not (all_exempt or trench_exempt):
             items.append(annual_or_project("Trench / excavation", why, ids))
         else:
+            exempt = (all_exempt or trench_exempt) and deep and workers_enter_trench
             reason = (f" Exempt from the permit ({exemption.replace('_', ' ')}); excavation safety rules still apply."
-                      if (all_exempt or trench_exempt) and deep and workers_enter_trench else " No permit needed.")
-            items.append(_item("Trench / excavation", "permit", False, why + reason, ids + ["permit-exceptions"]))
+                      if exempt else " No permit needed.")
+            # 341(e) lists "no person descends" among the exceptions; a trench under 5 ft is simply below the trigger.
+            items.append(_item("Trench / excavation", "permit", False, why + reason,
+                               ids + (["permit-exceptions"] if deep else [])))
         usa = core.rule("usa-811-notice-2-working-days").parameters
         dl, window = None, ""
         if start:
@@ -1213,8 +1276,11 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                "through it needs design drawings signed by a California-registered civil engineer; scaffold "
                "erection is directed by a qualified person.")
         tall_for_ce = hit or (scaffold_or_falsework_height_ft or 0) > ce["engineer_required_if_height_ft_gt"]
-        ids = ["permit-scaffold-falsework-36ft"] + (["falsework-engineer-design", "scaffold-qualified-person-erection"]
-                                                    if tall_for_ce else [])
+        if scaffold_or_falsework_height_ft is None:
+            eng += (f" Give the height in ft to check the {ce['engineer_required_if_height_ft_gt']} ft engineer "
+                    "trigger.")
+        # The engineer triggers (height, span, traffic) apply below the 36 ft permit height too, so always state them.
+        ids = ["permit-scaffold-falsework-36ft", "falsework-engineer-design", "scaffold-qualified-person-erection"]
         named = ["California-registered civil engineer (falsework/shoring design)",
                  "Qualified person directing scaffold erection"] if tall_for_ce else []
         if hit and not all_exempt:
@@ -1225,9 +1291,8 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
             items.append(it)
         else:
             items.append(_item("Scaffold / falsework / vertical shoring", "permit", False,
-                               f"{how}." + (" Exempt employer (8 CCR 341(e))." if hit else " No permit needed.")
-                               + (eng if tall_for_ce else ""), ids + (["permit-exceptions"] if hit else []), unv,
-                               named_people=named))
+                               f"{how}." + (" Exempt employer (8 CCR 341(e))." if hit else " No permit needed.") + eng,
+                               ids + (["permit-exceptions"] if hit else []), unv, named_people=named))
 
     # ---- demolition
     if demolition:
@@ -1325,10 +1390,12 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                                "the job must still be reported under 8 CCR 5208.", ["asbestos-dosh-registration-100sqft"]))
         n = core.rule("asbestos-job-notification").parameters
         items.append(_item("Asbestos job notice to district office", "notification", need,
-                           "Written notice before each separate job or phase (address, location, dates, certified "
-                           f"supervisor, air-sampling person, work description); emergencies by phone then in writing "
-                           f"within {n['emergency_oral_then_written_within_hours']} hours. Hold a pre-job safety "
-                           "conference with the owner, contractor and employees.",
+                           ("Written notice before each separate job or phase (address, location, dates, certified "
+                            f"supervisor, air-sampling person, work description); emergencies by phone then in writing "
+                            f"within {n['emergency_oral_then_written_within_hours']} hours. Hold a pre-job safety "
+                            "conference with the owner, contractor and employees.") if need else
+                           (f"Not required: this notice is for registered asbestos work ({a['surface_area_sqft_gte']} "
+                            "sq ft or more). The 8 CCR 5208 report on the registration line still applies."),
                            ["asbestos-job-notification", "asbestos-safety-conference"], holder="your company",
                            lead_time="before work starts", deadline=_fmt(start) if start and need else None))
 
@@ -1372,7 +1439,12 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
     for i in items:
         i.deadline_passed = bool(i.required and i.deadline and _date(i.deadline, "deadline") < today)
     late = [i.activity for i in items if i.deadline_passed]
-    if late:
+    if start and start.date() < today:
+        res.notes.append(f"planned_start {start.date().isoformat()} is before as_of {today.isoformat()}"
+                         + (f" (missed: {', '.join(late)})" if late else "") + ". If covered work already began "
+                         "without a required permit, registration or notice, that is a violation (see penalties): "
+                         "pause that work and file or call now.")
+    elif late:
         res.notes.append(f"Already past the latest date as of {today.isoformat()}: {', '.join(late)}. Act today and "
                          "expect the start date to slip.")
     required_permits = [i for i in items if i.required and i.kind == "permit"]
@@ -1397,9 +1469,10 @@ def check_cal_osha_permits(excavation_max_depth_ft: float = 0, workers_enter_tre
                          "341(e)(1)-(2) name the government body or the PUC-regulated utility itself; a private "
                          "contractor doing the work for one is a separate employer and is not listed, so it still "
                          "needs its own permits.")
-    res.notes.append(WORKING_DAY_NOTE + (" Exception: the NESHAP/air district count already matches federal law, "
-                                         "which counts holidays that fall Monday-Friday as working days."
-                                         if demolition else ""))
+    if start or any("working day" in i.lead_time for i in items):
+        res.notes.append(WORKING_DAY_NOTE + (" Exception: the NESHAP/air district count already matches federal "
+                                             "law, which counts holidays that fall Monday-Friday as working days."
+                                             if demolition else ""))
     res.cite("permit-violation-min-penalty-1250")
     _finish(res, items)
     return res
@@ -1418,6 +1491,7 @@ class Deadline(BaseModel):
     days_left: Optional[int] = None
     who_and_how: str = ""
     how_computed: str = ""
+    window_closed: bool = Field(False, description="The action only counts inside a window that has already ended")
     rule_ids: list[str] = Field(default_factory=list)
     unverified: list[str] = Field(default_factory=list)
     verified: bool = False
@@ -1483,6 +1557,41 @@ _CONTENT_TEXT = {
 }
 
 
+def _due_moment(d: Deadline) -> datetime:
+    """A date-only deadline runs to the end of that day; a timed one to its minute."""
+    if not d.due:
+        return datetime.min
+    return datetime.fromisoformat(d.due) if "T" in d.due else datetime.combine(date.fromisoformat(d.due), time.max)
+
+
+def _todo(deadlines: list[Deadline]) -> list[str]:
+    """To-do lines, most urgent first: overdue, do-now, due today or due within 24 hours, then the next one."""
+    def urgent(d):
+        timed_tomorrow = "T" in (d.due or "") and d.days_left is not None and d.days_left <= 1   # date-only as_of
+        return (d.status in ("overdue", "do_now", "due_today") or timed_tomorrow
+                or (d.hours_left is not None and d.hours_left <= 24))
+    open_ = [d for d in deadlines if d.required]
+    rank = {"overdue": 0, "do_now": 1}
+    hot = sorted((d for d in open_ if urgent(d)), key=lambda d: (rank.get(d.status, 2), _due_moment(d)))
+    steps = []
+    for d in hot:
+        left = f", {_n(d.hours_left)} hours left" if d.hours_left is not None and d.hours_left >= 0 else ""
+        if d.window_closed:
+            steps.append(f"MISSED: {d.action} (window has closed; cannot be made up). Check it was done.")
+        elif d.status == "overdue":
+            steps.append(f"OVERDUE: {d.action} (was due {d.due}). Do it now; late is better than never.")
+        elif d.status == "do_now":
+            steps.append(f"DO NOW: {d.action}.")
+        else:
+            steps.append(f"{'DUE TODAY' if d.status == 'due_today' else 'DUE SOON'}: {d.action} by {d.due}{left}.")
+    # Record retention is ongoing ("keep until"), not a next action.
+    later = sorted((d for d in open_ if not urgent(d) and "log300-retention-5-years" not in d.rule_ids),
+                   key=_due_moment)
+    if later:
+        steps.append(f"NEXT: {later[0].action} by {later[0].due}.")
+    return steps
+
+
 def injury_reporting_deadlines(incident_datetime: str, serious: bool = False, fatality: bool = False,
                                hospitalized: bool = False, *, employer_knew_at: Optional[str] = None,
                                beyond_first_aid_or_lost_time: bool = True,
@@ -1499,6 +1608,14 @@ def injury_reporting_deadlines(incident_datetime: str, serious: bool = False, fa
         now, now_date_only = _dt(as_of, "as_of")
     else:
         now, now_date_only = datetime.now(logic.CA_TZ).replace(tzinfo=None), False
+    _check_nonneg(peak_employees_last_year=peak_employees_last_year)
+    for label, when, when_date_only in (("incident_datetime", inc, inc_date_only),
+                                        ("employer_knew_at", knew, knew_date_only)):
+        # Compare by date when either side has no time, so a same-day time is never treated as "in the future".
+        later = when.date() > now.date() if now_date_only or when_date_only else when > now
+        if later:
+            raise ValueError(f"{label} {_fmt(when)} is after as_of {_fmt(now)}; this tool reports on incidents "
+                             "that have already happened")
     serious_case = serious or hospitalized or fatality
     excluded = public_road_outside_construction_zone
     reportable = serious_case and not excluded
@@ -1582,6 +1699,10 @@ def injury_reporting_deadlines(incident_datetime: str, serious: bool = False, fa
                         "or hand a copy to field employees who do not report weekly to the posting location.",
                         f"Year covered {yr} -> post by {post['post_by']} and keep up until {post['keep_posted_until']} "
                         f"of {yr + 1}."))
+    if log_req and now.date() > p_to:
+        dl[-1].window_closed = True
+        dl[-1].how_computed += (f" The posting window ended {p_to.isoformat()}; a missed posting cannot be made up now, "
+                                "so make sure the next summary goes up on time.")
     ita = core.rule("osha-ita-electronic-submission-march-2").parameters
     lo, hi = ita["form_300a_construction_range"]
     ita_req = log_req and peak_known and (lo <= peak_employees_last_year <= hi or
@@ -1616,6 +1737,7 @@ def injury_reporting_deadlines(incident_datetime: str, serious: bool = False, fa
                                 incident_datetime=_fmt(inc), employer_knew_at=_fmt(knew),
                                 reportable_to_cal_osha=reportable, recordable=recordable, log300_required=log_req,
                                 deadlines=dl)
+    res.next_steps = _todo(dl)
     if reportable:
         res.report_contents = [_CONTENT_TEXT.get(f, f.replace("_", " ")) for f in
                                P("serious-injury-report-contents", "fields")]
@@ -1673,7 +1795,7 @@ def register(mcp) -> None:
 
     @mcp.tool(name="generate_safety_programs", annotations=ro)
     def _generate_safety_programs(
-        company_name: Annotated[str, Field(description="Legal company name to print on the programs")],
+        company_name: Annotated[str, Field(min_length=1, description="Legal company name to print on the programs")],
         employee_count: Annotated[int, Field(ge=1, description="Total employees now (company-wide)")],
         worksites_have_public_access: Annotated[bool, Field(description=(
             "True if the public can reach your jobsites, office or yard (affects the workplace violence exemption)"))],
@@ -1684,7 +1806,7 @@ def register(mcp) -> None:
         excavation_max_depth_ft: Annotated[float, Field(ge=0, description="Deepest trench/excavation you dig, ft")] = 0,
         workers_enter_trench: Annotated[bool, Field(description="Workers go down into the trench/excavation")] = False,
         building_stories: Annotated[int, Field(ge=0, description="Stories of the tallest structure you build")] = 0,
-        building_height_ft: Annotated[Optional[float], Field(description="Height of that structure in ft")] = None,
+        building_height_ft: Annotated[Optional[float], Field(ge=0, description="Height of that structure in ft")] = None,
         demolition: Annotated[bool, Field(description="You demolish buildings or structures")] = False,
         scaffold_or_falsework_height_stories: Annotated[float, Field(ge=0, description=(
             "Tallest scaffold, falsework or vertical shoring you erect, in stories"))] = 0,
@@ -1692,15 +1814,18 @@ def register(mcp) -> None:
         crane_use: Annotated[bool, Field(description="Cranes or derricks used by your crews")] = False,
         asbestos_or_lead: Annotated[bool, Field(description="Work that disturbs asbestos or lead")] = False,
         respirators_used: Annotated[bool, Field(description="Employees use required respirators")] = False,
-        max_employees_at_one_site: Annotated[Optional[int], Field(description=(
-            "Most employees at one place at the same time (default employee_count)"))] = None,
-        peak_employees_last_year: Annotated[Optional[int], Field(description=(
+        max_employees_at_one_site: Annotated[Optional[int], Field(ge=1, description=(
+            "Most employees at one place (jobsite, office or yard) at the same time, at most employee_count "
+            "(default employee_count). Drives heat water/observer math, first-aid kit size and the WVPP "
+            "exemption"))] = None,
+        peak_employees_last_year: Annotated[Optional[int], Field(ge=0, description=(
             "Company-wide peak employees at any time last calendar year, for Log 300 (default employee_count)"))] = None,
         hazardous_chemicals: Annotated[bool, Field(description="Crews use fuels, cement, adhesives, coatings, solvents")] = True,
-        max_fall_height_ft: Annotated[Optional[float], Field(description="Highest fall exposure, ft")] = None,
+        max_fall_height_ft: Annotated[Optional[float], Field(ge=0, description="Highest fall exposure, ft")] = None,
         conventional_fall_protection_infeasible: Annotated[bool, Field(description=(
             "Guardrails, nets and personal fall protection are infeasible or a greater hazard for some work"))] = False,
-        naics_code: Annotated[Optional[str], Field(description="NAICS code, e.g. 238160 (roofing)")] = None,
+        naics_code: Annotated[Optional[str], Field(pattern=r"^\d{2,6}$", description=(
+            "NAICS code, 2-6 digits, e.g. 238160 (roofing); default treated as construction (23)"))] = None,
         majority_language: Annotated[Optional[str], Field(description="Language most employees understand")] = None,
         last_toolbox_meeting: Annotated[Optional[str], Field(description="ISO date of the last toolbox meeting")] = None,
         shift_hours: Annotated[float, Field(gt=0, le=24, description="Typical shift length, for the water math")] = 8,
@@ -1731,13 +1856,14 @@ def register(mcp) -> None:
         excavation_max_depth_ft: Annotated[float, Field(ge=0, description="Deepest trench/excavation on the job, ft")] = 0,
         workers_enter_trench: Annotated[bool, Field(description="Anyone must go down into it")] = False,
         building_stories: Annotated[int, Field(ge=0, description="Stories of the structure being built")] = 0,
-        building_height_ft: Annotated[Optional[float], Field(description=(
+        building_height_ft: Annotated[Optional[float], Field(ge=0, description=(
             "Intended height of the structure when complete, ft (top incl. parapets to lowest grade)"))] = None,
         demolition: Annotated[bool, Field(description="The job includes demolition")] = False,
-        demolition_height_ft: Annotated[Optional[float], Field(description=(
+        demolition_height_ft: Annotated[Optional[float], Field(ge=0, description=(
             "Height of the structure being demolished, ft (default building_height_ft)"))] = None,
-        demolition_stories: Annotated[Optional[int], Field(description="Stories of the structure being demolished")] = None,
-        scaffold_or_falsework_height_ft: Annotated[Optional[float], Field(description=(
+        demolition_stories: Annotated[Optional[int], Field(ge=0, description=(
+            "Stories of the structure being demolished (default building_stories)"))] = None,
+        scaffold_or_falsework_height_ft: Annotated[Optional[float], Field(ge=0, description=(
             "Intended height of scaffold, falsework or vertical shoring when complete, ft"))] = None,
         scaffold_or_falsework_height_stories: Annotated[float, Field(ge=0, description="Same, in stories")] = 0,
         tower_crane: Annotated[bool, Field(description="You erect, climb or dismantle a tower crane")] = False,
@@ -1791,7 +1917,7 @@ def register(mcp) -> None:
             "than the incident (default incident_datetime)"))] = None,
         beyond_first_aid_or_lost_time: Annotated[bool, Field(description=(
             "Medical treatment beyond first aid or time lost beyond the day of injury"))] = True,
-        peak_employees_last_year: Annotated[Optional[int], Field(description=(
+        peak_employees_last_year: Annotated[Optional[int], Field(ge=0, description=(
             "Company peak employees at any time last calendar year (Log 300 exemption and OSHA submission)"))] = None,
         exigent_circumstances: Annotated[bool, Field(description=(
             "You can show exigent circumstances (allows the Cal/OSHA report up to 24 hours after the incident)"))] = False,
@@ -1804,10 +1930,12 @@ def register(mcp) -> None:
         due date/time, status (overdue / due_today / upcoming / do_now / not_required), hours or days left and the
         math: Cal/OSHA report within 8 hours of knowing of a death or serious injury (with exigent circumstances,
         up to 24 hours after the incident), DWC-1 claim form within 1 working day, Form 5020 to the insurer within
-        5 days, Log 300/301 entry within 7 calendar days (unless size-exempt at 10 or fewer employees), Form 300A posting Feb 1-Apr 30, OSHA electronic
-        submission by March 2, 5-year retention, and workplace-crime notices. Also returns what the Cal/OSHA report
-        must contain, next steps and penalties ($5,000 minimum for a late serious-injury report, recordkeeping
-        penalties, CSLB discipline, Labor Code 6425)."""
+        5 days, Log 300/301 entry within 7 calendar days (unless size-exempt at 10 or fewer employees), Form 300A
+        posting Feb 1-Apr 30, OSHA electronic submission by March 2, 5-year retention, and workplace-crime notices.
+        next_steps starts with a to-do list ordered most urgent first (OVERDUE / DO NOW / DUE TODAY, then NEXT).
+        Also returns what the Cal/OSHA report must contain and penalties ($5,000 minimum for a late serious-injury
+        report, recordkeeping penalties, CSLB discipline, Labor Code 6425). Rejects an incident or knowledge time
+        later than as_of."""
         return injury_reporting_deadlines(
             incident_datetime, serious, fatality, hospitalized, employer_knew_at=employer_knew_at,
             beyond_first_aid_or_lost_time=beyond_first_aid_or_lost_time,

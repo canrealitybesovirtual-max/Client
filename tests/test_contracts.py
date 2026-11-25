@@ -370,7 +370,8 @@ def test_generated_contract_has_every_item_in_order():
     assert -1 not in pos, [s for s, p in zip(order, pos) if p == -1]
     assert pos == sorted(pos)
     # Notice of Cancellation is completed: signed Mon 11/23 -> deadline Fri 11/27 (Thanksgiving skipped)
-    assert md.count("not later than midnight of 2026-11-27") == 2 and "[enter" not in md and "[name of seller]" not in md
+    assert md.count("not later than midnight of November 27, 2026") == 2 and "[enter" not in md
+    assert "[name of seller]" not in md and md.count("November 23, 2026 (Date)") == 2  # homeowner-style dates
     assert md.count("One or more subcontractors will be used") == 2       # contract + change-order form
     assert "| 3 | Cabinets delivered and installed | $12,000.00 |" in md
     assert g.problems == [] and g.cancellation.last_day_to_cancel == "2026-11-27"
@@ -387,7 +388,7 @@ def test_generated_senior_bonded_arbitration_contract():
     md = g.markdown
     assert "**Five-Day Right to Cancel**" in md and "fifth business day" in md and "third business day" not in md
     assert md.count("within five business days from the above date") == 2
-    assert md.count("not later than midnight of 2026-11-30") == 2   # Fri 27 (3), Sat 28 (4), Mon 30 (5)
+    assert md.count("not later than midnight of November 30, 2026") == 2   # Fri 27 (3), Sat 28 (4), Mon 30 (5)
     assert "MECHANICS LIEN WARNING" not in md and "THE DOWNPAYMENT MAY NOT EXCEED" not in md
     assert "IT IS AGAINST THE LAW" not in md and "## Downpayment" in md and "$4,000.00" in md
     notice = core.rule("residential-arbitration-notice-and-initials").param("notice_text")
@@ -488,6 +489,100 @@ def test_change_order_problems():
     assert by_item(r, "Subcontractor disclaimer")[0].status == "not_applicable"
 
 
+# ---------------------------------------------------------------- hostile and edge inputs
+def test_money_rounds_half_up_to_cents_and_rejects_nonsense():
+    # 1,234.565 -> $1,234.57 (half up); 10% = 123.457 -> cap rounded DOWN to $123.45
+    d = c.down_payment_limit(1234.565, 0)
+    assert d.contract_price_usd == 1234.57 and d.max_allowed_usd == 123.45
+    # 2,450.005 -> $2,450.01 in both the finding and the math: 48,000 + 0 + 2,450.01 = 50,450.01
+    r = c.check_change_order("Add outlet", 2450.005, "No change", "2026-12-14", "2026-12-14", "2026-12-15", 48000)
+    assert by_item(r, "Amount added")[0].detail == "$2,450.01" and r.revised_contract_price_usd == 50450.01
+    for bad in (float("inf"), float("nan"), 1e30):
+        with pytest.raises(ValueError, match="contract_price_usd"):
+            c.validate_home_improvement_contract(bad, as_of=AS_OF)
+    with pytest.raises(ValueError, match="more than"):
+        c.validate_home_improvement_contract(0, as_of=AS_OF)        # a $0.00 contract is an input error
+    with pytest.raises(ValueError, match="must not be negative"):
+        c.down_payment_limit(-100, 0)
+    # 1,000 original - 5,000 deduction = -4,000: impossible, so a clear error
+    with pytest.raises(ValueError, match="below"):
+        c.check_change_order("Delete everything", -5000, "No change", "2026-12-14", "2026-12-14", "2026-12-15", 1000)
+    # deductive math prints the sign in front of the dollar sign: 48,000 - 1,800 = 46,200
+    r = c.check_change_order("Delete backsplash", -1800, "No change", "2026-12-14", "2026-12-14", "2026-12-20", 48000)
+    assert "-$1,800.00 this order = $46,200.00" in r.math
+
+
+def test_misspelled_or_blank_inputs_are_rejected():
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError, match="mechanics_lien_warnings"):   # typo must not read as "not checked"
+        c.validate_home_improvement_contract(48000, includes={"mechanics_lien_warnings": False}, as_of=AS_OF)
+    with pytest.raises(ValidationError, match="salesman"):
+        c.generate_home_improvement_contract(dict(BASE, salesman="Bob"), as_of=AS_OF)
+    with pytest.raises(ValidationError):
+        c.generate_home_improvement_contract(dict(BASE, buyer_names=["  "]), as_of=AS_OF)
+    with pytest.raises(ValidationError):
+        c.generate_home_improvement_contract(dict(BASE, hourly_rate_usd=-50), as_of=AS_OF)
+
+
+def test_dates_out_of_order():
+    with pytest.raises(ValueError, match="before contract_signed_on"):  # copy received before it was signed
+        _kitchen(contract_signed_on="2026-11-23", buyer_received_signed_copy_on="2026-11-20")
+    # copy received Mon 11/30, work set for Fri 11/27: work before the buyer has the copy (B&P 7159(c)(3)(A))
+    r = _kitchen(buyer_received_signed_copy_on="2026-11-30", start_date="2026-11-27")
+    f = by_item(r, "Work before the buyer has the signed copy")[0]
+    assert f.status == "violation" and f.citation == "B&P 7159(c)(3)(A)" and "2026-12-04" in f.detail
+    assert not by_item(r, "Start date vs. cancellation period")      # the violation already covers it
+    g = c.generate_home_improvement_contract(dict(BASE, start_date="2026-11-20"), as_of=AS_OF)
+    assert any("before the signing date" in p for p in g.problems)
+
+
+def test_generated_dates_are_normalized_for_the_homeowner():
+    g = c.generate_home_improvement_contract(dict(BASE, signing_date="2026-11-23T10:15:00",
+                                                  start_date="2026-12-07T08:00"), as_of=AS_OF)
+    assert "T10:15" not in g.markdown and "T08:00" not in g.markdown
+    assert "**Date buyer signed this contract:** November 23, 2026" in g.markdown
+    assert "## Approximate Start Date\n\nDecember 7, 2026" in g.markdown
+    assert g.cancellation.last_day_to_cancel == "2026-11-27"           # machine fields stay ISO
+
+
+@pytest.mark.parametrize("work,status", [
+    ("Final inspection sign-off", "ok"),                  # inspector sign-off is finished work, not contract signing
+    ("Rough-in complete and signed off by inspector", "ok"),
+    ("Drywall complete before paint", "ok"),              # "before" the next trade, not before the work
+    ("Due 10 days after final completion", "ok"),         # a date tied to completion is still tied to the work
+    ("HVAC start-up and testing complete", "ok"),         # equipment start-up is a completion milestone
+    ("Change order #2 work complete", "ok"),
+    ("Upon signing", "warning"), ("Payment before work starts", "warning"), ("Cabinets ordered", "warning"),
+    ("Mobilization", "warning"), ("Every two weeks", "warning"), ("May 15", "warning"),
+])
+def test_payment_wording(work, status):
+    lines, _ = c.check_payment_schedule(20000, 0, [P(20000, work)])
+    assert lines[0].status == status, lines[0].detail
+
+
+def test_partial_value_of_work_is_reported_not_checked():
+    r = c.validate_home_improvement_contract(30000, 1000, [P(14000, "Framing complete", 9000),
+                                                           P(15000, "Final completion")], as_of=AS_OF)
+    assert by_item(r, "Payments vs. value of work")[0].status == "not_checked"
+    assert r.payment_schedule[0].cumulative_value_of_work_usd is None
+
+
+def test_summary_counts_unchecked_items():
+    r = c.validate_home_improvement_contract(48000, as_of=AS_OF)    # nothing confirmed in `includes`
+    assert r.compliant and r.not_checked_count > 0
+    assert r.summary[-1].startswith(f"NOT CHECKED: {r.not_checked_count} items")
+
+
+def test_service_and_repair_work_may_start_once_buyer_has_copy():
+    # Tue 11/24: Wed 25 (1), Thu 26 Thanksgiving skipped, Fri 27 (2), Sat 28 (3) -> after-start window to 11/28,
+    # but a conforming service call may start the same day the buyer has the signed copy
+    p = c.cancellation_deadline("2026-11-24", service_and_repair=True, as_of=AS_OF).cancellation
+    assert p.last_day_to_cancel == "2026-11-28" and p.earliest_safe_start_date == "2026-11-24"
+    assert any("start work as soon as the buyer has the signed copy" in x for x in p.explanation)
+    assert not any("ask your attorney before starting early" in x for x in p.explanation)
+    assert c._license_codes(["C 39 roofing"]) == {"C-39"}
+
+
 # ---------------------------------------------------------------- MCP
 def test_mcp_tools_register_and_run():
     mcp = FastMCP("t")
@@ -512,6 +607,18 @@ def test_mcp_tools_register_and_run():
                                                            "buyer_signed_on": "2026-12-14",
                                                            "contractor_signed_on": "2026-12-14",
                                                            "changed_work_starts_on": "2026-12-15"})
+            typo = await cl.call_tool("validate_home_improvement_contract", {
+                "contract_price_usd": 48000, "includes": {"mechanics_lien_warnings": False}}, raise_on_error=False)
+            inf = await cl.call_tool("validate_home_improvement_contract", {"contract_price_usd": "Infinity"},
+                                     raise_on_error=False)
+            text = await cl.call_tool("validate_home_improvement_contract", {"contract_price_usd": "48000",
+                                                                             "as_of": AS_OF})
+            desc = {t.name: t.description for t in await cl.list_tools()}
+            assert typo.is_error and "mechanics_lien_warnings" in typo.content[0].text
+            assert inf.is_error and "contract_price_usd" in inf.content[0].text
+            assert text.structured_content["contract_type"] == "home_improvement"   # "48000" coerces to a number
+            assert "lesser of $1,000.00 or 10% of price" in desc["validate_home_improvement_contract"]
+            assert "3 business days, 5 if a buyer is 65+, 7" in desc["home_improvement_cancellation_deadline"]
             return (names, v.structured_content, g.structured_content, d.structured_content, co.structured_content,
                     wc.structured_content)
 

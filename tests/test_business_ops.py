@@ -85,11 +85,16 @@ def test_monthly_depositor_gets_13_dated_deposits_with_holiday_roll_and_futa_car
     assert deps["November 2026"].due_date == "2026-12-15" and deps["November 2026"].status == "due_soon"
     assert deps["December 2026"].due_date == "2027-01-15"
     assert "$4,590 / 3 = $1,530" in deps["March 2026"].math[1]
-    # FUTA: 3 employees x $10,000/quarter: Q1 taxes the first $7,000 each = 21,000 x 2.1% = 441, not over $500,
-    # nothing left to tax after Q1, so the $441 is paid with Form 940 and no FUTA deposit is due.
+    # FUTA (IRS 940 method): 3 employees x $10,000/quarter. Q1 taxes the first $7,000 each at 0.6%:
+    # 21,000 x 0.6% = 126, not over $500, carried. Q4 adds the 1.5% credit reduction on the year's 21,000 = 315,
+    # undeposited 126 + 315 = 441, not over $500, so it may be paid with Form 940 by Feb 1, 2027.
+    # Last year (same payroll): 126 + 21,000 x 1.2% = 252 -> 378, paid with the 2025 Form 940 by Feb 2, 2026.
     none(r, "FUTA deposit")
     bal = one(r, "FUTA for 2026")
-    assert "$441" in bal.title and bal.status == "event_driven"
+    assert "$441" in bal.title and bal.due_date == "2027-02-01" and bal.status == "upcoming"
+    assert "= $126" in bal.math[0] and "x 1.5% = $315" in bal.math[-2]
+    prior = one(r, "FUTA for 2025")
+    assert "$378" in prior.title and prior.due_date == "2026-02-02" and prior.status == "passed"
 
 
 def test_semiweekly_depositor_when_lookback_over_50000():
@@ -100,9 +105,15 @@ def test_semiweekly_depositor_when_lookback_over_50000():
     none(r, "Payroll tax deposit for")
     semi = one(r, "Semiweekly payroll tax deposits")
     assert semi.due_date is None and "following Wednesday" in semi.trigger
-    # FUTA: 12 x 7,000 = 84,000 x 2.1% = 1,764 in Q1 -> deposit by Apr 30
+    # FUTA: Q1 12 x 7,000 = 84,000 x 0.6% = 504 > 500 -> deposit by Apr 30.
+    # Q4: credit reduction 84,000 x 1.5% = 1,260 > 500 -> deposit by Jan 31 2027 (Sun) -> Feb 1.
+    # Last year's Q4: 84,000 x 1.2% = 1,008 -> deposit by Jan 31 2026 (Sat) -> Feb 2.
     futa = one(r, "FUTA deposit for Q1 2026")
-    assert futa.due_date == "2026-04-30" and "$1,764" in futa.math[-1]
+    assert futa.due_date == "2026-04-30" and "$504 is more than $500" in futa.math[-1]
+    q4 = one(r, "FUTA deposit for Q4 2026")
+    assert q4.due_date == "2027-02-01" and "$84,000 taxable FUTA wages x 1.5% = $1,260" in q4.math[-2]
+    q4_prior = one(r, "FUTA deposit for Q4 2025")
+    assert q4_prior.due_date == "2026-02-02" and "x 1.2% = $1,008" in q4_prior.math[-2]
 
 
 def test_small_payroll_pays_with_return_and_new_employer_is_monthly():
@@ -114,8 +125,10 @@ def test_small_payroll_pays_with_return_and_new_employer_is_monthly():
     new = cal(employee_count=8, quarterly_payroll_usd=120000, new_employer=True)
     # 120,000 x 15.3% = 18,360 a quarter, but a new employer has a $0 lookback -> monthly
     assert (new.deposit_schedule.schedule, new.deposit_schedule.estimated_lookback_usd) == ("monthly", 0.0)
-    # FUTA: 8 x 7,000 = 56,000 x 2.1% = 1,176 > 500 -> one Q1 deposit
-    assert [i.due_date for i in find(new, "FUTA deposit")] == ["2026-04-30"]
+    # FUTA: Q1 8 x 7,000 = 56,000 x 0.6% = 336, carried; Q4 adds 56,000 x 1.5% = 840 -> 1,176 > 500 -> one deposit
+    # due Jan 31 2027 (Sun) -> Feb 1. New employer: last year's Q4 FUTA is not estimated.
+    futa = find(new, "FUTA deposit")
+    assert [i.due_date for i in futa] == ["2027-02-01"] and "$1,176 is more than $500" in futa[0].math[-1]
 
 
 # ---------------------------------------------------------------- new employer mid-year
@@ -132,12 +145,14 @@ def test_started_paying_wages_mid_year():
     assert one(r, "Replace workplace posters").due_date == "2026-05-04"
     assert find(r, "Payroll tax deposit for")[0].title.endswith("May 2026")
     # FUTA: $60,000 / 25 = $2,400 per employee per quarter, starting Q2.
-    #   Q2: 25 x 2,400 = 60,000 x 2.1% = 1,260 -> due Jul 31
-    #   Q3: cumulative 4,800 each, taxable 2,400 -> 1,260 -> due Oct 31 (Sat) -> Nov 2
-    #   Q4: cumulative 7,200 hits the $7,000 cap, taxable 2,200 x 25 = 55,000 x 2.1% = 1,155 -> Jan 31 2027 (Sun) -> Feb 1
+    #   Q2: 25 x 2,400 = 60,000 x 0.6% = 360, not over $500 -> carried
+    #   Q3: 60,000 x 0.6% = 360 -> undeposited 720 > 500 -> due Oct 31 (Sat) -> Nov 2
+    #   Q4: cumulative 7,200 hits the $7,000 cap, taxable 2,200 x 25 = 55,000 x 0.6% = 330, plus the credit reduction
+    #       on the year's 60,000 + 60,000 + 55,000 = 175,000 x 1.5% = 2,625 -> 2,955 -> Jan 31 2027 (Sun) -> Feb 1
+    #   total 720 + 2,955 = 3,675 = 175,000 x 2.1%
     futa = find(r, "FUTA deposit")
-    assert [(f.due_date, f.math[-2].split("= ")[1].split(";")[0]) for f in futa] == [
-        ("2026-07-31", "$1,260"), ("2026-11-02", "$1,260"), ("2027-02-01", "$1,155")]
+    assert [(f.due_date, f.math[-1].split(" is more")[0]) for f in futa] == [("2026-11-02", "$720"),
+                                                                           ("2027-02-01", "$2,955")]
     assert any("minimum franchise tax" in n for n in r.notes)
 
 
@@ -298,14 +313,311 @@ def test_labor_burden_edge_cases():
     assert no_ett.employer_taxes_and_insurance_usd == 12390.0       # 12,397 - 7 ETT
     later = b.labor_burden_estimate(35, 2000, 9.50, as_of="2027-03-01")
     assert later.tax_year == 2027 and later.total_annual_cost_usd == 82397.0 and later.verified is False
-    assert any("2027 rates are not in the rulebook" in n for n in later.notes)
+    assert any("2027 rates (including the 2027 minimum wage) are not in the rulebook" in n for n in later.notes)
     low = b.labor_burden_estimate(15, 1000, 5, ui_rate=0.034, as_of=AS_OF)
-    assert any("below the 2026 California minimum wage of $16.90" in n for n in low.notes)
-    assert any("pass 3.4 instead" in n for n in low.notes)
+    assert any("below the California minimum wage of $16.90 (in force from 2026-01-01)" in n for n in low.notes)
+    # ui_rate 0.034 is read as 3.4% (no California UI rate is under 1%): 3.4% x 7,000 = 238
+    assert lines(low)["CA Unemployment Insurance"] == 238.0
+    assert any("read as a decimal, so 3.4% was used" in n for n in low.notes)
+    assert "ca_ui_rate_range" in low.unverified_values_used and low.verified is False
     with pytest.raises(ValueError):
         b.labor_burden_estimate(0, 2000, 9.5)
     with pytest.raises(ValueError):
         b.labor_burden_estimate(35, 9000, 9.5)
+
+
+# ---------------------------------------------------------------- review fixes
+def test_llc_flag_on_sole_owner_entity_pays_entity_fee_and_entity_wc_penalty():
+    r = cal(entity_type="sole_owner", llc=True, license_expiration_date="2026-12-31")
+    lic = one(r, "CSLB license renewal")
+    # an LLC is not a sole owner: $700 active renewal, $700 x 1.5 = $1,050 late (16 CCR 811 / B&P 7137(a)(5))
+    assert "Active renewal fee (non-sole owner): $700" in lic.math[0] and "= $1,050" in lic.math[1]
+    assert "Late renewal costs $1,050 instead of $700" in lic.penalty_if_late
+    wc = one(r, "Workers' comp policy in force")
+    assert "(entity): $20,000 per violation" in wc.math[0]          # B&P 7125.4(a)(2), not the $10,000 sole owner
+    assert "can issue a stop order" in wc.penalty_if_late
+    jv = one(cal(entity_type="joint_venture"), "Workers' comp policy in force")
+    assert "not joint ventures" in jv.math[0]
+    # B&P 7125 (operative 2028-01-01): a no-employee joint venture keeps its exemption, so no 2028 end date
+    jv_ex = one(cal(year=2027, entity_type="joint_venture", has_employees=False, employee_count=0),
+                "Workers' comp exemption on file")
+    assert jv_ex.due_date is None and "can stay exempt" in jv_ex.notes[0]
+    none(cal(year=2028, entity_type="joint_venture", has_employees=False, employee_count=0), "Workers' comp policy")
+
+
+def test_i9_penalty_and_short_jobs_and_de542_threshold_doubt():
+    r = cal(pays_independent_contractors=True, new_hire_dates=["2026-11-20"])
+    packet = one(r, "New-hire paperwork")
+    assert "$288 to $2,861 per form" in packet.penalty_if_late and "form-i9-civil-penalties" in packet.rule_ids
+    assert "a job shorter than 3 business days: both sections on day one" in packet.trigger
+    assert "$288 to $2,861" in one(r, "Form I-9 Section 2 for employee").penalty_if_late
+    de542 = one(r, "Report subcontractors")
+    assert any("$2,000 for 2026 payments" in n and "report at $600" in n for n in de542.notes)
+    assert de542.verified is False
+    de34 = one(r, "Report each new hire to EDD")
+    assert any("12 and not more than 16 days apart" in n for n in de34.notes)
+
+
+def test_deposit_schedule_notes_and_de9_ui_ett_and_edd_registration_basis():
+    r = cal(quarterly_payroll_usd=30000, started_paying_wages_on="2026-01-05")
+    assert not any("IRS mails" in n for n in r.deposit_schedule.notes)
+    assert any("12 months ended preceding June 30" in n for n in r.deposit_schedule.notes)
+    de9 = one(r, "EDD DE 9 and DE 9C for Q1 2026")
+    assert any("UI and ETT" in n for n in de9.notes) and "edd_de88_deposit_schedule" in de9.unverified_values
+    reg = one(r, "Register as an employer with EDD")
+    assert "lawbook-edd-registration-100-per-quarter" in reg.rule_ids     # $100 is total quarterly wages
+    small = cal(employee_count=1, quarterly_payroll_usd=10000)
+    assert any("no $100,000 day" in n for n in small.deposit_schedule.notes)
+
+
+def test_irs_deposit_rolls_past_dc_emancipation_day():
+    r = cal(year=2028, quarterly_payroll_usd=30000, as_of="2028-01-02")
+    # March 2028 deposit: Apr 15 2028 is a Saturday, Apr 16 (Emancipation Day) a Sunday observed Mon Apr 17 -> Tue Apr 18
+    march = one(r, "Payroll tax deposit for March 2028")
+    assert march.due_date == "2028-04-18" and "federal_legal_holidays" in march.unverified_values
+    # 2027: Apr 15 is a Thursday, nothing moves
+    assert one(cal(year=2027, quarterly_payroll_usd=30000), "Payroll tax deposit for March 2027").due_date == "2027-04-15"
+
+
+def test_llc_liability_insurance_flags_literal_statute_reading():
+    r = cal(entity_type="llc", personnel_of_record_count=7)
+    ins = one(r, "LLC liability insurance")
+    assert "= $1,200,000" in ins.math[0]                          # 1,000,000 + 100,000 x (7 - 5), CSLB reading
+    assert any("literally says $100,000 for each person listed" in n for n in ins.notes)
+
+
+def test_workplace_violence_plan_and_know_your_rights_new_hire_note():
+    r = cal()
+    wvpp = one(r, "Workplace Violence Prevention Plan")
+    assert wvpp.status == "event_driven" and "every 12 months" in wvpp.trigger
+    assert {"wvpp-training-initial-and-annual", "wvpp-plan-review-annual", "wvpp-exemptions"} <= set(wvpp.rule_ids)
+    assert any("fewer than 10 employees" in n for n in wvpp.notes) and any("1 year" in n for n in wvpp.notes)
+    none(cal(has_employees=False, employee_count=0), "Workplace Violence Prevention Plan")
+    kyr = one(r, "Give every employee the Workplace Know Your Rights")
+    assert any("new hires" in n for n in kyr.notes)
+
+
+def test_public_works_registration_renewal():
+    r = cal(public_works=True)
+    pw = one(r, "DIR public works contractor registration for fiscal year 2026-27")
+    assert pw.due_date == "2026-06-30" and pw.status == "passed"
+    assert pw.math[0] == "Fee $400 per fiscal year; 1 yr $400, 2 yr $800, 3 yr $1,200"
+    # late: 90-day grace (Jul 1 - Sep 30) with $400 penalty; unregistered work $100/day up to $8,000 + $2,000
+    assert "within 90 days (2026-07-01 to 2026-09-30)" in pw.penalty_if_late and "$400 penalty" in pw.penalty_if_late
+    assert "$100 per day up to $8,000" in pw.penalty_if_late and "$2,000 registration penalty" in pw.penalty_if_late
+    assert pw.verified is False                                   # required-to-bid rule is unchecked
+    none(cal(), "DIR public works contractor registration")
+
+
+def test_carpentry_dual_wage_uses_threshold_in_force_at_policy_start():
+    # $44/h: at or above the $41 threshold (policies from 2024-09-01) but below $46 (policies from 2026-09-01)
+    unknown = b.labor_burden_estimate(44, 2000, 8, as_of=AS_OF, wc_class_code="5432")
+    dual = [n for n in unknown.notes if n.startswith("Carpentry")]
+    assert any("on or after 2026-09-01 the threshold is $46" in n and "belongs in 5403, not 5432" in n for n in dual)
+    assert any("before 2026-09-01 the threshold is $41" in n and "belongs in 5432." in n for n in dual)
+    assert any("give wc_policy_start_date" in n for n in unknown.notes)
+    old_policy = b.labor_burden_estimate(44, 2000, 8, as_of=AS_OF, wc_class_code="5432",
+                                         wc_policy_start_date="2026-03-01")
+    assert [n for n in old_policy.notes if n.startswith("Carpentry")] == [
+        "Carpentry dual-wage classes (regular hourly wage test): for a policy starting 2026-03-01 the threshold is "
+        "$41, and $44/h is at or above it, so payroll belongs in 5432."]
+    summer = b.labor_burden_estimate(44, 2000, 8, as_of="2026-06-01", wc_class_code="5403")
+    assert any("in force on 2026-06-01 the threshold is $41" in n and "belongs in 5432, not 5403" in n
+               for n in summer.notes)
+    ancient = b.labor_burden_estimate(44, 2000, 8, as_of=AS_OF, wc_class_code="5403", wc_policy_start_date="2024-01-01")
+    assert any("predates the thresholds" in n for n in ancient.notes)
+    odd = b.labor_burden_estimate(35, 2000, 9.5, ui_rate=7.5, as_of=AS_OF)
+    assert any("outside California's 1.5%-6.2%" in n for n in odd.notes) and odd.verified is False
+
+
+# ---------------------------------------------------------------- code/realism review regressions
+def test_contradictory_inputs_give_clear_errors():
+    with pytest.raises(ValueError, match="after 2026, so you had no employees in 2026"):
+        cal(started_paying_wages_on="2027-03-01")
+    with pytest.raises(ValueError, match="new_hire_dates were given but has_employees is false"):
+        cal(has_employees=False, employee_count=0, new_hire_dates=["2026-11-20"])
+    with pytest.raises(ValueError, match="cannot be negative"):
+        cal(quarterly_payroll_usd=-1)
+    with pytest.raises(ValueError, match="4-digit year"):
+        cal(year="twenty")
+    assert cal(year="2026").year == 2026
+
+
+def test_wages_started_this_year_make_a_new_employer_monthly_depositor():
+    r = cal(employee_count=30, quarterly_payroll_usd=400000, started_paying_wages_on="2026-02-01")
+    d = r.deposit_schedule
+    # 400,000 x 15.3% = 61,200 a quarter, but no payroll in Jul 2024 - Jun 2025, so the lookback is $0 -> monthly
+    # (it was wrongly 4 x 61,200 = 244,800 -> semiweekly before)
+    assert (d.schedule, d.estimated_quarterly_federal_tax_usd, d.estimated_lookback_usd) == ("monthly", 61200.0, 0.0)
+    deps = find(r, "Payroll tax deposit for")
+    assert len(deps) == 11 and deps[0].title.endswith("February 2026")      # Feb through Dec 2026
+    assert deps[0].due_date == "2026-03-16"                                 # Mar 15 2026 is a Sunday
+    assert one(r, "Register as an employer with EDD").due_date == "2026-02-16"   # Feb 1 + 15 days
+    assert one(r, "Get a federal EIN").due_date == "2026-02-08"                  # Feb 1 + 7 days
+
+
+def test_wages_started_inside_lookback_count_only_those_quarters():
+    # 10 employees, $100,000 a quarter: 100,000 x 15.3% = 15,300 a quarter.
+    # Started 2025-03-01: the 2026 lookback (Jul 2024 - Jun 2025) has payroll in Q1 and Q2 2025 only:
+    # 2 x 15,300 = 30,600 <= 50,000 -> monthly.  Started 2024-01-01: 4 x 15,300 = 61,200 > 50,000 -> semiweekly.
+    partial = cal(employee_count=10, quarterly_payroll_usd=100000, started_paying_wages_on="2025-03-01")
+    assert (partial.deposit_schedule.schedule, partial.deposit_schedule.estimated_lookback_usd) == ("monthly", 30600.0)
+    assert "payroll in 2 of its 4 quarters" in partial.deposit_schedule.math[-2]
+    full = cal(employee_count=10, quarterly_payroll_usd=100000, started_paying_wages_on="2024-01-01")
+    assert (full.deposit_schedule.schedule, full.deposit_schedule.estimated_lookback_usd) == ("semiweekly", 61200.0)
+    none(full, "Register as an employer with EDD")          # due 2024-01-16: not a 2026 item any more
+    none(full, "Get a federal EIN")
+    # Last year's FUTA from 2025-03-01: Q1 10 x 7,000 = 70,000 x 0.6% = 420 (carried, not over $500); Q2-Q4 nothing
+    # left under the $7,000 base; Q4 adds 70,000 x 1.2% (2025 credit reduction) = 840 -> 1,260 due Jan 31 2026 (Sat)
+    # -> Mon Feb 2. (It used to be dropped whenever started_paying_wages_on was given.)
+    prior = one(partial, "FUTA deposit for Q4 2025")
+    assert prior.due_date == "2026-02-02" and "$1,260 is more than $500" in prior.math[-1]
+    assert "from 2025-03-01" in prior.notes[-1]
+    # new_employer=True with wages from 2025-08-01: same $1,260 (Q3 420 + Q4 840) is still owed for 2025
+    aug = cal(employee_count=10, quarterly_payroll_usd=100000, started_paying_wages_on="2025-08-01", new_employer=True)
+    assert "$1,260 is more than $500" in one(aug, "FUTA deposit for Q4 2025").math[-1]
+
+
+def test_registration_items_only_when_due_in_the_calendar_year():
+    early = cal(quarterly_payroll_usd=30000, started_paying_wages_on="2025-12-15")
+    none(early, "Register as an employer with EDD")          # Dec 15 + 15 = Dec 30, 2025
+    none(early, "Get a federal EIN")                         # Dec 15 + 7 = Dec 22, 2025
+    late = cal(quarterly_payroll_usd=30000, started_paying_wages_on="2025-12-26")
+    assert one(late, "Register as an employer with EDD").due_date == "2026-01-10"   # Dec 26 + 15
+    assert one(late, "Get a federal EIN").due_date == "2026-01-02"                  # Dec 26 + 7
+
+
+def test_1099_for_last_year_kept_when_wages_start_this_year():
+    r = cal(started_paying_wages_on="2026-05-04", pays_independent_contractors=True)
+    assert one(r, "Forms 1099-NEC for 2025").due_date == "2026-02-02"   # subs paid in 2025 still get 1099s
+    none(r, "Forms W-2 / W-3 for 2025")                                   # but no 2025 employees
+
+
+def test_expired_license_is_flagged_with_the_retroactive_window():
+    recent = cal(license_expiration_date="2026-10-31")
+    item = one(recent, "CSLB license EXPIRED 2026-10-31")
+    # Oct 31 + 90 days = Jan 29, 2027 (30 to Nov 30, 31 to Dec 31, 29 to Jan 29)
+    assert item.due_date == "2027-01-29" and "renew by 2027-01-29" in item.notes[0]
+    assert "retroactive with no gap" in item.notes[0] and "paying $675" in item.notes[0]
+    none(recent, "CSLB license renewal")
+    old = cal(license_expiration_date="2025-06-30")
+    item = one(old, "CSLB license EXPIRED 2025-06-30")
+    assert item.due_date == "2025-09-28" and item.status == "passed"     # Jun 30 + 90 days
+    assert "more than 90 days have passed" in item.notes[0] and "Stop contracting" in item.notes[0]
+    assert any("has passed" in n for n in old.notes)
+    assert not any("no renewal is due" in n for n in old.notes)          # used to say nothing was due
+
+
+def test_renewal_dates_outside_the_year_stay_on_the_calendar():
+    nxt = one(cal(wc_policy_renewal_date="2027-03-01"), "Workers' comp policy renewal")
+    assert nxt.due_date == "2027-03-01" and any("not in 2026" in n for n in nxt.notes)   # used to vanish
+    past = one(cal(wc_policy_renewal_date="2025-03-01"), "Workers' comp policy renewal")
+    assert past.status == "passed" and any("This date has passed" in n for n in past.notes)
+    bond = one(cal(bond_renewal_date="2027-01-10"), "Bond renewal")
+    assert bond.due_date == "2027-01-10" and bond.remind_on == "2026-12-13"            # Jan 10 - 4 weeks
+    r = cal(cities_worked=["San Diego", "san diego ", "", "Oakland"],
+            city_tax_renewal_dates={"Oakland": "2027-03-01", "San Jose": "2026-12-31"})
+    assert {i.title for i in find(r, "")} >= {"San Diego business tax certificate renewal",
+                                              "Oakland business tax certificate renewal",
+                                              "San Jose business tax certificate renewal"}
+    one(r, "San Diego business tax")                                      # one item, not one per spelling
+    assert one(r, "Oakland business tax").due_date == "2027-03-01"
+    assert one(r, "San Jose business tax").due_date == "2026-12-31"      # named only in the dates dict
+
+
+def test_license_class_names_are_read_and_c10_surcharge_totalled():
+    r = cal(has_employees=False, employee_count=0, license_expiration_date="2026-12-31",
+            license_classifications=["C-10 Electrical", "D-49 Tree Service"])
+    lic = one(r, "CSLB license renewal")
+    assert lic.math[0] == "Active renewal fee (sole owner): $450 + C-10 surcharge $20 = $470"
+    wc = one(r, "Workers' comp policy in force")                        # D-49 must carry WC without employees
+    assert "class D49 must carry it even without employees" in wc.notes[0]
+    assert b._norm_class("Class B") == "B" and b._norm_class("C-61/D-49") == "D49" and b._norm_class("c39") == "C39"
+
+
+def test_blank_and_out_of_year_dates_and_contractor_dates():
+    r = cal(new_hire_dates=["", " ", "2026-11-20", "2024-05-01"], independent_contractor_600_dates=["2026-03-01"])
+    one(r, "DE 34 new-hire report")                                      # blanks skipped, 2024 left out
+    assert any("left out: 2024-05-01" in n for n in r.notes)
+    assert one(r, "DE 542 for subcontractor").due_date == "2026-03-21"   # Mar 1 + 20 days
+    assert any("pays_independent_contractors was treated as true" in n for n in r.notes)
+    one(r, "Forms 1099-NEC for 2026")
+
+
+def test_vote_notice_without_known_election_dates_and_941_pay_with_return():
+    vote = one(cal(year=2027), "Post the time-off-to-vote notice")
+    assert vote.status == "event_driven" and "At least 10 days before every statewide election" in vote.trigger
+    small = cal(employee_count=1, quarterly_payroll_usd=10000)            # 1,530 a quarter < 2,500
+    f941 = one(small, "IRS Form 941 for Q1 2026")
+    assert "may pay it with this timely filed return" in f941.notes[0]
+    assert "federal-deposit-de-minimis-2500" in f941.rule_ids
+    assert "may pay" not in one(cal(quarterly_payroll_usd=30000), "IRS Form 941 for Q1 2026").notes[0]
+
+
+def test_labor_burden_ui_decimal_only_when_it_is_a_real_rate():
+    half = b.labor_burden_estimate(35, 2000, 9.5, ui_rate=0.5, as_of=AS_OF)
+    # 0.5 is not a decimal for 50%: used as 0.5% x 7,000 = 35 and flagged (it used to become 50% = $3,500)
+    assert lines(half)["CA Unemployment Insurance"] == 35.0
+    assert any("0.5% UI rate is outside" in n for n in half.notes) and "ca_ui_rate_range" in half.unverified_values_used
+    dec = b.labor_burden_estimate(35, 2000, 9.5, ui_rate=0.029, as_of=AS_OF)
+    assert lines(dec)["CA Unemployment Insurance"] == 203.0              # 2.9% x 7,000
+    ok = b.labor_burden_estimate(35, 2000, 9.5, ui_rate=2.9, as_of=AS_OF)
+    assert ok.unverified_values_used == {} and lines(ok)["CA Unemployment Insurance"] == 203.0
+
+
+def test_labor_burden_mod_typo_additional_medicare_and_exact_rates():
+    with pytest.raises(ValueError, match="looks like a percent"):
+        b.labor_burden_estimate(35, 2000, 9.5, experience_mod=92, as_of=AS_OF)
+    r = b.labor_burden_estimate(110, 2080, 4, as_of=AS_OF)
+    # wages 110 x 2,080 = 228,800. Employer: SS 11,439 (capped) + Medicare 1.45% x 228,800 = 3,317.60 + FUTA 147
+    # + UI 238 + ETT 7 + WC 2,288 x 4 = 9,152 -> 24,300.60; total 253,100.60
+    assert (r.employer_taxes_and_insurance_usd, r.total_annual_cost_usd) == (24300.6, 253100.6)
+    # employee-only Additional Medicare Tax: 0.9% x (228,800 - 200,000) = 0.9% x 28,800 = 259.20
+    extra = next(l for l in r.employee_withholding_lines if l.item.startswith("Additional Medicare"))
+    assert extra.annual_usd == 259.2 and extra.verified is False
+    assert "additional_medicare_tax" in r.unverified_values_used and r.verified is False
+    assert not any(l.item.startswith("Additional Medicare") for l in
+                   b.labor_burden_estimate(35, 2000, 9.5, as_of=AS_OF).employee_withholding_lines)
+    odd = b.labor_burden_estimate(33.333, 2000, 7.777, as_of=AS_OF)
+    wc = next(l for l in odd.employer_lines if l.item.startswith("Workers"))
+    # 66,666 / 100 x 7.777 = 5,184.6148 -> 5,184.61; the rate is shown exactly, not rounded to $7.78
+    assert wc.annual_usd == 5184.61 and "x $7.777 per $100" in wc.math
+
+
+def test_minimum_wage_check_uses_rate_in_force_on_as_of():
+    mid_2025 = b.labor_burden_estimate(16.75, 2000, 5, as_of="2025-06-01")
+    assert not any("below the California minimum wage" in n for n in mid_2025.notes)   # 2025 rate was $16.50
+    assert any(n == "Rates are the verified 2026 values; 2025 rates are not in the rulebook." for n in mid_2025.notes)
+    y2026 = b.labor_burden_estimate(16.75, 2000, 5, as_of="2026-03-01")
+    assert any("below the California minimum wage of $16.90" in n for n in y2026.notes)
+    alone = b.labor_burden_estimate(35, 2000, 9.5, as_of=AS_OF, wc_policy_start_date="2026-10-01")
+    assert any("used only with wc_class_code 5403 or 5432" in n for n in alone.notes)
+
+
+def test_mcp_rejects_bad_arguments_with_clear_errors():
+    from fastmcp.exceptions import ToolError
+    mcp = FastMCP("t")
+    b.register(mcp)
+
+    async def call(name, args):
+        async with Client(mcp) as c:
+            return await c.call_tool(name, args)
+
+    for name, args, msg in [
+        ("compliance_calendar", {"year": 1999}, "greater than or equal to 2000"),
+        ("compliance_calendar", {"year": 2026, "quarterly_payroll_usd": "abc"}, "valid number"),
+        ("compliance_calendar", {"year": 2026, "license_expiration_date": "12/31/2026"}, "ISO date"),
+        ("compliance_calendar", {"year": 2026, "started_paying_wages_on": "2027-01-05"}, "no employees in 2026"),
+        ("labor_burden_estimate", {"hourly_wage": 35, "annual_hours": 2000, "wc_rate_per_100": 9.5,
+                                   "experience_mod": 92}, "less than or equal to 10"),
+        ("labor_burden_estimate", {"hourly_wage": 35, "annual_hours": 99999, "wc_rate_per_100": 9.5},
+         "less than or equal to 8784"),
+    ]:
+        with pytest.raises(ToolError, match=msg):
+            asyncio.run(call(name, args))
+    ok = asyncio.run(call("labor_burden_estimate", {"hourly_wage": "35", "annual_hours": "2000",
+                                                    "wc_rate_per_100": "9.5", "as_of": AS_OF}))
+    assert ok.structured_content["total_annual_cost_usd"] == 82397.0        # numeric strings are coerced
 
 
 # ---------------------------------------------------------------- MCP
@@ -319,12 +631,16 @@ def test_tools_through_mcp_client():
             calendar_ = await c.call_tool("compliance_calendar", {
                 "year": 2026, "entity_type": "llc", "has_employees": True, "employee_count": 12,
                 "license_expiration_date": "2026-12-31", "quarterly_payroll_usd": 30000,
-                "cities_worked": ["San Diego"], "as_of": AS_OF})
+                "cities_worked": ["San Diego"], "as_of": AS_OF, "public_works": True})
             burden = await c.call_tool("labor_burden_estimate", {"hourly_wage": 35, "annual_hours": 2000,
-                                                                 "wc_rate_per_100": 9.5, "as_of": AS_OF})
+                                                                 "wc_rate_per_100": 9.5, "as_of": AS_OF,
+                                                                 "wc_class_code": "5403",
+                                                                 "wc_policy_start_date": "2026-10-01"})
             return names, calendar_.structured_content, burden.structured_content
     names, cal_out, burden = asyncio.run(run())
     assert {"compliance_calendar", "labor_burden_estimate"} <= names
     assert cal_out["deposit_schedule"]["schedule"] == "monthly" and cal_out["is_llc"] is True
     assert any(i["title"] == "EDD DE 9 and DE 9C for Q4 2026" and i["due_date"] == "2027-02-01" for i in cal_out["items"])
+    assert any(i["title"].startswith("DIR public works contractor registration") for i in cal_out["items"])
     assert burden["total_annual_cost_usd"] == 82397.0 and burden["burdened_hourly_rate_usd"] == 41.2
+    assert any("threshold is $46" in n and "belongs in 5403." in n for n in burden["notes"])   # $35 < $46

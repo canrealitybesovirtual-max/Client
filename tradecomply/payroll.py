@@ -13,12 +13,14 @@ recorded, so a missing rest-break count never creates a premium; missing or late
 """
 import csv
 import io
+import json
+import math
 import re
 from collections import defaultdict
 from datetime import date as Date, datetime, timedelta
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, PrivateAttr, ValidationError, field_validator
 
 from . import core, logic
 
@@ -33,6 +35,7 @@ WAIT, LATE_PAY, WO16_PEN, STUB_PEN = ("waiting-time-penalty", "late-payment-pena
                                       "wage-statement-penalties-226e")
 PW_OT, PW_PEN, SEMI = "pw-overtime-8-40-time-and-half", "penalty-1813-overtime", "semimonthly-paydays-26th-and-10th"
 WEEKLY_PAY, ON_DUTY_MEAL = "weekly-biweekly-payroll-7-days", "on-duty-meal-written-agreement"
+RECORDS = "payroll-time-records-required-and-3-year-retention"
 FINAL_PAY = {"discharged": "final-pay-discharge-or-layoff-immediate", "laid_off": "final-pay-discharge-or-layoff-immediate",
              "quit_with_72h_notice": "final-pay-quit-with-72-hours-notice",
              "quit_without_notice": "final-pay-quit-without-notice-72-hours"}
@@ -63,6 +66,7 @@ UNVERIFIED = {
 
 WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
 Weekday = Literal["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+PAY_FREQUENCIES = ("weekly", "biweekly", "semimonthly", "monthly")
 PayFrequency = Literal["weekly", "biweekly", "semimonthly", "monthly"]
 SeparationType = Literal["discharged", "laid_off", "quit_with_72h_notice", "quit_without_notice"]
 
@@ -79,13 +83,32 @@ def _h(minutes: float) -> float:
     return round(minutes / 60, 2)
 
 
+def _hx(minutes: float) -> str:
+    """Hours for a math line, precise enough that 'hours x rate' reproduces the cents (8:20 -> 8.3333)."""
+    return f"{round(minutes / 60, 4):g}"
+
+
+def _finite(x: float, field: str, minimum: float = 0, strict: bool = False) -> float:
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        raise ValueError(f"{field} must be a number, got {x!r}") from None
+    if not math.isfinite(x) or x < minimum or (strict and x == minimum):
+        raise ValueError(f"{field} must be a finite number {'greater than' if strict else 'at least'} {minimum:g}, "
+                         f"got {x!r}")
+    return x
+
+
+_DATE_FORMATS = ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y", "%Y/%m/%d", "%b %d, %Y", "%B %d, %Y", "%b %d %Y", "%B %d %Y")
+
+
 def _as_date(value, field: str = "date") -> Date:
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, Date):
         return value
-    s = str(value or "").strip()
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
+    s = re.sub(r"\s+", " ", str(value or "").strip())
+    for fmt in _DATE_FORMATS:
         try:
             return datetime.strptime(s[:10] if fmt == "%Y-%m-%d" else s, fmt).date()
         except ValueError:
@@ -93,14 +116,17 @@ def _as_date(value, field: str = "date") -> Date:
     raise ValueError(f"{field} must be a date like 2026-11-02 or 11/02/2026, got {value!r}")
 
 
-_CLOCK = re.compile(r"(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*(?:([ap])\.?m?\.?)?", re.I)
+_CLOCK = re.compile(r"(\d{1,2})(?::?(\d{2}))?(?::\d{2})?\s*(?:([ap])\.?m?\.?)?", re.I)
+_DATE_PREFIX = re.compile(r"^(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}/\d{1,2}/\d{2,4})(?:T|\s+)")
 
 
 def _clock(value, field: str) -> int:
-    """Clock time -> minutes after midnight. Accepts 06:30, 6:30 AM, 6pm, 2026-11-02T06:30."""
+    """Clock time -> minutes after midnight. Accepts 06:30, 0630, 6:30 AM, 6pm, 2026-11-02T06:30(-08:00),
+    2026-11-02 06:30 and 11/02/2026 6:30 AM (the date part is ignored; the entry's date decides the workday)."""
     s = str(value or "").strip()
-    if "T" in s:
-        s = s.split("T", 1)[1]
+    if (dm := _DATE_PREFIX.match(s)) or "T" in s:
+        s = s[dm.end():] if dm else s.split("T", 1)[1]
+        s = re.sub(r"(?:Z|[+-]\d{2}:?\d{2})$", "", s.strip())    # ISO time-zone suffix
     m = _CLOCK.fullmatch(s)
     if not m:
         raise ValueError(f"{field} must be a clock time like 06:30 or 6:30 AM, got {value!r}")
@@ -120,12 +146,31 @@ class Break(BaseModel):
     end: str = Field(description="Clock time the meal break ended")
 
 
+def _breaks(value):
+    """Meal breaks as given by people and agents: [{start, end}], ['11:00-11:30'], or '11:00-11:30; 17:00 to 17:30'."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        value = [p for p in re.split(r"[;|]", value) if p.strip()]
+    out = []
+    for b in value:
+        if isinstance(b, str):
+            parts = re.split(r"\s*(?:-|–|—|\bto\b)\s*", b.strip(), maxsplit=1)
+            if len(parts) != 2 or not all(parts):
+                raise ValueError(f"meal break {b!r} must look like '11:00-11:30'")
+            b = {"start": parts[0], "end": parts[1]}
+        out.append(b)
+    return out
+
+
 class TimeEntry(BaseModel):
-    employee: str = Field(description="Employee name or ID (must match a key in hourly_rates)")
+    employee: str = Field(min_length=1, description="Employee name or ID (must match a key in hourly_rates)")
     date: Date = Field(description="Workday the shift started (ISO 2026-11-02 or 11/02/2026)")
-    start: str = Field(description="Clock-in time, e.g. '06:00' or '6:00 AM'")
+    start: str = Field(description="Clock-in time, e.g. '06:00', '0600' or '6:00 AM'")
     end: str = Field(description="Clock-out time; earlier than start means the shift ran past midnight")
-    meal_breaks: list[Break] = Field(default_factory=list, description="Unpaid meal breaks taken inside this entry")
+    meal_breaks: Annotated[list[Break], BeforeValidator(_breaks)] = Field(
+        default_factory=list, description="Unpaid meal breaks taken inside this entry, as [{start, end}] or "
+                                          "'11:00-11:30' strings")
     rest_breaks_taken: Optional[int] = Field(None, ge=0, description=(
         "Number of 10-minute paid rest breaks authorized and taken. Leave empty if not recorded (Wage Order 16 does "
         "not require recording rest breaks): no rest premium is then computed"))
@@ -140,6 +185,11 @@ class TimeEntry(BaseModel):
     @classmethod
     def _parse_date(cls, v):
         return _as_date(v)
+
+    @field_validator("employee", mode="before")
+    @classmethod
+    def _strip_name(cls, v):
+        return str(v).strip() if isinstance(v, (str, int)) else v          # numeric employee IDs are fine
 
 
 class LineItem(BaseModel):
@@ -177,6 +227,9 @@ class DayLine(BaseModel):
     premiums_usd: float = 0
     minimum_wage_shortfall_usd: float = 0
     explanation: list[str] = Field(default_factory=list)
+    # Exact minutes (worked, regular, OT, DT) and the unrounded state-minimum gap, so totals are not sums of roundings.
+    _mins: tuple = PrivateAttr(default=(0, 0, 0, 0))
+    _state_mw_gap_usd: float = PrivateAttr(default=0.0)
 
 
 class EmployeePayroll(BaseModel):
@@ -240,10 +293,22 @@ def _bool(s: str) -> bool:
     return str(s).strip().lower() in ("1", "true", "yes", "y", "x")
 
 
-def parse_csv(text: str) -> tuple[list[TimeEntry], dict[str, float]]:
-    """CSV time entries -> (entries, rates from an optional rate column). meal_breaks like '11:00-11:30;17:00-17:30',
-    or lunch_out/lunch_in columns."""
-    reader = csv.DictReader(io.StringIO(text.strip()))
+def _why(exc: Exception) -> str:
+    """One readable line from a pydantic or ValueError message (no pydantic URLs)."""
+    if isinstance(exc, ValidationError):
+        return "; ".join(f"{'.'.join(str(x) for x in e['loc']) or 'value'}: "
+                         f"{re.sub(r'^Value error, ', '', e['msg'])}" for e in exc.errors())
+    return str(exc)
+
+
+def parse_csv(text: str) -> tuple[list[TimeEntry], dict[str, set[float]], list[int]]:
+    """CSV/TSV time entries -> (entries, {employee casefold: rates in the rate column}, skipped line numbers).
+    Accepts comma, tab or semicolon delimiters and a UTF-8 BOM; meal_breaks like '11:00-11:30;17:00-17:30' or
+    lunch_out/lunch_in columns. Blank rows, and rows with no date and no times (totals, notes), are skipped."""
+    text = text.lstrip("\ufeff").strip()
+    header = text.split("\n", 1)[0]
+    delim = "\t" if "\t" in header else ";" if ";" in header and "," not in header else ","
+    reader = csv.DictReader(io.StringIO(text), delimiter=delim)
     col = {}
     for h in reader.fieldnames or []:
         norm = re.sub(r"[^a-z0-9]+", "_", (h or "").strip().lower()).strip("_")
@@ -254,28 +319,39 @@ def parse_csv(text: str) -> tuple[list[TimeEntry], dict[str, float]]:
     if missing:
         raise ValueError(f"CSV is missing column(s) {missing}. Expected a header like: "
                          "employee,date,start,end,meal_breaks,rest_breaks_taken,on_call,hourly_rate")
-    entries, rates = [], {}
-    for line, row in enumerate(reader, 2):
+    entries, rates, skipped = [], defaultdict(set), []
+    for row in reader:
+        line = reader.line_num
         def get(name):
-            return (row.get(col[name]) or "").strip() if name in col else ""
+            return str(row.get(col[name]) or "").strip() if name in col else ""
+        if not any(get(c) for c in ("date", "start", "end")):
+            if any(str(v or "").strip() for v in row.values()):
+                skipped.append(line)
+            continue
         try:
-            meals = [dict(zip(("start", "end"), (x.strip() for x in part.split("-", 1))))
-                     for part in re.split(r"[;|]", get("meal_breaks")) if part.strip()]
-            if get("meal_start") and get("meal_end"):
+            meals = _breaks(get("meal_breaks"))
+            if get("meal_start") or get("meal_end"):
+                if not (get("meal_start") and get("meal_end")):
+                    raise ValueError("lunch out and lunch in must both be filled in (or both left blank)")
                 meals.append({"start": get("meal_start"), "end": get("meal_end")})
             rest = get("rest_breaks_taken")
+            if rest and not float(rest).is_integer():
+                raise ValueError(f"rest breaks must be a whole number, got {rest!r}")
             e = TimeEntry(employee=get("employee"), date=get("date"), start=get("start"), end=get("end"),
                           meal_breaks=meals, rest_breaks_taken=int(float(rest)) if rest else None,
                           on_call=_bool(get("on_call")), first_meal_waived=_bool(get("first_meal_waived")),
                           second_meal_waived=_bool(get("second_meal_waived")))
-            if get("rate"):
-                rates[e.employee] = float(get("rate").replace("$", "").replace(",", ""))
-        except Exception as exc:
-            raise ValueError(f"CSV line {line}: {exc}") from None
+            if raw := get("rate"):
+                try:
+                    rates[e.employee.casefold()].add(float(re.sub(r"[^\d.\-]", "", raw)))
+                except ValueError:
+                    raise ValueError(f"hourly rate {raw!r} is not a number") from None
+        except (ValueError, ValidationError) as exc:
+            raise ValueError(f"CSV line {line}: {_why(exc)}") from None
         entries.append(e)
     if not entries:
-        raise ValueError("CSV has no data rows")
-    return entries, rates
+        raise ValueError("CSV has no time entries (need a header row and at least one row with date, start and end)")
+    return entries, dict(rates), skipped
 
 
 # ---------------------------------------------------------------- one workday
@@ -296,16 +372,24 @@ def _analyze_day(entries: list[TimeEntry]) -> dict:
     work, offs, on_duty_meals = [], [], 0
     for i, (s, en, e) in enumerate(spans):
         if i and s < spans[i - 1][1]:
-            raise ValueError(f"{e.employee} {e.date}: time entries overlap")
+            prev = spans[i - 1][2]
+            raise ValueError(f"{e.employee} {e.date}: time entries {prev.start}-{prev.end} and {e.start}-{e.end} "
+                             "overlap; fix the punches or remove the duplicate row")
         if i:
             offs.append({"start": spans[i - 1][1], "end": s, "kind": "gap"})
         cur = last = s
-        for bs, be, b in sorted((*(t + 1440 if t < s else t for t in (_clock(b.start, "meal start"),
-                                                                          _clock(b.end, "meal end"))), b)
-                                for b in e.meal_breaks):
-            if not (last <= bs < be <= en):
-                raise ValueError(f"{e.employee} {e.date}: meal break {b.start}-{b.end} is outside the "
-                                 f"{e.start}-{e.end} shift or overlaps another break")
+        meals = []
+        for b in e.meal_breaks:                                  # a time before clock-in is after midnight
+            bs, be = (t + 1440 if t < s else t for t in (_clock(b.start, "meal start"), _clock(b.end, "meal end")))
+            meals.append((bs, be, b))
+        for bs, be, b in sorted(meals, key=lambda t: t[:2]):
+            where = f"{e.employee} {e.date}: meal break {b.start}-{b.end}"
+            if be <= bs:
+                raise ValueError(f"{where} ends before it starts or has no length; check AM/PM")
+            if not (s <= bs and be <= en):
+                raise ValueError(f"{where} is outside the {e.start}-{e.end} shift")
+            if bs < last:
+                raise ValueError(f"{where} overlaps another meal break in the same entry")
             last = be
             if e.on_call:
                 on_duty_meals += 1          # not relieved of duty: paid work time, not a meal period
@@ -319,7 +403,9 @@ def _analyze_day(entries: list[TimeEntry]) -> dict:
         o["worked_before"] = sum(max(0, min(b, o["start"]) - a) for a, b in work)
     # Rest breaks need not be recorded (WO16 §6(A)(1)): unknown unless every entry records them or was on call.
     rest_known = all(e.on_call or e.rest_breaks_taken is not None for e in entries)
+    rest_partial = not rest_known and any(e.rest_breaks_taken is not None for e in entries if not e.on_call)
     return {"minutes": sum(b - a for a, b in work), "offs": sorted(offs, key=lambda o: o["start"]),
+            "spans": [(s, en) for s, en, _ in spans], "rest_partial": rest_partial,
             "on_duty_meals": on_duty_meals, "on_call": any(e.on_call for e in entries),
             "rest_taken": (sum(e.rest_breaks_taken or 0 for e in entries if not e.on_call) if rest_known else None),
             "waive1": any(e.first_meal_waived for e in entries), "waive2": any(e.second_meal_waived for e in entries),
@@ -393,7 +479,9 @@ def _state_min_wage(d: Date) -> tuple[float, list[str], Optional[str]]:
     for start, rate in sorted(r.param("prior_rates_usd").items(), reverse=True):
         if d >= Date.fromisoformat(start):
             return rate, [MW], None
-    raise ValueError(f"No California minimum wage in the rulebook for {d}")
+    raise ValueError(f"No California minimum wage in the rulebook for {d}: entries before "
+                     f"{min(r.param('prior_rates_usd'))} cannot be checked here (most wage claims reach back "
+                     f"{P(MEAL_PREM, 'statute_of_limitations_years')} years). Remove the older entries")
 
 
 def _period_key(d: Date, freq: str, week_start: Date, anchor: Date):
@@ -408,31 +496,67 @@ def _period_key(d: Date, freq: str, week_start: Date, anchor: Date):
 
 
 # ---------------------------------------------------------------- check_payroll
+def _entries(records) -> tuple[list[TimeEntry], dict[str, set[float]], list[int]]:
+    """Time entries from CSV text, a JSON list (as text or parsed), or TimeEntry objects."""
+    if isinstance(records, str) and records.lstrip("\ufeff \t\r\n")[:1] in ("[", "{"):
+        try:
+            records = json.loads(records)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"records looks like JSON but does not parse: {exc}") from None
+    if isinstance(records, str):
+        return parse_csv(records)
+    if isinstance(records, dict):
+        records = [records]
+    entries = []
+    for i, r in enumerate(records or [], 1):
+        try:
+            entries.append(r if isinstance(r, TimeEntry) else TimeEntry.model_validate(r))
+        except ValidationError as exc:
+            raise ValueError(f"time entry {i}: {_why(exc)}") from None
+    if not entries:
+        raise ValueError("No time entries given")
+    return entries, {}, []
+
+
 def check_payroll(records: Union[str, list], hourly_rates: Optional[dict[str, float]] = None,
                   local_minimum_wage_usd: Optional[float] = None, as_of: Optional[Date] = None,
                   workweek_starts_on: Weekday = "monday", pay_frequency: PayFrequency = "weekly",
                   gross_paid_usd: Optional[dict[str, float]] = None, public_works: bool = False,
                   include_unverified_penalties: bool = True) -> PayrollResult:
     as_of = _as_date(as_of, "as_of") if as_of else logic.today_ca()
+    workweek_starts_on, pay_frequency = str(workweek_starts_on).strip().lower(), str(pay_frequency).strip().lower()
     if workweek_starts_on not in WEEKDAYS:
         raise ValueError(f"workweek_starts_on must be one of {WEEKDAYS}")
-    if isinstance(records, str):
-        entries, csv_rates = parse_csv(records)
-    else:
-        entries, csv_rates = [r if isinstance(r, TimeEntry) else TimeEntry.model_validate(r) for r in records], {}
-    if not entries:
-        raise ValueError("No time entries given")
-    rates = {k.strip().casefold(): float(v) for k, v in {**csv_rates, **(hourly_rates or {})}.items()}
-    paid = {k.strip().casefold(): float(v) for k, v in (gross_paid_usd or {}).items()}
-    if missing := sorted({e.employee for e in entries if e.employee.strip().casefold() not in rates}):
+    if pay_frequency not in PAY_FREQUENCIES:
+        raise ValueError(f"pay_frequency must be one of {PAY_FREQUENCIES}")
+    entries, csv_rates, skipped = _entries(records)
+    names = {}
+    for e in entries:
+        names.setdefault(e.employee.casefold(), e.employee)
+    rates = {str(k).strip().casefold(): _finite(v, f"hourly rate for {k}", strict=True)
+             for k, v in (hourly_rates or {}).items()}
+    for key, found in csv_rates.items():
+        if key in rates:                                         # hourly_rates overrides the CSV column
+            continue
+        if len(found) > 1:
+            listed = ", ".join(f"${r:.2f}" for r in sorted(found))
+            raise ValueError(
+                f"{names[key]} has more than one hourly rate in the CSV ({listed}). This check supports one "
+                "straight-time rate per employee: work at two rates in one workweek needs a weighted regular rate "
+                "for overtime, which is not computed here. Pass hourly_rates={name: rate} to choose the rate, or "
+                "check each rate's work separately.")
+        rates[key] = _finite(next(iter(found)), f"hourly rate for {names[key]}", strict=True)
+    if missing := sorted({names[k] for k in names if k not in rates}):
         raise ValueError(f"No hourly rate for: {', '.join(missing)}. Pass hourly_rates={{name: rate}} or a rate column.")
-    if bad := sorted(k for k, v in rates.items() if v <= 0):
-        raise ValueError(f"Hourly rate must be greater than 0 for: {', '.join(bad)}")
-    if local_minimum_wage_usd is not None and local_minimum_wage_usd <= 0:
-        raise ValueError("local_minimum_wage_usd must be greater than 0")
+    paid = {str(k).strip().casefold(): _finite(v, f"gross_paid_usd for {k}") for k, v in (gross_paid_usd or {}).items()}
+    if unknown := sorted(str(k) for k in (gross_paid_usd or {}) if str(k).strip().casefold() not in names):
+        raise ValueError(f"gross_paid_usd names {unknown} have no time entries; use the same names as the employee "
+                         f"field ({', '.join(sorted(names.values()))})")
+    if local_minimum_wage_usd is not None:
+        local_minimum_wage_usd = _finite(local_minimum_wage_usd, "local_minimum_wage_usd", strict=True)
 
     cited = {MW, MW_LOCAL, MW_PERIOD, OT, DT, MEAL1, MEAL2, MEAL_PREM, REST, REST_PREM}
-    notes, fixes, unverified_used, split_flagged, rest_unrecorded = [], [], False, False, 0
+    notes, fixes, unverified_used, split_flagged, rest_unrecorded, meal_days = [], [], False, False, 0, 0
     wk0 = WEEKDAYS.index(workweek_starts_on)
     week_of = lambda d: d - timedelta(days=(d.weekday() - wk0) % 7)
     anchor = min(week_of(e.date) for e in entries)
@@ -444,16 +568,22 @@ def check_payroll(records: Union[str, list], hourly_rates: Optional[dict[str, fl
     gap_flag = UNVERIFIED["split_shift_screen"]["flag_unpaid_gap_over_minutes"]
 
     by_emp: dict[str, dict[Date, list[TimeEntry]]] = defaultdict(lambda: defaultdict(list))
-    names = {}
     for e in entries:
-        key = e.employee.strip().casefold()
-        names.setdefault(key, e.employee.strip())
-        by_emp[key][e.date].append(e)
+        by_emp[e.employee.casefold()][e.date].append(e)
+    if skipped:
+        notes.append(f"Skipped CSV line(s) {', '.join(map(str, skipped))}: no date and no clock times (totals, notes "
+                     "or days off). Check that no worked day was left out.")
 
     employees = []
     for key, days in sorted(by_emp.items()):
         name, rate = names[key], rates[key]
         facts = {d: _analyze_day(es) for d, es in days.items()}
+        absolute = sorted((d.toordinal() * 1440 + s, d.toordinal() * 1440 + en, d) for d, f in facts.items()
+                          for s, en in f["spans"])
+        for (_, end1, d1), (start2, _, d2) in zip(absolute, absolute[1:]):
+            if start2 < end1:                                    # e.g. a shift past midnight runs into the next day
+                raise ValueError(f"{name}: the {d1} time entries run past the start of the {d2} entries; the same "
+                                 "hours would be counted twice. Fix the clock-out or clock-in time")
         weeks = defaultdict(list)
         for d in facts:
             weeks[week_of(d)].append(d)
@@ -504,7 +634,7 @@ def check_payroll(records: Union[str, list], hourly_rates: Optional[dict[str, fl
                     cited.add(REG_RATE)
                 why.insert(0, f"{_h(m)} h worked ({f['entries']}): {_h(reg)} h regular, {_h(ot)} h at {ot_x}x, "
                               f"{_h(dt)} h at {dt_x}x [{OT}, {DT}]")
-                why.append("Wages: " + " + ".join(f"{_h(mins)} h x ${rr * x:.2f}" for mins, x in
+                why.append("Wages: " + " + ".join(f"{_hx(mins)} h x ${rr * x:.2f}" for mins, x in
                                                   ((reg, 1), (ot, ot_x), (dt, dt_x)) if mins) + f" = ${wages:,.2f}")
                 if rate < mw:
                     why.append(f"Rate ${rate:.2f} is below the ${mw:.2f} minimum wage for this day: pay at least "
@@ -516,9 +646,11 @@ def check_payroll(records: Union[str, list], hourly_rates: Optional[dict[str, fl
                 why.append(f"Rest breaks: {rest_req} required for {_h(m)} h "
                            f"({P(REST, 'minutes_per_break')} min per {P(REST, 'per_hours_worked')} h or major "
                            f"fraction), " + (f"{rest_got} counted" if rest_got is not None else
-                                             "not recorded, so no rest premium was computed (Wage Order 16 does not "
-                                             "require recording rest breaks; confirm they were authorized and "
-                                             "permitted)")
+                                             ("recorded on only some of this day's time entries" if f["rest_partial"]
+                                              else "not recorded") + ", so no rest premium was computed (Wage Order "
+                                             "16 does not require recording rest breaks; confirm they were "
+                                             "authorized and permitted; to check them, enter the count on every "
+                                             "entry, 0 where none were taken)")
                            + (" (breaks on call do not count)" if f["on_call"] else "") + f" [{REST}]")
                 if rp:
                     why.append(f"Rest premium: {rest_ph} h x ${rr:.2f} = ${rr * rest_ph:,.2f} (one per workday, not "
@@ -544,24 +676,31 @@ def check_payroll(records: Union[str, list], hourly_rates: Optional[dict[str, fl
                     issues.append(f"{d}: meal period violation")
                 if rp:
                     issues.append(f"{d}: rest break(s) missed ({rest_got} of {rest_req})")
-                lines.append(DayLine(
+                meal_days += bool(meal)
+                line = DayLine(
                     date=d.isoformat(), weekday=WEEKDAYS[d.weekday()], hours_worked=_h(m), regular_hours=_h(reg),
                     overtime_hours=_h(ot), double_time_hours=_h(dt), seventh_consecutive_day=seventh,
                     regular_rate_usd=rr, wages_due_usd=wages, meal_issues=meal, meal_premium_hours=mp,
                     rest_breaks_required=rest_req, rest_breaks_counted=rest_got, rest_premium_hours=rp,
-                    premiums_usd=prem, minimum_wage_shortfall_usd=shortfall, explanation=why))
+                    premiums_usd=prem, minimum_wage_shortfall_usd=shortfall, explanation=why)
+                line._mins, line._state_mw_gap_usd = (m, reg, ot, dt), max(0.0, state_mw - rate) * m / 60
+                lines.append(line)
         employees.append(_employee(name, rate, lines, issues, periods_owed, all_periods, pw_days, paid.get(key),
                                    public_works, include_unverified_penalties))
 
     # roll-up
     exposure: dict[str, ExposureItem] = {}
+    general = []                                                 # crew-wide how-to fixes, listed once after names
     for emp in employees:
         for x in emp.exposure:
             agg = exposure.setdefault(x.item, ExposureItem(item=x.item, low_usd=0, high_usd=0, math="",
-                                                           rule_ids=x.rule_ids, verified=x.verified))
+                                                           rule_ids=[], verified=x.verified))
             agg.low_usd, agg.high_usd = _money(agg.low_usd + x.low_usd), _money(agg.high_usd + x.high_usd)
             agg.math = (agg.math + "; " if agg.math else "") + f"{emp.employee}: {x.math}"
-        fixes.extend(f for f in emp.fixes if f not in fixes)
+            agg.rule_ids += [r for r in x.rule_ids if r not in agg.rule_ids]
+        fixes.extend(f for f in emp.fixes if f.startswith(f"{emp.employee}:"))
+        general.extend(f for f in emp.fixes if not f.startswith(f"{emp.employee}:") and f not in general)
+    fixes.extend(general)
     if any(x.rule_ids == [STUB_PEN] for x in exposure.values()):
         cited.add(STUB_PEN)
     if any(not x.verified and not x.rule_ids for x in exposure.values()):
@@ -598,8 +737,20 @@ def check_payroll(records: Union[str, list], hourly_rates: Optional[dict[str, fl
                      f"waivable) [{PW_OT}, {PW_PEN}]")
     if any(e.overtime_hours or e.double_time_hours for e in employees):
         cited.add(OT_DEADLINE)
-        fixes.append(f"Pay overtime and double time no later than the payday for the next regular payroll period "
-                     f"(LC 204(b)) [{OT_DEADLINE}]")
+        notes.append(f"Overtime and double time may be paid as late as the payday for the next regular payroll "
+                     f"period (LC 204(b)); straight time may not be delayed [{OT_DEADLINE}].")
+    if pay_frequency == "biweekly":
+        notes.append(f"Biweekly pay periods are counted in 14-day blocks from the first workweek in this data "
+                     f"({anchor}). If your pay period starts on the other week, the per-period penalty counts can be "
+                     "off by one.")
+    one_punch_pair_per_day = len(entries) == len({(e.employee.casefold(), e.date) for e in entries})
+    if meal_days and one_punch_pair_per_day and not any(e.meal_breaks for e in entries):
+        cited.add(RECORDS)
+        notes.append("No meal break appears anywhere in these time records (one clock-in and one clock-out per day), "
+                     "so every day over the meal threshold is treated as having no meal. Meal periods must be "
+                     "recorded unless operations cease, and records that show no meal are generally treated as "
+                     "evidence it was not provided. If your timeclock deducts lunch automatically, export the actual "
+                     f"lunch-out/lunch-in punches and run this again before paying premiums [{RECORDS}].")
     if REST_DAY in cited:
         fixes.append(f"Give {P(REST_DAY, 'rest_days_per_7_days')} day's rest in seven. Rest days may be accumulated "
                      f"{P(REST_DAY, 'accumulation_allowed')}, but each calendar month must include the equivalent of "
@@ -667,32 +818,35 @@ def check_payroll(records: Union[str, list], hourly_rates: Optional[dict[str, fl
 def _employee(name, rate, lines, issues, periods_owed, all_periods, pw_days, gross_paid, public_works,
               include_unverified) -> EmployeePayroll:
     tot = lambda attr: round(sum(getattr(x, attr) for x in lines), 2)
+    worked_m, reg_m, ot_m, dt_m = (sum(x._mins[i] for x in lines) for i in range(4))   # exact minutes
     ot_x, dt_x = P(OT, "multiplier"), P(DT, "multiplier")
     wages, prem, short = _money(tot("wages_due_usd")), _money(tot("premiums_usd")), _money(tot("minimum_wage_shortfall_usd"))
-    ot_prem = _money(sum(x.regular_rate_usd * ((ot_x - 1) * x.overtime_hours + (dt_x - 1) * x.double_time_hours)
-                         for x in lines))
+    ot_prem = _money(sum(x.regular_rate_usd * ((ot_x - 1) * x._mins[2] + (dt_x - 1) * x._mins[3]) / 60 for x in lines))
     rr = lines[-1].regular_rate_usd
     same_rate = len({x.regular_rate_usd for x in lines}) == 1
-    at = lambda h, mult: f"{h} h x ${rr * mult:.2f}" if same_rate else f"{h} h (rates by day, see days)"
-    items = [LineItem(item="Regular hours", value=tot("regular_hours"), unit="hours", math=at(tot("regular_hours"), 1),
+
+    def at(minutes, mult):
+        return (f"{_hx(minutes)} h x ${rr * mult:.2f} = ${rr * mult * minutes / 60:,.2f}" if same_rate
+                else f"{_h(minutes)} h (rate differs by day, see days)")
+    items = [LineItem(item="Regular hours", value=_h(reg_m), unit="hours", math=at(reg_m, 1), rule_ids=[OT]),
+             LineItem(item=f"Overtime hours ({ot_x}x)", value=_h(ot_m), unit="hours", math=at(ot_m, ot_x),
                       rule_ids=[OT]),
-             LineItem(item=f"Overtime hours ({ot_x}x)", value=tot("overtime_hours"), unit="hours",
-                      math=at(tot("overtime_hours"), ot_x), rule_ids=[OT]),
-             LineItem(item=f"Double-time hours ({dt_x}x)", value=tot("double_time_hours"), unit="hours",
-                      math=at(tot("double_time_hours"), dt_x), rule_ids=[DT]),
-             LineItem(item="Gross wages due", value=wages, math="sum of the daily wage lines", rule_ids=[OT, DT, MW]),
+             LineItem(item=f"Double-time hours ({dt_x}x)", value=_h(dt_m), unit="hours", math=at(dt_m, dt_x),
+                      rule_ids=[DT]),
+             LineItem(item="Gross wages due", value=wages, rule_ids=[OT, DT, MW],
+                      math="sum of the daily wage lines (each rounded to the cent)"),
              LineItem(item="Overtime premium over straight time", value=ot_prem,
                       math=f"OT h x {ot_x - 1:g} x rate + DT h x {dt_x - 1:g} x rate (owed if you paid straight time "
                            "for every hour)", rule_ids=[OT, DT])]
     mp, rp = tot("meal_premium_hours"), tot("rest_premium_hours")
+    meal_usd = _money(sum(x.regular_rate_usd * x.meal_premium_hours for x in lines))
+    rest_usd = _money(sum(x.regular_rate_usd * x.rest_premium_hours for x in lines))
     if mp:
-        items.append(LineItem(item="Meal period premiums", value=_money(sum(x.regular_rate_usd * x.meal_premium_hours
-                                                                            for x in lines)),
+        items.append(LineItem(item="Meal period premiums", value=meal_usd,
                               math=f"{mp:g} premium hour(s) at the regular rate (one per workday)",
                               rule_ids=[MEAL_PREM]))
     if rp:
-        items.append(LineItem(item="Rest period premiums", value=_money(sum(x.regular_rate_usd * x.rest_premium_hours
-                                                                            for x in lines)),
+        items.append(LineItem(item="Rest period premiums", value=rest_usd,
                               math=f"{rp:g} premium hour(s) at the regular rate (one per workday)",
                               rule_ids=[REST_PREM]))
     if short:
@@ -705,19 +859,22 @@ def _employee(name, rate, lines, issues, periods_owed, all_periods, pw_days, gro
     else:
         owed, periods = _money(prem + short), len(periods_owed)
         owed_math = f"${prem:,.2f} premiums + ${short:,.2f} minimum wage shortfall"
-    fixes = []
+    fixes = []                       # "<name>: ..." = this employee; the rest are crew-wide how-to lines
     if mp:
         h1, h2 = P(MEAL1, "trigger_work_period_hours_gt"), P(MEAL2, "trigger_hours_gt")
-        fixes.append(f"{name}: pay {mp:g} meal premium hour(s) on the next payday as its own wage-statement line. "
-                     f"Start the first {P(MEAL1, 'min_minutes')}-minute meal no later than the end of hour {h1} "
-                     f"worked (a 6:00 start with no earlier unpaid break means lunch starts by {6 + h1}:00), start a "
-                     f"second no later than the end of hour {h2} on days over {h2} h, and relieve the crew of all "
-                     f"duty [{MEAL1}, {MEAL2}, {MEAL_PREM}]")
+        fixes.append(f"{name}: pay {mp:g} meal premium hour(s) = ${meal_usd:,.2f} on the next payday, as its own line "
+                     f"on the wage statement [{MEAL_PREM}]")
+        fixes.append(f"Meal periods: start the first {P(MEAL1, 'min_minutes')}-minute meal no later than the end of "
+                     f"hour {h1} worked (a 6:00 start with no earlier unpaid break means lunch starts by {6 + h1}:00), "
+                     f"start a second no later than the end of hour {h2} on days over {h2} h, relieve the crew of all "
+                     f"duty, and record each meal's start and end [{MEAL1}, {MEAL2}]")
     if rp:
         sched = ", ".join(f"{s['breaks']} for {s['hours']} h" for s in P(REST, "schedule"))
-        fixes.append(f"{name}: pay {rp:g} rest premium hour(s). Authorize a paid {P(REST, 'minutes_per_break')}-minute "
-                     f"break per {P(REST, 'per_hours_worked')} h or major fraction ({sched}); breaks taken on call do "
-                     f"not count [{REST}, {REST_PREM}]")
+        fixes.append(f"{name}: pay {rp:g} rest premium hour(s) = ${rest_usd:,.2f} on the next payday, as its own line "
+                     f"on the wage statement [{REST_PREM}]")
+        fixes.append(f"Rest breaks: authorize and permit a paid {P(REST, 'minutes_per_break')}-minute break per "
+                     f"{P(REST, 'per_hours_worked')} h or major fraction ({sched}); breaks taken on call or on duty do "
+                     f"not count [{REST}]")
     if short:
         fixes.append(f"{name}: raise the rate from ${rate:.2f} to at least ${max(x.regular_rate_usd for x in lines):.2f} "
                      f"and pay the ${short:,.2f} shortfall. Exception: an apprentice regularly indentured under the "
@@ -727,7 +884,7 @@ def _employee(name, rate, lines, issues, periods_owed, all_periods, pw_days, gro
     if owed > 0:
         periods = max(1, periods)
         days = len(lines)
-        avg_reg = round(sum(min(x.hours_worked, P(OT, "daily_threshold_hours")) for x in lines) / days, 2)
+        avg_reg = round(sum(min(x._mins[0], P(OT, "daily_threshold_hours") * 60) for x in lines) / days / 60, 2)
         daily = _money(rr * avg_reg)
         p210 = (P(LATE_PAY, "initial_usd_per_employee_per_failure"),
                 P(LATE_PAY, "subsequent_or_willful_usd_per_employee_per_failure"),
@@ -760,8 +917,7 @@ def _employee(name, rate, lines, issues, periods_owed, all_periods, pw_days, gro
                 math=f"${a} first + ${b} x {periods - 1} later pay period(s), max ${cap:,}"))
             # LC 1194.2 liquidated damages: state minimum-wage part only (hours x (state minimum - rate)); not OT and
             # not a local-ordinance rate (LC 1194.2 covers minimums fixed by statute or IWC order).
-            mw_base = _money(sum(max(0.0, _state_min_wage(Date.fromisoformat(x.date))[0] - rate) * x.hours_worked
-                                 for x in lines))
+            mw_base = _money(sum(x._state_mw_gap_usd for x in lines))
             if mw_base:
                 ld = UNVERIFIED["minimum_wage_liquidated_damages"]
                 k = ld["multiplier_of_unpaid_minimum_wages"]
@@ -779,9 +935,8 @@ def _employee(name, rate, lines, issues, periods_owed, all_periods, pw_days, gro
                                               f"{P(PW_OT, 'daily_hours_threshold')} h/day or "
                                               f"{P(PW_OT, 'weekly_hours_threshold')} h/week"))
     return EmployeePayroll(
-        employee=name, hourly_rate_usd=rate, days=lines, total_hours=tot("hours_worked"),
-        regular_hours=tot("regular_hours"), overtime_hours=tot("overtime_hours"),
-        double_time_hours=tot("double_time_hours"), wages_due_usd=wages, overtime_premium_usd=ot_prem,
+        employee=name, hourly_rate_usd=rate, days=lines, total_hours=_h(worked_m), regular_hours=_h(reg_m),
+        overtime_hours=_h(ot_m), double_time_hours=_h(dt_m), wages_due_usd=wages, overtime_premium_usd=ot_prem,
         meal_premium_hours=mp, rest_premium_hours=rp, premiums_usd=prem, minimum_wage_shortfall_usd=short,
         gross_paid_usd=gross_paid, amount_owed_usd=owed, pay_periods_affected=periods if owed > 0 else 0,
         line_items=items, exposure=exposure, exposure_low_usd=_money(sum(x.low_usd for x in exposure)),
@@ -805,6 +960,7 @@ class FinalPayResult(core.Result):
     status: Literal["not_yet_due", "due_today", "paid_on_time", "paid_late", "late_unpaid", "late_unpaid_max_reached"]
     days_late: int = 0
     penalty_accrued_usd: float = 0
+    next_step: str = Field("", description="What to do now, in plain language")
     line_items: list[LineItem] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
 
@@ -814,10 +970,12 @@ def final_paycheck_deadline(separation_type: SeparationType, separation_date, da
                             separation_time: Optional[str] = None) -> FinalPayResult:
     if separation_type not in FINAL_PAY:
         raise ValueError(f"separation_type must be one of {list(FINAL_PAY)}")
-    if daily_wage_usd <= 0:
-        raise ValueError("daily_wage_usd must be greater than 0 (regular hours per day x hourly rate)")
+    daily_wage_usd = _finite(daily_wage_usd, "daily_wage_usd (regular hours per day x hourly rate)", strict=True)
     sep, as_of = _as_date(separation_date, "separation_date"), (_as_date(as_of, "as_of") if as_of else logic.today_ca())
     paid = _as_date(paid_date, "paid_date") if paid_date else None
+    if paid and paid < sep:
+        raise ValueError(f"paid_date {paid} is before separation_date {sep}; final wages cover work through the last "
+                         "day, so check the dates (a paycheck before the last day is not the final paycheck)")
     rid, r = FINAL_PAY[separation_type], core.rule(FINAL_PAY[separation_type])
     notes, extra = [], []
     if separation_type == "quit_without_notice":
@@ -879,14 +1037,33 @@ def final_paycheck_deadline(separation_type: SeparationType, separation_date, da
               f"Unused paid sick leave does not have to be paid out (unless it is part of a PTO/vacation policy); "
               f"restore it if you rehire within {P(SICK_SEP, 'rehire_restoration_window_months')} months "
               f"[{SICK_SEP}]."]
+    if paid and paid > as_of:
+        notes.append(f"paid_date {paid} is after the as-of date {as_of}; treated as a planned payment date.")
+    accrued, per, cap = (_money(daily_wage_usd * pen_days), _money(daily_wage_usd), _money(daily_wage_usd * max_days))
+    stops = due + timedelta(days=max_days)
+    what = "all wages earned, accrued vacation/PTO and any unpaid meal/rest premiums"
+    next_step = {
+        "not_yet_due": f"Have the final check ({what}) ready by {due} ({due_rule.lower()}) at {place}.",
+        "due_today": f"Pay the final check today ({what}) at {place}. From tomorrow the waiting-time penalty can "
+                     f"run ${per:,.2f} a day.",
+        "paid_on_time": "Final pay was on time; no waiting-time penalty. Keep the record of the date paid or mailed.",
+        "paid_late": f"Paid {days_late} day(s) late: if the delay was willful (no good-faith dispute), also pay the "
+                     f"employee ${accrued:,.2f} in waiting-time penalty ({pen_days} x ${per:,.2f}).",
+        "late_unpaid": f"Pay the final wages now. The waiting-time penalty is ${accrued:,.2f} so far ({pen_days} "
+                       f"day(s) x ${per:,.2f}) and grows ${per:,.2f} each calendar day until paid, up to ${cap:,.2f} "
+                       f"on {stops}.",
+        "late_unpaid_max_reached": f"Pay the final wages now. The waiting-time penalty reached its {max_days}-day "
+                                   f"maximum of ${cap:,.2f} on {stops}; it is owed in addition to the wages if the "
+                                   "delay was willful.",
+    }[status]
     res = FinalPayResult(
+        next_step=next_step,
         separation_type=separation_type, separation_date=sep.isoformat(), due_date=due.isoformat(), due_rule=due_rule,
         place_of_payment=place, must_include=includes, daily_wage_usd=_money(daily_wage_usd),
         penalty_per_day_usd=_money(daily_wage_usd), max_penalty_days=max_days,
-        max_penalty_usd=_money(daily_wage_usd * max_days),
-        penalty_stops_growing_on=(due + timedelta(days=max_days)).isoformat(),
+        max_penalty_usd=cap, penalty_stops_growing_on=stops.isoformat(),
         paid_date=paid.isoformat() if paid else None, status=status, days_late=days_late,
-        penalty_accrued_usd=_money(daily_wage_usd * pen_days), line_items=items, notes=notes)
+        penalty_accrued_usd=accrued, line_items=items, notes=notes)
     return res.cite(rid, FINAL_PAY["discharged"], WAIT, SICK_SEP, *extra)
 
 
@@ -907,7 +1084,9 @@ class SickLeaveResult(core.Result):
     at_accrual_cap: bool
     annual_use_minimum_hours: float = Field(description="Employer must let the employee use at least this much a year")
     use_cap_hours: float = Field(description="Employer may limit yearly use to this much")
-    usable_now_hours: float
+    usable_now_hours: float = Field(description=(
+        "Hours the employee can use now if you apply the lowest yearly use cap the law allows; with no use cap in "
+        "your policy, the whole (positive) balance is usable"))
     next_milestone: Optional[str] = None
     line_items: list[LineItem] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
@@ -928,11 +1107,17 @@ def sick_leave_status(hours_worked: float, hours_used: float, hire_date, as_of: 
                       frontloaded_hours: Optional[float] = None) -> SickLeaveResult:
     hire, as_of = _as_date(hire_date, "hire_date"), (_as_date(as_of, "as_of") if as_of else logic.today_ca())
     if hire > as_of:
-        raise ValueError("hire_date is after as_of")
-    if min(hours_worked, hours_used, carryover_hours) < 0 or normal_shift_hours <= 0:
-        raise ValueError("hours must be 0 or more and normal_shift_hours greater than 0")
-    shift = normal_shift_hours
+        raise ValueError(f"hire_date {hire} is after the as-of date {as_of}")
+    if plan not in ("accrual", "frontload"):
+        raise ValueError("plan must be 'accrual' or 'frontload'")
+    hours_worked, hours_used = _finite(hours_worked, "hours_worked"), _finite(hours_used, "hours_used")
+    carryover_hours = _finite(carryover_hours, "carryover_hours")
+    shift = _finite(normal_shift_hours, "normal_shift_hours", strict=True)
+    if frontloaded_hours is not None:
+        frontloaded_hours = _finite(frontloaded_hours, "frontloaded_hours")
     days_employed = (as_of - hire).days + 1                      # hire date = day 1
+    if days_worked is not None and not 0 <= days_worked <= days_employed:
+        raise ValueError(f"days_worked must be between 0 and {days_employed} (days from hire {hire} through {as_of})")
     wait = P(SICK_ELIG, "waiting_period_days_before_use")
     usable_from = hire + timedelta(days=wait - 1)
     min_days = P(SICK_ELIG, "min_days_worked_within_year")
@@ -997,6 +1182,9 @@ def sick_leave_status(hours_worked: float, hours_used: float, hire_date, as_of: 
                      f"California within a year from hire; accrued hours cannot be used before then [{SICK_ELIG}].")
     if days_worked is None:
         notes.append(f"days_worked not given; coverage assumed from days employed ({days_employed}).")
+    if plan == "accrual" and frontloaded_hours is not None:
+        notes.append("frontloaded_hours was ignored because plan is 'accrual'; pass plan='frontload' to check a "
+                     "frontloaded grant.")
     notes += [f"Employee chooses how much to use; you may set a minimum increment of no more than "
               f"{P(SICK_INCR, 'max_minimum_increment_hours')} h. Requests may be oral or written; you may not require "
               f"a replacement worker [{SICK_INCR}].",
@@ -1017,6 +1205,10 @@ def sick_leave_status(hours_worked: float, hours_used: float, hire_date, as_of: 
 
 
 # ---------------------------------------------------------------- MCP tools
+def _lower(v):
+    return v.strip().lower() if isinstance(v, str) else v
+
+
 def register(mcp) -> None:
     ro = {"readOnlyHint": True, "openWorldHint": False}
 
@@ -1024,19 +1216,23 @@ def register(mcp) -> None:
     def _check_payroll(
         records: Annotated[Union[list[TimeEntry], str], Field(description=(
             "Time entries as a list of {employee, date, start, end, meal_breaks:[{start,end}], rest_breaks_taken, "
-            "on_call, first_meal_waived, second_meal_waived}, or CSV text with a header such as "
-            "employee,date,start,end,meal_breaks,rest_breaks_taken,on_call,hourly_rate (meal_breaks like "
-            "'11:00-11:30;17:00-17:30', or lunch_out/lunch_in columns). One row per clock-in/clock-out. Leave "
-            "rest_breaks_taken out if rest breaks are not tracked: rest premiums are then not computed."))],
+            "on_call, first_meal_waived, second_meal_waived}, or CSV/tab-separated text pasted from a timeclock "
+            "export with a header such as employee,date,start,end,meal_breaks,rest_breaks_taken,on_call,hourly_rate "
+            "(also In/Out, Lunch Out/Lunch In; meal_breaks like '11:00-11:30;17:00-17:30'). One row per "
+            "clock-in/clock-out; times like 06:00, 0600 or 6:00 AM. Leave rest_breaks_taken out if rest breaks are "
+            "not tracked: rest premiums are then not computed."))],
         hourly_rates: Annotated[Optional[dict[str, float]], Field(description=(
             "Straight-time hourly rate per employee name, e.g. {'Ana Lopez': 32.5}. Optional if the CSV has a "
-            "rate column"))] = None,
+            "rate column; overrides that column when both are given"))] = None,
         local_minimum_wage_usd: Annotated[Optional[float], Field(description=(
             "City/county minimum wage for the jobsite if higher than the state rate"))] = None,
-        workweek_starts_on: Annotated[Weekday, Field(description="First day of your fixed payroll workweek")] = "monday",
-        pay_frequency: Annotated[PayFrequency, Field(description="How often you pay (counts pay periods for penalties)")] = "weekly",
+        workweek_starts_on: Annotated[Weekday, BeforeValidator(_lower), Field(
+            description="First day of your fixed payroll workweek")] = "monday",
+        pay_frequency: Annotated[PayFrequency, BeforeValidator(_lower), Field(
+            description="How often you pay (counts pay periods for penalties; monthly is flagged)")] = "weekly",
         gross_paid_usd: Annotated[Optional[dict[str, float]], Field(description=(
-            "Gross pay actually paid per employee for these entries, to compute the real shortfall"))] = None,
+            "Gross pay actually paid per employee for these entries, to compute the real shortfall. Names must "
+            "match the employee field"))] = None,
         public_works: Annotated[bool, Field(description=(
             "True for a prevailing-wage public works job (adds LC 1810-1815 overtime notes and the LC 1813 "
             "penalty); use the basic prevailing rate as the hourly rate"))] = False,
@@ -1054,8 +1250,11 @@ def register(mcp) -> None:
         the regular rate per day per type); minimum wage shortfall; wages due; possible split shifts and unpaid
         short breaks flagged. Also returns totals, estimated penalty exposure (low/high: LC 210, LC 558 / WO16 §18,
         LC 203 waiting time, LC 1813 on public works, and unverified LC 226(e) and LC 1194.2), payday-timing notes
-        (monthly pay is flagged as not allowed), fixes, notes and rule citations. Every daily line shows its math.
-        Does not compute alternative workweeks, union CBA exemptions, split-shift or reporting-time pay."""
+        (monthly pay is flagged as not allowed), fixes (per employee with the dollar amount to pay, then crew-wide
+        how-to lines), notes and rule citations. Every daily line shows its math. Raises a clear error for
+        overlapping punches, a meal break outside its shift, more than one rate for an employee in the CSV, or
+        gross_paid_usd names with no time entries. Does not compute alternative workweeks, union CBA exemptions,
+        split-shift or reporting-time pay, or mixed rates in one workweek."""
         return check_payroll(records, hourly_rates, local_minimum_wage_usd, as_of, workweek_starts_on, pay_frequency,
                              gross_paid_usd, public_works, include_unverified_penalties)
 
@@ -1075,7 +1274,9 @@ def register(mcp) -> None:
         quitting without notice. Returns the due date and rule, place of payment (LC 208: place of discharge, or the
         employer's office in the county of the work for a quit), what must be included (wages, vacation/PTO, unpaid
         meal/rest premiums), the LC 203 waiting-time penalty per day (one daily wage per calendar day late) and its
-        30-day maximum, days late and penalty accrued so far, status, notes and citations."""
+        30-day maximum, days late and penalty accrued so far, status (not_yet_due, due_today, paid_on_time,
+        paid_late, late_unpaid, late_unpaid_max_reached), next_step in plain language, notes and citations. A
+        paid_date after as_of is treated as a planned payment date (to price a late payment)."""
         return final_paycheck_deadline(separation_type, separation_date, daily_wage_usd, paid_date, as_of,
                                        separation_time)
 

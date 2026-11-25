@@ -14,9 +14,10 @@ import io
 import re
 from datetime import date as Date, datetime, timedelta
 from functools import lru_cache
-from typing import Annotated, Literal, Optional
+from math import isfinite
+from typing import Annotated, Literal, Optional, get_args
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from . import core, logic
 from .cslb import norm_class
@@ -73,6 +74,25 @@ R_CITE, R_CITE_OLD, R_7031, R_7031B, R_SUBST, R_DISASTER, R_PUBLIC_BID, R_DOUBLE
     "disaster-unlicensed-contracting-penalty", "unlicensed-public-agency-bid", "contractor-bond-double-for-prior-unlicensed",
     "unlicensed-advertising-fine", "lc-2750-5-license-required-for-ic-status")
 
+R_PEN_2026, R_QBOND_DROP, R_DOSH, R_C10 = ("civil-penalty-range-from-july-2026",
+                                          "qualifier-bond-10-percent-owner-exemption",
+                                          "asbestos-cert-dosh-registration-90-days", "class-c10-electrical-scope")
+R_WC_C39_REMOVE, R_WC_CLASS_REMOVE = ("c39-classification-removed-without-wc",
+                                      "c8-c20-c22-d49-classification-removed-without-wc")
+R_CITE_LIMIT = "unlicensed-citation-limitations"
+R_7117_5_PEN, R_7117_5_DISC, R_7117_6_PEN = ("civpen-7117-5-inactive-suspended-expired", "discipline-guideline-bp-7117-5",
+                                             "civpen-7117-6-out-of-classification")
+
+# Law used here that is not in the rulebook. Any result relying on an entry is returned with verified=False.
+UNVERIFIED = {
+    "pc-654-single-punishment": {
+        "citation": "Penal Code 654(a)",
+        "text": "An act punishable in different ways by different provisions of law may be punished under either "
+                "provision, but not under more than one.",
+        "source": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=PEN&sectionNum=654",
+    },
+}
+
 # Operational reminder window for "expiring soon" flags. A scheduling setting, not a legal value.
 EXPIRING_SOON_DAYS = 30
 
@@ -107,6 +127,25 @@ def _day(value, field: str = "date") -> Optional[Date]:
 
 def _as_of(value) -> Date:
     return _day(value, "as_of") or logic.today_ca()
+
+
+def _choice(field: str, value, allowed) -> None:
+    if value not in allowed:
+        raise ValueError(f"{field} must be one of {', '.join(allowed)}; got {value!r}")
+
+
+def _nonneg(**values) -> None:
+    """Amounts and counts must be finite numbers >= 0 (None = not given)."""
+    for k, v in values.items():
+        if v is not None and (isinstance(v, bool) or not isinstance(v, (int, float)) or not isfinite(v) or v < 0):
+            raise ValueError(f"{k} must be a number >= 0, got {v!r}")
+
+
+def _licensee_min(rule_id: str, as_of: Date) -> float:
+    """Minimum CSLB citation penalty for a licensee violation. B&P 7099.2(b)(1) set statutory floors from its
+    operative date; before that the 16 CCR 884(a) table minimum applies."""
+    new = as_of >= _day(P(R_PEN_2026, "operative_date"))
+    return P(rule_id, "min_usd" if new else "min_usd_before_2026_07_01")
 
 
 def _add_years(d: Date, years: int) -> Date:
@@ -146,6 +185,35 @@ def _code_key(code: str):
     return (m[1], int(m[2] or 0)) if m else (code, 0)
 
 
+_CLASS_SEP = re.compile(r"[,;|/]")
+
+
+def _codes(classes) -> set[str]:
+    """Codes held: ['C-61/D-49', 'C-10 Electrical'] or 'B, C-10' -> {'C61', 'D49', 'C10'} / {'B', 'C10'}."""
+    if isinstance(classes, str):
+        classes = [classes]
+    return {_code(p) for c in (classes or []) for p in _CLASS_SEP.split(c or "") if p.strip()}
+
+
+def _class_code(text: str) -> Optional[str]:
+    """One class as CSLB writes it: 'c10', 'C-010', 'C-10 Electrical', 'Class B', 'Electrical', 'D-49' -> 'C-10',
+    'B', 'D-49'. None if it is not a CSLB class (e.g. 'plumber', 'HVAC')."""
+    t = re.sub(r"(?i)^\s*class\s+|\s+contractor\s*$", "", text or "").strip()
+    m = re.fullmatch(r"(?i)([ABCD])\s*-?\s*(\d{0,3})\b.*", t)
+    if m:
+        letter, num = m[1].upper(), int(m[2]) if m[2] else None
+        code = letter if num is None else f"{letter}-{num}"
+        if code in ("A", "B", "B-2") or code in class_table() or (letter == "D" and num):
+            return code
+        return None
+    name = t.lower()
+    hits = [c for c, e in class_table().items() if e.name.lower() == name or e.name.lower().startswith(name + " ")
+            or e.name.lower().startswith(name + ",")]
+    hits += [c for c, n in (("A", "general engineering"), ("B", "general building"), ("B-2", "residential remodeling"))
+             if n == name]
+    return hits[0] if len(hits) == 1 else None
+
+
 # ================================================================ classification for scope
 # Contractor vocabulary for each 16 CCR 832 class. The table below adds the rulebook's own scope phrases at import.
 ALIASES: dict[str, tuple[str, ...]] = {
@@ -161,7 +229,7 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "C-7": ("low voltage", "data cabling", "network cabling", "structured cabling", "cat6", "cat 6", "cat5",
             "ethernet", "telephone system", "phone system", "sound system", "speaker", "audio visual", "av system",
             "cctv", "security camera", "camera system", "satellite dish", "cable tv", "intercom",
-            "landscape lighting"),
+            "landscape lighting", "doorbell", "video doorbell"),
     "C-8": ("concrete", "slab", "flatwork", "sidewalk", "concrete driveway", "curb gutter", "curb", "footing",
             "foundation", "stamped concrete", "concrete patio"),
     "C-9": ("drywall", "sheetrock", "gypsum board", "wallboard", "taping", "texture", "metal stud"),
@@ -169,7 +237,7 @@ ALIASES: dict[str, tuple[str, ...]] = {
              "dimmer", "electrical panel", "main panel", "service upgrade", "panel upgrade", "subpanel", "circuit",
              "breaker", "lighting", "light fixture", "recessed light", "can light", "ceiling fan", "ev charger",
              "ev charging", "car charger", "standby generator", "conduit", "landscape lighting", "battery",
-             "battery storage", "energy storage", "bess", "powerwall",
+             "battery storage", "energy storage", "bess", "powerwall", "exhaust fan", "bath fan", "bathroom fan",
              # 832.07 and 832.28 exclude fire alarms; 7026.12 excludes electrical alarms from fire protection.
              "fire alarm", "low voltage fire alarm", "fire alarm system"),
     "C-11": ("elevator", "dumbwaiter"),
@@ -183,8 +251,10 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "C-17": ("glass", "glazing", "window replacement", "replacement window", "window", "storefront", "mirror",
              "shower door", "skylight"),
     "C-20": ("hvac", "air conditioning", "air conditioner", "ac unit", "furnace", "heat pump", "ductwork",
-             "duct work", "duct", "mini split", "ventilation", "condenser"),
-    "C-21": ("demolition", "demolish", "tear down", "teardown", "building moving", "house moving", "house raising"),
+             "duct work", "duct", "mini split", "ventilation", "condenser", "exhaust fan", "bath fan",
+             "bathroom fan", "heat pump water heater"),     # 832.20 lists water heating heat pumps; so does C-36
+    "C-21": ("demolition", "demolish", "demo", "tear down", "teardown", "building moving", "house moving",
+             "house raising"),
     "C-22": ("asbestos", "asbestos abatement", "acm removal"),
     "C-23": ("ornamental iron", "wrought iron", "ornamental metal", "metal railing", "iron railing", "iron gate"),
     "C-27": ("landscaping", "landscape", "irrigation", "drip system", "lawn", "sod", "planting", "hardscape",
@@ -202,7 +272,7 @@ ALIASES: dict[str, tuple[str, ...]] = {
     "C-35": ("plaster", "plastering", "stucco", "lath", "lathing"),
     "C-36": ("plumbing", "plumber", "repipe", "re pipe", "water heater", "tankless", "faucet", "toilet", "sink",
              "shower valve", "drain line", "drain", "gas line", "sewer lateral", "backflow", "water line",
-             "garbage disposal", "bathtub", "tub"),
+             "garbage disposal", "bathtub", "tub", "heat pump water heater"),
     "C-38": ("refrigeration", "walk in cooler", "walk in freezer", "cold storage", "refrigerated case",
              "ice machine"),
     "C-39": ("roof", "roofing", "reroof", "re roof", "shingle", "tile roof", "torch down", "roof membrane",
@@ -245,7 +315,7 @@ MEP_CLASSES = {"C-4", "C-10", "C-20", "C-36", "C-38"}
 STRUCTURAL_WORDS = ("load bearing", "bearing wall", "structural", "beam", "header", "footing", "foundation",
                     "shear wall", "rafter", "truss", "joist", "roof structure", "roof framing", "seismic retrofit",
                     "underpinning", "underpin")
-_NON_STRUCTURAL = re.compile(r"non ?(?:load )?(?:bearing|structural)")
+_NON_STRUCTURAL = re.compile(r"\bnon ?(?:load )?(?:bearing|structural)\b")
 FIXTURE_WORDS = ("faucet", "toilet", "sink", "tub", "bathtub", "fixture", "ceiling fan", "exhaust fan", "fan",
                  "switch", "outlet", "receptacle", "dimmer", "air filter", "grill", "register", "garbage disposal")
 SYSTEM_WORDS = ("add", "new", "relocate", "move", "extend", "reroute", "rewire", "repipe", "re pipe", "upgrade",
@@ -510,9 +580,16 @@ def _specialty_option(code: str, segs: list[TradeMatch], role: str, project_type
         rules.append(R_ADU)
     if whole and code != "C-47":
         return _opt(code, e.name, "no", basis + " A whole building or addition is a multi-trade B job; a specialty "
-                    "contractor may take only its own trade on it, as a subcontract.",
+                    "contractor may take only its own trade on it (a subcontract, or a separate contract with the "
+                    "owner).",
                     [], rules + [R_ADU if project_type == "adu" else R_834])
     others = _groups(uncovered)
+    civil = [] if standalone else [s.segment for s in segs if not s.classes and s.civil_work]
+    if civil:   # e.g. 'underground utilities': no specialty matched, so it is Class A fixed work (B&P 7056)
+        conds.append(f"The {'; '.join(civil)} work is Class A fixed work (B&P 7056): {code} may take it only if it is "
+                     f"incidental and supplemental to the {code} work (16 CCR 831, 834(c)); otherwise a Class A (or "
+                     "the specialty class for it) needs its own contract.")
+        rules += [R_A, R_831, R_834]
     if others and project_type == "public_works" and role == "prime":
         # B&P 7059(b)(1) replaces the private-work 834(c) bar: an authorized specialty prime subs out the rest.
         conds.append(f"Public works: the awarding agency decides which class may bid, and may not award the prime to a "
@@ -648,6 +725,9 @@ def classification_for_scope(scope_of_work: str, project_type: ProjectType = "ot
                              asbestos_sq_ft: Optional[float] = None) -> ClassificationResult:
     if not (scope_of_work or "").strip():
         raise ValueError("scope_of_work must describe the work, e.g. 'replace water heater, add 2 outlets'")
+    _choice("project_type", project_type, get_args(ProjectType))
+    _choice("contract_role", contract_role, ("prime", "subcontract"))
+    _nonneg(battery_kwh=battery_kwh, asbestos_sq_ft=asbestos_sq_ft)
     segs, unmatched, strong, remodel = _detect(scope_of_work)
     groups = _groups(segs)
     trades = sorted({c for g in groups for c in g}, key=_code_key)
@@ -665,7 +745,8 @@ def classification_for_scope(scope_of_work: str, project_type: ProjectType = "ot
                     _b2_option(groups, segs, project_type), _a_option(trades, segs, project_type)]
     notes = ["Keyword matching against 16 CCR 832 class scopes. CSLB decides which trades are 'unrelated' and what is "
              "incidental and supplemental case by case; confirm borderline scopes with CSLB.",
-             "The class must be on an active license (B&P 7117.6)."]
+             "The license must currently hold the class; contracting in a class not held is cause for discipline "
+             "(B&P 7117.6)."]
     if any(len(g) > 1 for g in groups):
         notes.append("Classes listed together (" + "; ".join(_label(g) for g in groups if len(g) > 1) + ") can each do "
                      "that piece of work, so it counts as one trade.")
@@ -679,7 +760,9 @@ def classification_for_scope(scope_of_work: str, project_type: ProjectType = "ot
         notes.append("Hazardous substance removal at a listed site also needs a qualifier who passed the HAZ "
                      "certification exam (B&P 7058.7).")
     if ust:
-        notes.append("Installing or removing an underground storage tank needs the HAZ certification (B&P 7058.7(e)).")
+        notes.append("Installing or removing an underground storage tank must be done by a contractor with the HAZ "
+                     "certification; a contractor without it may bid and contract for the tank work only if a "
+                     "certified contractor performs it (B&P 7058.7(e)).")
     options.sort(key=lambda o: ({"yes": 0, "conditional": 1, "no": 2}[o.status], _code_key(o.code)))
     yes = [o.code for o in options if o.status == "yes"]
     cond = [o.code for o in options if o.status == "conditional"]
@@ -692,8 +775,9 @@ def classification_for_scope(scope_of_work: str, project_type: ProjectType = "ot
     humans = ["A CSLB-licensed contractor whose active license holds the class; its qualifying individual must be "
               "qualified in that class."]
     if "C-22" in trades:
-        humans.append("DOSH-registered asbestos abatement contractor; the owner must use a DOSH-certified asbestos "
-                      "consultant for asbestos consulting or site surveillance (B&P 7180.5).")
+        humans.append("Asbestos abatement contractor (C-22, or a qualifier with the asbestos certification) registered "
+                      "with DOSH (B&P 7058.5, 7058.6); if the owner hires an asbestos consultant or site surveillance "
+                      "technician, that person must be DOSH-certified (B&P 7180.5).")
     if "C-16" in trades:
         humans.append("C-16 fire protection contractor for the sprinkler or suppression system.")
     res = ClassificationResult(
@@ -702,7 +786,8 @@ def classification_for_scope(scope_of_work: str, project_type: ProjectType = "ot
         options=options, can_perform=yes, can_perform_with_conditions=cond, unmatched_segments=unmatched,
         answer=answer, licensed_humans=humans, notes=notes)
     res.cite(R_CLASSES, R_830, R_7117_6, *[r for o in options for r in o.rule_ids])
-    for flag, rid in (("C-22" in trades, "owner-must-hire-certified-asbestos-consultant"), (haz, R_HAZ),
+    for flag, rid in (("C-22" in trades, "owner-must-hire-certified-asbestos-consultant"), ("C-22" in trades, R_DOSH),
+                      ("C-22" in trades, R_ASB), (haz, R_HAZ),
                       (ust, R_UST), (bool(unmatched), R_C61)):
         if flag:
             res.cite(rid)
@@ -714,9 +799,12 @@ class SubInput(BaseModel):
     license_number: str = Field("", description="CSLB license number")
     name: Optional[str] = Field(None, description="Company name as you know it (optional)")
     scope_of_work: Optional[str] = Field(None, description="What the sub will do, e.g. 'electrical rough and finish'")
-    required_classification: Optional[str] = Field(None, description="Class the work needs, e.g. 'C-10'. If blank, "
-                                                                     "it is inferred from scope_of_work")
-    coi_expiry: Optional[str] = Field(None, description="Liability insurance certificate expiry (ISO or MM/DD/YYYY)")
+    required_classification: Optional[str] = Field(None, description="Class the work needs: a code ('C-10', "
+                                                                     "'C-61/D-49', 'C-10, C-36') or a class name "
+                                                                     "('Electrical'). If blank, it is inferred from "
+                                                                     "scope_of_work")
+    coi_expiry: Optional[str] = Field(None, description="Liability insurance certificate expiry (ISO or MM/DD/YYYY); "
+                                                        "text such as 'TBD' counts as no certificate")
     wc_required: bool = Field(True, description="True if the sub will have employees on your job (workers' comp "
                                                 "needed). False only for an owner-operator working alone")
     project_type: ProjectType = Field("other", description="Used only when the class is inferred from scope")
@@ -726,17 +814,29 @@ class SubInput(BaseModel):
     def _bool(cls, v):
         if isinstance(v, str):
             s = v.strip().lower()
-            if s in ("", "none"):
+            if s in ("", "none", "n/a", "na", "unknown", "?", "tbd"):     # unknown: assume employees (stricter)
                 return True
             if s in ("y", "yes", "true", "1", "t", "required"):
                 return True
             if s in ("n", "no", "false", "0", "f", "not required"):
                 return False
-            raise ValueError(f"wc_required must be yes/no, got {v!r}")
+            if s.isdigit():                                  # an 'Employees' column with a head count
+                return int(s) > 0
+            raise ValueError(f"wc_required must be yes/no (will the sub have employees on the job?), got {v!r}")
+        if isinstance(v, int) and not isinstance(v, bool):
+            return v > 0
         return True if v is None else v
 
-    @field_validator("license_number", "scope_of_work", "required_classification", "coi_expiry", "name",
-                     mode="before")
+    @field_validator("license_number", mode="before")
+    @classmethod
+    def _lic(cls, v):
+        if v is None:
+            return ""
+        if isinstance(v, float) and v.is_integer():         # spreadsheet export: 1234567.0
+            v = int(v)
+        return str(v).strip() if isinstance(v, (int, str)) and not isinstance(v, bool) else v
+
+    @field_validator("scope_of_work", "required_classification", "coi_expiry", "name", mode="before")
     @classmethod
     def _strip(cls, v):
         return v.strip() if isinstance(v, str) else v
@@ -754,7 +854,7 @@ class SubRiskRow(BaseModel):
     scope_of_work: Optional[str] = None
     license_status: str
     license_lookup: Literal["found", "not_in_partial_copy", "not_in_complete_cslb_file", "no_license_data_loaded",
-                            "no_license_number"]
+                            "cslb_data_loading", "no_license_number"]
     data_source: str
     classifications: list[str] = Field(default_factory=list)
     required_classification: Optional[str] = None
@@ -785,22 +885,42 @@ class BulkSubResult(core.Result):
     notes: list[str] = Field(default_factory=list)
 
 
-_HEADER_ALIASES = {"license": "license_number", "license_no": "license_number", "lic": "license_number",
-                   "lic_no": "license_number", "cslb": "license_number", "cslb_license": "license_number",
-                   "license_num": "license_number", "license_number_": "license_number",
-                   "scope": "scope_of_work", "trade": "scope_of_work", "work": "scope_of_work",
-                   "classification": "required_classification", "class": "required_classification",
-                   "required_class": "required_classification", "license_class": "required_classification",
-                   **{k: "coi_expiry" for k in ("coi", "coi_exp", "coi_expiration", "coi_expires", "coi_exp_date",
-                                                "coi_expiration_date", "insurance_expiry", "insurance_expiration",
-                                                "liability_insurance_expiry", "gl_expiry", "gl_expiration")},
-                   **{k: "wc_required" for k in ("will_have_employees_on_site", "employees", "has_employees", "wc",
-                                                 "workers_comp", "workers_comp_required", "wc_needed")},
-                   "company": "name", "business_name": "name", "sub": "name", "subcontractor": "name"}
+_HEADER_ALIASES = {
+    **{k: "license_number" for k in ("license", "license_no", "lic", "lic_no", "lic_num", "lic_number", "cslb",
+                                     "cslb_no", "cslb_number", "cslb_license", "cslb_license_number", "license_num",
+                                     "contractor_license", "contractor_license_number", "state_license")},
+    **{k: "scope_of_work" for k in ("scope", "trade", "work", "work_description", "description", "scope_description")},
+    **{k: "required_classification" for k in ("classification", "class", "required_class", "license_class",
+                                              "classification_required", "class_required")},
+    **{k: "coi_expiry" for k in ("coi", "coi_exp", "coi_expiration", "coi_expires", "coi_exp_date",
+                                 "coi_expiration_date", "coi_expiry_date", "insurance_exp", "insurance_expiry",
+                                 "insurance_expiration", "ins_exp", "liability_exp", "liability_expiration",
+                                 "liability_insurance_expiry", "gl_exp", "gl_expiry", "gl_expiration")},
+    **{k: "wc_required" for k in ("will_have_employees_on_site", "employees", "has_employees", "wc", "workers_comp",
+                                  "workers_comp_required", "wc_needed", "wc_required_")},
+    **{k: "name" for k in ("company", "company_name", "business_name", "sub", "subcontractor", "subcontractor_name",
+                           "sub_name", "vendor", "vendor_name")},
+}
+
+
+def _errors(e: ValidationError) -> str:
+    return "; ".join(f"{'.'.join(map(str, x['loc'])) or 'value'}: {x['msg']}" for x in e.errors())
+
+
+def _sub(n: int, data, where: str = "") -> SubInput:
+    try:
+        return data if isinstance(data, SubInput) else SubInput.model_validate(data)
+    except ValidationError as e:
+        raise ValueError(f"row {n}{where}: {_errors(e)}") from None
 
 
 def parse_sub_csv(csv_text: str) -> list[SubInput]:
-    reader = csv.DictReader(io.StringIO(csv_text.strip()))
+    """Sub list as CSV (comma, semicolon, tab or pipe separated, e.g. pasted from a spreadsheet). Blank lines and
+    unknown columns are ignored; common header names (License #, Trade, COI Exp, ...) are recognized."""
+    text = csv_text.lstrip("\ufeff").strip()
+    first = text.splitlines()[0] if text else ""
+    delim = max(",;\t|", key=first.count)
+    reader = csv.DictReader(io.StringIO(text), delimiter=delim if first.count(delim) else ",")
     if not reader.fieldnames:
         raise ValueError("csv_text has no header row")
     keys = {}
@@ -808,10 +928,37 @@ def parse_sub_csv(csv_text: str) -> list[SubInput]:
         k = re.sub(r"[^a-z0-9]+", "_", (h or "").strip().lower()).strip("_")
         keys[h] = _HEADER_ALIASES.get(k, k)
     if "license_number" not in keys.values():
-        raise ValueError("csv_text needs a license_number column")
+        raise ValueError(f"csv_text needs a license_number column (found: {', '.join(reader.fieldnames)})")
     fields = set(SubInput.model_fields)
-    return [SubInput(**{keys[h]: v for h, v in row.items() if h in keys and keys[h] in fields and v is not None})
-            for row in reader if any((v or "").strip() for v in row.values() if isinstance(v, str))]
+    out = []
+    for row in reader:
+        if any((v or "").strip() for v in row.values() if isinstance(v, str)):
+            data = {keys[h]: v for h, v in row.items() if h in keys and keys[h] in fields and v is not None}
+            out.append(_sub(len(out) + 1, data, f" (CSV line {reader.line_num})"))
+    return out
+
+
+def _req_codes(text: str) -> Optional[list[str]]:
+    """Required class(es): 'C-10' -> ['C-10']; 'C-61/D-12' -> ['D-12'] (D-codes are C-61 subcategories);
+    'C-10, C-36' -> both. None if any part is not a CSLB class."""
+    codes = [_class_code(p) for p in _CLASS_SEP.split(text or "") if p.strip()]
+    if not codes or None in codes:
+        return None
+    if any(c.startswith("D-") for c in codes):
+        codes = [c for c in codes if c != "C-61"]
+    return list(dict.fromkeys(codes))
+
+
+_LOOKUP_PROBLEM = {
+    "not_in_partial_copy": "Not in our partial copy of CSLB data. This does NOT mean the sub is unlicensed: check the "
+                           "number on the CSLB site",
+    "no_license_data_loaded": "No CSLB data loaded and the number is not in the demo/CSV records. This does NOT mean "
+                              "the sub is unlicensed: check the number on the CSLB site",
+    "cslb_data_loading": "CSLB license data is still loading on this server. This does NOT mean the sub is "
+                         "unlicensed: check again shortly or on the CSLB site",
+    "not_in_complete_cslb_file": "Not in CSLB's current master file (which omits cancelled, revoked and long-expired "
+                                 "licenses). Treat as not licensed until confirmed on the CSLB site",
+}
 
 
 def _check_one(i: int, s: SubInput, as_of: Date, cite: set) -> SubRiskRow:
@@ -822,67 +969,135 @@ def _check_one(i: int, s: SubInput, as_of: Date, cite: set) -> SubRiskRow:
                           workers_comp_ok=False, contractor_bond_on_file=False, risk="high",
                           problems=["No license number given"],
                           action="Get the sub's CSLB license number and check it before award.")
-    # The insurance date is evaluated here against as_of; the far-future value keeps check_subcontractor neutral.
-    sub = logic.check_subcontractor(s.license_number, s.required_classification, "9999-12-31", s.wc_required)
+    # The class and insurance date are checked here (class codes vary in format; insurance against as_of), so
+    # check_subcontractor gets no class and a far-future insurance date.
+    sub = logic.check_subcontractor(s.license_number, None, "9999-12-31", s.wc_required)
     lic = sub.license
-    problems, warnings = list(sub.problems), []
+    problems, warnings, stop = list(sub.problems), [], []        # stop = reasons not to use the sub at all
     lookup = "found" if lic.found else {"CSLB master file (partial copy)": "not_in_partial_copy",
-                                        "CSLB master file": "not_in_complete_cslb_file"}.get(lic.data_source,
-                                                                                            "no_license_data_loaded")
-    if not lic.found:      # bond/WC flags are meaningless without a record; say only what the lookup means
-        problems = [{
-            "not_in_partial_copy": "Not in our partial copy of CSLB data. This does NOT mean the sub is unlicensed: "
-                                   "check the number on the CSLB site",
-            "no_license_data_loaded": "No CSLB data loaded and the number is not in the demo/CSV records. This does "
-                                      "NOT mean the sub is unlicensed: check the number on the CSLB site",
-            "not_in_complete_cslb_file": "Not in CSLB's current master file (which omits cancelled, revoked and "
-                                         "long-expired licenses). Treat as not licensed until confirmed on the CSLB "
-                                         "site"}[lookup]]
-    blocking = (sub.overall_risk == "do_not_use" and lic.found) or lookup == "not_in_complete_cslb_file"
-    hold = lookup in ("not_in_partial_copy", "no_license_data_loaded")
-    exp_days = None
+                                        "CSLB master file": "not_in_complete_cslb_file",
+                                        "CSLB data loading": "cslb_data_loading"}.get(lic.data_source,
+                                                                                      "no_license_data_loaded")
     exp = _day(lic.expiration_date, "expiration_date") if lic.expiration_date else None
+    status = lic.status
+    if status == "expired" and exp:
+        # 'expired' only means the expiration date has passed, which verify_license judges against today (and
+        # caches); re-judge it against as_of below so results do not depend on the day the check runs.
+        status = "active"
+        problems = [p for p in problems if p != "License is expired"]
+    if not lic.found:      # bond/WC flags are meaningless without a record; say only what the lookup means
+        problems = [_LOOKUP_PROBLEM[lookup]]
+        if lookup == "not_in_complete_cslb_file":
+            stop.append("not in CSLB's current license file")
+    elif status != "active":
+        stop.append(f"the license is {status}")
+    hold = lookup in ("not_in_partial_copy", "no_license_data_loaded", "cslb_data_loading")
+    held = _codes(lic.classifications)
+    exp_days = None
     if exp:
         exp_days = (exp - as_of).days
-        if exp_days < 0 and lic.status == "active":
+        if exp_days < 0 and status == "active":
             problems.append(f"License expired {exp.isoformat()} (as of {as_of.isoformat()})")
-            blocking = True
+            stop.append(f"the license expired {exp.isoformat()}")
         elif 0 <= exp_days <= EXPIRING_SOON_DAYS:
             warnings.append(f"License expires {exp.isoformat()} ({exp_days} days): confirm renewal before it lapses")
-    # Classification: given, else inferred from scope.
-    req, src, match, acceptable = s.required_classification, None, sub.classification_match if lic.found else None, []
-    needs: list[str] = [req] if req else []
-    if req:
-        src, acceptable = "given", [req]
+    # Classification: given (a CSLB class code or name), else inferred from the scope.
+    raw, scope = s.required_classification, s.scope_of_work
+    reqs = _req_codes(raw) if raw else None
+    if raw and not reqs:
+        warnings.append(f"'{raw}' is not a CSLB class code (like C-10, B or D-49), so it was read as a description "
+                        "of the work")
+        scope = scope or raw
+    src, match, acceptable, conditional, cond_action = None, None, [], False, ""
+    needs: list[str] = list(reqs or [])
+    if reqs:
+        src, acceptable = "given", list(reqs)
         cite.add(R_7117_6)
-    elif s.scope_of_work and lic.found:
-        cl = classification_for_scope(s.scope_of_work, s.project_type, "subcontract")
+    if reqs and lic.found:
+        missing_req = []
+        for rc in reqs:
+            c = _code(rc)
+            if c in held:
+                continue
+            if c == "C7" and "C10" in held:
+                # 16 CCR 832.10: a C-10 does electrical work 'in any form or for any purpose', incl. C-7 systems.
+                warnings.append("Holds C-10, which covers low-voltage (C-7) work (16 CCR 832.10)")
+                cite.add(R_C10)
+            elif c == "C46" and "C10" in held:
+                conditional, cond_action = True, "Before award: confirm the solar work is photovoltaic only."
+                warnings.append("Holds C-10, which covers photovoltaic systems but not solar thermal (16 CCR "
+                                "832.10): confirm the solar work is PV only")
+                cite.add(R_C10)
+            elif c == "B2" and "B" in held:
+                conditional = True
+                cond_action = "Before award: confirm 2+ of the trades are other than framing or carpentry."
+                warnings.append(f"Holds B: a B may take a subcontract with "
+                                f"{P(R_B_SUB, 'min_unrelated_trades_excluding_framing_carpentry')}+ unrelated "
+                                "trades besides framing/carpentry (B&P 7057(b)), which a B-2 job "
+                                f"({P(R_B2_MIN, 'min_unrelated_trades_per_contract')}+ trades) normally meets")
+                cite.update([R_B_SUB, R_B2_MIN])
+            else:
+                missing_req.append(rc)
+        # B&P 7057(b): a B may take a subcontract with 2+ unrelated trades besides framing/carpentry, but not fire
+        # protection, wells (7057(c)) or asbestos (16 CCR 833(b)) unless it holds that class.
+        trades = [c for c in reqs if c.startswith("C-") and c not in _carpentry_codes()]
+        min_b = P(R_B_SUB, "min_unrelated_trades_excluding_framing_carpentry")
+        if ("B" in held and missing_req and len(trades) >= min_b
+                and all(c in trades and c not in ("C-16", "C-22", "C-57") for c in missing_req)):
+            conditional = True
+            cond_action = "Before award: confirm one subcontract covers all of these trades (not just one of them)."
+            warnings.append(f"Holds B, which may take a subcontract covering {len(trades)} unrelated trades "
+                            f"({', '.join(trades)}) without holding each class (B&P 7057(b))")
+            cite.add(R_B_SUB)
+            missing_req = []
+        match = False if missing_req else (None if conditional else True)
+        if missing_req:
+            problems.append(f"License does not include {', '.join(missing_req)} (holds "
+                            f"{', '.join(lic.classifications) or 'no classes'})")
+            stop.append(f"no {', '.join(missing_req)} on the license; use a sub holding {', '.join(missing_req)}")
+    elif scope and lic.found:
+        cl = classification_for_scope(scope, s.project_type, "subcontract")
         cite.update(c.rule_id for c in cl.citations)
-        held = {_code(c) for c in lic.classifications}
-        yes = [c for c in cl.can_perform]
-        cond = [c for c in cl.can_perform_with_conditions]
+        yes, cond = cl.can_perform, cl.can_perform_with_conditions
+        # 16 CCR 830(b): a licensee may contract in every class it holds, so a multi-class sub (e.g. C-10 + C-36)
+        # is covered when each distinct piece of work is in one of its classes.
+        missing = [t for t in cl.trades if (t.classes and not any(
+            _code(c) in held for c in [*t.classes, *(["C-10"] if _covers("C-10", t) else [])]))
+            or (not t.classes and t.civil_work and "A" not in held)]       # civil-only work: Class A
         if cl.trade_classes:
             src, acceptable = "inferred_from_scope", yes + cond
-            if held & {_code(c) for c in yes}:
+            if held & {_code(c) for c in yes} or not missing:
                 match = True
+                if not held & {_code(c) for c in yes}:
+                    cite.add(R_830)
             elif held & {_code(c) for c in cond}:
-                match = None
+                match, conditional = None, True
+                cond_action = ("Before award: confirm the out-of-class work is only incidental to its own trade, or "
+                               "split it out.")
                 ok = next(o for o in cl.options if _code(o.code) in held and o.status == "conditional")
-                warnings.append(f"{ok.code} can do this scope only if: {' '.join(ok.conditions)}")
+                if ok.code in class_table():   # re-check against only the work its other classes don't cover
+                    ok = _specialty_option(ok.code, [t for t in cl.trades if t in missing or ok.code in t.classes],
+                                           "subcontract", s.project_type, None, None, False)
+                gap = "; ".join(f"{t.segment} ({' or '.join(t.classes) or 'A'})" for t in missing)
+                warnings.append(f"Not in its classes: {gap}. {ok.code} can take this only if: {' '.join(ok.conditions)}")
             else:
                 match, needs = False, yes or cond
                 problems.append(f"License classes ({', '.join(lic.classifications) or 'none'}) do not appear to cover "
-                                f"'{s.scope_of_work}' (needs {' or '.join(needs)})")
+                                f"'{scope}' (needs {' or '.join(needs)})")
                 if any(c.startswith("D") for c in held):
                     warnings.append("D-codes are C-61 limited specialty subcategories; check the endorsed scope on "
                                     "the CSLB license record")
         else:
             warnings.append("Could not infer the class from the scope; give required_classification")
-    # Insurance certificate vs as_of.
-    coi = _day(s.coi_expiry, "coi_expiry") if s.coi_expiry else None
+    # Insurance certificate vs as_of. Text such as 'TBD' or 'pending' means no usable certificate.
+    try:
+        coi = _day(s.coi_expiry, "coi_expiry")
+    except ValueError:
+        coi = None
     if not coi:
         coi_status = "missing"
-        problems.append("No liability insurance certificate provided")
+        problems.append(f"Liability insurance expiry '{s.coi_expiry}' is not a date: get the current certificate"
+                        if s.coi_expiry else "No liability insurance certificate provided")
     elif coi <= as_of:
         coi_status = "expired"
         problems.append(f"Liability insurance expired {coi.isoformat()}")
@@ -901,39 +1116,46 @@ def _check_one(i: int, s: SubInput, as_of: Date, cite: set) -> SubRiskRow:
             problems.append(f"Workers' comp exemption is no longer valid from {change.isoformat()}: every active "
                             "licensee needs a certificate (B&P 7125, current version)")
             wc_ok = False
-        else:
+        elif wc_ok:                 # an exemption already invalid (employees, mandatory class) is a problem above
             warnings.append(f"Relies on a workers' comp exemption, which ends {change.isoformat()} "
                             f"({(change - as_of).days} days)")
     if not lic.contractor_bond_on_file and lic.found:
         cite.add(R_BOND)
     if not wc_ok and lic.found:
         cite.add(R_WC_EXEMPT)
-    if blocking:
+    if match is False and src == "inferred_from_scope":
+        lo7, hi7 = _licensee_min(R_7117_6_PEN, as_of), P(R_7117_6_PEN, "max_usd")
+        warnings.append(f"Contracting outside the classes held is cause for discipline (B&P 7117.6; CSLB citation "
+                        f"{_usd(lo7)}-{_usd(hi7)}). The class was inferred from the scope text, so confirm before "
+                        "rejecting the sub.")
+        cite.update([R_7117_6_PEN, R_PEN_2026])
+    if stop:
         risk = "do_not_use"
-    elif hold or not wc_ok or sub.overall_risk == "high" or len(problems) >= 2:
+    elif hold or not wc_ok or sub.overall_risk == "high" or len(problems) >= 2 or match is False:
         risk = "high"
-    elif problems:
+    elif problems or conditional:
         risk = "medium"
     else:
         risk = "low"
     if risk == "do_not_use":
-        action = ("Do not use. " + (sub.recommended_action.split(". ", 1)[-1] if sub.overall_risk == "do_not_use"
-                                    else "The license is missing, expired or wrong for this work."))
+        action = f"Do not use or pay: {'; '.join(stop)}."
     elif hold:
         action = "Hold. Confirm the license on the CSLB site before award (missing from our data is not unlicensed)."
     elif not wc_ok:
         action = "Hold. Get a workers' comp certificate before they start."
     elif match is False:
-        action = (("Hold. " if risk == "high" else "Before award: ") + "confirm the license covers this scope"
+        action = ("Hold. Confirm the license covers this scope"
                   + (f", or use a sub holding {' or '.join(needs[:3])}." if needs else "."))
-    elif risk in ("high", "medium"):
+    elif risk in ("high", "medium") and problems:
         action = ("Hold. " if risk == "high" else "") + "Fix before award: " + "; ".join(problems[:3]) + "."
+    elif conditional:
+        action = cond_action
     else:
         action = "Cleared for the bid list, subject to verifying the source records."
     return SubRiskRow(
         row=i, license_number=lic.license_number, business_name=lic.business_name if lic.found else (s.name or "unknown"),
-        scope_of_work=s.scope_of_work, license_status=lic.status, license_lookup=lookup, data_source=lic.data_source,
-        classifications=lic.classifications, required_classification=req, classification_source=src,
+        scope_of_work=s.scope_of_work, license_status=status, license_lookup=lookup, data_source=lic.data_source,
+        classifications=lic.classifications, required_classification=raw, classification_source=src,
         classification_match=match, acceptable_classifications=acceptable, license_expiration_date=lic.expiration_date,
         license_expires_in_days=exp_days, coi_expiry=coi.isoformat() if coi else s.coi_expiry, coi_status=coi_status,
         workers_comp=lic.workers_comp, workers_comp_ok=wc_ok, contractor_bond_on_file=lic.contractor_bond_on_file,
@@ -941,20 +1163,21 @@ def _check_one(i: int, s: SubInput, as_of: Date, cite: set) -> SubRiskRow:
 
 
 def _who(r: SubRiskRow) -> str:
-    return f"#{r.license_number or '?'} {r.business_name}".strip()
+    return f"#{r.license_number or '?'}" + (f" {r.business_name}" if r.business_name != "unknown" else "")
 
 
 def _top_actions(rows: list[SubRiskRow]) -> list[str]:
     def group(label, pick):
         hit = [r for r in rows if pick(r)]
         if hit:
-            names = "; ".join(_who(r) for r in hit[:8]) + (f"; +{len(hit) - 8} more" if len(hit) > 8 else "")
-            out.append(f"{label} ({len(hit)}): {names}")
+            who = list(dict.fromkeys(_who(r) for r in hit))          # a sub listed twice is named once
+            names = "; ".join(who[:8]) + (f"; +{len(who) - 8} more" if len(who) > 8 else "")
+            out.append(f"{label} ({len(hit)} row{'s' if len(hit) > 1 else ''}): {names}")
     out: list[str] = []
     group("Do not use or pay until fixed (license missing, inactive, expired or wrong class)",
           lambda r: r.risk == "do_not_use")
     group("Confirm on the CSLB site before award (not in our data; NOT a finding of unlicensed)",
-          lambda r: r.license_lookup in ("not_in_partial_copy", "no_license_data_loaded"))
+          lambda r: r.license_lookup in ("not_in_partial_copy", "no_license_data_loaded", "cslb_data_loading"))
     group("Get the license number", lambda r: r.license_lookup == "no_license_number")
     group("Get a workers' comp certificate before they start",
           lambda r: r.license_lookup == "found" and not r.workers_comp_ok and r.risk != "do_not_use")
@@ -970,31 +1193,32 @@ def _top_actions(rows: list[SubRiskRow]) -> list[str]:
 
 
 def _markdown(rows: list[SubRiskRow]) -> str:
+    def cell(x) -> str:
+        return re.sub(r"\s+", " ", str(x)).replace("|", "\\|") or "-"
     head = "| # | License | Business | Status | Classes | COI | WC | Risk | Action |\n|---|---|---|---|---|---|---|---|---|"
-    lines = [f"| {r.row} | {r.license_number} | {r.business_name} | {r.license_status} | "
-             f"{', '.join(r.classifications) or '-'} | {r.coi_status} | {r.workers_comp} | {r.risk} | {r.action} |"
-             for r in rows]
+    lines = ["| " + " | ".join(cell(x) for x in (r.row, r.license_number, r.business_name, r.license_status,
+                                                  ", ".join(r.classifications), r.coi_status, r.workers_comp, r.risk,
+                                                  r.action)) + " |" for r in rows]
     return "\n".join([head, *lines])
 
 
 def bulk_check_subcontractors(csv_text: Optional[str] = None, rows: Optional[list] = None, as_of=None) -> BulkSubResult:
     if bool(csv_text and csv_text.strip()) == bool(rows):
         raise ValueError("Give exactly one of csv_text or rows")
-    subs = parse_sub_csv(csv_text) if csv_text else [r if isinstance(r, SubInput) else SubInput.model_validate(r)
-                                                      for r in rows]
+    subs = parse_sub_csv(csv_text) if csv_text else [_sub(n, r) for n, r in enumerate(rows, 1)]
     if not subs:
         raise ValueError("No subcontractor rows found")
     day = _as_of(as_of)
-    cite: set[str] = {R_7118, R_7118_PEN}
+    cite: set[str] = {R_7118, R_7118_PEN, R_PEN_2026}
     out = [_check_one(i, s, day, cite) for i, s in enumerate(subs, 1)]
     out.sort(key=lambda r: (RISK_ORDER[r.risk], r.row))
     counts = {k: sum(r.risk == k for r in out) for k in RISK_ORDER}
     official = all(r.data_source.startswith("CSLB master file") for r in out)
-    lo, hi = P(R_7118_PEN, "min_usd"), P(R_7118_PEN, "max_usd")
+    lo, hi = _licensee_min(R_7118_PEN, day), P(R_7118_PEN, "max_usd")
     notes = [f"Contracting with an unlicensed contractor is cause for discipline (B&P 7118); CSLB citations run "
              f"{_usd(lo)}-{_usd(hi)}. Check license status at award and again before each payment.",
              "License status is CSLB's status in the data snapshot; as_of drives the expiration, insurance and "
-             "2028 workers' comp checks."]
+             "workers' comp exemption-end checks."]
     dupes = sorted({r.license_number for r in out if r.license_number and
                     sum(x.license_number == r.license_number for x in out) > 1})
     if dupes:
@@ -1032,6 +1256,8 @@ class Obligation(BaseModel):
 class Deadline(BaseModel):
     item: str
     due_date: str
+    weekday: str
+    act_by: str = Field(description="Last weekday (Mon-Fri) on or before due_date; holidays are not checked")
     days_remaining: int
     status: Literal["overdue", "due_soon", "upcoming"]
     consequence: str
@@ -1057,7 +1283,9 @@ class RenewalInfo(BaseModel):
     on_time_total_usd: float
     delinquency_fee_usd: float
     late_total_usd: float
-    renew_by: Optional[str] = Field(None, description="Postmark or hand-deliver the renewal by this date")
+    renew_by: Optional[str] = Field(None, description="Postmark or hand-deliver the renewal by this date: the "
+                                                      "expiration date, or once expired the last day that avoids a "
+                                                      "gap (retroactive window) or the last day it can be renewed")
     retroactive_renewal_deadline: Optional[str] = None
     renewal_window_ends: Optional[str] = None
     next_expiration_if_renewed: Optional[str] = None
@@ -1083,14 +1311,18 @@ class LicenseObligations(core.Result):
 def _deadline(item, due: Date, as_of: Date, consequence, rule_ids) -> Deadline:
     days = (due - as_of).days
     status = "overdue" if days < 0 else ("due_soon" if days <= EXPIRING_SOON_DAYS else "upcoming")
-    return Deadline(item=item, due_date=due.isoformat(), days_remaining=days, status=status, consequence=consequence,
-                    rule_ids=rule_ids)
+    act_by = due - timedelta(days=max(0, due.weekday() - 4))          # Saturday/Sunday -> the Friday before
+    if as_of <= act_by < due:
+        consequence += f" {due.isoformat()} is a {due.strftime('%A')}: get it done by Friday {act_by.isoformat()}."
+    return Deadline(item=item, due_date=due.isoformat(), weekday=due.strftime("%A"), act_by=act_by.isoformat(),
+                    days_remaining=days, status=status, consequence=consequence, rule_ids=rule_ids)
 
 
 def _wc_status(entity, employees, classes, active, rme, his, as_of, cite) -> WorkersCompStatus:
     change = _day(P(R_WC_2028, "operative_date"))
     mandatory = P(R_WC_EXEMPT, "classifications_always_require_wc")
-    held = [c for c in mandatory if _code(c) in {_code(x) for x in classes}]
+    codes = _codes(classes)                                    # 'C-61/D-49' -> C61, D49
+    held = [c for c in mandatory if _code(c) in codes] if as_of < change else []
     base = dict(exemption_ends_on=change.isoformat(), days_until_exemption_ends=(change - as_of).days,
                 mandatory_classes_held=held)
     if not active:
@@ -1099,7 +1331,8 @@ def _wc_status(entity, employees, classes, active, rme, his, as_of, cite) -> Wor
             "No workers' comp certificate or exemption is required while the license is inactive (B&P 7125)."],
             actions=["Before reactivating, file a workers' comp certificate (or a valid exemption)."],
             rule_ids=[R_WC_INACTIVE], **base)
-    reasons, rules, actions = [], [R_WC_EXEMPT, R_WC_2028], []
+    # The B&P 7125 version with the no-employee exemption is repealed on the 2028 operative date.
+    reasons, rules, actions, removal = [], ([R_WC_EXEMPT] if as_of < change else []) + [R_WC_2028], [], None
     if as_of >= change:
         reasons.append(f"From {change.isoformat()} every active licensee must file a workers' comp or self-insurance "
                        "certificate; only a joint venture with no employees may still file an exemption.")
@@ -1108,18 +1341,27 @@ def _wc_status(entity, employees, classes, active, rme, his, as_of, cite) -> Wor
                        "workers' comp (Labor Code 3700).")
         rules.append(R_WC_ONE)
     if held:
-        reasons.append(f"{', '.join(held)} must carry workers' comp even with no employees (B&P 7125).")
+        reasons.append(f"{', '.join(held)} must carry workers' comp even with no employees (B&P 7125(b)(2)).")
+        if codes - {_code(c) for c in held} - {"C61"}:
+            removal = (f"Without a certificate CSLB removes {', '.join(held)} from a license that holds other classes "
+                       "instead of suspending the whole license, and suspends it if you are later found with "
+                       "employees and no coverage (B&P 7125(f)-(g)).")
+            rules += [R_WC_C39_REMOVE] if "C-39" in held else []
+            rules += [R_WC_CLASS_REMOVE] if set(held) - {"C-39"} else []
     if rme:
         reasons.append("The license is qualified by an RME, who is an employee, so CSLB will not accept an exemption.")
         rules.append(R_WC_RME)
     if his:
         reasons.append("Employing home improvement salespersons rules out the exemption.")
         rules.append(R_WC_RME)
+    rules = list(dict.fromkeys(rules))
     cite.update(rules)
     if reasons:
         actions.append("Keep a current Certificate of Workers' Compensation Insurance (filed by your insurer) or a "
                        "DIR self-insurance certificate on file with CSLB in the license's business name.")
         actions.append("If coverage lapses, the license is suspended automatically as of the lapse date (B&P 7125.2).")
+        if removal:
+            actions.append(removal)
         cite.add(R_WC_LAPSE)
         return WorkersCompStatus(requirement="certificate_required", reasons=reasons, actions=actions,
                                  rule_ids=rules + [R_WC_LAPSE], **base)
@@ -1139,7 +1381,7 @@ def _wc_status(entity, employees, classes, active, rme, his, as_of, cite) -> Wor
 def _renewal(entity, active, classes, exp: Optional[Date], as_of: Date, cite) -> RenewalInfo:
     who = "individual" if entity == "sole_owner" else "entity"
     fee = float(P(R_FEES, f"{who}_{'active' if active else 'inactive'}_usd"))
-    c10 = float(P(R_FEES, "c10_active_renewal_surcharge_usd")) if active and "C10" in {_code(c) for c in classes} else 0.0
+    c10 = float(P(R_FEES, "c10_active_renewal_surcharge_usd")) if active and "C10" in _codes(classes) else 0.0
     pct = P(R_DELINQ, "delinquency_percent_of_renewal_fee")
     delinquency = _money(fee * pct / 100)
     math = [f"Renewal fee ({'sole owner' if who == 'individual' else entity}, {'active' if active else 'inactive'}): "
@@ -1168,18 +1410,33 @@ def _renewal(entity, active, classes, exp: Optional[Date], as_of: Date, cite) ->
     math.append(f"Expires {exp.isoformat()}; the next term runs {term} years from that date to "
                 f"{_add_years(exp, term).isoformat()} (B&P 7140); a late renewal does not restart the {term}-year "
                 "clock (B&P 7141(c)).")
+    math.append(f"If a renewal sent on time comes back incomplete, a corrected one received within "
+                f"{P(R_GRACE, 'grace_days')} days after expiration avoids the delinquency fee, but the license shows "
+                "expired until it is accepted (B&P 7141(b)).")
+    if status == "expired_over_5_years":
+        math.append(f"More than {window} years since expiration: it can no longer be renewed; apply for a new "
+                    "license with original-license fees and requirements (B&P 7141(d)).")
+        nxt = None
+        rules.append("not-renewed-5-years-new-license")
+    elif status != "current":
+        math.append(f"Renewed now, it keeps its original cycle and expires {nxt.isoformat()} "
+                    f"({(nxt - as_of).days} days from {as_of.isoformat()}) (B&P 7141(c)).")
     rules += [R_RETRO, R_5YR, R_GRACE, "late-renewal-keeps-original-cycle"]
     cite.update(rules)
     return RenewalInfo(expiration_date=exp.isoformat(), days_until_expiration=days, status=status,
-                       renew_by=exp.isoformat(), retroactive_renewal_deadline=(exp + timedelta(days=retro)).isoformat(),
-                       renewal_window_ends=_add_years(exp, window).isoformat(), next_expiration_if_renewed=nxt.isoformat(),
+                       renew_by={"current": exp, "expired_retroactive_window": exp + timedelta(days=retro),
+                                 "expired_gap": _add_years(exp, window)}.get(status, exp).isoformat()
+                       if status != "expired_over_5_years" else None,
+                       retroactive_renewal_deadline=(exp + timedelta(days=retro)).isoformat(),
+                       renewal_window_ends=_add_years(exp, window).isoformat(),
+                       next_expiration_if_renewed=nxt.isoformat() if nxt else None,
                        rule_ids=rules, **out)
 
 
 _CHANGE_TEXT = {
     "business_address": "Business address change", "mailing_address": "Mailing address change",
     "business_name": "Business name change", "personnel": "Personnel of record change (officer, member, partner)",
-    "qualifier_bond_exemption": "Qualifier bond exemption change (e.g. ownership fell below 10%)",
+    "qualifier_bond_exemption": "Qualifier bond exemption change (e.g. qualifier's ownership fell below the minimum)",
     "multiple_license_exemption": "Multiple-license qualifier exemption change",
     "dissolution_or_merger": "Dissolution, merger or surrender of the right to do business",
     "criminal_conviction": "Felony or contracting-related conviction (from when you learned of it)",
@@ -1188,7 +1445,7 @@ _CHANGE_TEXT = {
 
 def _change_deadlines(changes: list[ChangeEvent], entity: str, as_of: Date, cite) -> tuple[list[Deadline], list[str]]:
     out, notes = [], []
-    lo, hi = P(R_NOTIFY_PEN, "min_usd"), P(R_NOTIFY_PEN, "max_usd")
+    lo, hi = _licensee_min(R_NOTIFY_PEN, as_of), P(R_NOTIFY_PEN, "max_usd")
     late = (f"Late notice: the change takes effect only when CSLB receives it, and is grounds for discipline "
             f"(citation {_usd(lo)}-{_usd(hi)}).")
     for ch in changes:
@@ -1209,9 +1466,11 @@ def _change_deadlines(changes: list[ChangeEvent], entity: str, as_of: Date, cite
             cite.update([R_Q_NOTIFY, R_Q_REPLACE, R_APP_FEES, R_Q_EXT])
             continue
         if ch.change == "mailing_address":
-            days, rules = P(R_MAIL, "notify_within_days"), [R_MAIL, R_NOTIFY]
-            cons = (f"B&P 136 requires mailing address changes within {days} days (citation and fine); B&P 7083 "
-                    f"allows {P(R_NOTIFY, 'deadline_days')} for other record changes. Use the earlier date.")
+            days, rules = P(R_MAIL, "notify_within_days"), [R_MAIL, R_NOTIFY, R_NOTIFY_PEN, R_PEN_2026]
+            cons = (f"Shown at {days} days, the general DCA rule for mailing addresses (B&P 136). CSLB's own statute "
+                    f"(B&P 7083(a), 'notwithstanding any other law') gives {P(R_NOTIFY, 'deadline_days')} days for any "
+                    "change to recorded information, so the later date is likely the legal one; filing by the "
+                    "earlier date avoids the question. " + late)
         elif ch.change == "dissolution_or_merger":
             days, rules = P(R_DISSOLVE, "notice_deadline_days"), [R_DISSOLVE]
             cons = ("The corporation/LLC license is cancelled; if notice is late, cancellation is effective when CSLB "
@@ -1223,7 +1482,13 @@ def _change_deadlines(changes: list[ChangeEvent], entity: str, as_of: Date, cite
             days, rules = P(R_CONVICT, "days"), [R_CONVICT]
             cons = "Report in writing to CSLB; failure is grounds for discipline."
         else:
-            days, rules, cons = P(R_NOTIFY, "deadline_days"), [R_NOTIFY, R_NOTIFY_PEN], late
+            days, rules, cons = P(R_NOTIFY, "deadline_days"), [R_NOTIFY, R_NOTIFY_PEN, R_PEN_2026], late
+            if ch.change == "qualifier_bond_exemption":
+                cons = (f"File the {_usd(P(R_QBOND, 'amount_usd'))} qualifier bond now if ownership fell below "
+                        f"{P(R_QBOND_EXEMPT, 'llc_min_membership_interest_percent' if entity == 'llc' else 'corporation_min_voting_stock_percent')}%:"
+                        " the exemption ends the day ownership drops, and CSLB suspends the license from that date "
+                        f"without a bond. The {days} days are only for the written notice. " + cons)
+                rules += [R_QBOND_DROP, R_QBOND, R_QBOND_EXEMPT]
             if ch.change == "business_name":
                 cons += f" Name change fee {_usd(P(R_NAME_FEE, 'business_name_change_usd'))}."
                 rules.append(R_NAME_FEE)
@@ -1244,12 +1509,16 @@ def company_license_obligations(
         qualifier_is_employee_rme: bool = False, qualifier_ownership_percent: Optional[float] = None,
         employs_home_improvement_salespersons: bool = False,
         changes: Optional[list] = None) -> LicenseObligations:
-    if entity_type not in ("sole_owner", "partnership", "corporation", "llc"):
-        raise ValueError("entity_type must be sole_owner, partnership, corporation or llc")
-    if employee_count < 0 or (member_count_for_llc is not None and member_count_for_llc < 0):
-        raise ValueError("counts cannot be negative")
+    _choice("entity_type", entity_type, get_args(EntityType))
+    _choice("license_status", license_status, ("active", "inactive"))
+    _nonneg(employee_count=employee_count, member_count_for_llc=member_count_for_llc,
+            qualifier_ownership_percent=qualifier_ownership_percent)
+    if qualifier_ownership_percent is not None and qualifier_ownership_percent > 100:
+        raise ValueError(f"qualifier_ownership_percent must be 0-100, got {qualifier_ownership_percent!r}")
     day = _as_of(as_of)
-    classes = [c for c in (classifications or []) if c and c.strip()]
+    if isinstance(classifications, str):                       # 'B, C-10' -> ['B', 'C-10']
+        classifications = _CLASS_SEP.split(classifications)
+    classes = [c.strip() for c in (classifications or []) if c and c.strip()]
     active = license_status == "active"
     exp = _day(license_expiration_date, "license_expiration_date")
     evs = [c if isinstance(c, ChangeEvent) else ChangeEvent.model_validate(c) for c in (changes or [])]
@@ -1260,8 +1529,9 @@ def company_license_obligations(
     not_owner = qualifier_is_rme_or_rmo or qualifier_is_employee_rme
     if entity_type in ("corporation", "llc") and has_qualifier and not not_owner:
         not_owner = True
-        notes.append("Corporations and LLCs qualify through an RMO, RME or LLC responsible managing member/manager, "
-                     "not an owner; treated as an RMO.")
+        notes.append("A corporation or LLC qualifier is never the proprietor or a general partner, so the qualifier "
+                     f"bond applies unless the {P(R_QBOND_EXEMPT, 'corporation_min_voting_stock_percent')}% ownership "
+                     "exemption does; treated as an RMO / LLC qualifier.")
 
     # ---- bonds
     bonds = []
@@ -1289,11 +1559,14 @@ def company_license_obligations(
         cite.add(R_QBOND_EXEMPT)
     elif not active:
         q_math = "not required while inactive"
+    elif not has_qualifier:
+        q_math = ("no qualifier on file now; a replacement who is not the proprietor or a general partner will need "
+                  f"this bond, unless an RMO or LLC qualifier owns {pct}% or more")
     bonds.append(Obligation(item="Bond of qualifying individual", required=q_required,
                             amount_usd=q_amt if q_required else 0.0, math=q_math,
                             detail="Required when the qualifier is neither the sole owner, a general partner nor a joint "
                                    "licensee. Each RME/RMO qualifying the license needs one. An RME can never use the "
-                                   "10% ownership exemption.", rule_ids=[R_QBOND, R_QBOND_EXEMPT]))
+                                   f"{pct}% ownership exemption.", rule_ids=[R_QBOND, R_QBOND_EXEMPT]))
     cite.add(R_QBOND)
     if entity_type == "llc":
         llc_amt = float(P(R_LLC_BOND, "amount_usd"))
@@ -1329,7 +1602,9 @@ def company_license_obligations(
             detail += (f" CSLB reads the statute as {_usd(per)} per person above {thr}; the literal text ('for each "
                        f"person listed') would require {_usd(literal)}. Ask your broker to confirm which CSLB applies.")
         insurance.append(Obligation(item="LLC liability insurance (aggregate limit)", required=active,
-                                    amount_usd=req if active else 0.0, math=math if active else "not required while inactive",
+                                    amount_usd=req if active else 0.0,
+                                    math=math if active else ("not required while inactive; B&P 7071.19(a) requires it "
+                                                              "again to reactivate"),
                                     detail=detail, rule_ids=[R_LLC_INS, "llc-insurance-reinstate-limit"]))
         cite.update([R_LLC_INS, "llc-insurance-reinstate-limit"])
     else:
@@ -1341,7 +1616,7 @@ def company_license_obligations(
 
     # ---- workers' comp
     wc = _wc_status(entity_type, employee_count, classes, active, rme, employs_home_improvement_salespersons, day, cite)
-    if any(_code(c) == "C49" for c in classes):
+    if "C49" in _codes(classes):
         notes.append("C-49 Tree and Palm is not named in the B&P 7125 mandatory list (which names D-49 Tree Service); "
                      "confirm with CSLB whether C-49 must carry workers' comp without employees.")
 
@@ -1352,19 +1627,26 @@ def company_license_obligations(
         if renewal.status == "current":
             deadlines.append(_deadline("Renew the license (postmark or hand-deliver application and fee)", exp, day,
                                        f"After this date the renewal is delinquent: + {_usd(renewal.delinquency_fee_usd)}"
-                                       " and the license shows expired; contracting while expired is unlicensed.",
-                                       [R_POSTMARK, R_FEES, R_DELINQ]))
+                                       " and the license shows expired. Contracting while expired is unlicensed unless "
+                                       f"a completed late renewal is filed within {P(R_RETRO, 'window_days')} days, "
+                                       "which renews it retroactively with no break (B&P 7141.5).",
+                                       [R_POSTMARK, R_FEES, R_DELINQ, R_RETRO]))
         elif renewal.status == "expired_retroactive_window":
             deadlines.append(_deadline("Late renewal with no break in licensure (renewal + delinquency fee)",
                                        _day(renewal.retroactive_renewal_deadline), day,
                                        "After this date renewal is effective only on filing; you are unlicensed for the "
                                        "gap.", [R_RETRO, R_DELINQ]))
+            actions.append(f"The license expired {renewal.expiration_date}: file the completed renewal with "
+                           f"{_usd(renewal.late_total_usd)} (renewal + delinquency fee) by "
+                           f"{renewal.retroactive_renewal_deadline} so it is renewed retroactively with no break "
+                           "(B&P 7141.5). Until CSLB shows it renewed, owners and GCs will see it as expired.")
         elif renewal.status == "expired_gap":
             deadlines.append(_deadline("Last day to renew the expired license", _day(renewal.renewal_window_ends), day,
                                        f"After {P(R_5YR, 'renewal_window_years_after_expiration')} years you must "
                                        "apply for a new license and meet all original-license "
                                        "requirements. Until renewed you are unlicensed.", [R_5YR]))
-            actions.append("The license is expired past the 90-day retroactive window: stop contracting until the "
+            actions.append(f"The license is expired past the {P(R_RETRO, 'window_days')}-day retroactive window: "
+                           "stop contracting until the "
                            "renewal is filed; work in the gap is unlicensed.")
         else:
             actions.append(f"The license expired more than {P('not-renewed-5-years-new-license', 'years_after_expiration')}"
@@ -1379,7 +1661,11 @@ def company_license_obligations(
     ch_deadlines, ch_notes = _change_deadlines(evs, entity_type, day, cite)
     deadlines += ch_deadlines
     notes += ch_notes
-    if not has_qualifier and not any(e.change == "qualifier_left" for e in evs):
+    if not has_qualifier and not active:
+        notes.append("No qualifier is required while the license is inactive (B&P 7076.5); you need one on file to "
+                     "reactivate. A qualifier's departure must still be reported (B&P 7068.2, 7083).")
+        cite.update([R_INACTIVE, R_Q_NOTIFY])
+    elif not has_qualifier and not any(e.change == "qualifier_left" for e in evs):
         actions.insert(0, "No qualifier: the license must be qualified by an owner/general partner, RMO or RME. If your "
                           f"qualifier left, notify CSLB and file a replacement within {P(R_Q_REPLACE, 'deadline_days')} "
                           "days of the departure date "
@@ -1390,14 +1676,15 @@ def company_license_obligations(
         notes.append(f"An RME must be a permanent employee actively engaged {hrs} hours a week, or {pct80}% of the "
                      "business's weekly operating hours if less (B&P 7068(c)).")
         cite.add(R_RME_HOURS)
-    if entity_type in ("corporation", "llc") and active:
+    if entity_type in ("corporation", "llc"):            # B&P 7076.2 applies to inactive licenses too
         notes.append(f"Stay in good standing with the Secretary of State and FTB: CSLB suspends the license "
                      f"{P(R_SOS, 'suspension_days_after_notice')} days after notice if the entity is not.")
         cite.add(R_SOS)
         if entity_type == "llc":
-            notes.append(f"While an LLC license is suspended for that reason, each officer, manager and member can be "
-                         f"personally liable up to {_usd(P(R_LLC_PERSONAL, 'personal_liability_cap_per_person_usd'))} "
-                         "for third-party damages.")
+            notes.append(f"While an LLC license is suspended for that reason, each officer, director, manager, "
+                         "qualifier and other person on the personnel of record (B&P 7028.5) can be personally liable "
+                         f"up to {_usd(P(R_LLC_PERSONAL, 'personal_liability_cap_per_person_usd'))} each for "
+                         "third-party damages from licensed work done during the suspension (B&P 7076.2(b)).")
             cite.add(R_LLC_PERSONAL)
     if wc.requirement == "certificate_required" and active:
         actions.append("Confirm CSLB shows a current workers' comp certificate in the license's exact business name.")
@@ -1408,7 +1695,7 @@ def company_license_obligations(
                        "before a bond's cancellation or expiry date.")
     deadlines.sort(key=lambda d: d.due_date)
     humans = ["Qualifying individual (owner, general partner, RMO, RME or LLC responsible managing member/manager) "
-              "who passed the CSLB exam for each class and is responsible for supervising the work."]
+              "qualified (normally by passing the CSLB exam) in each class and responsible for supervising the work."]
     if active:
         humans.append("Admitted surety (through a bond agent) for each bond; licensed California workers' comp "
                       "insurer for the WC certificate" + ("; admitted or surplus-line insurer for the LLC policy."
@@ -1434,6 +1721,8 @@ class Exposure(BaseModel):
     high_usd: float
     math: str
     rule_ids: list[str]
+    counted_in_total: bool = Field(True, description="False for an alternative charge for the same act; the total "
+                                                     "counts only the larger alternative")
 
 
 class UnlicensedExposureResult(core.Result):
@@ -1487,12 +1776,16 @@ def unlicensed_contracting_exposure(
         previously_licensed_in_california: bool = False, license_lapsed_during_work: bool = False,
         perspective: Literal["unlicensed_party", "hiring_contractor"] = "unlicensed_party",
         last_activity_date=None, as_of=None) -> UnlicensedExposureResult:
-    if contract_price_usd < 0 or (amount_paid_usd is not None and amount_paid_usd < 0) or prior_unlicensed_convictions < 0:
-        raise ValueError("amounts and counts cannot be negative")
-    if amount_paid_usd is not None and amount_paid_usd > contract_price_usd:
-        raise ValueError("amount_paid_usd is more than contract_price_usd")
+    _nonneg(contract_price_usd=contract_price_usd, amount_paid_usd=amount_paid_usd,
+            prior_unlicensed_convictions=prior_unlicensed_convictions)
+    _choice("perspective", perspective, ("unlicensed_party", "hiring_contractor"))
+    # Work in whole cents so every line of math adds up exactly as displayed.
+    price = _money(float(contract_price_usd))
+    paid = None if amount_paid_usd is None else _money(float(amount_paid_usd))
+    if paid is not None and paid > price:
+        raise ValueError(f"amount_paid_usd ({_usd(paid)}) is more than contract_price_usd ({_usd(price)})")
     day = _as_of(as_of)
-    price, paid = float(contract_price_usd), amount_paid_usd
+    last = _day(last_activity_date, "last_activity_date")
     cite: set[str] = set()
     tests = _minor_work_tests(price, requires_building_permit, part_of_larger_project_or_split,
                               advertises_as_contractor, has_employees_or_helpers)
@@ -1506,7 +1799,7 @@ def unlicensed_contracting_exposure(
     unlicensed = not has_license or license_lapsed_during_work
     if has_license and not license_lapsed_during_work:
         exemption = "not_applicable_licensed"
-    notes, other, actions, exposure = [], [], [], []
+    notes, other, actions, exposure, unverified = [], [], [], [], []
     humans = ["Construction attorney: to evaluate B&P 7031 claims, substantial compliance and any criminal referral."]
     deadline = None
     if exemption == "applies" and perspective == "unlicensed_party":
@@ -1540,7 +1833,12 @@ def unlicensed_contracting_exposure(
         exposure.append(Exposure(item="CSLB citation civil penalty (B&P 7028.7) with order to stop", kind="administrative",
                                  low_usd=lo, high_usd=hi, math=f"{_usd(lo)}-{_usd(hi)} per citation", rule_ids=[rid]))
         cite.add(rid)
-        # Criminal fine (B&P 7028), by prior convictions
+        # Criminal fine (B&P 7028), by prior convictions; B&P 7028(g) sets the deadline to file charges.
+        years = P(R_7028_SOL, "years")
+        end = _add_years(last, years) if last else None
+        barred = bool(end and end < day)
+        deadline = end.isoformat() if end else None
+        cite.add(R_7028_SOL)
         pay = paid if paid is not None else price
         if prior_unlicensed_convictions == 0:
             hi1 = P(R_7028_1, "fine_max_usd")
@@ -1572,75 +1870,113 @@ def unlicensed_contracting_exposure(
             other.append(f"Third or later conviction: {P(R_7028_3, 'jail_min_days')} days to "
                          f"{P(R_7028_3, 'jail_max_years')} year in county jail.")
             cite.add(R_7028_3)
+        fine7028 = exposure[-1]
+        fine7028.counted_in_total = not barred
         if advertises_as_contractor:
             lo_a, hi_a = P(R_AD_FINE, "fine_min_usd"), P(R_AD_FINE, "fine_max_usd")
             exposure.append(Exposure(item="Fine for advertising without a license (B&P 7027.1)", kind="criminal",
-                                     low_usd=lo_a, high_usd=hi_a, math=f"{_usd(lo_a)}-{_usd(hi_a)}, on top of other "
-                                     "penalties", rule_ids=[R_AD_FINE]))
+                                     low_usd=lo_a, high_usd=hi_a, math=f"{_usd(lo_a)}-{_usd(hi_a)}; advertising is a "
+                                     "separate misdemeanor, and this fine is on top of any other punishment for it",
+                                     rule_ids=[R_AD_FINE]))
             cite.add(R_AD_FINE)
         if declared_disaster_repair:
             hi_d = P(R_DISASTER, "felony_option.fine_max_usd")
+            bigger = barred or hi_d > fine7028.high_usd
+            fine7028.counted_in_total = not bigger
             exposure.append(Exposure(item="Unlicensed repair of declared-disaster damage (B&P 7028.16)", kind="criminal",
-                                     low_usd=0.0, high_usd=hi_d, math=f"fine up to {_usd(hi_d)}",
-                                     rule_ids=[R_DISASTER]))
-            other.append("Disaster repair without a license is a felony-level offense: "
+                                     low_usd=0.0, high_usd=hi_d, counted_in_total=bigger,
+                                     math=f"fine up to {_usd(hi_d)}. Charged instead of the B&P 7028 fine for the same "
+                                          "work, so the total counts only one of the two (the larger one that can "
+                                          "still be charged)", rule_ids=[R_DISASTER]))
+            other.append("Disaster repair without a license can be charged as a felony: "
                          + ", ".join(P(R_DISASTER, "felony_option.imprisonment_penal_code_1170h"))
-                         + " under Penal Code 1170(h), with or without the fine.")
+                         + " under Penal Code 1170(h), with or without the fine; or as a misdemeanor with a fine up to "
+                         + _usd(P(R_DISASTER, "misdemeanor_option.fine_max_usd")) + " and up to "
+                         + f"{P(R_DISASTER, 'misdemeanor_option.county_jail_max_years')} year in county jail.")
+            notes.append("One act is punished under only one statute (Penal Code 654, not in the verified rulebook), so "
+                         "the B&P 7028 and 7028.16 fines are not added together.")
+            unverified.append("pc-654-single-punishment")
             cite.add(R_DISASTER)
         if public_agency_bid:
-            other.append("A public-agency bid without a license is nonresponsive and a contract awarded is void "
-                         "(B&P 7028.15).")
+            other.append("Submitting a bid to a public agency without a license is a separate misdemeanor; the bid is "
+                         "nonresponsive and must be rejected, and any contract awarded is void (B&P 7028.15).")
             cite.add(R_PUBLIC_BID)
         dbl = P(R_DOUBLE_BOND, "amount_usd")
         other.append(f"If you later apply for a license, CSLB may require a {_usd(dbl)} bond (double) until first "
                      "renewal when the violation caused substantial injury (B&P 7071.6(d)).")
         cite.add(R_DOUBLE_BOND)
-        last = _day(last_activity_date, "last_activity_date")
-        years = P(R_7028_SOL, "years")
-        cite.add(R_7028_SOL)
-        if last:
-            deadline = _add_years(last, years).isoformat()
-            notes.append(f"Prosecution window: {years} years from the latest of proposal, contract, completion or "
-                         f"abandonment -> {deadline}.")
+        window = (f"Criminal charges under B&P 7028 must be filed within {years} years of the latest of proposal, "
+                  "contract, completion or abandonment (B&P 7028(g))")
+        if barred:
+            notes.append(f"{window}: that was {deadline}, which has passed, so the B&P 7028 fine is shown but not "
+                         "counted in the total (ask the attorney whether anything extended that deadline). The 7031 "
+                         "civil claims and CSLB citations have their own deadlines"
+                         + (f"; the {years}-year limit does not cover a 7028.16 charge." if declared_disaster_repair
+                            else "."))
         else:
-            notes.append(f"Prosecution window: {years} years from the latest of proposal, contract, completion or "
-                         "abandonment (give last_activity_date for the date).")
+            notes.append(f"{window} -> {deadline}." if end else f"{window}; give last_activity_date for the date.")
+        notes.append(f"A CSLB citation must be issued within {P(R_CITE_LIMIT, 'years_after_act_or_omission')} years "
+                     f"of the act or {P(R_CITE_LIMIT, 'months_after_complaint_filed')} months after a complaint is "
+                     "filed, whichever is later (B&P 7028.9).")
+        cite.add(R_CITE_LIMIT)
         if previously_licensed_in_california or license_lapsed_during_work:
             notes.append("Substantial compliance may excuse a lapse only if you were licensed in California before the "
                          "work, acted reasonably and in good faith to stay licensed, and fixed it promptly once you "
                          "knew; a court decides after a hearing (B&P 7031(e)). Never-licensed contractors can't use it.")
             cite.add(R_SUBST)
+        if license_lapsed_during_work:
+            lo5, hi5 = _licensee_min(R_7117_5_PEN, day), P(R_7117_5_PEN, "max_usd")
+            other.append(f"As a licensee, CSLB can cite you for contracting on an expired, suspended or inactive license "
+                         f"(B&P 7117.5: {_usd(lo5)}-{_usd(hi5)}) and discipline the license (guideline minimum "
+                         f"{P(R_7117_5_DISC, 'minimum_penalty.text')}).")
+            cite.update([R_7117_5_PEN, R_7117_5_DISC, R_PEN_2026])
         actions += ["Stop taking new work that needs a license until licensed.",
                     "Do not record or foreclose a lien for this job without an attorney's advice."]
     if exposed and perspective == "hiring_contractor":
-        lo, hi = P(R_7118_PEN, "min_usd" if day >= cite_date else "min_usd_before_2026_07_01"), P(R_7118_PEN, "max_usd")
+        lo, hi = _licensee_min(R_7118_PEN, day), P(R_7118_PEN, "max_usd")
         exposure.append(Exposure(item="CSLB citation against your license for contracting with an unlicensed "
                                       "contractor (B&P 7118)", kind="administrative", low_usd=lo, high_usd=hi,
                                  math=f"{_usd(lo)}-{_usd(hi)} per citation", rule_ids=[R_7118_PEN, R_7118]))
         disc = P(R_7118_DISC, "minimum_penalty.text")
         other.append(f"Disciplinary guideline for B&P 7118: minimum {disc}; maximum revocation.")
-        other.append("You can recover what you paid an unlicensed sub (B&P 7031(b)), but the owner may also look to "
-                     "you for the unlicensed work.")
+        other.append("You can sue the unlicensed sub to recover everything you paid it (B&P 7031(b)), and it cannot "
+                     "sue you for any unpaid balance (B&P 7031(a)). Under your own contract you stay responsible to "
+                     "the owner for its work.")
         other.append("An unlicensed worker doing licensed work is presumed your employee (Labor Code 2750.5): payroll "
                      "taxes, wage-and-hour and workers' comp exposure follow.")
-        cite.update([R_7118_PEN, R_7118, R_7118_DISC, R_7031B, R_2750_5])
+        cite.update([R_7118_PEN, R_7118, R_7118_DISC, R_7031B, R_7031, R_2750_5, R_PEN_2026])
         actions += ["Do not sign with or pay this sub until it holds an active license in the right class.",
                     "If work already started, stop it, document payments and call a construction attorney."]
     if has_license and not license_lapsed_during_work:
         notes.append("Licensed: keep the license active, bonded and insured for the whole job (any lapse is "
                      "unlicensed time under B&P 7031) and work only in the classes you hold (B&P 7117.6). Use "
-                     "classification_for_scope to check the class.")
+                     "classification_for_scope to check the class." if perspective == "unlicensed_party" else
+                     "The sub is licensed: confirm on the CSLB site, at award and before each payment, that the "
+                     "license is active and holds the class for this work (B&P 7117.6). If it lapses mid-job, the "
+                     "work during the lapse is unlicensed (B&P 7031). bulk_check_subcontractors checks a sub list.")
         cite.update([R_7031, R_7117_6])
     if not exposed and exemption == "applies" and perspective == "hiring_contractor":
         notes.append("The minor work exemption applies, so this person needs no license for this job as described.")
-    low = _money(sum(e.low_usd for e in exposure))
-    high = _money(sum(e.high_usd for e in exposure))
+    if perspective == "hiring_contractor" and not has_license:
+        notes.append(f"A sub's work on your job is part of a larger operation, so the under-"
+                     f"{_usd(P(R_MINOR, 'max_aggregate_contract_price_usd_exclusive'))} exemption applies "
+                     "only if the whole project, all contracts combined, is under that amount (B&P 7048(b)); enter "
+                     "the whole project price, not the sub's piece.")
+        cite.add(R_MINOR_SPLIT)
+    counted = [e for e in exposure if e.counted_in_total]
+    low = _money(sum(e.low_usd for e in counted))
+    high = _money(sum(e.high_usd for e in counted))
+    for key in unverified:
+        u = UNVERIFIED[key]
+        notes.append(f"Unverified source used: {u['citation']} ({u['source']}).")
     res = UnlicensedExposureResult(
         as_of=day.isoformat(), perspective=perspective, contract_price_usd=price, amount_paid_usd=paid, scope=scope,
         has_license=has_license, license_required=required, minor_work_exemption=exemption, exemption_tests=tests,
-        exposure=exposure, total_low_usd=low, total_high_usd=high, other_consequences=other, prosecution_deadline=deadline, licensed_humans=humans,
-        actions=actions, notes=notes)
-    return res.cite(*sorted(cite))
+        exposure=exposure, total_low_usd=low, total_high_usd=high, other_consequences=other,
+        prosecution_deadline=deadline, licensed_humans=humans, actions=actions, notes=notes)
+    res.cite(*sorted(cite))
+    res.verified = res.verified and not unverified
+    return res
 
 
 # ================================================================ MCP tools
@@ -1650,17 +1986,21 @@ READ_ONLY = {"readOnlyHint": True, "openWorldHint": False}
 def register(mcp) -> None:
     @mcp.tool(name="bulk_check_subcontractors", annotations=READ_ONLY)
     def _bulk(
-        csv_text: Annotated[Optional[str], Field(description="CSV with a header row. Columns: license_number "
-                            "(required), scope_of_work, required_classification, coi_expiry, wc_required (yes/no), "
-                            "name, project_type")] = None,
+        csv_text: Annotated[Optional[str], Field(description="CSV with a header row (comma, semicolon or tab "
+                            "separated, e.g. pasted from a spreadsheet). Columns: license_number (required), "
+                            "scope_of_work, required_classification, coi_expiry, wc_required (yes/no), name, "
+                            "project_type. Common headers like 'License #', 'Trade', 'COI Exp' are recognized")] = None,
         rows: Annotated[Optional[list[SubInput]], Field(description="Same data as a list of objects instead of CSV")] = None,
         as_of: Annotated[Optional[str], Field(description="Evaluate as of this ISO date (default today in California)")] = None,
     ) -> BulkSubResult:
-        """Prequalify a whole subcontractor list against CSLB license data. For each sub: license status, class vs
-        scope (given, or inferred from scope_of_work), liability insurance expiry, workers' comp, bond, and the 2028
-        workers' comp change. Returns a per-sub risk table (do_not_use / high / medium / low, sorted worst first)
-        with problems and an action for each, counts by risk, grouped top actions and a markdown table. A license
-        missing from a partial copy of CSLB data is reported as 'confirm on CSLB site', never as unlicensed."""
+        """Prequalify a whole subcontractor list against CSLB license data. Give csv_text OR rows. For each sub:
+        license status and expiration, class vs work (required_classification as a code like 'C-10' or a class
+        name like 'Electrical'; otherwise inferred from scope_of_work), liability insurance expiry ('TBD' counts as
+        missing), workers' comp, bond, and the 2028 end of the workers' comp exemption. Returns rows sorted worst
+        first, each with risk (do_not_use / high / medium / low), problems, warnings and one action; counts by
+        risk; grouped top actions; and a markdown table to show the user. A sub holding several classes is matched
+        piece by piece. A license missing from a partial copy of CSLB data (or while it is still loading) is
+        reported as 'confirm on the CSLB site', never as unlicensed."""
         return bulk_check_subcontractors(csv_text, rows, as_of)
 
     @mcp.tool(name="classification_for_scope", annotations=READ_ONLY)
@@ -1688,7 +2028,8 @@ def register(mcp) -> None:
         employee_count: Annotated[int, Field(ge=0, description="Employees (any, incl. part-time)")] = 0,
         member_count_for_llc: Annotated[Optional[int], Field(ge=0, description="LLC only: persons listed as personnel "
                                         "of record (officers, managers, members, qualifiers)")] = None,
-        classifications: Annotated[Optional[list[str]], Field(description="Classes held, e.g. ['B', 'C-10']")] = None,
+        classifications: Annotated[Optional[list[str] | str], Field(description="Classes held, e.g. ['B', 'C-10'] "
+                                   "or 'B, C-10'")] = None,
         license_expiration_date: Annotated[Optional[str], Field(description="Expiration date on the license (ISO)")] = None,
         has_qualifier: Annotated[bool, Field(description="A qualifying individual is currently on the license")] = True,
         qualifier_is_rme_or_rmo: Annotated[bool, Field(description="The qualifier is an RME or RMO (or LLC "
@@ -1696,7 +2037,9 @@ def register(mcp) -> None:
         qualifier_is_employee_rme: Annotated[bool, Field(description="The qualifier is specifically an RME (employee)")] = False,
         qualifier_ownership_percent: Annotated[Optional[float], Field(ge=0, le=100, description="RMO's % of voting "
                                                "stock (corporation) or LLC qualifier's % membership interest")] = None,
-        license_status: Annotated[Literal["active", "inactive"], Field(description="License status")] = "active",
+        license_status: Annotated[Literal["active", "inactive"], Field(description="'inactive' only if the "
+                                  "license was placed on inactive status; an expired license is 'active' with a past "
+                                  "license_expiration_date")] = "active",
         employs_home_improvement_salespersons: Annotated[bool, Field(description="Employs registered HIS salespeople")] = False,
         changes: Annotated[Optional[list[ChangeEvent]], Field(description="Recent record changes with dates, for the "
                            "CSLB notice deadlines (qualifier_left, business_address, mailing_address, business_name, "
@@ -1708,7 +2051,8 @@ def register(mcp) -> None:
         the math), workers' comp certificate vs exemption (mandatory classes, RME, the 2028 end of the exemption),
         renewal date and fees (on time, late, 90-day retroactive window, 5-year limit), and CSLB change-notice
         deadlines (90 days; 30 for mailing address; qualifier replacement). Returns line items, a sorted deadline
-        list with days remaining, actions and the licensed people involved."""
+        list (due date, weekday, act-by weekday, days remaining, consequence), actions and the licensed people
+        involved."""
         return company_license_obligations(
             entity_type, employee_count, member_count_for_llc, classifications, license_expiration_date,
             has_qualifier, qualifier_is_rme_or_rmo, as_of, license_status=license_status,
@@ -1745,7 +2089,8 @@ def register(mcp) -> None:
         everything paid), the CSLB citation range (B&P 7028.7), criminal fines by prior convictions (B&P 7028),
         advertising, disaster and public-bid add-ons, and the 4-year prosecution window. With
         perspective=hiring_contractor it returns the hiring licensee's B&P 7118 citation range and related risks.
-        Returns line items with low/high dollars and the math, totals, non-money consequences and actions."""
+        Returns line items with low/high dollars and the math, totals (an alternative charge for the same act, such
+        as 7028.16 vs 7028, is counted once), non-money consequences and actions."""
         return unlicensed_contracting_exposure(
             contract_price_usd, scope, has_license, amount_paid_usd, requires_building_permit,
             part_of_larger_project_or_split, advertises_as_contractor, has_employees_or_helpers,

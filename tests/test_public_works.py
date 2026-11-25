@@ -367,7 +367,7 @@ def test_sb909_flag_follows_job_dates():
 
 
 def test_input_validation():
-    with pytest.raises(ValueError, match="before start_date"):
+    with pytest.raises(ValueError, match="start_date .* is after estimated_completion_date"):
         pw.public_works_readiness(100_000, "city", True, "construction", "2027-02-01", True,
                                   estimated_completion_date="2027-01-01", as_of=AS_OF)
     with pytest.raises(ValueError, match="ISO date"):
@@ -422,7 +422,8 @@ def test_penalties_combined_exposure():
     # low = 1,920+150+5,400+2,600+3,000+2,000+1,200+0 = 16,270; high = 9,600+150+5,400+4,000+3,000+2,000+1,200+5,000
     assert (r.penalties_low_usd, r.penalties_high_usd) == (16_270, 30_350)
     assert (r.back_wages_usd, r.liquidated_damages_usd, r.total_low_usd, r.total_high_usd) == (3450, 0, 19_720, 33_800)
-    assert r.verified is True and len(r.debarment_risk) == 2
+    # records were produced (11/5), so no LC 1777.1(c) records debarment; the apprenticeship one stays
+    assert r.verified is True and len(r.debarment_risk) == 1 and "apprenticeship" in r.debarment_risk[0]
 
 
 def test_penalty_tiers_caps_and_liquidated_damages():
@@ -467,9 +468,9 @@ def test_cpr_penalty_runs_until_produced_and_sb909_flag():
 def test_das142_send_by_counts_back_from_the_start_of_the_day():
     # Thu 2/4/2027: 72 weekday hours before 12:00 a.m. Thu = Wed 2/3 + Tue 2/2 + Mon 2/1 -> window opens 12:00 a.m.
     # Mon 2/1, so the last day to send is the weekday before: Fri 1/29
-    assert pw._das142_send_by(date(2027, 2, 4), 72) == (date(2027, 1, 29), date(2027, 2, 1))
+    assert pw._das142_send_by(date(2027, 2, 4), 72) == (date(2027, 1, 29), date(2027, 2, 1), [])
     # Tue 3/2/2027: Mon 3/1 + Fri 2/26 + Thu 2/25 -> window opens Thu 2/25; send by Wed 2/24
-    assert pw._das142_send_by(date(2027, 3, 2), 72) == (date(2027, 2, 24), date(2027, 2, 25))
+    assert pw._das142_send_by(date(2027, 3, 2), 72) == (date(2027, 2, 24), date(2027, 2, 25), [])
     r = school_remodel()
     assert "send it by the end of 2027-01-05" in task(r, "Send DAS 142").due_rule
 
@@ -573,6 +574,175 @@ def test_penalties_sb909_flag_is_per_section():
     assert pw.prevailing_wage_penalties(overtime_violation_worker_days=4, as_of="2027-02-01").verified is True
 
 
+# ---------------------------------------------------------------- code / realism review fixes
+CITY = dict(project_value_usd=200_000, awarding_body_type="city", is_public_funds=True, work_type="construction",
+            start_date="2027-02-01", contractor_dir_registered=True, dir_registration_expiry="2027-06-30", as_of=AS_OF)
+
+
+@pytest.mark.parametrize("kw,msg", [
+    (dict(project_value_usd=float("nan")), "finite"),
+    (dict(project_value_usd=float("inf")), "finite"),
+    (dict(prime_bid_usd=0), "prime_bid_usd must be more than 0"),
+    (dict(work_type="painting"), "work_type must be one of"),
+    (dict(your_role="gc"), "your_role must be one of"),
+    (dict(awarding_body_type="town"), "awarding_body_type must be one of"),
+    (dict(bid_opening_date="2027-03-01"), r"bid_opening_date \(2027-03-01\) is after start_date"),
+    (dict(bid_opening_date="2026-12-20", award_date="2026-12-10"), "bid_opening_date .* is after award_date"),
+    (dict(contract_execution_date="2027-09-01", estimated_completion_date="2027-05-01"),
+     "contract_execution_date .* is after estimated_completion_date"),
+    # craft hours are checked even when the apprentice ratio does not apply ($20,000 < $30,000)
+    (dict(project_value_usd=20_000, journeyman_hours_by_craft={"laborer": -5}), "journeyman hours for 'laborer'"),
+    (dict(your_role="subcontractor", your_contract_usd=500_000), "PRIME contract amount"),
+    (dict(awarding_body_type="private_developer", public_subsidy_usd=500_000), "total project cost"),
+    (dict(awarding_body_type="private_developer", project_value_usd=0, public_subsidy_usd=0), "more than 0"),
+])
+def test_readiness_rejects_impossible_input(kw, msg):
+    with pytest.raises(ValueError, match=msg):
+        pw.public_works_readiness(**{**CITY, **kw})
+
+
+def test_das142_skips_holidays_and_marks_the_date_unverified():
+    # Tue 9/8/2026: Mon 9/7 is Labor Day, so 72 working-day hours = Fri 9/4 + Thu 9/3 + Wed 9/2 -> window opens
+    # 12:00 a.m. Wed 9/2 -> send by Tue 9/1
+    assert pw._das142_send_by(date(2026, 9, 8), 72) == (date(2026, 9, 1), date(2026, 9, 2), ["2026-09-07 Labor Day"])
+    # Tue 7/7/2026: July 4 is a Saturday, observed Fri 7/3 -> Mon 7/6 + Thu 7/2 + Wed 7/1 -> send by Tue 6/30
+    assert pw._das142_send_by(date(2026, 7, 7), 72)[0] == date(2026, 6, 30)
+    # Mon 11/30/2026: Thanksgiving Thu 11/26 and Fri 11/27 skipped -> Wed 11/25 + Tue 11/24 + Mon 11/23 -> Fri 11/20
+    assert pw._das142_send_by(date(2026, 11, 30), 72)[0] == date(2026, 11, 20)
+    # Job starting Mon 1/4/2027: Fri 1/1 New Year's Day skipped -> Thu 12/31 + Wed 12/30 + Tue 12/29 -> Mon 12/28
+    r = school_remodel(start_date="2027-01-04")
+    t = task(r, "Send DAS 142")
+    assert (r.apprenticeship.das142_request_by, t.due) == ("2026-12-28", "2026-12-28")
+    assert "skipping 2027-01-01 New Year's Day" in t.due_rule and not t.verified
+    assert r.unverified_values == ["holidays"] and r.verified is False
+    assert any("UNVERIFIED" in n and "holidays" in n for n in r.notes)
+    # No holiday in the window (the 1/11 start): the DAS 142 date stays verified and nothing is listed
+    r = school_remodel()
+    assert task(r, "Send DAS 142").verified and r.unverified_values == []
+    assert pw.UNVERIFIED["holidays"]["source"].startswith("https://")
+
+
+def test_weekend_and_holiday_due_dates_get_a_finish_early_tip():
+    r = school_remodel()
+    # Training fund: 15th of the month after the January start = Mon 2/15/2027, Presidents' Day. The legal date stays.
+    fund = task(r, "Pay apprenticeship training fund")
+    assert fund.due == "2027-02-15" and "Presidents' Day (a holiday): finish it the working day before" in fund.due_rule
+    # Hours statement: 8/31/2027 + 60 = Sat 10/30/2027
+    assert "falls on a Saturday" in task(r, "Send the verified statement").due_rule
+    # The awarding body's own retention date and the 5-year record date get no tip
+    assert "falls on" not in task(r, "Awarding body releases").due_rule
+    assert "falls on" not in task(r, "Keep all project").due_rule
+
+
+def test_zero_hour_craft_needs_no_dispatch_request_and_unused_crafts_are_noted():
+    # Electricians 0 h -> 0 apprentice h, no DAS 142; laborers 500 h / 5 = 100 h, request max(8, 20 = 20%) = 20 h
+    r = pw.public_works_readiness(**{**CITY, "journeyman_hours_by_craft": {"electrician": 0, "laborer": 500}})
+    crafts = {c.craft: c for c in r.apprenticeship.crafts}
+    elec = crafts["electrician"]
+    assert (elec.required_apprentice_hours, elec.das142_min_request_hours) == (0, None)
+    assert (crafts["laborer"].required_apprentice_hours, crafts["laborer"].das142_min_request_hours) == (100, 20)
+    # $28,000 job: ratio does not apply, so the craft hours given are reported as unused
+    r = pw.public_works_readiness(**{**CITY, "project_value_usd": 28_000, "journeyman_hours_by_craft": {"laborer": 80}})
+    assert any("journeyman_hours_by_craft was not used" in n for n in r.notes)
+
+
+def test_unregistered_bid_before_work_starts_shows_no_daily_exposure():
+    # Bid opened 11/10 unregistered, work starts 2/1/2027: $2,000 penalty fee, no work days yet -> $2,000 to $2,000
+    r = pw.public_works_readiness(**{**CITY, "contractor_dir_registered": False, "dir_registration_expiry": None,
+                                     "bid_opening_date": "2026-11-10"})
+    x = line(r, "Penalty exposure")
+    assert (r.dir_registration.penalty_low_usd, r.dir_registration.penalty_high_usd) == (2000, 2000)
+    assert "no days worked yet (work starts 2027-02-01" in x.math and "2027-02-01 to 2026-11-25" not in x.math
+    # An expiry date given with contractor_dir_registered=False is not silently dropped
+    r = pw.public_works_readiness(**{**CITY, "contractor_dir_registered": False,
+                                     "dir_registration_expiry": "2026-06-30"})
+    assert any("2026-06-30 was ignored" in n for n in r.dir_registration.notes)
+
+
+def test_bid_stage_tasks_move_to_the_next_milestone_once_the_bid_has_opened():
+    subs = [{"name": "No Number Electric", "license_number": "9", "bid_amount_usd": 40_000,
+             "portion_of_work": "electrical"}]
+    # Public body, no public funds, bid opened 11/10: the coverage determination is due before work starts (2/1)
+    r = pw.public_works_readiness(**{**CITY, "is_public_funds": False, "bid_opening_date": "2026-11-10",
+                                     "subcontractors": subs})
+    assert task(r, "Get a written coverage determination").due == "2027-02-01"
+    # The 24-hour correction window closed 11/11, so no "correct the sub list" task; the sub's problem is still shown
+    assert not any(t.task.startswith("Correct any inadvertent") for t in r.checklist)
+    assert "No DIR registration number" in r.subcontractor_listing.subs[0].problems[0]
+
+
+def test_retention_pass_through_wording_by_role():
+    p = pw.public_works_readiness(**CITY)
+    s = pw.public_works_readiness(**{**CITY, "your_role": "subcontractor", "your_contract_usd": 30_000})
+    assert task(p, "Pass each sub's share").who == "you (prime)"
+    t = task(s, "Collect your retention share")
+    assert t.who.startswith("the prime (to you)") and "7 days" in t.due_rule
+    # 5% x $30,000 subcontract = $1,500
+    assert s.retention.max_total_retention_usd == 1500
+
+
+def test_de_minimis_percent_just_under_the_cap_is_not_printed_as_the_cap():
+    # $799,999 / $40,000,000 = 1.9999975% < 2% (all single-family) -> de minimis; 2 decimals would print "2.00%"
+    r = pw.public_works_readiness(40_000_000, "private_developer", True, "construction", "2027-03-01", False,
+                                  as_of=AS_OF, public_subsidy_usd=799_999, all_single_family=True)
+    m = line(r, "Public subsidy").math
+    assert r.coverage.public_work is False and "2.00%" not in m and "1.99999" in m
+
+
+def test_apprentice_hours_input_checks_and_threshold_note():
+    with pytest.raises(ValueError, match="total for ALL crafts"):
+        pw.apprentice_hours_required(100, project_journeyman_hours=50, as_of=AS_OF)
+    with pytest.raises(ValueError, match="finite"):
+        pw.apprentice_hours_required(float("nan"), as_of=AS_OF)
+    # $20,000 < $30,000: 100 / 5 = 20 h still shown, flagged as not applying
+    r = pw.apprentice_hours_required(100, prime_contract_usd=20_000, as_of=AS_OF)
+    assert r.applies is False and r.required_apprentice_hours == 20
+    assert any("do not apply to this job" in n for n in r.notes)
+    # 10 h all overtime -> 0 counted, 0 required: no "under 40 hours" exemption note
+    r = pw.apprentice_hours_required(10, 10, as_of=AS_OF)
+    assert r.required_apprentice_hours == 0 and r.das142_min_request_hours is None
+    assert not any("PROJECTS under" in n for n in r.notes)
+
+
+@pytest.mark.parametrize("kw,msg", [
+    (dict(cpr_workers=3, cpr_request_received_date="2026-11-01", cpr_days_late=5), "not both"),
+    (dict(cpr_workers=3, cpr_produced_date="2026-11-10"), "needs cpr_request_received_date"),
+    (dict(cpr_workers=3, cpr_request_received_date="2026-11-10", cpr_produced_date="2026-11-01"),
+     "cpr_request_received_date .* is after cpr_produced_date"),
+    (dict(cpr_workers=3, cpr_request_received_date="2026-12-01"), "is after as_of"),
+    (dict(underpaid_worker_days=2.5), "whole number"),
+    (dict(unpaid_wages_usd=float("nan")), "finite"),
+    (dict(ecpr_days_late=-1), "finite number 0 or more"),
+])
+def test_penalties_reject_impossible_input(kw, msg):
+    with pytest.raises(ValueError, match=msg):
+        pw.prevailing_wage_penalties(**kw, as_of=AS_OF)
+
+
+def test_penalty_notes_for_half_given_facts_and_records_debarment():
+    # cpr_workers alone: no request date or days late, so no LC 1776(h) line, and a note says why
+    r = pw.prevailing_wage_penalties(cpr_workers=4, as_of=AS_OF)
+    assert r.lines == [] and any("cpr_workers was given without" in n for n in r.notes)
+    r = pw.prevailing_wage_penalties(unpaid_60_days_after_assessment=True, as_of=AS_OF)
+    assert any("needs unpaid_wages_usd" in n for n in r.notes)
+    # Still missing (received 11/1, due 11/11, 14 days late on 11/25): records debarment risk shown
+    missing = pw.prevailing_wage_penalties(cpr_workers=3, cpr_request_received_date="2026-11-01", as_of=AS_OF)
+    assert any("1777.1(c)" in d for d in missing.debarment_risk)
+    # Produced 11/16 (5 days late): $100 x 3 x 5 = $1,500, no records debarment risk
+    done = pw.prevailing_wage_penalties(cpr_workers=3, cpr_request_received_date="2026-11-01",
+                                        cpr_produced_date="2026-11-16", as_of=AS_OF)
+    assert done.penalties_high_usd == 1500 and done.debarment_risk == []
+
+
+def test_tool_descriptions_come_from_the_rulebook():
+    docs = pw._tool_docs()
+    cap = core.rule("ecpr-late-penalty").param("max_per_project_usd")
+    assert f"${cap:,.0f} per project" in docs["penalties"] and f"${cap:,.0f}" in docs["penalties"]
+    fee = core.rule("dir-registration-fee").param("fee_per_fiscal_year_usd")
+    assert f"${fee:,.0f} per fiscal year, 1-3 years" in docs["readiness"]
+    assert "1:5" in docs["hours"] and "under 40 journeyman hours" in docs["hours"]
+
+
 # ---------------------------------------------------------------- rulebook wiring
 def test_every_rule_id_exists_in_rulebook():
     consts = {v for k, v in vars(pw).items() if k.isupper() and isinstance(v, str) and "-" in v and " " not in v}
@@ -598,8 +768,26 @@ def test_register_and_call_through_mcp_client():
             hours = await c.call_tool("apprentice_hours_required", {"journeyman_hours": 30,
                                                                     "project_journeyman_hours": 1280})
             pen = await c.call_tool("prevailing_wage_penalties", {"underpaid_worker_days": 48, "as_of": AS_OF})
-            return names, ready.structured_content, hours.structured_content, pen.structured_content
-    names, ready, hours, pen = asyncio.run(run())
+            # hostile input comes back as a tool error, not a crash
+            base = {"project_value_usd": 200_000, "awarding_body_type": "city", "is_public_funds": True,
+                    "work_type": "construction", "start_date": "2027-02-01", "contractor_dir_registered": True}
+            bad = [await c.call_tool(name, args, raise_on_error=False) for name, args in [
+                ("public_works_readiness", {**base, "project_value_usd": "Infinity"}),
+                ("public_works_readiness", {**base, "journeyman_hours_by_craft": {"laborer": -5}}),
+                ("public_works_readiness", {**base, "start_date": "next Monday"}),
+                ("prevailing_wage_penalties", {"underpaid_worker_days": 4.5}),
+                ("prevailing_wage_penalties", {"cpr_workers": 2, "cpr_produced_date": "2026-11-10"}),
+            ]]
+            # strings that are numbers are accepted (lax JSON clients)
+            lax = await c.call_tool("apprentice_hours_required", {"journeyman_hours": "1000", "as_of": AS_OF})
+            tool = next(t for t in await c.list_tools() if t.name == "prevailing_wage_penalties")
+            return (names, ready.structured_content, hours.structured_content, pen.structured_content, bad,
+                    lax.structured_content, tool.description)
+    names, ready, hours, pen, bad, lax, desc = asyncio.run(run())
+    assert all(r.is_error for r in bad)
+    assert "ISO date" in bad[2].content[0].text and "needs cpr_request_received_date" in bad[4].content[0].text
+    assert lax["required_apprentice_hours"] == 200                                          # 1,000 / 5
+    assert "$5,000 per project" in desc                                                     # from the rulebook
     assert {"public_works_readiness", "apprentice_hours_required", "prevailing_wage_penalties"} <= names
     assert ready["pwc100_due"] == "2026-12-17" and ready["subcontractor_listing"]["threshold_usd"] == 2400
     assert ready["retention"]["max_total_retention_usd"] == 24_000

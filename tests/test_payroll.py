@@ -1,5 +1,6 @@
 """Payroll module: hand-computed California Wage Order 16 / Labor Code scenarios for construction crews."""
 import asyncio
+import json
 from datetime import date, timedelta
 
 import pytest
@@ -61,7 +62,7 @@ def test_long_day_late_meal_no_second_meal_missed_rest():
     r2, _ = one("Ben", 40, day("Ben", MON + timedelta(1), "05:00", "19:00", [("11:30", "12:00")], rest=1),
                 include_unverified_penalties=False)
     assert r2.exposure_high_usd == 10000.0 and r2.verified is True
-    assert any("overtime-payment-deadline" in f for f in r.fixes)
+    assert any("overtime-payment-deadline" in n for n in r.notes)     # a timing note, not a fix (nothing is wrong)
 
 
 # ---------------------------------------------------------------- weekly / 7th day
@@ -463,6 +464,179 @@ def test_sick_leave_not_usable_until_covered_even_after_90th_day():
     assert r.accrued_hours == 5.33 and r.usable_now_hours == 0
     r = p.sick_leave_status(160, 0, "2026-08-01", as_of=AS_OF, days_worked=30)
     assert r.covered and r.can_use_now and r.usable_now_hours == 5.33
+
+
+# ---------------------------------------------------------------- code/realism review: hostile and messy input
+def test_fractional_minutes_show_math_that_reproduces_the_cents():
+    # 06:00-14:50 minus a 30-min lunch = 8 h 20 min -> 8 h regular + 20 min (1/3 h) at 1.5x, three days at $30.
+    # Day: 8 x 30 + (1/3) x 45 = 240 + 15 = 255.00. Shown as 0.3333 h (0.33 h x 45 would be 14.85, off by 15 cents).
+    # Totals from exact minutes: 3 x 8:20 = 25.00 h (not 3 x 8.33 = 24.99); OT 3 x 20 min = 1.00 h;
+    # wages 3 x 255 = 765.00; OT premium 1 h x 0.5 x 30 = 15.00.
+    recs = [day("Ana", MON + timedelta(i), "06:00", "14:50", [("11:00", "11:30")]) for i in range(3)]
+    _, e = one("Ana", 30, *recs)
+    assert "0.3333 h x $45.00" in e.days[0].explanation[1] and e.days[0].wages_due_usd == 255.0
+    assert (e.total_hours, e.regular_hours, e.overtime_hours) == (25.0, 24.0, 1.0)
+    assert e.wages_due_usd == 765.0 and e.overtime_premium_usd == 15.0
+    ot_line = next(x for x in e.line_items if x.item.startswith("Overtime hours"))
+    assert ot_line.math == "1 h x $45.00 = $45.00"
+
+
+def test_timeclock_formats_from_real_exports_are_accepted():
+    # Every variant is the same 06:00-14:30 day with a 11:00-11:30 lunch: 8 h x $30 = $240.
+    variants = [dict(start="0600", end="1430"), dict(start="2026-11-02 06:00", end="2026-11-02 14:30"),
+                dict(start="11/02/2026 6:00 AM", end="11/02/2026 2:30 PM"),
+                dict(start="2026-11-02T06:00:00-08:00", end="2026-11-02T14:30:00Z")]
+    for v in variants:
+        rec = {**day("Ana", MON, "06:00", "14:30", [("11:00", "11:30")]), **v}
+        assert one("Ana", 30, rec)[1].wages_due_usd == 240.0, v
+    rec = {**day("Ana", "Nov 2, 2026", "06:00", "14:30"), "meal_breaks": ["11:00 AM to 11:30 AM"]}
+    assert one("Ana", 30, rec)[1].wages_due_usd == 240.0
+    # JSON text instead of a list, a capitalized weekday and a numeric employee ID (agents send these).
+    rec = day(1042, MON, "06:00", "14:30", [("11:00", "11:30")])
+    r = p.check_payroll(json.dumps([rec]), {"1042": 30}, as_of=AS_OF, workweek_starts_on="Monday")
+    assert r.employees[0].employee == "1042" and r.total_wages_due_usd == 240.0 and r.workweek_starts_on == "monday"
+
+
+def test_tab_separated_paste_with_bom_blank_rows_and_a_totals_row():
+    # Two 8 h days (lunch 11:00-11:30) x $30 = $480. Line 3 is blank, line 4 is only tabs (both ignored), line 6 is a
+    # "Total" row with no date or times (skipped and reported so a missing day is not silent).
+    text = ("﻿Employee\tDate\tIn\tLunch Out\tLunch In\tOut\tJob\n"
+            "Ana Lopez\t11/02/2026\t0600\t1100\t1130\t1430\tJob 12\n"
+            "\n"
+            "\t\t\t\t\t\t\n"
+            "Ana Lopez\t11/03/2026\t6:00 AM\t11:00 AM\t11:30 AM\t2:30 PM\tJob 12\n"
+            "Total\t\t\t\t\t\t16.0\n")
+    r = p.check_payroll(text, {"ana lopez": 30}, as_of=AS_OF)
+    assert r.total_wages_due_usd == 480.0 and r.total_premiums_owed_usd == 0
+    assert any(n.startswith("Skipped CSV line(s) 6:") for n in r.notes)
+    # Semicolon CSV with an en dash in the meal column: 06:00-14:30 minus 11:00-11:30 = 8.0 h.
+    r = p.check_payroll("employee;date;start;end;meal_breaks\nAna;2026-11-02;06:00;14:30;11:00–11:30\n",
+                        {"Ana": 30}, as_of=AS_OF)
+    assert r.employees[0].total_hours == 8.0
+
+
+def test_bad_input_gives_a_clear_error_not_a_crash_or_a_silent_answer():
+    rec = day("Zed", MON, "06:00", "14:30", [("11:00", "11:30")])
+    cases = [
+        # same lunch typed two ways used to crash sorting Break objects (TypeError)
+        ([{**rec, "meal_breaks": [{"start": "11:00", "end": "11:30"}, {"start": "11:00 AM", "end": "11:30 AM"}]}],
+         {}, "overlaps another meal break"),
+        ([{**rec, "meal_breaks": [{"start": "11:30", "end": "11:00"}]}], {}, "ends before it starts"),
+        ([rec], {"pay_frequency": "daily"}, "pay_frequency must be one of"),
+        ([rec], {"hourly_rates": {"Zed": float("nan")}}, "finite number greater than 0"),
+        ([rec], {"gross_paid_usd": {"Zed Smith": 200}}, "have no time entries"),     # used to give owed = 0 silently
+        ([rec], {"gross_paid_usd": {"Zed": -5}}, "at least 0"),
+        ([{**rec, "employee": "  "}], {}, "employee"),
+        # Monday night shift to 05:30 and a Tuesday 05:00 start: 30 minutes would be paid twice
+        ([day("Zed", MON, "21:00", "05:30"), day("Zed", MON + timedelta(1), "05:00", "13:00")], {},
+         "run past the start"),
+        ([day("Zed", "2022-06-01", "06:00", "14:30")], {}, "before 2023-01-01"),
+    ]
+    for recs, kw, msg in cases:
+        kw = {"hourly_rates": {"Zed": 30}, **kw}
+        with pytest.raises(ValueError, match=msg):
+            p.check_payroll(recs, as_of=AS_OF, **kw)
+    two_rates = "Employee,Date,In,Out,Rate\nAna,11/02/2026,6:00 AM,2:30 PM,30\nAna,11/03/2026,6:00 AM,2:30 PM,32\n"
+    with pytest.raises(ValueError, match=r"more than one hourly rate in the CSV \(\$30.00, \$32.00\)"):
+        p.check_payroll(two_rates, as_of=AS_OF)
+    # hourly_rates overrides the column: 2 days x 8.5 h (no lunch) at $31 = 2 x (8 x 31 + 0.5 x 46.50) = 2 x 271.25
+    assert p.check_payroll(two_rates, {"ana": 31}, as_of=AS_OF).total_wages_due_usd == 542.5
+
+
+def test_rest_breaks_recorded_on_only_some_punches_are_not_a_violation():
+    # 06:00-10:00 (rest 1) + 10:30-14:30 (blank) = 8 h, 2 required. Counting the blank as 0 would invent a premium.
+    r = p.check_payroll([day("Ana", MON, "06:00", "10:00", rest=1), day("Ana", MON, "10:30", "14:30", rest=None)],
+                        {"Ana": 30}, as_of=AS_OF)
+    d = r.employees[0].days[0]
+    assert d.rest_breaks_counted is None and d.rest_premium_hours == 0 and r.total_premiums_owed_usd == 0
+    assert any("recorded on only some of this day's time entries" in x for x in d.explanation)
+
+
+def test_export_with_no_meal_punches_warns_about_auto_deducted_lunch():
+    # One in/out per day, no lunch columns: 06:00-14:30 = 8.5 h with no meal -> 1 meal premium x $30. The note says
+    # why (records showing no meal) and cites the unchecked time-records rule, so the result is unverified.
+    r, e = one("Ana", 30, day("Ana", MON, "06:00", "14:30"), include_unverified_penalties=False)
+    assert e.premiums_usd == 30.0 and e.wages_due_usd == 262.5          # 8 x 30 + 0.5 x 45
+    assert any("deducts lunch automatically" in n for n in r.notes)
+    assert "payroll-time-records-required-and-3-year-retention" in {c.rule_id for c in r.citations}
+    assert r.verified is False
+    # With a recorded lunch somewhere in the data the note does not appear.
+    r, _ = one("Ana", 30, day("Ana", MON, "06:00", "14:30", [("11:00", "11:30")]),
+               day("Ana", MON + timedelta(1), "06:00", "14:30"))
+    assert not any("deducts lunch automatically" in n for n in r.notes)
+
+
+def test_fixes_give_each_employee_the_dollar_amount_and_crew_rules_once():
+    # Jose $25: 8.5 h, no meal, 1 of 2 rest breaks -> meal $25 + rest $25. Kai $28: 8.5 h, no meal -> meal $28.
+    recs = [day("Jose", MON, "06:00", "14:30", rest=1), day("Kai", MON, "06:00", "14:30")]
+    r = p.check_payroll(recs, {"Jose": 25, "Kai": 28}, as_of=AS_OF)
+    assert r.fixes[:3] == [
+        "Jose: pay 1 meal premium hour(s) = $25.00 on the next payday, as its own line on the wage statement "
+        "[meal-period-premium-pay]",
+        "Jose: pay 1 rest premium hour(s) = $25.00 on the next payday, as its own line on the wage statement "
+        "[rest-period-premium-pay]",
+        "Kai: pay 1 meal premium hour(s) = $28.00 on the next payday, as its own line on the wage statement "
+        "[meal-period-premium-pay]"]
+    assert sum(f.startswith("Meal periods:") for f in r.fixes) == 1
+    assert sum(f.startswith("Rest breaks:") for f in r.fixes) == 1
+    # A compliant overtime week has nothing to fix: the LC 204(b) overtime timing is a note.
+    r, _ = one("Carla", 25, *carla_week())
+    assert r.fixes == [] and any("overtime-payment-deadline" in n for n in r.notes)
+
+
+def test_final_pay_next_step_and_date_order_checks():
+    # Discharged 11/20, unpaid 11/25: 5 days x $256 = $1,280 so far; max 30 x 256 = $7,680 on 11/20 + 30 = 12/20.
+    r = p.final_paycheck_deadline("discharged", "2026-11-20", 256, as_of=AS_OF)
+    assert "$1,280.00 so far (5 day(s) x $256.00)" in r.next_step and "up to $7,680.00 on 2026-12-20" in r.next_step
+    # Planned payment 12/1: 11 days late x 256 = $2,816 if willful.
+    r = p.final_paycheck_deadline("discharged", "2026-11-20", 256, paid_date="2026-12-01", as_of=AS_OF)
+    assert r.penalty_accrued_usd == 2816.0 and "$2,816.00" in r.next_step
+    assert any("planned payment date" in n for n in r.notes)
+    # Quit without notice Tue 11/24 15:00: due Fri 11/27 15:00, not yet due on 11/25.
+    r = p.final_paycheck_deadline("quit_without_notice", "2026-11-24", 256, separation_time="15:00", as_of=AS_OF)
+    assert r.status == "not_yet_due" and "ready by 2026-11-27" in r.next_step and "county" in r.next_step
+    with pytest.raises(ValueError, match="before separation_date"):
+        p.final_paycheck_deadline("discharged", "2026-11-20", 256, paid_date="2026-11-10", as_of=AS_OF)
+    with pytest.raises(ValueError, match="finite"):
+        p.final_paycheck_deadline("discharged", "2026-11-20", float("inf"), as_of=AS_OF)
+
+
+def test_sick_leave_rejects_impossible_inputs():
+    # Hired 11/1/2026 -> 25 days employed on 11/25, so 200 days worked is impossible.
+    with pytest.raises(ValueError, match="between 0 and 25"):
+        p.sick_leave_status(100, 0, "2026-11-01", as_of=AS_OF, days_worked=200)
+    with pytest.raises(ValueError, match="plan must be"):
+        p.sick_leave_status(100, 0, "2026-01-05", as_of=AS_OF, plan="pto")
+    with pytest.raises(ValueError, match="finite"):
+        p.sick_leave_status(float("nan"), 0, "2026-01-05", as_of=AS_OF)
+    with pytest.raises(ValueError, match="frontloaded_hours"):
+        p.sick_leave_status(0, 0, "2026-01-05", as_of=AS_OF, plan="frontload", frontloaded_hours=-5)
+    # frontloaded_hours with an accrual plan is ignored, and the result says so (1,500 / 30 = 50 h accrued).
+    r = p.sick_leave_status(1500, 0, "2026-01-05", as_of=AS_OF, frontloaded_hours=40)
+    assert r.accrued_hours == 50.0 and any("frontloaded_hours was ignored" in n for n in r.notes)
+
+
+def test_mcp_accepts_agent_style_arguments():
+    mcp = FastMCP("t")
+    p.register(mcp)
+    rec = {**day("Ana", MON, "06:00", "14:30"), "meal_breaks": ["11:00-11:30"]}
+
+    async def run():
+        async with Client(mcp) as c:
+            pay = await c.call_tool("check_payroll", {"records": json.dumps([rec]), "hourly_rates": {"Ana": "30"},
+                                                      "workweek_starts_on": "Monday", "pay_frequency": "Weekly",
+                                                      "as_of": AS_OF})
+            fin = await c.call_tool("final_paycheck_deadline", {"separation_type": "discharged",
+                                                                "separation_date": "2026-11-20",
+                                                                "daily_wage_usd": "256", "as_of": AS_OF})
+            bad = await c.call_tool("check_payroll", {"records": [rec], "hourly_rates": {"Ana": 30},
+                                                      "gross_paid_usd": {"Bob": 1}, "as_of": AS_OF},
+                                    raise_on_error=False)
+            return pay.structured_content, fin.structured_content, bad
+    pay, fin, bad = asyncio.run(run())
+    assert pay["total_wages_due_usd"] == 240.0 and pay["workweek_starts_on"] == "monday"   # 8 h x $30
+    assert fin["status"] == "late_unpaid" and "$1,280.00" in fin["next_step"]
+    assert bad.is_error and "have no time entries" in bad.content[0].text
 
 
 # ---------------------------------------------------------------- MCP

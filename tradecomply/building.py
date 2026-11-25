@@ -4,13 +4,16 @@
                                CRC R105.2 as the rulebook holds them; local amendments override), who may do the work
                                (B&P 7048 minor work, B&P 7044 owner-builder), smoke/CO alarm retrofit on permits over
                                $1,000, pre-1994 plumbing fixture retrofit, lead RRP / asbestos / pool flags, permit
-                               counter documents, state SMIP + BSASRF fees and school fees with the math
+                               counter documents, state SMIP + BSASRF fees and school fees with the math, and the
+                               start-work-by (permit issue + 12 months) and demolition notice send-by dates
   energy_compliance_triggers   project type + scope -> 2025 Energy Code documents (CF1R/CF2R/CF3R or NRCC/NRCI), HERS
-                               verifications, and the new single-family PV / battery-ready / heat-pump baseline
+                               verifications (ducted or ductless), and the new single-family PV / battery-ready /
+                               heat-pump baseline
   calgreen_and_stormwater      CALGreen 65% C&D diversion (with the math), low-disposal alternative, EV-capable,
                                nonresidential addition/alteration thresholds, Construction General Permit at 1 acre
-  adu_rules                    ADU/JADU size, height and setback floors, 15-business-day completeness and 60-day
-                               approval clocks, impact-fee and school-fee exemptions with the Level 1 estimate
+  adu_rules                    ADU/JADU size, height and setback floors, 15-business-day completeness (skipping any
+                               agency closures given) and 60-day approval clocks, impact-fee and school-fee exemptions
+                               with the Level 1 estimate
 
 Every legal number comes from the rulebook (core.rule(id).param(key)) at call time. The few rules the rulebook does not
 hold are in UNVERIFIED below with their official source; any result that uses one has verified=False.
@@ -60,6 +63,10 @@ ADU_60, ADU_15, ADU_MIN, ADU_CAP, ADU_HT = ("adu-60-day-deemed-approved", "adu-c
                                             "adu-height-and-setbacks")
 ADU_IMPACT, JADU, AB1308 = ("adu-impact-fee-exempt-750", "jadu-owner-occupancy-ab1154",
                             "final-inspection-10-business-days-ab1308")
+HOMEOWNER, SFD_CONTRACT, CANCEL = ("homeowner-principal-residence-exemption", "sfd-construction-contract-requirements",
+                                   "three-day-right-to-cancel-notice")
+ASB_LIC, ASB_DOSH, NESHAP_DAYS = ("asbestos-100-sqft-c22-or-certification", "asbestos-dosh-registration-100sqft",
+                                  "neshap-notification-10-working-days")
 
 ICC_CA = "https://codes.iccsafe.org/codes/california (2025 CBC/CRC Chapter 1 Div. II); https://www.dgs.ca.gov/BSC/Codes"
 # Law the rulebook does not hold. Any result that uses an entry lists it in unverified_sources and has verified=False.
@@ -97,6 +104,26 @@ UNVERIFIED = {
         "source": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=HSC&sectionNum=19211",
         "note": "New and replacement water heaters must be braced, anchored or strapped to resist falling or "
                 "horizontal displacement in an earthquake; inspectors check this at final."},
+    "civ-1101.5-d-fixture-triggers": {
+        "citation": "Civil Code 1101.5(d)(1)(A)-(C) (multifamily and commercial real property)",
+        "source": "https://law.justia.com/codes/california/code-civ/division-2/part-4/title-4/chapter-2/article-1-4/section-1101-5",
+        "addition_floor_area_increase_gt_percent": 10,
+        "note": "Pre-1994 multifamily/commercial buildings: (A) additions whose concurrent permits by the same applicant "
+                "increase the building's floor area by more than 10 percent -> replace all noncompliant fixtures in "
+                "the building; (B) alterations or improvements with an estimated permit construction cost over "
+                "$150,000 -> replace the noncompliant fixtures serving the area of the work; (C) any permitted "
+                "alteration of a room that contains noncompliant fixtures -> replace those fixtures in that room."},
+    "gov-65995-b1-assessable-space": {
+        "citation": "Gov Code 65995(b)(1)",
+        "source": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=65995",
+        "note": "Residential school fees are charged on assessable space: the square footage within the perimeter of "
+                "the residential structure, not counting a carport, walkway, garage, overhang, patio, enclosed patio, "
+                "detached accessory structure or similar structure."},
+    "gov-66313-jadu-definition": {
+        "citation": "Gov Code 66313(d) (formerly 65852.22(h)(1))",
+        "source": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=66313",
+        "note": "A junior accessory dwelling unit is a unit of no more than 500 sq ft contained entirely within a "
+                "single-family residence; it may have its own bathroom or share the residence's."},
     "calgreen-301.1.1-residential-additions": {
         "citation": "CALGreen (Title 24 Part 11) 301.1.1", "source": "https://www.dgs.ca.gov/BSC/CALGreen",
         "note": "For existing residential buildings, CALGreen mandatory measures apply to additions or alterations "
@@ -125,17 +152,26 @@ ALTERATIONS = {"alteration", "structural_repair", "reroof", "window_replacement"
                "hvac_changeout", "water_heater", "electrical", "plumbing", "solar_pv"}
 PAINT_DISTURBING = {"addition", "alteration", "structural_repair", "demolition", "window_replacement", "finish_work",
                     "reroof", "ordinary_repair"}
-KEYWORDS = {"electrical": ("electric", "outlet", "wiring", "panel", "circuit", "ev charger", "lighting"),
-            "plumbing": ("plumb", "water heater", "sewer", "drain", "toilet", "sink", "shower", "water line"),
-            "mechanical": ("hvac", "furnace", "duct", "air condition", "heat pump", "mini split", "mini-split"),
-            "gas": ("gas",)}
+# Regexes matched at a word start in the job description. Kept broad for fixtures (a missed plumbing permit is worse
+# than an extra flag) but not on carpentry/site words: "plumb and level", "wood paneling", "fence panel", "gasket",
+# "French drain", "site drainage" and "ductless" do not count.
+KEYWORDS = {"electrical": (r"electric", r"outlets?\b", r"receptacles?\b", r"wiring", r"circuits?\b",
+                           r"(?:electrical|main|service|sub|breaker|solar) ?panels?\b", r"panel (?:upgrade|replace|swap|change)",
+                           r"ev charg", r"lighting\b", r"light fixtures?\b", r"solar pv\b", r"photovoltaic"),
+            "plumbing": (r"plumbing", r"plumber", r"water heaters?\b", r"sewer", r"(?<!french )drains?\b", r"toilets?\b",
+                         r"sinks?\b", r"showers?\b", r"(?:bath)?tubs?\b", r"water lines?\b", r"re-?pip"),
+            "mechanical": (r"hvac", r"furnace", r"duct(?:s|work)?\b", r"air condition", r"heat pumps?\b", r"mini[- ]?splits?\b",
+                           r"(?:exhaust|bath) fans?\b", r"range hoods?\b"),
+            "gas": (r"gas\b",)}
+# "no power", "without electrical or plumbing", "no new gas": drop the negated words before matching.
+NEGATED = re.compile(r"\b(?:no|without)\s+(?:new\s+)?\w+(?:\s*(?:,|/|\bor\b|\band\b)\s*\w+){0,3}")
 ENGINEER = ("California-licensed civil or structural engineer (expect the building department to require stamped "
             "calculations/plans)")
 
 
 # ---------------------------------------------------------------- helpers
 def _d(value, field: str) -> Optional[date]:
-    if value is None or value == "":
+    if value is None or str(value).strip() == "":
         return None
     if isinstance(value, datetime):
         return value.date()
@@ -159,6 +195,11 @@ def _g(x) -> str:
     return f"{x:,g}" if isinstance(x, (int, float)) else str(x)
 
 
+def _round2(x: float, up: bool) -> float:
+    """2-decimal display rounded toward the failing side of a limit, so 64.996% shows 64.99% (< 65%), never 65%."""
+    return (math.ceil(x * 100 - 1e-9) if up else math.floor(x * 100 + 1e-9)) / 100
+
+
 def _num(pattern: str, text: str) -> float:
     """Pull a number the rulebook states inside a text parameter (e.g. '25 ft or ...'). Fails loudly if it moved."""
     m = re.search(pattern, str(text))
@@ -167,13 +208,30 @@ def _num(pattern: str, text: str) -> float:
     return float(m.group(1))
 
 
-def _add_business_days(d: date, n: int) -> date:
-    """Mon-Fri only. State and local holidays are NOT skipped, so the real deadline can be later (see notes)."""
+def _check(**values) -> None:
+    """Reject negative, NaN and infinite numbers with the parameter's name (None means 'not given')."""
+    for name, v in values.items():
+        if v is not None and (not math.isfinite(v) or v < 0):
+            raise ValueError(f"{name} must be a finite number of 0 or more, got {v!r}")
+
+
+def _add_business_days(d: date, n: int, closed: frozenset = frozenset()) -> date:
+    """Move n Mon-Fri days forward (n < 0: back), skipping `closed` dates. Holidays are skipped only if listed."""
+    step = 1 if n >= 0 else -1
+    n = abs(n)
     while n > 0:
-        d += timedelta(days=1)
-        if d.weekday() < 5:
+        d += timedelta(days=step)
+        if d.weekday() < 5 and d not in closed:
             n -= 1
     return d
+
+
+def _add_months(d: date, months: int) -> date:
+    """Same day `months` later; a day the month lacks (Feb 29/30/31) becomes that month's last day."""
+    y, m = divmod(d.month - 1 + months, 12)
+    y, m = d.year + y, m + 1
+    nxt = date(y + (m == 12), m % 12 + 1, 1)
+    return min(date(y, m, 1) + timedelta(days=d.day - 1), nxt - timedelta(days=1))
 
 
 class LineItem(BaseModel):
@@ -316,6 +374,8 @@ class PermitRequiredResult(_Result):
     state_fees_usd: dict[str, float] = Field(default_factory=dict)
     state_fees_total_usd: Optional[float] = None
     school_fee_estimate_usd: Optional[float] = None
+    start_work_by: Optional[str] = None
+    demolition_notice_send_by: Optional[str] = None
 
 
 def _exemption(ctx: _Ctx, t: str, ptype: str, sq_ft, fence_h, wall_h, one_story_detached, surcharge, liquids,
@@ -461,16 +521,23 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                     owner_builder: bool = False, owner_builder_work_by: OwnerBuilderWork = "owner_or_own_employees",
                     owner_intends_to_sell: bool = False, performer_advertises_or_has_employees: bool = False,
                     part_of_larger_project: bool = False, permit_application_date=None,
-                    as_of=None) -> PermitRequiredResult:
-    for name, v in (("valuation_usd", valuation_usd), ("sq_ft", sq_ft), ("fence_height_ft", fence_height_ft),
-                    ("retaining_wall_height_ft", retaining_wall_height_ft),
-                    ("height_above_grade_in", height_above_grade_in)):
-        if v is not None and v < 0:
-            raise ValueError(f"{name} cannot be negative")
+                    as_of=None, existing_building_sq_ft: Optional[float] = None,
+                    owner_lived_in_home_12_months_before_completion: Optional[bool] = None,
+                    permit_issued_date=None, demolition_start_date=None) -> PermitRequiredResult:
+    _check(valuation_usd=valuation_usd, sq_ft=sq_ft, fence_height_ft=fence_height_ft,
+           retaining_wall_height_ft=retaining_wall_height_ft, height_above_grade_in=height_above_grade_in,
+           existing_building_sq_ft=existing_building_sq_ft)
     if stories < 1:
         raise ValueError("stories must be at least 1")
     today = _d(as_of, "as_of") or logic.today_ca()
-    app = _d(permit_application_date, "permit_application_date") or today
+    applied = _d(permit_application_date, "permit_application_date")
+    issued = _d(permit_issued_date, "permit_issued_date")
+    demo_start = _d(demolition_start_date, "demolition_start_date")
+    if issued and applied and issued < applied:
+        raise ValueError(f"permit_issued_date {issued} is before permit_application_date {applied}")
+    app = applied or issued or today
+    if year_built is not None and not 1700 <= year_built <= today.year:
+        raise ValueError(f"year_built must be the existing building's year (1700-{today.year}), got {year_built}")
     ctx, t, val = _Ctx(), structure_type, valuation_usd
     dwelling = project_type in RESIDENTIAL
 
@@ -478,7 +545,11 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
     eff = date.fromisoformat(ctx.P(EDITION, "effective_date"))
     edition = ctx.P(EDITION, "edition") if app >= eff else ctx.P(EDITION, "prior_edition")
     ctx.item("Code edition", f"{edition} California Building Standards Code",
-             f"permit application {app.isoformat()} {'>=' if app >= eff else '<'} {eff.isoformat()}", EDITION)
+             f"permit application {app.isoformat()}{' (issue date; application date not given)' if not applied and issued else ''} "
+             f"{'>=' if app >= eff else '<'} {eff.isoformat()}", EDITION)
+    if not applied and issued and app >= eff:
+        ctx.note(f"The code edition follows the application date, not the issue date: if the application went in before "
+                 f"{eff.isoformat()}, the {ctx.P(EDITION, 'prior_edition')} codes apply. Give permit_application_date.")
 
     # -- building permit
     det, basis = _exemption(ctx, t, project_type, sq_ft, fence_height_ft, retaining_wall_height_ft,
@@ -494,11 +565,8 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                  "building permit does not exempt electrical, plumbing or mechanical work from its own permit.", EXEMPT)
 
     # -- trade permits
-    trades = []
-    text = work_description.lower()
-    for trade, words in KEYWORDS.items():
-        if any(re.search(rf"(?<!no )\b{re.escape(w)}", text) for w in words):
-            trades.append(trade)
+    text = NEGATED.sub(" ", work_description.lower())
+    trades = [trade for trade, pats in KEYWORDS.items() if any(re.search(r"\b" + p, text) for p in pats)]
     if t in MEP_TYPES:
         trades.insert(0, MEP_TYPES[t])
     if includes_electrical_plumbing_or_gas and not trades:
@@ -519,7 +587,8 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
         dq.append("the work is part of a larger operation or split into smaller contracts")
     lic, lic_basis, minor = None, "", None
     if owner_builder:
-        lic, lic_basis = _owner_builder(ctx, owner_builder_work_by, owner_intends_to_sell, required, dwelling)
+        lic, lic_basis = _owner_builder(ctx, owner_builder_work_by, owner_intends_to_sell, required, dwelling, t,
+                                        owner_lived_in_home_12_months_before_completion, val, lt, dq)
     elif required:
         ctx.P(MINOR_PERMIT, "permit_required_means_license_required")
         lic, minor = True, False
@@ -534,7 +603,12 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
         ctx.item("Minor work exemption price test (B&P 7048)", _usd(val),
                  f"{_usd(val)} {'<' if under else '>='} {_usd(lt)} (labor + materials + all other items, all contracts "
                  "on the project, materials counted even if the owner buys them)", MINOR_PERMIT)
-        if under and not dq:
+        if under and not dq and det == "not_required" and trades:
+            lic = minor = None
+            lic_basis = (f"Under {_usd(lt)} and exempt from a building permit, but the {', '.join(trades)} part likely "
+                         "needs its own permit; if it does, a licensed contractor is required at any price (B&P 7048). "
+                         "Ask the building department before using an unlicensed person.")
+        elif under and not dq:
             lic, minor = (False, True) if det == "not_required" else (None, None)
             lic_basis = (f"Under {_usd(lt)} and no permit needed: an unlicensed person may do it as minor work (B&P "
                          "7048), but only without employees, without advertising as a contractor, and not as part of "
@@ -580,8 +654,9 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                      f"{'alarms required before final' if smoke else 'not triggered'}", ALARMS)
             if smoke:
                 co = has_fuel_burning_appliance_or_attached_garage
+                co_text = devices[1].split(" (")[0] if co else devices[1]
                 ctx.step(f"Install/verify {devices[0]} throughout the existing dwelling"
-                         + (f" and {devices[1]}" if co is not False else "")
+                         + (f" and {co_text}" if co is not False else "")
                          + "; owner signs the alarm certificate", "Contractor and owner", "Before final inspection",
                          ALARMS)
                 if co is None:
@@ -589,6 +664,10 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                              "garage; set has_fuel_burning_appliance_or_attached_garage.")
                 ctx.note("Hard-wired, interconnected alarms are generally required only where wall or ceiling finishes "
                          "are removed; battery alarms usually satisfy the retrofit otherwise (local practice).")
+            else:
+                ctx.note(f"At or under {_usd(gt)} the alarm retrofit is not triggered by the valuation rule, but the CRC "
+                         "R314.2.2 text has no dollar figure and some building departments ask for smoke/CO alarms on "
+                         "any permitted alteration; check the inspection card.", ALARMS)
 
     # -- pre-1994 plumbing fixtures (Civil Code 1101.4 / 1101.5)
     fixtures = None
@@ -604,6 +683,24 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                 fixtures = year_built < cutoff.year or None
                 ctx.step(f"Replace {ctx.P(FIXTURES, 'single_family_scope')} with water-conserving fixtures",
                          "Plumbing contractor (C-36) or GC", ctx.P(FIXTURES, "timing"), FIXTURES)
+            elif t == "addition":
+                key = "civ-1101.5-d-fixture-triggers"
+                u = ctx.U(key)
+                lim = u["addition_floor_area_increase_gt_percent"]
+                if sq_ft and existing_building_sq_ft:
+                    over = sq_ft * 100 > lim * existing_building_sq_ft + 1e-9  # exact test; display is rounded
+                    inc = _round2(sq_ft / existing_building_sq_ft * 100, up=True)
+                    fixtures = (over and year_built < cutoff.year) or None
+                    ctx.item("Pre-1994 fixture retrofit addition floor-area test", f"{inc:g}%",
+                             f"{_g(sq_ft)} added / {_g(existing_building_sq_ft)} existing sq ft x 100 = {inc:g}% "
+                             f"{'>' if over else '<='} {_g(lim)}% -> "
+                             f"{'replace all noncompliant fixtures in the building' if over else 'building-wide trigger not met'}",
+                             key)
+                else:
+                    ctx.note(f"Give sq_ft and existing_building_sq_ft: a multifamily/commercial addition triggers the "
+                             f"building-wide fixture retrofit when it adds more than {_g(lim)}% to the floor area "
+                             "(count all concurrent permits by the same applicant).")
+                ctx.note(u["note"])
             else:
                 trig = ctx.P(FIXTURES, "multifamily_commercial_valuation_trigger_usd")
                 if val is not None:
@@ -613,9 +710,10 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                              f"{_usd(val)} {'>' if over else '<='} {_usd(trig)} -> "
                              f"{'replace fixtures serving the altered area' if over else 'area trigger not met'}",
                              FIXTURES)
-                ctx.note(f"Multifamily/commercial scope: {ctx.P(FIXTURES, 'multifamily_commercial_scope')} (the "
-                         "altered-room part is not confirmed; ask plan check).", FIXTURES)
-        ctx.item("Built on or before 1994-01-01?", str(year_built),
+                ctx.note(f"Multifamily/commercial scope: {ctx.P(FIXTURES, 'multifamily_commercial_scope')}. Even under "
+                         f"{_usd(trig)}, every noncompliant fixture in a room the permit alters must be replaced, so "
+                         "plan for it in any altered restroom or kitchen.", FIXTURES)
+        ctx.item(f"Built on or before {cutoff.isoformat()}?", str(year_built),
                  f"{year_built} vs {cutoff.isoformat()} -> {'yes' if year_built < cutoff.year else 'no' if year_built > cutoff.year else 'check'}",
                  FIXTURES)
     elif required and year_built is not None and t in ALTERATIONS:
@@ -641,10 +739,47 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                      "Before disturbing paint", RRP)
             ctx.use(RRP_MINOR)
             ctx.pro("EPA-certified renovator (lead RRP)")
+            if owner_builder and owner_builder_work_by == "owner_or_own_employees":
+                ctx.note("EPA RRP covers renovations performed for compensation, so an owner working on their own home "
+                         "is outside it; anyone paid to do the work (including the owner's employees) should be "
+                         "treated as covered. Use lead-safe practices either way.", RRP)
+    send_by = None
     if t == "demolition":
         days = ctx.P(AIR_DISTRICT, "lead_time_working_days")
+        count = (f"federal NESHAP working days: {ctx.P(NESHAP_DAYS, 'working_day_definition')}; the district's own "
+                 "rule controls if stricter")
+        when = f"At least {days} working days before demolition ({count})"
+        if demo_start:
+            # NESHAP working days include holidays, so only weekends are skipped. SCAQMD also states a calendar-day
+            # figure; the earlier of the two dates satisfies both.
+            cal = ctx.P(AIR_DISTRICT, "scaqmd_equivalent_calendar_days")
+            by_wd = _add_business_days(demo_start, -days)
+            by_cal = demo_start - timedelta(days=cal)
+            send = min(by_wd, by_cal)
+            send_by = send.isoformat()
+            ctx.item("Asbestos/demolition notice: postmark or deliver by", send_by,
+                     f"{demo_start.isoformat()} - {days} working days (Mon-Fri, holidays count) = {by_wd.isoformat()}; "
+                     f"- {cal} calendar days (SCAQMD) = {by_cal.isoformat()} -> earlier = {send_by}", NESHAP_DAYS)
+            ctx.use(AIR_DISTRICT)
+            when = (f"Postmarked or delivered no later than {send_by} for a {demo_start.isoformat()} start; send it "
+                    f"earlier ({count})")
+            if send < today <= demo_start:
+                ctx.note(f"The notice date {send_by} has passed: demolition cannot start on {demo_start.isoformat()}; "
+                         f"send the notice now and move the start to {days} working days after it is delivered.",
+                         NESHAP_DAYS)
         ctx.step("Get an asbestos survey and send the asbestos/demolition notification to the local air district",
-                 "Owner or demolition contractor", f"At least {days} working days before demolition", AIR_DISTRICT)
+                 "Owner or demolition contractor", when, AIR_DISTRICT)
+        ctx.use(NESHAP_DAYS)
+        asb = ctx.P(ASB_LIC, "threshold_sq_ft")
+        ctx.step(f"If the survey finds {asb} sq ft or more of asbestos-containing material, the abatement must be done "
+                 "by a contractor holding the C-22 Asbestos Abatement classification (or whose qualifier passed the "
+                 "asbestos certification exam) and registered with Cal/OSHA for that work "
+                 f"({ctx.P(ASB_DOSH, 'surface_area_sqft_gte')} sq ft or more)",
+                 "Asbestos abatement contractor (C-22 or certified, Cal/OSHA-registered)", "Before abatement starts",
+                 ASB_LIC)
+        ctx.use(ASB_DOSH)
+        ctx.pro(f"Asbestos abatement contractor (C-22, or a qualifier who passed the asbestos certification exam, "
+                f"registered with Cal/OSHA) if the survey finds {asb} sq ft or more of asbestos-containing material")
         ctx.step(f"Give the building department a copy of the air district notification, or an {ctx.P(DEMO_NOTICE, 'alternative')}",
                  "Permit applicant", "Before the demolition permit is issued", DEMO_NOTICE)
         ctx.pro("Asbestos consultant for the pre-demolition survey (air districts commonly require a Cal/OSHA Certified "
@@ -663,7 +798,7 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                  "energy_compliance_triggers for the list.", HVAC)
 
     # -- permit counter documents, permit life, contract
-    fees, school = {}, None
+    fees, school, start_by = {}, None, None
     if required:
         ctx.step(f"Sign the license statement: license number and that it is in full force, or the basis for an "
                  f"exemption (penalty up to {_usd(ctx.P(LIC_STATEMENT, 'civil_penalty_max_usd'))})",
@@ -673,10 +808,25 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
                  + "; or ".join(ctx.P(WC_DECL, "options")), "Permit applicant", "Before permit issuance", WC_DECL)
         months, ext = (ctx.P(EXPIRE, "state_statutory_commencement_window_months"),
                        ctx.P(EXPIRE, "extension_max_days_each"))
+        gap = ctx.P(EXPIRE, "cbc_105_5_suspension_or_abandonment_days")
         ctx.note(f"Start work within {months} months of issuance or the permit expires (H&S 18938.6); extensions are "
                  f"in writing, up to {ext} days each, for justifiable cause. Once started, keep inspections moving: "
-                 "locally adopted CBC/CRC 105.5 suspends permits after long gaps.", EXPIRE)
-        if dwelling and (not owner_builder or owner_builder_work_by == "licensed_contractors"):
+                 f"locally adopted CBC/CRC 105.5 suspends or expires a permit after {gap} days without work or an "
+                 "approved inspection (check the local ordinance).", EXPIRE)
+        if issued:
+            start_by = _add_months(issued, months)
+            ctx.item("Permit: start work by", start_by.isoformat(),
+                     f"issued {issued.isoformat()} + {months} months = {start_by.isoformat()}", EXPIRE)
+            ctx.step(f"Start the permitted work (get a first inspection on record) before {start_by.isoformat()}, or "
+                     f"request a written extension (up to {ext} days) before then", "Contractor or owner-builder",
+                     f"Before {start_by.isoformat()}", EXPIRE)
+        hires = not owner_builder or owner_builder_work_by == "licensed_contractors"
+        if hires and t == "new_building" and project_type == "single_family":
+            ctx.step("Put the construction contract and every change in writing, signed by owner and contractor, with "
+                     + ", ".join(ctx.P(SFD_CONTRACT, "required_fields")) + " (new home the owner keeps at least "
+                     f"{ctx.P(SFD_CONTRACT, 'min_owner_retention_years')} year)", "Contractor", "Before work starts",
+                     SFD_CONTRACT)
+        elif hires and dwelling and t != "new_building":
             ctx.step("List each required permit in the home improvement contract and say who obtains and who pays for "
                      "it", "Contractor", "At contract signing", HIC_PERMITS)
         if val is not None and val > 0:
@@ -691,12 +841,14 @@ def permit_required(work_description: str, structure_type: WorkType, project_typ
         license_required=lic, license_basis=lic_basis, minor_work_exemption_available=minor,
         smoke_alarms_required=smoke, co_alarms_required=co, plumbing_fixture_retrofit_required=fixtures,
         lead_rrp_applies=rrp, owner_builder_warnings=ctx.warnings, state_fees_usd=fees,
-        state_fees_total_usd=_money(sum(fees.values())) if fees else None, school_fee_estimate_usd=school)
+        state_fees_total_usd=_money(sum(fees.values())) if fees else None, school_fee_estimate_usd=school,
+        start_work_by=start_by.isoformat() if start_by else None, demolition_notice_send_by=send_by)
     return _finish(res, ctx)
 
 
-def _owner_builder(ctx: _Ctx, work_by: str, sell: bool, required: Optional[bool],
-                   dwelling: bool) -> tuple[Optional[bool], str]:
+def _owner_builder(ctx: _Ctx, work_by: str, sell: bool, required: Optional[bool], dwelling: bool, t: str,
+                   lived_12: Optional[bool], val: Optional[float], lt: float,
+                   dq: list[str]) -> tuple[Optional[bool], str]:
     def w(text: str, rule_id: str) -> None:
         ctx.use(rule_id)
         ctx.warnings.append(f"{text} [{rule_id}]")
@@ -707,18 +859,33 @@ def _owner_builder(ctx: _Ctx, work_by: str, sell: bool, required: Optional[bool]
       f"(rebuttable); {conclusive} or more structures in that window is conclusive.", OB_SALE)
     duties = ctx.P(OB_DUTIES, "responsibilities")
     w("Signing as owner-builder makes the owner the responsible party: " + "; ".join(duties) + ".", OB_DUTIES)
-    if dwelling:
-        w(f"Home-improvement owner-builders must have lived in the home {ctx.P(OB_DUTIES, 'principal_residence_occupancy_months_before_completion')} "
-          f"months before completion and may use the exemption on no more than "
-          f"{ctx.P(OB_DUTIES, 'max_structures_per_3_years')} structures in 3 years.", OB_DUTIES)
+    # B&P 7044(a)(3) is a separate exemption for a homeowner improving their own principal residence; it is not a
+    # condition of (a)(1) or (a)(2).
+    a3 = dwelling and t != "new_building"
+    months, mx, look = (ctx.P(HOMEOWNER, "residency_months_before_completion"), ctx.P(HOMEOWNER, "max_structures"),
+                        ctx.P(HOMEOWNER, "lookback_years")) if a3 else (None, None, None)
+    a3_terms = (f"B&P 7044(a)(3): a homeowner improving their principal residence is exempt even if they sell later, "
+                f"if the work is done before the sale, they actually lived there for the {months} months before the "
+                f"work is completed, and they have not used this exemption on more than {mx} structures more than "
+                f"once in any {look}-year period.") if a3 else ""
+    if a3:
+        w(a3_terms, HOMEOWNER)
     w("Anyone who bids the job or schedules and oversees the trades for the owner is a contractor and must be licensed "
       "(construction consultant rule).", OB_CONSULT)
     if work_by == "owner_or_own_employees":
         ctx.use(OB_SELF)
         if sell:
             w("B&P 7044(a)(1) requires that none of the work is intended or offered for sale; with a planned sale the "
-              "owner needs a license or must contract with licensed trades instead.", OB_SELF)
-            return True, "Owner-builder exemption fails: self-performed work intended for sale (B&P 7044(a)(1))."
+              "owner needs the (a)(3) homeowner exemption, a license, or licensed trades under (a)(2).", OB_SELF)
+            if a3 and lived_12:
+                return False, ("B&P 7044(a)(1) fails (work intended for sale), but the homeowner exemption applies: "
+                               + a3_terms + " Confirm the structure count.")
+            if a3 and lived_12 is None:
+                return None, ("B&P 7044(a)(1) fails (work intended for sale). Exempt only under the homeowner rule; set "
+                              "owner_lived_in_home_12_months_before_completion. " + a3_terms)
+            return True, ("Owner-builder exemption fails: self-performed work intended for sale (B&P 7044(a)(1))"
+                          + (f", and the owner has not lived in the home the {months} months the (a)(3) homeowner "
+                             "exemption needs." if a3 else "."))
         w("If the owner uses employees, the owner is their employer: payroll, withholding and workers' compensation "
           "apply. Helpers paid by the job are not employees.", OB_SELF)
         return False, "Owner-builder exemption (B&P 7044(a)(1)): owner does the work personally or with wage employees, not for sale."
@@ -729,16 +896,26 @@ def _owner_builder(ctx: _Ctx, work_by: str, sell: bool, required: Optional[bool]
           OB_TRADES)
         return False, "Owner-builder exemption (B&P 7044(a)(2)): the owner hires licensed contractors for each trade; each of them must hold the right license."
     ctx.use(MINOR_PERMIT)
-    w("Paying unlicensed workers by the job on permitted work is unlicensed contracting by them: work that needs a "
-      "permit needs a licensed contractor at any price (B&P 7048), and the owner may become their employer for workers' "
-      "compensation.", MINOR_PERMIT)
-    return True, "Unlicensed workers paid by the job may not do permitted work; hire licensed trades or employ them on payroll."
+    if required is False and val is not None and val < lt and not dq:
+        return False, (f"No permit and under {_usd(lt)}: the workers may do it as minor work (B&P 7048) if each works "
+                       "alone, does not advertise as a contractor and it is not part of a larger job.")
+    w("Paying unlicensed workers by the job is unlicensed contracting by them unless the job needs no permit and is "
+      f"under {_usd(lt)} (B&P 7048); work that needs a permit needs a licensed contractor at any price, and the owner "
+      "may become their employer for workers' compensation.", MINOR_PERMIT)
+    if required is None:
+        return None, (f"Depends on the permit: unlicensed workers may not do permitted work, or any job of {_usd(lt)} "
+                      "or more (B&P 7048).")
+    return True, "Unlicensed workers paid by the job may not do this work; hire licensed trades or employ them on payroll."
 
 
 def _state_fees(ctx: _Ctx, val: float, ptype: str, stories: int) -> dict[str, float]:
     scope1 = ctx.P(SMIP, "category_1_scope")
     max_res_stories = int(_num(r"(\d+)\s*stories", scope1))
-    cat1 = ptype in RESIDENTIAL and stories <= max_res_stories
+    # multifamily_high_rise means 4+ stories by definition (see ProjectType), so it is always Category 2.
+    cat1 = ptype in ("single_family", "multifamily_low_rise") and stories <= max_res_stories
+    if ptype == "multifamily_high_rise" and 1 < stories <= max_res_stories:
+        ctx.note(f"project_type multifamily_high_rise but stories={stories}: SMIP uses Category 2 for high-rise; if the "
+                 f"building is really {max_res_stories} stories or fewer, use multifamily_low_rise.", SMIP)
     rate = ctx.P(SMIP, "category_1_rate" if cat1 else "category_2_rate")
     smin = ctx.P(SMIP, "minimum_fee_usd")
     raw = _money(val * rate)
@@ -770,6 +947,7 @@ def _permit_school_fee(ctx: _Ctx, t: str, ptype: str, sq_ft: float, on: date) ->
                      f"{'fee on the entire ' + _g(sq_ft) + ' sq ft' if over else 'no school fee'}", SCHOOL_ADD)
             if not over:
                 return 0.0
+        ctx.note("Enter living area only: " + ctx.U("gov-65995-b1-assessable-space")["note"])
         return _school_fee(ctx, sq_ft, "residential", on, label="School fee estimate (Level 1 maximum)")
     if t == "new_building":
         return _school_fee(ctx, sq_ft, "commercial", on, label="School fee estimate (Level 1 commercial maximum)")
@@ -813,9 +991,6 @@ class EnergyResult(_Result):
     duct_system_treated_as: Optional[Literal["entirely_new", "altered"]] = None
 
 
-UNKNOWN_HERS = {"water_heater", "reroof", "window_replacement", "lighting_alteration"}
-
-
 def _hers(ctx: _Ctx, out: list, measure: str, status: str, why: str, rule_id: str) -> None:
     ctx.use(rule_id)
     out.append(HersCheck(measure=measure, status=status, why=why, rule_id=rule_id, verified=core.rule(rule_id).verified))
@@ -828,13 +1003,18 @@ def energy_compliance_triggers(project_type: ProjectType, scope: EnergyScope, cl
                                electrical_service_amps: Optional[int] = None, battery_storage_installed: bool = False,
                                pv_kwdc_required: Optional[float] = None, gas_appliances_planned: bool = False,
                                homes_in_subdivision: Optional[int] = None, permit_application_date=None,
-                               as_of=None) -> EnergyResult:
-    for name, v in (("ducts_added_or_replaced_ft", ducts_added_or_replaced_ft), ("pv_kwdc_required", pv_kwdc_required),
-                    ("electrical_service_amps", electrical_service_amps)):
-        if v is not None and v < 0:
-            raise ValueError(f"{name} cannot be negative")
-    if percent_of_duct_system_replaced is not None and not 0 <= percent_of_duct_system_replaced <= 100:
+                               as_of=None, ductless_system: bool = False) -> EnergyResult:
+    _check(ducts_added_or_replaced_ft=ducts_added_or_replaced_ft, pv_kwdc_required=pv_kwdc_required,
+           electrical_service_amps=electrical_service_amps, percent_of_duct_system_replaced=percent_of_duct_system_replaced)
+    if percent_of_duct_system_replaced is not None and percent_of_duct_system_replaced > 100:
         raise ValueError("percent_of_duct_system_replaced must be 0-100")
+    if climate_zone is not None and not 1 <= climate_zone <= 16:
+        raise ValueError(f"climate_zone must be a California building climate zone 1-16, got {climate_zone}")
+    if homes_in_subdivision is not None and homes_in_subdivision < 1:
+        raise ValueError("homes_in_subdivision must be at least 1")
+    if ductless_system and (scope == "duct_alteration" or ducts_added_or_replaced_ft):
+        raise ValueError("ductless_system=True means no ducts: do not combine it with duct_alteration or "
+                         "ducts_added_or_replaced_ft")
     today = _d(as_of, "as_of") or logic.today_ca()
     app = _d(permit_application_date, "permit_application_date") or today
     ctx, hers, docs = _Ctx(), [], []
@@ -862,29 +1042,47 @@ def energy_compliance_triggers(project_type: ProjectType, scope: EnergyScope, cl
             for m in hvac_measures:
                 if m == "duct leakage":
                     continue
-                st = "likely" if equip else "possible" if equip is None else "not_triggered"
-                _hers(ctx, hers, m, st, "New or replacement space-conditioning equipment triggers HERS checks of "
-                                        "these items depending on equipment type and climate zone (2025 thresholds "
-                                        "not in the rulebook).", HVAC)
-        if ducts_added_or_replaced_ft is None and "duct leakage" in hvac_measures:
-            st = "not_triggered" if equip is False and scope != "duct_alteration" else "possible"
-            _hers(ctx, hers, "duct leakage", st,
-                  "Applies when ducts are new or altered (and, for some changeouts, to the existing ducts); give "
-                  "ducts_added_or_replaced_ft.", HVAC)
+                # The rule names refrigerant charge/airflow as the typical equipment tests; fan efficacy depends more
+                # on the system type, so it stays "possible".
+                st = ("likely" if m in ("refrigerant charge", "airflow") else "possible") if equip else \
+                     "possible" if equip is None else "not_triggered"
+                why = ("New or replacement space-conditioning equipment triggers HERS checks of these items depending "
+                       "on equipment type and climate zone (2025 thresholds not in the rulebook).")
+                if ductless_system and m in ("airflow", "fan efficacy"):
+                    st, why = "not_triggered", "Airflow and fan efficacy are tests of ducted forced-air systems; this one is ductless."
+                _hers(ctx, hers, m, st, why, HVAC)
+        if ductless_system:
+            _hers(ctx, hers, "duct leakage", "not_triggered", "Ductless system: there are no ducts to seal or test.", HVAC)
+        elif ducts_added_or_replaced_ft is None and "duct leakage" in hvac_measures:
+            if equip:
+                st, why = "likely", ("Replacing heating/cooling equipment normally means sealing and HERS-testing the "
+                                     "ducts connected to it, unless the small-duct exception applies (its 2025 length "
+                                     "is not verified); give ducts_added_or_replaced_ft for new ducts.")
+            else:
+                st = "not_triggered" if equip is False and scope == "alteration" else "possible"
+                why = ("Applies when ducts are new, extended or altered (an addition usually extends the existing "
+                       "ducts); give ducts_added_or_replaced_ft.")
+            _hers(ctx, hers, "duct leakage", st, why, HVAC)
 
     duct_as = None
     if ducts_added_or_replaced_ft is not None and not nonres and scope != "new_construction":
         dtext = ctx.P(HVAC, "duct_length_threshold_ft")
         form_ft, old_ft = _num(r">\s*(\d+)\s*ft", dtext), _num(r"used\s*(\d+)\s*ft", dtext)
         L = ducts_added_or_replaced_ft
-        st = "likely" if L > form_ft else "possible"
+        # Replacing equipment brings in the existing ducts connected to it, so a short duct extension cannot lower
+        # the changeout's "likely" duct test.
+        changeout = scope == "hvac_changeout" or new_or_replacement_hvac_equipment is True
+        st = "likely" if L > form_ft or changeout else "possible"
         ctx.item("Duct length added/replaced vs small-duct threshold", f"{_g(L)} ft",
                  f"{_g(L)} {'>' if L > form_ft else '<='} {_g(form_ft)} ft (2025 CF1R-ALT question); "
-                 f"{'>' if L > old_ft else '<='} {_g(old_ft)} ft (2019 form) -> duct leakage test {st}", HVAC)
+                 f"{'>' if L > old_ft else '<='} {_g(old_ft)} ft (2019 form)"
+                 + ("; equipment is replaced, so the existing ducts are tested too" if changeout and L <= form_ft else "")
+                 + f" -> duct leakage test {st}", HVAC)
         _hers(ctx, hers, "duct leakage", st,
-              f"{_g(L)} ft of duct {'exceeds' if L > form_ft else 'is within'} the {_g(form_ft)} ft question on the "
-              f"2025 CF1R-ALT form (the 2019 form used {_g(old_ft)} ft); the 2025 threshold is not verified, so "
-              "confirm on the CF1R.", HVAC)
+              f"{_g(L)} ft of new/replaced duct {'exceeds' if L > form_ft else 'is within'} the {_g(form_ft)} ft question "
+              f"on the 2025 CF1R-ALT form (the 2019 form used {_g(old_ft)} ft); the 2025 threshold is not verified, so "
+              "confirm on the CF1R." + (" New or replacement equipment normally means sealing and testing the existing "
+                                        "ducts connected to it, whatever the new duct length." if changeout else ""), HVAC)
     if percent_of_duct_system_replaced is not None and not nonres:
         defn = ctx.P(HVAC, "altered_duct_system_definition")
         pct = _num(r"<\s*(\d+)\s*%", defn)
@@ -910,7 +1108,8 @@ def energy_compliance_triggers(project_type: ProjectType, scope: EnergyScope, cl
                  "take them from the 2025 compliance manual or software.")
 
     # -- documents
-    needs_hers = bool(hers) and any(h.status in ("required", "likely", "possible") for h in hers)
+    needs_hers = any(h.status in ("required", "likely", "possible") for h in hers)
+    likely_hers = any(h.status in ("required", "likely") for h in hers)
     alt = scope != "new_construction"
     if nonres:
         docs.append(EnergyDoc(form=ctx.P(CF1R, "nonresidential_form"), phase="plan check / permit application",
@@ -958,8 +1157,8 @@ def energy_compliance_triggers(project_type: ProjectType, scope: EnergyScope, cl
             pv_after = round(pv_kwdc_required * (1 - cut / 100) + 1e-9, 3)
             ctx.item("PV size with battery credit", f"{pv_after:g} kWdc",
                      f"{_g(pv_kwdc_required)} kWdc x (1 - {cut:g}%) = {pv_after:g} kWdc", PV)
-            ctx.note("The battery credit counts only if the battery meets Joint Appendix JA12 (CEC: at least 7.5 kWh "
-                     "usable capacity).", PV)
+            ctx.note("The battery credit counts only if the battery meets Joint Appendix JA12 (CEC: minimum 7.5 kWh "
+                     "cycling capacity); confirm the battery model with the energy consultant.", PV)
         gt = ctx.P(BESS, "bess_ready_service_amps_gt")
         if battery_storage_installed and ctx.P(BESS, "bess_ready_waived_if_bess_installed"):
             bess = False
@@ -989,6 +1188,10 @@ def energy_compliance_triggers(project_type: ProjectType, scope: EnergyScope, cl
                      HEAT_PUMP)
         ctx.note("New detached ADUs are newly constructed buildings: check the PV exceptions with the energy "
                  "consultant.", PV)
+    if scope == "new_construction" and not sf:
+        ctx.note("The rulebook holds the solar PV rule for new single-family homes only. The Energy Code also requires "
+                 "PV (and for some buildings battery storage) on many new multifamily and nonresidential buildings; "
+                 "the energy consultant's compliance run sets the size.")
     if scope == "addition" and sf:
         ctx.note("Single-family additions: gas tankless water heaters are no longer a prescriptive option; a heat pump "
                  "water heater or the performance path is needed (2025 150.2(a)).", HEAT_PUMP)
@@ -998,7 +1201,8 @@ def energy_compliance_triggers(project_type: ProjectType, scope: EnergyScope, cl
 
     res = EnergyResult(as_of=today.isoformat(), project_type=project_type, scope=scope, climate_zone=climate_zone,
                        energy_code_edition=edition, documents=docs, hers_verifications=hers,
-                       hers_rater_needed=True if needs_hers else (None if nonres or scope in UNKNOWN_HERS else False),
+                       # None = depends on the registered compliance run; the tool never gives a firm "no rater".
+                       hers_rater_needed=True if likely_hers else None,
                        solar_pv_required=pv_req,
                        pv_kwdc_after_battery_credit=pv_after, battery_ready_required=bess,
                        electric_ready_required=elec, duct_system_treated_as=duct_as)
@@ -1034,12 +1238,9 @@ def calgreen_and_stormwater(project_type: ProjectType, scope: GreenScope = "new_
                             cd_waste_diverted_tons: Optional[float] = None,
                             landfill_disposal_lbs: Optional[float] = None,
                             rainfall_erosivity_r_factor: Optional[float] = None, as_of=None) -> CalgreenResult:
-    for name, v in (("valuation_usd", valuation_usd), ("sq_ft", sq_ft), ("disturbed_acres", disturbed_acres),
-                    ("cd_waste_generated_tons", cd_waste_generated_tons),
-                    ("cd_waste_diverted_tons", cd_waste_diverted_tons), ("landfill_disposal_lbs", landfill_disposal_lbs),
-                    ("rainfall_erosivity_r_factor", rainfall_erosivity_r_factor)):
-        if v is not None and v < 0:
-            raise ValueError(f"{name} cannot be negative")
+    _check(valuation_usd=valuation_usd, sq_ft=sq_ft, disturbed_acres=disturbed_acres,
+           cd_waste_generated_tons=cd_waste_generated_tons, cd_waste_diverted_tons=cd_waste_diverted_tons,
+           landfill_disposal_lbs=landfill_disposal_lbs, rainfall_erosivity_r_factor=rainfall_erosivity_r_factor)
     if cd_waste_generated_tons is not None and cd_waste_diverted_tons is not None \
             and cd_waste_diverted_tons > cd_waste_generated_tons:
         raise ValueError("cd_waste_diverted_tons cannot exceed cd_waste_generated_tons")
@@ -1095,17 +1296,20 @@ def calgreen_and_stormwater(project_type: ProjectType, scope: GreenScope = "new_
                  "via: " + "; ".join(ctx.P(CG_WASTE, "compliance_methods")),
                  "General contractor", "Plan before permit (many cities require it); "
                  + ctx.P(CG_WASTE, "documentation") + " before final", CG_WASTE)
-        if cd_waste_generated_tons:
-            div = cd_waste_diverted_tons or 0.0
-            gen_pct = round(div / cd_waste_generated_tons * 100 + 1e-9, 2)
-            ok = gen_pct >= need
+        if cd_waste_generated_tons and cd_waste_diverted_tons is not None:
+            div = cd_waste_diverted_tons
+            ok = div * 100 + 1e-9 >= need * cd_waste_generated_tons       # exact test; display is rounded
+            gen_pct = _round2(div / cd_waste_generated_tons * 100, up=False)
             target = cd_waste_generated_tons * need / 100
-            short = 0.0 if ok else round(target - div + 1e-9, 2)
+            short = 0.0 if ok else _round2(target - div, up=True)
             ctx.item("C&D waste diversion rate", f"{gen_pct:g}%",
                      f"{_g(div)} diverted / {_g(cd_waste_generated_tons)} generated x 100 = {gen_pct:g}% "
-                     f"{'>=' if ok else '<'} {need:g}%" + ("" if ok else f"; divert {short:g} more (target "
-                                                                          f"{cd_waste_generated_tons:g} x {need:g}% = "
-                                                                          f"{round(target, 2):g})"), CG_WASTE)
+                     f"{'>=' if ok else '<'} {need:g}%" + ("" if ok else f"; divert {_g(short)} more (target "
+                                                                          f"{_g(cd_waste_generated_tons)} x {need:g}% = "
+                                                                          f"{_g(round(target, 2))})"), CG_WASTE)
+        elif cd_waste_generated_tons or cd_waste_diverted_tons is not None:
+            ctx.note("Give both cd_waste_generated_tons (more than 0) and cd_waste_diverted_tons to compute the diversion "
+                     "rate; a missing figure is not treated as zero.", CG_WASTE)
     low = low_act = low_ok = None
     if waste:
         key = ("low_rise_residential_max_disposal_lbs_per_sqft" if project_type in ("single_family", "multifamily_low_rise")
@@ -1113,8 +1317,8 @@ def calgreen_and_stormwater(project_type: ProjectType, scope: GreenScope = "new_
                else "nonresidential_max_disposal_lbs_per_sqft")
         low = float(ctx.P(CG_LOW, key))
         if landfill_disposal_lbs is not None and sq_ft:
-            low_act = round(landfill_disposal_lbs / sq_ft + 1e-9, 2)
-            low_ok = low_act <= low
+            low_ok = landfill_disposal_lbs <= low * sq_ft + 1e-9          # exact test; display is rounded
+            low_act = _round2(landfill_disposal_lbs / sq_ft, up=True)
             ctx.item("Low-disposal alternative", f"{low_act:g} lbs/sq ft",
                      f"{_g(landfill_disposal_lbs)} lbs landfilled / {_g(sq_ft)} sq ft = {low_act:g} lbs/sq ft "
                      f"{'<=' if low_ok else '>'} {low:g} cap", CG_LOW)
@@ -1122,13 +1326,18 @@ def calgreen_and_stormwater(project_type: ProjectType, scope: GreenScope = "new_
             ctx.note(f"Alternative to {need:g}% diversion: landfill no more than {low:g} lbs of C&D waste per sq ft of "
                      "building area (give landfill_disposal_lbs and sq_ft to check).", CG_LOW)
 
-    met = True if (ok or low_ok) else (False if (ok is False or low_ok is False) else None)
+    # Either path satisfies the requirement, so it fails only when both were checked and both fail.
+    met = True if (ok or low_ok) else (False if (ok is False and low_ok is False) else None)
     if ok is False and low_ok:
         ctx.note("Diversion is under the minimum, but the project meets the low-disposal alternative, which satisfies "
                  "the waste requirement on its own.", CG_LOW)
     elif met is False:
-        ctx.note(f"Not yet compliant on the path checked: divert more, or document the other path ({need:g}% "
-                 "diversion or the lbs/sq ft disposal cap) before final.", CG_WASTE)
+        ctx.note(f"Not compliant on either path: divert at least {need:g}% or get landfilled waste down to {low:g} "
+                 "lbs/sq ft before final.", CG_WASTE)
+    elif ok is False or low_ok is False:
+        ctx.note(f"The path checked falls short; the other path ({need:g}% diversion or the {low:g} lbs/sq ft disposal "
+                 "cap) was not checked, so compliance is undetermined. Give the missing inputs or divert more before "
+                 "final.", CG_WASTE)
 
     # -- EV capable
     ev = None
@@ -1151,6 +1360,16 @@ def calgreen_and_stormwater(project_type: ProjectType, scope: GreenScope = "new_
 
     # -- Construction General Permit
     cgp, basis, waiver = None, "", None
+    small_ac = ctx.P(SW_DEF, "small_construction_min_acres")
+    if disturbed_acres is None and part_of_larger_common_plan:
+        cgp = True
+        basis = (f"Part of a larger common plan of development disturbing {_g(small_ac)}+ acre: construction stormwater "
+                 "coverage applies to this lot whatever its own disturbed area.")
+        ctx.note("Give disturbed_acres for the erosivity waiver test and the SMARTS/SWPPP/QSP steps.", SW_DEF)
+    elif disturbed_acres is None and scope != "alteration":
+        ctx.note(f"Give disturbed_acres (clearing, grading, excavating, stockpiles) to check the Construction General "
+                 f"Permit: it applies at {_g(small_ac)} acre or more, or on any lot in a larger common plan of that "
+                 "size.", SW_DEF)
     if disturbed_acres is not None:
         small = ctx.P(SW_DEF, "small_construction_min_acres")
         large = ctx.P(SW_DEF, "large_construction_min_acres")
@@ -1166,6 +1385,10 @@ def calgreen_and_stormwater(project_type: ProjectType, scope: GreenScope = "new_
                      + f": construction stormwater coverage applies at {_g(small)} acre or more "
                        f"({'large construction, ' + _g(large) + '+ acres' if disturbed_acres >= large else 'small construction'}).")
             wmax, rmax = ctx.P(SW_WAIVER, "max_disturbed_acres_lt"), ctx.P(SW_WAIVER, "r_factor_lt")
+            if part_of_larger_common_plan and disturbed_acres < wmax:
+                ctx.note(f"Part of a larger common plan: the waiver's under-{_g(wmax)}-acre test applies to the whole "
+                         f"plan's disturbance; if the common plan disturbs {_g(wmax)} acres or more it is large "
+                         "construction and no erosivity waiver is available.", SW_DEF)
             if disturbed_acres < wmax and rainfall_erosivity_r_factor is not None:
                 waiver = rainfall_erosivity_r_factor < rmax
                 ctx.item("Erosivity waiver test", f"R = {_g(rainfall_erosivity_r_factor)}",
@@ -1252,25 +1475,32 @@ def adu_rules(adu_type: AduType, sq_ft: float, lot_type: LotType = "single_famil
               submitted_with_new_primary_dwelling: bool = False,
               impact_fee_for_primary_dwelling_usd: Optional[float] = None,
               school_district_rate_usd_per_sqft: Optional[float] = None, contract_price_usd: Optional[float] = None,
-              buyer_65_or_older: bool = False, is_manufactured_home: bool = False, as_of=None) -> AduResult:
+              buyer_65_or_older: bool = False, is_manufactured_home: bool = False, as_of=None,
+              agency_closed_dates: Optional[list] = None) -> AduResult:
+    _check(sq_ft=sq_ft, primary_dwelling_sq_ft=primary_dwelling_sq_ft, proposed_height_ft=proposed_height_ft,
+           primary_zone_height_limit_ft=primary_zone_height_limit_ft,
+           proposed_side_rear_setback_ft=proposed_side_rear_setback_ft,
+           impact_fee_for_primary_dwelling_usd=impact_fee_for_primary_dwelling_usd,
+           school_district_rate_usd_per_sqft=school_district_rate_usd_per_sqft, contract_price_usd=contract_price_usd)
     if sq_ft <= 0:
         raise ValueError("sq_ft must be greater than 0")
     if bedrooms < 0:
         raise ValueError("bedrooms cannot be negative")
-    for name, v in (("primary_dwelling_sq_ft", primary_dwelling_sq_ft), ("proposed_height_ft", proposed_height_ft),
-                    ("primary_zone_height_limit_ft", primary_zone_height_limit_ft),
-                    ("proposed_side_rear_setback_ft", proposed_side_rear_setback_ft),
-                    ("impact_fee_for_primary_dwelling_usd", impact_fee_for_primary_dwelling_usd),
-                    ("school_district_rate_usd_per_sqft", school_district_rate_usd_per_sqft),
-                    ("contract_price_usd", contract_price_usd)):
-        if v is not None and v < 0:
-            raise ValueError(f"{name} cannot be negative")
     today = _d(as_of, "as_of") or logic.today_ca()
+    sub = _d(application_submitted_date, "application_submitted_date")
+    comp = _d(application_complete_date, "application_complete_date")
+    if sub and comp and comp < sub:
+        raise ValueError(f"application_complete_date {comp} is before application_submitted_date {sub}")
+    closed = frozenset(filter(None, (_d(x, "agency_closed_dates") for x in agency_closed_dates or [])))
     ctx = _Ctx()
     ctx.note(f"ADU square footage is measured as {ctx.P(ADU_MIN, 'measurement_basis_from_2026')}.", ADU_MIN)
     if lot_type == "multifamily":
         ctx.note("Multifamily lots: the number of detached and converted ADUs allowed is not in the rulebook; ask "
                  "planning.")
+        if adu_type == "jadu":
+            ctx.note("A JADU must be inside a single-family home, so it is not available on a multifamily lot; use "
+                     "conversion (existing non-livable space) or detached instead. "
+                     + ctx.U("gov-66313-jadu-definition")["note"])
 
     # -- size
     floor = guaranteed = default = None
@@ -1352,18 +1582,31 @@ def adu_rules(adu_type: AduType, sq_ft: float, lot_type: LotType = "single_famil
         ctx.note("Conversions of existing structures need no additional setback.", ADU_HT)
 
     # -- approval clocks
-    sub = _d(application_submitted_date, "application_submitted_date")
-    comp = _d(application_complete_date, "application_complete_date")
     cdl = adl = None
     basis = ""
-    if sub:
+    eff15 = date.fromisoformat(core.rule(ADU_15).effective)
+    if sub and sub < eff15:
+        ctx.note(f"Received {sub.isoformat()}, before the {eff15.isoformat()} start of the "
+                 f"{ctx.P(ADU_15, 'completeness_deadline_business_days')}-business-day completeness clock (SB 543), so "
+                 "no completeness deadline is computed; give application_complete_date for the approval clock.", ADU_15)
+    elif sub:
         n = ctx.P(ADU_15, "completeness_deadline_business_days")
-        cdl = _add_business_days(sub, n)
+        cdl = _add_business_days(sub, n, closed)
+        skipped = sorted(d.isoformat() for d in closed if sub < d <= cdl and d.weekday() < 5)
         ctx.item("Completeness determination due", cdl.isoformat(),
-                 f"{sub.isoformat()} + {n} business days (Mon-Fri) = {cdl.isoformat()}; if no written determination by "
-                 f"then: {ctx.P(ADU_15, 'consequence_if_missed')}", ADU_15)
-        ctx.note("Business days here skip weekends only; each state or local holiday in the window moves the deadline "
-                 "one business day later. Confirm before treating the application as deemed complete.")
+                 f"{sub.isoformat()} + {n} business days (Mon-Fri"
+                 + (f", skipping agency closures {', '.join(skipped)}" if skipped else "") + f") = {cdl.isoformat()}; "
+                 f"if no written determination by then: {ctx.P(ADU_15, 'consequence_if_missed')}", ADU_15)
+        if not closed:
+            ctx.note("Business days here skip weekends only; each state or local holiday the agency is closed in the "
+                     "window moves the deadline one business day later. List them in agency_closed_dates, and confirm "
+                     "before treating the application as deemed complete.")
+        if comp and comp > cdl:
+            late = cdl + timedelta(days=ctx.P(ADU_60, "deadline_days"))
+            ctx.note(f"The complete date {comp.isoformat()} is after the {cdl.isoformat()} completeness deadline. Unless "
+                     f"the agency sent a written incompleteness notice by {cdl.isoformat()}, the missed deadline applies "
+                     f"that day ({ctx.P(ADU_15, 'consequence_if_missed')}) and the approval deadline is "
+                     f"{late.isoformat()}, not the later date computed from {comp.isoformat()}.", ADU_15)
     if comp or cdl:
         days = ctx.P(ADU_60, "deadline_days")
         start = comp or cdl
@@ -1373,9 +1616,14 @@ def adu_rules(adu_type: AduType, sq_ft: float, lot_type: LotType = "single_famil
         ctx.item("Approve/deny deadline", adl.isoformat(),
                  f"{start.isoformat()} + {days} calendar days = {adl.isoformat()} ({basis}); if missed: "
                  f"{ctx.P(ADU_60, 'consequence_if_missed')}", ADU_60)
-        ctx.note(f"Deemed approval ({days} days) can be tolled at the applicant's request. Ask for a denial's full set "
-                 f"of comments in writing; appeals are decided within {ctx.P(ADU_15, 'appeal_decision_business_days')} "
-                 "business days.", ADU_15)
+        ctx.note(f"The {days}-day clock can be tolled at the applicant's request ({ctx.P(ADU_60, 'tolling')}).", ADU_60)
+        if adl < today:
+            ctx.note(f"The {adl.isoformat()} approve/deny deadline has passed. If the agency has not acted and the clock "
+                     f"was not tolled, the application is {ctx.P(ADU_60, 'consequence_if_missed')}: ask the agency in "
+                     "writing to issue the permit.", ADU_60)
+        ctx.note(f"If the agency finds the application incomplete it must give {ctx.P(ADU_15, 'notice_form')}; the "
+                 "applicant can appeal in writing and the agency must issue a final written determination within "
+                 f"{ctx.P(ADU_15, 'appeal_decision_business_days')} business days of the appeal.", ADU_15)
     tolled = bool(submitted_with_new_primary_dwelling)
     if tolled:
         ctx.note("Submitted with a new primary dwelling: the ADU clock may be delayed until the agency acts on the "
@@ -1407,6 +1655,10 @@ def adu_rules(adu_type: AduType, sq_ft: float, lot_type: LotType = "single_famil
              f"{_g(sq_ft)} {'<' if s_exempt else '>='} {s_lim} sq ft (exempt only if less than {s_lim})", SCHOOL_ADU)
     school = 0.0 if s_exempt else _school_fee(ctx, sq_ft, "residential", today, school_district_rate_usd_per_sqft,
                                              "School fee estimate")
+    if not s_exempt and adu_type in ("conversion", "jadu"):
+        ctx.note("The estimate assumes the converted area is new assessable space (for example a garage). "
+                 + ctx.U("gov-65995-b1-assessable-space")["note"] + " Space that is already living area adds none; "
+                 "ask the district whether any fee is due.")
 
     # -- occupancy and use
     occ = None
@@ -1433,6 +1685,9 @@ def adu_rules(adu_type: AduType, sq_ft: float, lot_type: LotType = "single_famil
                        else "cancel_business_days_standard")
         ctx.step(f"Use a written home improvement contract; buyer may cancel within {cancel} business days; progress "
                  "payments may not get ahead of work done", "Contractor", "At signing", ADU_HIC)
+        ctx.note(f"The {cancel}-business-day cancel right runs to midnight of the last business day after the buyer "
+                 "gets a signed copy with the notice; it does not apply if the contract was "
+                 f"{ctx.P(CANCEL, 'exceptions')[0]}.", CANCEL)
         prime = ctx.P(ADU_LIC, "prime_allowed")
         ctx.pro(f"Prime contractor: {prime[0]} General Building" + (f", or {prime[1]}" if is_manufactured_home else "")
                 + " (specialty C classes only as subcontractors for their trade)")
@@ -1489,6 +1744,10 @@ def register(mcp) -> None:
         part_of_larger_project: Annotated[bool, Field(description="Job is part of a bigger project or one of several small contracts")] = False,
         permit_application_date: Annotated[Optional[str], Field(description=f"{D}. Sets the code edition; default as_of")] = None,
         as_of: Annotated[Optional[str], Field(description=f"{D}. Evaluate as of this date; default today in California")] = None,
+        existing_building_sq_ft: Annotated[Optional[float], Field(ge=0, description="Existing floor area before an addition (pre-1994 multifamily/commercial fixture retrofit 10% test)")] = None,
+        owner_lived_in_home_12_months_before_completion: Annotated[Optional[bool], Field(description="Owner-builder only: the home is the owner's principal residence and they will have lived there 12 months before the work is completed (B&P 7044(a)(3))")] = None,
+        permit_issued_date: Annotated[Optional[str], Field(description=f"{D}. Day the permit was issued; returns start_work_by (12-month start deadline)")] = None,
+        demolition_start_date: Annotated[Optional[str], Field(description=f"{D}. Demolition only: planned start; returns demolition_notice_send_by for the air district asbestos/demolition notice")] = None,
     ) -> PermitRequiredResult:
         """Is a building permit required in California for this job, and who may do it?
 
@@ -1497,12 +1756,17 @@ def register(mcp) -> None:
         measured bottom of footing to top with no surcharge) plus flagged model-code items (finish work, flat
         sidewalks/driveways, small detached decks, playground equipment, ordinary repairs). Local amendments can
         override. Returns determination (not_required / required / need_more_info / check_with_building_department),
-        basis, likely separate electrical/plumbing/mechanical permits, license_required with the B&P 7048 under-$1,000
-        minor work test or B&P 7044 owner-builder analysis (owner_builder_warnings), smoke/CO alarm retrofit on dwelling
-        permits over $1,000, pre-1994 water-conserving plumbing fixture retrofit, lead RRP for pre-1978 housing,
-        demolition asbestos-notice and pool safety steps, permit counter documents (license statement, workers' comp
-        declaration), state SMIP and BSASRF fees and school fees with the math, the licensed professionals needed,
-        line_items and checklist with a rule citation each, verified and unverified_sources. Not legal advice."""
+        basis, likely separate electrical/plumbing/mechanical permits, license_required (True / False / None = depends)
+        with the B&P 7048 under-$1,000 minor work test or the B&P 7044 owner-builder analysis ((a)(1) self-performed
+        not for sale, (a)(2) licensed trades, (a)(3) homeowner improving a principal residence lived in 12 months;
+        owner_builder_warnings), smoke/CO alarm retrofit on dwelling permits over $1,000, pre-1994 water-conserving
+        plumbing fixture retrofit (single-family; multifamily/commercial $150,000 alteration or 10% addition tests),
+        lead RRP for pre-1978 housing, demolition asbestos-notice and C-22 abatement steps, pool safety steps, permit
+        counter documents (license statement, workers' comp declaration), contract steps, state SMIP and BSASRF fees
+        and school fees with the math, the licensed professionals needed, line_items and checklist with a rule citation
+        each, verified and unverified_sources. Due dates: start_work_by (permit_issued_date + 12 months) and
+        demolition_notice_send_by (demolition_start_date minus 10 working days / SCAQMD 14 calendar days, whichever is
+        earlier); tell the user to act before these dates. Not legal advice."""
         return permit_required(work_description, structure_type, project_type, valuation_usd, sq_ft, fence_height_ft,
                                retaining_wall_height_ft, is_one_story_detached_accessory,
                                retaining_wall_supports_surcharge, retaining_wall_impounds_flammable_liquids,
@@ -1510,7 +1774,9 @@ def register(mcp) -> None:
                                affects_structure_egress_or_utilities, includes_electrical_plumbing_or_gas, stories,
                                year_built, has_fuel_burning_appliance_or_attached_garage, owner_builder,
                                owner_builder_work_by, owner_intends_to_sell, performer_advertises_or_has_employees,
-                               part_of_larger_project, permit_application_date, as_of)
+                               part_of_larger_project, permit_application_date, as_of, existing_building_sq_ft,
+                               owner_lived_in_home_12_months_before_completion, permit_issued_date,
+                               demolition_start_date)
 
     @mcp.tool(name="energy_compliance_triggers", annotations=ro)
     def _energy(
@@ -1527,6 +1793,7 @@ def register(mcp) -> None:
         homes_in_subdivision: Annotated[Optional[int], Field(ge=1, description="New home: number of homes in the subdivision")] = None,
         permit_application_date: Annotated[Optional[str], Field(description=f"{D}. Sets the Energy Code edition; default as_of")] = None,
         as_of: Annotated[Optional[str], Field(description=f"{D}. Default today in California")] = None,
+        ductless_system: Annotated[bool, Field(description="The new/replacement system is ductless (mini-split heads): no duct, airflow or fan efficacy tests")] = False,
     ) -> EnergyResult:
         """California Title 24 Part 6 Energy Code triggers for a permit (2025 code for applications from 2026-01-01).
 
@@ -1535,14 +1802,16 @@ def register(mcp) -> None:
         the installer; CF3R certificate of verification by an independent certified HERS rater before final;
         nonresidential NRCC/NRCI); hers_verifications with status required/likely/possible/not_triggered (duct
         leakage, refrigerant charge, airflow, fan efficacy, ventilation, QII) including the duct-length and 75%-new
-        duct system tests; for new single-family homes: solar PV required, PV size after the 25% battery credit,
+        duct system tests (an equipment changeout keeps duct leakage "likely" because the connected ducts are tested;
+        ductless_system drops the duct, airflow and fan efficacy tests); for new single-family homes: solar PV required, PV size after the 25% battery credit,
         battery-ready over 125 A service, heat-pump baseline and electric-ready for gas appliances. Includes
         line_items, checklist, licensed_professionals, notes on gaps (climate-zone values, nonresidential acceptance
         tests), verified and citations. Not legal advice."""
         return energy_compliance_triggers(project_type, scope, climate_zone, ducts_added_or_replaced_ft,
                                           percent_of_duct_system_replaced, new_or_replacement_hvac_equipment,
                                           electrical_service_amps, battery_storage_installed, pv_kwdc_required,
-                                          gas_appliances_planned, homes_in_subdivision, permit_application_date, as_of)
+                                          gas_appliances_planned, homes_in_subdivision, permit_application_date, as_of,
+                                          ductless_system)
 
     @mcp.tool(name="calgreen_and_stormwater", annotations=ro)
     def _calgreen(
@@ -1598,6 +1867,7 @@ def register(mcp) -> None:
         buyer_65_or_older: Annotated[bool, Field(description="Homeowner buyer is 65 or older (longer cancel period)")] = False,
         is_manufactured_home: Annotated[bool, Field(description="ADU is a manufactured home built off site")] = False,
         as_of: Annotated[Optional[str], Field(description=f"{D}. Default today in California")] = None,
+        agency_closed_dates: Annotated[Optional[list[str]], Field(description="ISO dates the permitting agency is closed (holidays, furlough days) inside the 15-business-day window; skipped like weekends")] = None,
     ) -> AduResult:
         """California state ADU/JADU rules for one unit (Gov Code 66310+, as amended by SB 543 for 2026).
 
@@ -1607,12 +1877,14 @@ def register(mcp) -> None:
         setback cap, the 15-business-day completeness deadline and 60-day deemed-approved date, impact-fee exemption
         (750 sq ft ADU / 500 sq ft JADU) or the proportionate fee, the school-fee exemption under 500 sq ft or the Level
         1 estimate (2026 rate), JADU owner-occupancy, and with contract_price_usd the home improvement contract down
-        payment cap, cancel period and license class (B, or C-47 for manufactured). Includes line_items with the math,
-        checklist, verified and citations. Local ordinances can be more generous, never stricter than these floors.
-        Not legal advice."""
+        payment cap, cancel period and license class (B, or C-47 for manufactured). Business days skip weekends and
+        any agency_closed_dates given (not holidays otherwise). Notes say when the 60-day deadline has passed (deemed
+        approved) or when a late completeness finding means the application was deemed complete earlier. Includes
+        line_items with the math, checklist, verified and citations. Local ordinances can be more generous, never
+        stricter than these floors. Not legal advice."""
         return adu_rules(adu_type, sq_ft, lot_type, bedrooms, primary_dwelling_sq_ft, proposed_height_ft,
                          near_major_transit, lot_has_multistory_multifamily, primary_zone_height_limit_ft,
                          proposed_side_rear_setback_ft, jadu_shares_bathroom, application_submitted_date,
                          application_complete_date, submitted_with_new_primary_dwelling,
                          impact_fee_for_primary_dwelling_usd, school_district_rate_usd_per_sqft, contract_price_usd,
-                         buyer_65_or_older, is_manufactured_home, as_of)
+                         buyer_65_or_older, is_manufactured_home, as_of, agency_closed_dates)

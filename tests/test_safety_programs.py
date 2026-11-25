@@ -1,5 +1,6 @@
 """Safety programs module: Cal/OSHA written programs, 8 CCR 341 permits and injury reporting, with hand-computed values."""
 import asyncio
+import re
 
 import pytest
 from fastmcp import Client, FastMCP
@@ -221,7 +222,9 @@ def test_gc_four_story_building_trench_and_scaffold_fees_and_dates():
     scaf = item(r, "Scaffold / falsework / vertical shoring")
     assert "California-registered civil engineer (falsework/shoring design)" in scaf.named_people
     assert "minimum proposed penalty $1,250" in r.penalties[0]
-    assert r.verified is False and any("Labor Code 6500" in n for n in r.notes)    # 4 stories > 3 is UNVERIFIED
+    # 48 ft > 36 ft triggers on its own, so the unverified Labor Code 6500 stories test is not relied on
+    assert item(r, "Building / structure over 36 ft").unverified == []
+    assert r.verified is False and not any("Labor Code 6500" in n for n in r.notes)
 
 
 @pytest.mark.parametrize("depth,enter,exemption,required", [
@@ -570,6 +573,198 @@ def test_falsework_engineer_triggers_include_traffic_and_sill_to_soffit():
     r = sp.check_cal_osha_permits(scaffold_or_falsework_height_ft=20, as_of=AS_OF)          # 20 > 14, < 36
     f = item(r, "Scaffold / falsework / vertical shoring")
     assert f.required is False and "top of sills to soffit" in f.why and "rail traffic" in f.why
+
+
+# ---------------------------------------------------------------- code + realism review fixes
+@pytest.mark.parametrize("kwargs,msg", [
+    ({"max_employees_at_one_site": -5}, "between 1 and employee_count"),
+    ({"max_employees_at_one_site": 50}, "between 1 and employee_count (10)"),    # more at one site than on payroll
+    ({"peak_employees_last_year": -3}, "cannot be negative"),
+    ({"building_height_ft": -10}, "cannot be negative"),
+    ({"max_fall_height_ft": -1}, "cannot be negative"),
+    ({"excavation_max_depth_ft": -3}, "cannot be negative"),
+    ({"shift_hours": 0}, "shift_hours"),
+    ({"naics_code": "roofing"}, "2-6 digits"),
+    ({"last_toolbox_meeting": "2027-01-05"}, "after as_of"),                   # a "last" meeting in the future
+])
+def test_generate_rejects_bad_inputs_with_clear_errors(kwargs, msg):
+    with pytest.raises(ValueError, match=re.escape(msg)):
+        sp.generate_safety_programs("Co", 10, True, as_of=AS_OF, **kwargs)
+    with pytest.raises(ValueError, match="company_name"):
+        sp.generate_safety_programs("   ", 10, True, as_of=AS_OF)
+
+
+def test_permits_and_injury_reject_bad_inputs():
+    with pytest.raises(ValueError, match="role must be one of"):
+        sp.check_cal_osha_permits(building_height_ft=50, role="gc", as_of=AS_OF)
+    with pytest.raises(ValueError, match="exemption must be one of"):
+        sp.check_cal_osha_permits(excavation_max_depth_ft=8, workers_enter_trench=True, exemption="church", as_of=AS_OF)
+    with pytest.raises(ValueError, match="building_height_ft cannot be negative"):
+        sp.check_cal_osha_permits(building_height_ft=-40, as_of=AS_OF)
+    with pytest.raises(ValueError, match="incident_datetime .* is after as_of"):
+        sp.injury_reporting_deadlines("2026-12-24T09:00", serious=True, as_of="2026-11-25T10:00")
+    with pytest.raises(ValueError, match="employer_knew_at .* is after as_of"):
+        sp.injury_reporting_deadlines("2026-11-24T09:00", employer_knew_at="2026-11-25T12:00", as_of="2026-11-25T10:00")
+    with pytest.raises(ValueError, match="cannot be negative"):
+        sp.injury_reporting_deadlines("2026-11-24T09:00", peak_employees_last_year=-5, as_of=AS_OF)
+    # Same-day incident with a date-only as_of is today, not the future: 09:00 + 8 h = 17:00 today.
+    r = sp.injury_reporting_deadlines("2026-11-25T09:00", serious=True, as_of=AS_OF)
+    assert dl(r, "Report to Cal/OSHA").due == "2026-11-25T17:00" and dl(r, "Report to Cal/OSHA").status == "due_today"
+
+
+def test_water_math_rounds_to_two_decimals_and_never_uses_scientific_notation():
+    # 13 workers x 1 qt x 9.25 h = 120.25 quarts; / 4 = 30.0625 -> 30.06 gallons
+    r = sp.generate_safety_programs("Co", 13, True, shift_hours=9.25, as_of=AS_OF)
+    water = prog(r, "heat_illness_outdoor").elements[0].requirement
+    assert "13 workers x 1 qt x 9.25 h = 120.25 quarts (30.06 gallons)" in water
+    # 1,250 workers x 1 qt x 12 h = 15,000 quarts = 3,750 gallons (old :g output was 1.5e+04)
+    r = sp.generate_safety_programs("Co", 1250, True, shift_hours=12, as_of=AS_OF)
+    water = prog(r, "heat_illness_outdoor").elements[0].requirement
+    assert "1,250 workers x 1 qt x 12 h = 15,000 quarts (3,750 gallons)" in water and "e+" not in water
+
+
+def test_heat_plan_languages():
+    plan = lambda r, k: next(e for e in prog(r, k).elements if e.item.startswith("Written plan")).requirement
+    r = sp.generate_safety_programs("Co", 12, True, majority_language="english", as_of=AS_OF)
+    assert "in English, available" in plan(r, "heat_illness_outdoor")               # not "English and language..."
+    r = sp.generate_safety_programs("Co", 12, True, majority_language="  ", as_of=AS_OF)
+    assert "English and the language most of your employees understand" in plan(r, "heat_illness_outdoor")
+    r = sp.generate_safety_programs("Co", 12, True, heat_exposure=True, majority_language="Spanish", as_of=AS_OF)
+    assert "Written in English and Spanish" in plan(r, "heat_illness_indoor")
+
+
+def test_naics_whitespace_and_non_construction_codes():
+    # " 238120 " used to fail startswith("23") and silently drop the ITA line.
+    r = sp.generate_safety_programs("Co", 120, True, naics_code=" 238120 ", as_of=AS_OF)
+    ita = next(x for x in r.recordkeeping if x.item.startswith("Electronic"))
+    assert "in the 20-249 construction range" in ita.detail and "also submit Form 300 and 301" in ita.detail
+    r = sp.generate_safety_programs("Co", 30, True, naics_code="541330", as_of=AS_OF)
+    assert "NAICS 541330 is not construction" in r.recordkeeping[0].detail
+    assert "Construction (NAICS 23) is not a partially exempt" not in r.recordkeeping[0].detail
+
+
+def test_300a_window_open_now_and_ita_wording_for_250_plus():
+    # as_of 2027-03-15 is inside Feb 1-Apr 30 2027: the 2026 summary must be up now.
+    r = sp.generate_safety_programs("Co", 30, True, as_of="2027-03-15")
+    assert "posting window is open now (2027-03-15)" in next(x for x in r.recordkeeping if x.item == "Post 300A").detail
+    r = sp.generate_safety_programs("Co", 300, True, as_of=AS_OF)
+    ita = next(x for x in r.recordkeeping if x.item.startswith("Electronic"))
+    assert ita.detail.startswith("Peak 300 is 250 or more:") and "or 250+" not in ita.detail
+
+
+def test_toolbox_date_printed_as_date_and_timezone_as_of_uses_california_date():
+    r = sp.generate_safety_programs("Co", 12, True, last_toolbox_meeting="2026-11-20T15:00", as_of=AS_OF)
+    tb = next(t for t in r.training if t.item.startswith("Toolbox"))
+    assert "Last meeting 2026-11-20 ->" in tb.detail and tb.due == "2026-12-04"
+    # 2026-11-25T03:00Z is 2026-11-24 19:00 in California
+    assert sp.generate_safety_programs("Co", 12, True, as_of="2026-11-25T03:00Z").as_of == "2026-11-24"
+    assert sp.check_cal_osha_permits(as_of="2026-11-25T03:00Z").as_of == "2026-11-24"
+
+
+def test_outline_prints_gov_code_once():
+    r = sp.generate_safety_programs("Dig Co", 20, True, excavation_max_depth_ft=8, workers_enter_trench=True, as_of=AS_OF)
+    assert "_Authority: Gov Code 4216.2; 8 CCR 1541(b)(2)_" in prog(r, "excavation").document_outline_md
+
+
+def test_trench_citations_and_asbestos_notice_text_match_the_reason():
+    # 4 ft is below the 5 ft trigger: no 341(e) exception involved
+    r = sp.check_cal_osha_permits(excavation_max_depth_ft=4, as_of=AS_OF)
+    assert item(r, "Trench / excavation").rule_ids == ["permit-trench-excavation-5ft"]
+    # 6 ft but nobody descends: that IS a 341(e) exception
+    r = sp.check_cal_osha_permits(excavation_max_depth_ft=6, as_of=AS_OF)
+    assert "permit-exceptions" in item(r, "Trench / excavation").rule_ids
+    r = sp.check_cal_osha_permits(asbestos_sqft=50, as_of=AS_OF)
+    n = item(r, "Asbestos job notice to district office")
+    assert n.required is False and n.why.startswith("Not required") and "5208" in n.why
+
+
+def test_permit_notes_for_past_start_and_no_working_day_noise():
+    # Start 2026-11-01 is before as_of: trench permit (11/1 back 6 working days = 10/23) and 811 both missed.
+    r = sp.check_cal_osha_permits(excavation_max_depth_ft=8, workers_enter_trench=True, planned_start="2026-11-01",
+                                  as_of=AS_OF)
+    note = next(x for x in r.notes if x.startswith("planned_start 2026-11-01 is before as_of"))
+    assert "missed: Trench / excavation, 811 underground utility locate" in note and "pause that work" in note
+    assert item(r, "Trench / excavation").deadline == "2026-10-23"
+    assert not any(x.startswith("Already past") for x in r.notes)
+    # Nothing date-driven -> no working-day disclaimer
+    assert sp.check_cal_osha_permits(as_of=AS_OF).notes == []
+    assert sp.check_cal_osha_permits(lead_disturbed_sqft=150, as_of=AS_OF).notes == []
+
+
+def test_injury_todo_puts_the_8_hour_report_first_even_past_midnight():
+    # Knew 16:00 -> report due 00:00 next day; at 17:00 that is 7 h away (status "upcoming", but urgent).
+    # The DWC-1 (date-only, due end of 11/25) must come after it.
+    r = sp.injury_reporting_deadlines("2026-11-24T15:30", hospitalized=True, employer_knew_at="2026-11-24T16:00",
+                                      as_of="2026-11-24T17:00")
+    assert r.next_steps[0] == "DUE SOON: Report to Cal/OSHA (DOSH) district office by 2026-11-25T00:00, 7 hours left."
+    assert r.next_steps[1] == "NEXT: Give the employee a DWC-1 workers' comp claim form by 2026-11-25."
+    # Same-day: 15:30 + 8 h = 23:30, 3.5 h left at 20:00
+    r = sp.injury_reporting_deadlines("2026-11-24T15:30", hospitalized=True, as_of="2026-11-24T20:00")
+    assert r.next_steps[0].startswith("DUE TODAY: Report to Cal/OSHA") and "3.5 hours left" in r.next_steps[0]
+    # Crime victim, first aid only: violent incident log is do-now, the 1-working-day notices come next
+    r = sp.injury_reporting_deadlines("2026-11-24T09:00", beyond_first_aid_or_lost_time=False, workplace_crime=True,
+                                      as_of="2026-11-24T10:00")
+    assert r.next_steps[0] == "DO NOW: Enter the incident on the violent incident log."
+    # Date-only as_of: knew 17:00 + 8 h = 01:00 next day; still listed as urgent, ahead of the DWC-1
+    r = sp.injury_reporting_deadlines("2026-11-25T17:00", hospitalized=True, as_of=AS_OF)
+    assert r.next_steps[0] == "DUE SOON: Report to Cal/OSHA (DOSH) district office by 2026-11-26T01:00."
+
+
+def test_old_incident_marks_closed_300a_window_as_missed_not_do_now():
+    # 2025 incident; 300A for 2025 was to be posted 2026-02-01..2026-04-30, closed by 2026-11-25.
+    r = sp.injury_reporting_deadlines("2025-03-10T09:00", hospitalized=True, peak_employees_last_year=30, as_of=AS_OF)
+    post = dl(r, "Post certified Form 300A summary for 2025")
+    assert post.status == "overdue" and post.window_closed is True and "ended 2026-04-30" in post.how_computed
+    assert any(s.startswith("MISSED: Post certified Form 300A") for s in r.next_steps)
+    assert r.next_steps[0].startswith("OVERDUE: Report to Cal/OSHA")
+    assert not any(s.startswith("NEXT: Keep Forms") for s in r.next_steps)              # retention is not a to-do
+    # Inside the window (as_of 2026-03-25) it is still fixable: plain OVERDUE
+    r = sp.injury_reporting_deadlines("2025-11-10T09:00", hospitalized=True, peak_employees_last_year=30,
+                                      as_of="2026-03-25")
+    assert dl(r, "Post certified Form 300A").window_closed is False
+    assert any(s.startswith("OVERDUE: Post certified Form 300A") for s in r.next_steps)
+
+
+def test_falsework_engineer_triggers_shown_below_permit_height_and_stories_only_asks_for_feet():
+    # 10 ft falsework needs no permit, but a 20 ft span or traffic through it still needs a civil engineer design
+    r = sp.check_cal_osha_permits(scaffold_or_falsework_height_ft=10, as_of=AS_OF)
+    f = item(r, "Scaffold / falsework / vertical shoring")
+    assert f.required is False and "spans over 16 ft" in f.why and f.named_people == []
+    assert "falsework-engineer-design" in f.rule_ids
+    r = sp.check_cal_osha_permits(scaffold_or_falsework_height_stories=2, as_of=AS_OF)
+    assert "Give the height in ft to check the 14 ft engineer trigger" in item(
+        r, "Scaffold / falsework / vertical shoring").why
+
+
+def test_mcp_schema_rejects_negative_and_malformed_values():
+    mcp = FastMCP("t")
+    sp.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            errors = []
+            for name, args in [
+                ("generate_safety_programs", {"company_name": "Acme", "employee_count": 18,
+                                              "worksites_have_public_access": True, "max_employees_at_one_site": -3}),
+                ("generate_safety_programs", {"company_name": "", "employee_count": 18,
+                                              "worksites_have_public_access": True}),
+                ("generate_safety_programs", {"company_name": "Acme", "employee_count": 18,
+                                              "worksites_have_public_access": True, "naics_code": "roof"}),
+                ("check_cal_osha_permits", {"building_height_ft": -48}),
+                ("injury_reporting_deadlines", {"incident_datetime": "2026-12-24T15:30", "as_of": "2026-11-24T20:00"}),
+            ]:
+                try:
+                    await c.call_tool(name, args)
+                    errors.append(None)
+                except Exception as e:                         # fastmcp raises ToolError
+                    errors.append(str(e))
+            ok = await c.call_tool("generate_safety_programs", {"company_name": "Acme", "employee_count": "18",
+                                                                "worksites_have_public_access": True, "as_of": AS_OF})
+            return errors, ok.structured_content
+    errors, ok = asyncio.run(run())
+    assert all(errors), errors
+    assert "is after as_of" in errors[-1]
+    assert ok["employee_count"] == 18                                           # "18" coerced to int
 
 
 # ---------------------------------------------------------------- MCP

@@ -194,15 +194,31 @@ def test_residential_addition_school_fee_500_sqft_line():
 
 # ---------------------------------------------------------------- permit_required: owner-builder, demo, pool, edition
 def test_owner_builder_addition_for_sale():
+    # B&P 7044(a)(1) fails when the work is intended for sale, but (a)(3) still exempts a homeowner improving a
+    # principal residence lived in for the 12 months before completion -> unknown residency gives None.
     r = b.permit_required("650 sq ft bedroom addition", "addition", valuation_usd=120000, sq_ft=650, owner_builder=True,
                           owner_intends_to_sell=True, as_of=AS_OF)
-    assert r.license_required is True and "7044(a)(1)" in r.license_basis
+    assert r.license_required is None and "7044(a)(1) fails" in r.license_basis and "(a)(3)" in r.license_basis
     assert any("presumed" in w for w in r.owner_builder_warnings)
-    assert {b.OB_SALE, b.OB_SELF, b.OB_DUTIES, b.OB_CONSULT} <= ids(r)
+    assert {b.OB_SALE, b.OB_SELF, b.OB_DUTIES, b.OB_CONSULT, b.HOMEOWNER} <= ids(r)
+    assert any("12 months" in w and "7044(a)(3)" in w for w in r.owner_builder_warnings)
     assert r.school_fee_estimate_usd == 3497.0                                       # 650 x $5.38
     # SMIP 120,000 x 0.00013 = 15.60; BSASRF ceil(4.8) = 5 -> $5.00
     assert r.state_fees_usd == {"smip_seismic": 15.6, "bsasrf_building_standards": 5.0}
     assert not any("home improvement contract" in s.task for s in r.checklist)       # owner self-performs
+    lived = b.permit_required("addition", "addition", valuation_usd=120000, owner_builder=True, owner_intends_to_sell=True,
+                              owner_lived_in_home_12_months_before_completion=True, as_of=AS_OF)
+    assert lived.license_required is False and "homeowner exemption applies" in lived.license_basis
+    moved_in = b.permit_required("addition", "addition", valuation_usd=120000, owner_builder=True,
+                                 owner_intends_to_sell=True, owner_lived_in_home_12_months_before_completion=False,
+                                 as_of=AS_OF)
+    assert moved_in.license_required is True
+    spec = b.permit_required("spec house", "new_building", valuation_usd=500000, owner_builder=True,
+                             owner_intends_to_sell=True, owner_lived_in_home_12_months_before_completion=True,
+                             as_of=AS_OF)
+    assert spec.license_required is True and b.HOMEOWNER not in ids(spec)           # (a)(3) is for improvements only
+    keep = b.permit_required("addition", "addition", valuation_usd=120000, owner_builder=True, as_of=AS_OF)
+    assert keep.license_required is False and "7044(a)(1)" in keep.license_basis    # not for sale: no residency test
 
 
 def test_owner_builder_licensed_trades_and_unlicensed_helpers():
@@ -212,6 +228,12 @@ def test_owner_builder_licensed_trades_and_unlicensed_helpers():
     helpers = b.permit_required("garage conversion", "alteration", valuation_usd=60000, owner_builder=True,
                                 owner_builder_work_by="unlicensed_workers_paid_by_job", as_of=AS_OF)
     assert helpers.license_required is True
+    small = b.permit_required("6 ft fence", "fence", fence_height_ft=6, valuation_usd=800, owner_builder=True,
+                              owner_builder_work_by="unlicensed_workers_paid_by_job", as_of=AS_OF)
+    assert small.license_required is False                                            # no permit and 800 < 1,000
+    big = b.permit_required("6 ft fence", "fence", fence_height_ft=6, valuation_usd=4000, owner_builder=True,
+                            owner_builder_work_by="unlicensed_workers_paid_by_job", as_of=AS_OF)
+    assert big.license_required is True                                               # 4,000 is not < 1,000
 
 
 def test_demolition_and_pool_steps():
@@ -262,8 +284,9 @@ def test_battery_ready_strictly_over_125_amps():
 def test_hvac_changeout_hers():
     r = b.energy_compliance_triggers("single_family", "hvac_changeout", climate_zone=12, as_of=AS_OF)
     st = {h.measure: h.status for h in r.hers_verifications}
-    assert st == {"refrigerant charge": "likely", "airflow": "likely", "fan efficacy": "likely",
-                  "duct leakage": "possible"}
+    # a changeout normally means sealing/testing the connected ducts; charge/airflow are the rule's named examples
+    assert st == {"refrigerant charge": "likely", "airflow": "likely", "fan efficacy": "possible",
+                  "duct leakage": "likely"}
     assert r.documents[0].form == "CF1R-ALT" and r.hers_rater_needed is True
     assert r.verified is False and b.HVAC in r.unverified_rule_ids
 
@@ -430,6 +453,264 @@ def test_every_cited_rule_exists_and_unverified_entries_have_sources():
     r = b.adu_rules("detached", 450, as_of=AS_OF)           # < 500 sq ft: no school fee, so only verified rules
     assert all(core.rule(c.rule_id) for c in r.citations) and r.verified is True
     assert b.adu_rules("detached", 600, as_of=AS_OF).verified is False   # school certificate rule is unchecked
+
+
+# ---------------------------------------------------------------- review fixes
+def test_trade_permit_blocks_minor_work_on_exempt_shed():
+    # building-exempt 100 sq ft shed, but the wiring likely needs an electrical permit -> B&P 7048 not confirmed
+    r = b.permit_required("garden shed with an outlet and electrical", "detached_accessory_structure", valuation_usd=900,
+                          sq_ft=100, is_one_story_detached_accessory=True, as_of=AS_OF)
+    assert r.determination == "not_required" and r.separate_trade_permits_likely == ["electrical"]
+    assert r.license_required is None and r.minor_work_exemption_available is None
+    assert "any price" in r.license_basis
+
+
+def test_pre_1994_multifamily_commercial_addition_uses_10_percent_floor_area_test():
+    # 1,200 / 10,000 x 100 = 12% > 10% -> every noncompliant fixture in the building
+    over = b.permit_required("restroom addition", "addition", project_type="nonresidential", valuation_usd=300000,
+                             sq_ft=1200, existing_building_sq_ft=10000, year_built=1985, as_of=AS_OF)
+    assert over.plumbing_fixture_retrofit_required is True
+    assert "12% > 10%" in item(over, "Pre-1994 fixture retrofit addition").math
+    assert "civ-1101.5-d-fixture-triggers" in {u["key"] for u in over.unverified_sources}
+    # 900 / 10,000 = 9% <= 10%; the $300,000 valuation does not matter for an addition
+    under = b.permit_required("addition", "addition", project_type="nonresidential", valuation_usd=300000, sq_ft=900,
+                              existing_building_sq_ft=10000, year_built=1985, as_of=AS_OF)
+    assert under.plumbing_fixture_retrofit_required is None
+    missing = b.permit_required("addition", "addition", project_type="multifamily_low_rise", valuation_usd=300000,
+                                sq_ft=900, year_built=1985, as_of=AS_OF)
+    assert missing.plumbing_fixture_retrofit_required is None
+    assert any("existing_building_sq_ft" in n for n in missing.notes)
+
+
+def test_high_rise_is_always_smip_category_2():
+    r = b.permit_required("mid-rise", "new_building", project_type="multifamily_high_rise", valuation_usd=1_000_000,
+                          as_of=AS_OF)
+    # Category 2: 1,000,000 x 0.00028 = 280.00 (not Category 1's 130.00); BSASRF 1,000,000 / 25,000 = 40
+    assert r.state_fees_usd == {"smip_seismic": 280.0, "bsasrf_building_standards": 40.0}
+
+
+def test_permit_notes_alarm_caveat_expiry_and_new_home_contract():
+    small = b.permit_required("bath fan", "alteration", valuation_usd=800, as_of=AS_OF)
+    assert small.smoke_alarms_required is False and any("CRC R314.2.2" in n for n in small.notes)
+    assert any("after 180 days" in n for n in small.notes)                          # CBC 105.5 suspension period
+    home = b.permit_required("new 2,400 sq ft home", "new_building", valuation_usd=600000, sq_ft=2400, as_of=AS_OF)
+    tasks = {s.rule_id for s in home.checklist}
+    assert b.SFD_CONTRACT in tasks and b.HIC_PERMITS not in tasks                   # B&P 7164, not a HIC
+    assert home.school_fee_estimate_usd == 12912.0                                  # 2,400 x $5.38
+    assert any("garage" in n for n in home.notes)                                   # assessable space only
+
+
+def test_demolition_asbestos_contractor_and_working_days():
+    r = b.permit_required("demolish 1950 house", "demolition", valuation_usd=20000, year_built=1950, as_of=AS_OF)
+    steps = {s.rule_id: s for s in r.checklist}
+    assert "including holidays" in steps[b.AIR_DISTRICT].when
+    assert "100 sq ft or more" in steps[b.ASB_LIC].task and "C-22" in steps[b.ASB_LIC].task
+    assert {b.ASB_DOSH, b.NESHAP_DAYS} <= ids(r) and any("C-22" in p for p in r.licensed_professionals)
+    assert r.lead_rrp_applies is True                                                # 1950 < 1978
+
+
+def test_rrp_owner_self_performed_note():
+    r = b.permit_required("repaint and patch", "alteration", valuation_usd=5000, year_built=1960, owner_builder=True,
+                          as_of=AS_OF)
+    assert r.lead_rrp_applies is True and any("for compensation" in n for n in r.notes)
+
+
+def test_energy_addition_and_multifamily_notes():
+    add = b.energy_compliance_triggers("single_family", "addition", new_or_replacement_hvac_equipment=False, as_of=AS_OF)
+    st = {h.measure: h.status for h in add.hers_verifications}
+    assert st["duct leakage"] == "possible" and add.hers_rater_needed is None   # extended ducts may need testing
+    alt = b.energy_compliance_triggers("single_family", "alteration", new_or_replacement_hvac_equipment=False,
+                                       as_of=AS_OF)
+    assert all(h.status == "not_triggered" for h in alt.hers_verifications) and alt.hers_rater_needed is None
+    mf = b.energy_compliance_triggers("multifamily_low_rise", "new_construction", as_of=AS_OF)
+    assert mf.solar_pv_required is None and any("multifamily and nonresidential" in n for n in mf.notes)
+    sf = b.energy_compliance_triggers("single_family", "new_construction", battery_storage_installed=True,
+                                      pv_kwdc_required=5.2, as_of=AS_OF)
+    assert sf.pv_kwdc_after_battery_credit == 3.9                                   # 5.2 x 0.75 = 3.9
+    assert any("7.5 kWh cycling" in n for n in sf.notes)
+
+
+def test_waste_requirement_undetermined_until_both_paths_checked():
+    # 5 / 10 = 50% < 65%, low-disposal path not given -> undetermined, not "failed"
+    one = b.calgreen_and_stormwater("single_family", "new_construction", cd_waste_generated_tons=10,
+                                    cd_waste_diverted_tons=5, has_attached_private_garage=False, as_of=AS_OF)
+    assert one.diversion_meets_minimum is False and one.waste_requirement_met is None
+    # 10,000 lbs / 2,000 sq ft = 5.0 > 3.4 and 50% < 65% -> both paths fail
+    both = b.calgreen_and_stormwater("single_family", "new_construction", sq_ft=2000, cd_waste_generated_tons=10,
+                                     cd_waste_diverted_tons=5, landfill_disposal_lbs=10000,
+                                     has_attached_private_garage=False, as_of=AS_OF)
+    assert both.low_disposal_actual_lbs_per_sqft == 5.0 and both.waste_requirement_met is False
+
+
+def test_erosivity_waiver_common_plan_note():
+    r = b.calgreen_and_stormwater("single_family", "new_construction", disturbed_acres=0.4,
+                                  part_of_larger_common_plan=True, rainfall_erosivity_r_factor=2, as_of=AS_OF)
+    assert r.construction_general_permit_required is True and r.erosivity_waiver_possible is True
+    assert any("whole plan" in n for n in r.notes)
+
+
+def test_adu_pre_2026_application_and_cancel_exception():
+    # received before SB 543's 2026-01-01 start: no completeness clock; 2025-12-20 + 60 days = 2026-02-18
+    r = b.adu_rules("detached", 600, application_submitted_date="2025-12-10", application_complete_date="2025-12-20",
+                    as_of=AS_OF)
+    assert r.completeness_deadline is None and r.approval_deadline == "2026-02-18"
+    c = b.adu_rules("conversion", 520, contract_price_usd=50000, as_of=AS_OF)
+    assert c.school_fee_estimate_usd == 2797.6                                       # 520 x $5.38
+    assert any("assessable space" in n for n in c.notes)
+    assert b.CANCEL in ids(c) and any("place of business" in n for n in c.notes)
+    assert c.max_down_payment_usd == 1000.0                                          # min(1,000, 10% x 50,000)
+
+
+# ---------------------------------------------------------------- code/realism review fixes
+def test_trade_keywords_ignore_carpentry_words_and_negations():
+    def trades(desc, t, **kw):
+        return b.permit_required(desc, t, valuation_usd=900, as_of=AS_OF, **kw)
+    panel = trades("Install wood paneling in den", "finish_work")
+    assert panel.separate_trade_permits_likely == [] and panel.license_required is False   # $900 < $1,000, no permit
+    assert trades("set fence posts plumb and level, replace one fence panel", "fence",
+                  fence_height_ft=6).separate_trade_permits_likely == []
+    assert trades("replace door gasket", "ordinary_repair").separate_trade_permits_likely == []
+    assert trades("French drain behind the wall", "retaining_wall",
+                  retaining_wall_height_ft=3).separate_trade_permits_likely == []
+    shed = trades("8x10 shed without electrical or plumbing", "detached_accessory_structure", sq_ft=80,
+                  is_one_story_detached_accessory=True)
+    assert shed.separate_trade_permits_likely == [] and shed.license_required is False
+    assert trades("solar panels on garage roof", "reroof").separate_trade_permits_likely == ["electrical"]
+    assert "gas" in trades("new gas line to the BBQ", "other").separate_trade_permits_likely
+
+
+def test_non_finite_and_out_of_range_inputs_raise():
+    with pytest.raises(ValueError, match="finite"):
+        b.permit_required("x", "alteration", valuation_usd=float("nan"), as_of=AS_OF)
+    with pytest.raises(ValueError, match="finite"):
+        b.permit_required("x", "new_building", valuation_usd=float("inf"), as_of=AS_OF)
+    with pytest.raises(ValueError, match="year_built"):
+        b.permit_required("x", "alteration", valuation_usd=5000, year_built=2030, as_of=AS_OF)
+    with pytest.raises(ValueError, match="climate_zone"):
+        b.energy_compliance_triggers("single_family", "hvac_changeout", climate_zone=99, as_of=AS_OF)
+    with pytest.raises(ValueError, match="finite"):
+        b.adu_rules("detached", float("nan"), as_of=AS_OF)
+    with pytest.raises(ValueError, match="finite"):
+        b.calgreen_and_stormwater("single_family", disturbed_acres=float("inf"), as_of=AS_OF)
+    # blank optional dates mean "not given"
+    assert b.adu_rules("detached", 600, application_submitted_date="  ", as_of=AS_OF).completeness_deadline is None
+
+
+def test_rounding_never_hides_a_failed_limit():
+    r = b.calgreen_and_stormwater("single_family", sq_ft=1000, cd_waste_generated_tons=100000,
+                                  cd_waste_diverted_tons=64996, landfill_disposal_lbs=3404, as_of=AS_OF)
+    # 64,996 / 100,000 = 64.996% -> shown 64.99% (< 65%), not 65%; 3,404 / 1,000 = 3.404 -> shown 3.41 (> 3.4)
+    assert r.diversion_achieved_percent == 64.99 and r.diversion_meets_minimum is False
+    assert r.diversion_shortfall == 4.0                                               # 65,000 - 64,996 = 4
+    assert r.low_disposal_actual_lbs_per_sqft == 3.41 and r.low_disposal_meets_cap is False
+    assert r.waste_requirement_met is False
+    exact = b.calgreen_and_stormwater("single_family", sq_ft=2400, cd_waste_generated_tons=10,
+                                      cd_waste_diverted_tons=6.5, landfill_disposal_lbs=8160, as_of=AS_OF)
+    assert exact.diversion_meets_minimum is True and exact.low_disposal_meets_cap is True   # 65% and 3.4 exactly
+    add = b.permit_required("addition", "addition", project_type="nonresidential", valuation_usd=100000,
+                            sq_ft=1000.4, existing_building_sq_ft=10000, year_built=1980, as_of=AS_OF)
+    # 1,000.4 / 10,000 = 10.004% > 10% (shown 10.01%, never 10%)
+    assert add.plumbing_fixture_retrofit_required is True
+    assert "10.01% > 10%" in item(add, "Pre-1994 fixture retrofit addition").math
+
+
+def test_waste_rate_needs_both_figures_and_stormwater_prompts():
+    gen_only = b.calgreen_and_stormwater("single_family", cd_waste_generated_tons=10, as_of=AS_OF)
+    assert gen_only.diversion_achieved_percent is None and gen_only.diversion_meets_minimum is None
+    assert any("not treated as zero" in n for n in gen_only.notes)
+    assert any("Give disturbed_acres" in n for n in gen_only.notes)
+    plan = b.calgreen_and_stormwater("single_family", part_of_larger_common_plan=True, as_of=AS_OF)
+    assert plan.construction_general_permit_required is True and "common plan" in plan.cgp_basis
+    interior = b.calgreen_and_stormwater("nonresidential", "alteration", valuation_usd=50000, as_of=AS_OF)
+    assert not any("Give disturbed_acres" in n for n in interior.notes)
+
+
+def test_hvac_changeout_short_ducts_and_ductless():
+    short = b.energy_compliance_triggers("single_family", "hvac_changeout", ducts_added_or_replaced_ft=10, as_of=AS_OF)
+    # 10 ft <= 25 ft of new duct, but the existing ducts on the replaced equipment are tested -> still likely
+    assert {h.measure: h.status for h in short.hers_verifications}["duct leakage"] == "likely"
+    mini = b.energy_compliance_triggers("single_family", "hvac_changeout", ductless_system=True, as_of=AS_OF)
+    assert {h.measure: h.status for h in mini.hers_verifications} == {
+        "refrigerant charge": "likely", "airflow": "not_triggered", "fan efficacy": "not_triggered",
+        "duct leakage": "not_triggered"}
+    with pytest.raises(ValueError):
+        b.energy_compliance_triggers("single_family", "duct_alteration", ductless_system=True, as_of=AS_OF)
+
+
+def test_demolition_notice_send_by_dates():
+    mon = b.permit_required("demolish garage", "demolition", valuation_usd=8000, demolition_start_date="2026-12-14",
+                            as_of=AS_OF)
+    # Mon 2026-12-14 - 10 working days = Mon 2026-11-30; - 14 calendar days = 2026-11-30 -> 2026-11-30
+    assert mon.demolition_notice_send_by == "2026-11-30"
+    assert "2026-11-30" in next(s for s in mon.checklist if s.rule_id == b.AIR_DISTRICT).when
+    sat = b.permit_required("demolish garage", "demolition", valuation_usd=8000, demolition_start_date="2026-12-19",
+                            as_of=AS_OF)
+    # Sat 12-19 - 10 working days = Mon 12-07; - 14 calendar days = Sat 12-05 -> earlier is 2026-12-05
+    assert sat.demolition_notice_send_by == "2026-12-05"
+    soon = b.permit_required("demolish garage", "demolition", valuation_usd=8000, demolition_start_date="2026-12-02",
+                             as_of=AS_OF)
+    # Wed 12-02 back 10 weekdays (Thanksgiving 11-26 counts) = Wed 11-18, already past on 11-25
+    assert soon.demolition_notice_send_by == "2026-11-18" and any("has passed" in n for n in soon.notes)
+
+
+def test_permit_start_work_by_and_issue_date_edition():
+    r = b.permit_required("addition", "addition", valuation_usd=80000, permit_application_date="2026-02-01",
+                          permit_issued_date="2026-03-31", as_of=AS_OF)
+    assert r.start_work_by == "2027-03-31"                                          # 2026-03-31 + 12 months
+    assert any("2027-03-31" in s.when for s in r.checklist)
+    leap = b.permit_required("addition", "addition", valuation_usd=80000, permit_issued_date="2024-02-29",
+                             as_of=AS_OF)
+    assert leap.start_work_by == "2025-02-28" and leap.code_edition == 2022          # no Feb 29 in 2025
+    guessed = b.permit_required("addition", "addition", valuation_usd=80000, permit_issued_date="2026-02-10",
+                                as_of=AS_OF)
+    assert guessed.code_edition == 2025 and any("Give permit_application_date" in n for n in guessed.notes)
+    with pytest.raises(ValueError):
+        b.permit_required("addition", "addition", permit_application_date="2026-03-01",
+                          permit_issued_date="2026-02-01", as_of=AS_OF)
+
+
+def test_adu_closures_late_completeness_passed_deadline_and_jadu_lot():
+    closed = b.adu_rules("detached", 600, application_submitted_date="2026-03-02",
+                         agency_closed_dates=["2026-03-16", "2026-03-14", "2026-04-30"], as_of=AS_OF)
+    # 15 weekdays after Mon 03-02 skipping Mon 03-16 (Sat 03-14 and 04-30 do not matter) = Tue 2026-03-24
+    assert closed.completeness_deadline == "2026-03-24"
+    late = b.adu_rules("detached", 600, application_submitted_date="2026-03-02", application_complete_date="2026-05-01",
+                       as_of=AS_OF)
+    # complete date 05-01 + 60 = 2026-06-30; deemed complete 03-23 + 60 = 2026-05-22
+    assert late.approval_deadline == "2026-06-30"
+    assert any("2026-05-22" in n and "incompleteness notice" in n for n in late.notes)
+    assert any("has passed" in n and "deemed approved" in n for n in late.notes)      # 06-30 < 11-25
+    with pytest.raises(ValueError):
+        b.adu_rules("detached", 600, application_submitted_date="2026-05-01", application_complete_date="2026-03-01")
+    jadu = b.adu_rules("jadu", 400, lot_type="multifamily", as_of=AS_OF)
+    assert any("not available on a multifamily lot" in n for n in jadu.notes) and jadu.verified is False
+    assert "gov-66313-jadu-definition" in {u["key"] for u in jadu.unverified_sources}
+
+
+def test_mcp_new_params_and_clear_errors():
+    mcp = FastMCP("t")
+    b.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            demo = await c.call_tool("permit_required", {
+                "work_description": "demolish garage", "structure_type": "demolition", "valuation_usd": "8000",
+                "demolition_start_date": "2026-12-14", "as_of": AS_OF})
+            adu = await c.call_tool("adu_rules", {"adu_type": "detached", "sq_ft": 600,
+                                                  "application_submitted_date": "2026-03-02",
+                                                  "agency_closed_dates": ["2026-03-16"], "as_of": AS_OF})
+            mini = await c.call_tool("energy_compliance_triggers", {"project_type": "single_family",
+                                                                    "scope": "hvac_changeout",
+                                                                    "ductless_system": True, "as_of": AS_OF})
+            bad = await c.call_tool("adu_rules", {"adu_type": "detached", "sq_ft": 600,
+                                                  "application_submitted_date": "03/02/2026"}, raise_on_error=False)
+            return demo.structured_content, adu.structured_content, mini.structured_content, bad
+
+    demo, adu, mini, bad = asyncio.run(run())
+    assert demo["demolition_notice_send_by"] == "2026-11-30"                         # "8000" string coerced
+    assert adu["completeness_deadline"] == "2026-03-24"
+    assert {h["measure"]: h["status"] for h in mini["hers_verifications"]}["duct leakage"] == "not_triggered"
+    assert bad.is_error and "ISO date" in bad.content[0].text
 
 
 # ---------------------------------------------------------------- MCP wiring
