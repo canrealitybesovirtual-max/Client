@@ -902,7 +902,9 @@ def test_api_docs_page_is_same_origin(client):
 def test_every_cookie_write_route_requires_csrf(app):
     """Walk the real route table: any state-changing /api route reached with a valid session cookie but no CSRF
     header must be refused (403), except the few that are deliberately cookie-less."""
-    exempt = {"/api/auth/signup", "/api/auth/login", "/api/auth/logout", "/api/billing/webhook"}
+    exempt = {"/api/auth/signup", "/api/auth/login", "/api/auth/logout", "/api/billing/webhook",
+              "/api/auth/sso/start",                   # starts a login, like /api/auth/login (no session yet)
+              "/api/integrations/twilio-sms/inbound"}  # called by Twilio, authenticated by X-Twilio-Signature
     with TestClient(app, raise_server_exceptions=False) as c:
         signup(c)
         c.headers.pop("x-csrf-token")

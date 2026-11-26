@@ -4,7 +4,8 @@ One app, three parts:
   /api/*   FastAPI JSON API (accounts, tools, projects, subs, documents, field logs, dashboard, billing,
            integrations: /api/integrations, see docs/integrations-dev.md)
   /        the offline-capable web app (app/static)
-  /mcp     the FastMCP server from server.py (streamable HTTP), behind an API-key gate and audit log
+  /mcp     the FastMCP server from server.py (streamable HTTP), behind an API-key gate, per-key tool scopes and rate
+           limits, and the MCP call log (app/auth.py MCPGate, app/mcp_governance.py, docs/mcp-security.md)
   /health  health check
 The MCP app is created with path="/mcp" and mounted at the root (after every other route), so the endpoint is
 exactly /mcp with no redirect, and custom routes registered on the MCP server keep working. Its lifespan (the MCP
@@ -24,7 +25,8 @@ from starlette.staticfiles import StaticFiles
 
 from tradecomply import cslb
 
-from . import api, auth, billing, connectors, integrations_api
+from . import api, auth, billing, connectors, integrations_api, mcp_governance, sso
+from .connectors import alerts, calendar_feed, docusign, procore, schedule_import, splunk, twilio_sms
 from .config import Platform, Settings
 
 log = logging.getLogger("tradecomply")
@@ -151,12 +153,17 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
     @asynccontextmanager
     async def api_lifespan(_app):
         store = platform.store
-        log.info("TradeComply platform ready (storage %s, data dir %s, MCP key required: %s, Stripe: %s)",
-                 store.describe(), store.data_dir, settings.mcp_require_key, settings.stripe_enabled)
+        log.info("TradeComply platform ready (storage %s, data dir %s, MCP key required: %s (%s), Stripe: %s)",
+                 store.describe(), store.data_dir, settings.mcp_require_key, settings.mcp_access_reason,
+                 settings.stripe_enabled)
+        for warning in settings.mcp_access_warnings:
+            log.warning("MCP access: %s", warning)
         found = connectors.discover()
         log.info("integrations: %d connector(s) registered%s", len(found),
                  f"; failed to load: {', '.join(sorted(connectors.import_errors))}" if connectors.import_errors else "")
         platform.events.start()           # starts a thread only; no database call on the event loop
+        if settings.events_background:    # same switch as the event worker (tests drive both by hand)
+            splunk.start_exporter(platform)   # background HEC export thread; idle until a company connects Splunk
         if not store.persistent:
             log.warning("STORAGE IS NOT PERSISTENT: SQLite at %s is on this instance's own filesystem, which Render "
                         "replaces on every deploy and restart, so accounts, projects and logs will be lost. Set "
@@ -165,6 +172,7 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
         try:
             yield
         finally:
+            await anyio.to_thread.run_sync(splunk.stop_exporter, platform)   # thread join: off the event loop
             await anyio.to_thread.run_sync(platform.events.stop)    # joins the worker: off the event loop
             store.close()
 
@@ -179,7 +187,14 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(billing.router)
     app.include_router(api.router)
+    # Connector routers first: their fixed paths (/api/integrations/docusign/...) must win over the generic
+    # /api/integrations/{provider}/... routes.
+    for connector_router in (docusign.router, procore.router, alerts.router, twilio_sms.router,
+                             calendar_feed.router, schedule_import.router, splunk.router):
+        app.include_router(connector_router)
+    app.include_router(sso.router)
     app.include_router(integrations_api.router)
+    app.include_router(mcp_governance.router)
 
     @app.get("/health", include_in_schema=False)
     async def health():

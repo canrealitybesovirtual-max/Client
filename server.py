@@ -93,7 +93,7 @@ def check_subcontractor_compliance(
 
 MODULES = ("rulebook_tools", "licensing", "contracts", "payments", "payroll", "safety_programs", "public_works",
            "building", "business_ops", "project_setup", "jobsite_safety", "hr_compliance", "accessibility",
-           "equipment_emissions", "local_rules", "trade_certifications", "federal_projects")
+           "equipment_emissions", "local_rules", "trade_certifications", "federal_projects", "integrations_guide")
 for _name in MODULES:
     importlib.import_module(f"tradecomply.{_name}").register(mcp)
 

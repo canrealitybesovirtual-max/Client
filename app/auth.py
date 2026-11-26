@@ -153,14 +153,18 @@ class RateLimiter:
         self._hits: dict[str, deque] = {}
         self._lock = threading.Lock()
 
-    def retry_after(self, key: str) -> int:
+    def retry_after(self, key: str, limit: int | None = None) -> int:
+        """Seconds until `key` may act again (0 = now). `limit` overrides this limiter's limit for this key (a
+        per-API-key rate); it must not exceed self.limit, or a locked-out key could be evicted under memory
+        pressure."""
         now = time.monotonic()
+        cap = self.limit if limit is None else min(int(limit), self.limit)
         with self._lock:
             q = self._hits.get(key)
             while q and q[0] <= now - self.window:
                 q.popleft()
-            if q and len(q) >= self.limit:
-                return int(q[0] + self.window - now) + 1
+            if q and len(q) >= cap:
+                return int(q[len(q) - cap] + self.window - now) + 1
             return 0
 
     def hit(self, key: str):
@@ -210,6 +214,8 @@ class Principal:
     key_id: int | None = None
     key_prefix: str | None = None
     must_change_password: bool = False
+    scopes: dict | None = None        # API keys only: tool scope (None = all read-only tools; mcp_governance.py)
+    rate_limit: int | None = None     # API keys only: tool calls per minute (None = the platform default)
 
     @property
     def label(self) -> str:
@@ -241,7 +247,11 @@ def principal_from_key(platform, plain: str) -> Principal | None:
     key = platform.store.api_key_by_hash(hash_key(plain))
     if not key or key["revoked"]:
         return None
-    return Principal(tenant_id=key["tenant_id"], role="office", via="key", key_id=key["id"], key_prefix=key["prefix"])
+    from .mcp_governance import key_expired        # local import: mcp_governance imports this module
+    if key_expired(key):
+        return None
+    return Principal(tenant_id=key["tenant_id"], role="office", via="key", key_id=key["id"], key_prefix=key["prefix"],
+                     scopes=key.get("scopes"), rate_limit=key.get("rate_limit_per_min"))
 
 
 def user_fingerprint(platform, user: dict) -> str:
@@ -282,7 +292,11 @@ async def get_principal(request: Request) -> Principal:
     if token:
         p = await anyio.to_thread.run_sync(principal_from_key, platform, token)
         if not p:
-            raise HTTPException(401, "Invalid or revoked API key", headers={"WWW-Authenticate": "Bearer"})
+            raise HTTPException(401, "Invalid, expired or revoked API key", headers={"WWW-Authenticate": "Bearer"})
+        from .mcp_governance import rest_api_allowed
+        if not rest_api_allowed(p.scopes) and not _tool_route(request):
+            raise HTTPException(403, "This API key is limited to tool calls (/mcp and /api/tools). An owner or office "
+                                     "user can widen it in Settings > AI assistant (MCP) > API keys.")
     else:
         p, nonce = await anyio.to_thread.run_sync(principal_from_session, platform,
                                                   request.cookies.get(SESSION_COOKIE))
@@ -296,6 +310,13 @@ async def get_principal(request: Request) -> Principal:
                 raise HTTPException(403, "Security check failed (CSRF). Reload the page and try again.")
     request.state.principal = p
     return p
+
+
+def _tool_route(request: Request) -> bool:
+    """The REST routes a tool-calls-only API key may use: list tools, run a tool, and the tool definition hashes."""
+    path, method = request.url.path, request.method
+    return (path in ("/api/tools", "/api/mcp/tool-hashes") and method in SAFE_METHODS) or \
+        (path.startswith("/api/tools/") and path.count("/") == 3 and method == "POST")
 
 
 def require_roles(*roles: str):
@@ -403,6 +424,12 @@ async def login(body: LoginIn, request: Request):
         platform.email_limiter.hit(ekey)
         raise HTTPException(401, "Email or password is incorrect")
     platform.login_limiter.reset(key)
+    # A company that requires single sign-on refuses password sign-in for everyone but owners (their break-glass
+    # path, logged). Checked only after the password, so the answer says nothing about unknown emails.
+    from . import sso       # local import: app.sso imports this module
+    refusal = await anyio.to_thread.run_sync(sso.password_login_refusal, platform, user)
+    if refusal:
+        raise HTTPException(403, refusal)
     await anyio.to_thread.run_sync(lambda: platform.store.update_user(
         user["tenant_id"], user["id"], last_login=datetime.now(timezone.utc).isoformat()))
     resp = JSONResponse({"ok": True, "must_change_password": bool(user["must_change_password"])})
@@ -493,8 +520,13 @@ def _parse_jsonrpc(body: bytes) -> list[dict]:
     return [m for m in msgs if isinstance(m, dict)]
 
 
+def _rpc_key(rpc_id) -> str:
+    """A hashable key for a JSON-RPC id (a client may send any JSON value there)."""
+    return json.dumps(rpc_id, sort_keys=True, default=str)
+
+
 def _responses_from(body: bytes, content_type: str) -> dict:
-    """Map JSON-RPC id -> response message, from a JSON or text/event-stream body."""
+    """Map _rpc_key(JSON-RPC id) -> response message, from a JSON or text/event-stream body."""
     out = {}
     chunks = []
     if "text/event-stream" in content_type:
@@ -506,7 +538,7 @@ def _responses_from(body: bytes, content_type: str) -> dict:
     for c in chunks:
         for m in _parse_jsonrpc(c):
             if "id" in m and ("result" in m or "error" in m):
-                out[m["id"]] = m
+                out[_rpc_key(m["id"])] = m
     return out
 
 
@@ -518,50 +550,99 @@ def _scope_ip(scope, headers: dict, platform) -> str:
     return client[0] if client else "unknown"
 
 
+def _call_params(call: dict) -> tuple[str, object]:
+    params = call.get("params")
+    params = params if isinstance(params, dict) else {}
+    name = params.get("name", "?")
+    return (name if isinstance(name, str) else str(name))[:200], params.get("arguments")
+
+
 class MCPGate:
-    """Wraps the FastMCP HTTP app. On /mcp: checks the API key (required when MCP_REQUIRE_KEY=1, optional
-    otherwise) and writes an audit row for every tools/call, with the result's `verified` flag."""
+    """Wraps the FastMCP HTTP app. On /mcp (see docs/mcp-security.md and app/mcp_governance.py):
+
+    - Origin: a request carrying an Origin header from another site gets 403. Non-browser MCP clients send none
+      and are not affected.
+    - API key: required when settings.mcp_require_key (on Render unless MCP_PUBLIC_DEMO=1), optional otherwise. An
+      invalid, expired or revoked key gets 401, a company whose trial or subscription ended 402.
+    - tools/call: rate limits first (per key: its own limit or 600/min; per company: 1,200/min over all its keys;
+      anonymous: 60/min per IP and 300/min in total), then the key's tool scope: a call outside it gets a JSON-RPC
+      error and never reaches the tool.
+    - tools/list: a key whose scope is narrower than every tool sees only the tools it may call.
+    - audit: one mcp_audit_log row per call (ok / error / denied / rate_limited; the SHA-256 of the arguments, never
+      the arguments) plus the activity-log row for calls that ran, written after the response has been sent.
+    """
 
     MAX_BODY = 4 * 1024 * 1024
     MAX_CAPTURE = 2 * 1024 * 1024
     MAX_CALLS = 20
+    MAX_LIST_BODY = 4 * 1024 * 1024
+    DENIED = -32003            # JSON-RPC server-defined error code (-32000..-32099) for a call outside the key scope
 
     def __init__(self, app, platform):
         self.app = app
         self.platform = platform
 
-    async def _reply(self, send, status: int, message: str, extra_headers=()):
-        body = json.dumps({"jsonrpc": "2.0", "id": None, "error": {"code": -32001, "message": message}}).encode()
-        headers = [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode()), *extra_headers]
+    @staticmethod
+    async def _send_json(send, status: int, payload, extra_headers=()):
+        body = json.dumps(payload).encode()
+        headers = [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode()),
+                   *extra_headers]
         await send({"type": "http.response.start", "status": status, "headers": headers})
         await send({"type": "http.response.body", "body": body})
+
+    async def _reply(self, send, status: int, message: str, extra_headers=(), data: dict | None = None,
+                     code: int = -32001):
+        error = {"code": code, "message": message}
+        if data:
+            error["data"] = data
+        await self._send_json(send, status, {"jsonrpc": "2.0", "id": None, "error": error}, extra_headers)
+
+    def _key_help(self, headers: dict, scope: dict) -> dict:
+        s = self.platform.settings
+        base = s.app_url
+        if not base:
+            proto = (headers.get("x-forwarded-proto") or "").split(",")[0].strip() if not s.local_mode else ""
+            base = f"{proto if proto in ('http', 'https') else scope.get('scheme') or 'http'}://" \
+                   f"{headers.get('host') or 'localhost'}"
+        return {"get_a_key": f"{base}/#/settings", "header": "Authorization: Bearer <API key>",
+                "where": "TradeComply > Settings > AI assistant (MCP) > Create API key (owner or office user)"}
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or not _is_mcp(scope.get("path", "")):
             return await self.app(scope, receive, send)
-        from .billing import entitlement   # local import: billing imports this module
+        from . import mcp_governance as gov     # local imports: both modules import this one
+        from .billing import entitlement
+        platform = self.platform
         headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
+        www_auth = [(b"www-authenticate", b'Bearer realm="tradecomply"')]
+        if not gov.origin_allowed(platform, headers, scope):
+            return await self._reply(send, 403, "Origin not allowed: web pages on other sites can't call this MCP "
+                                                "server. MCP clients that send no Origin header are not affected.")
         token = bearer(headers)
         principal = None
         if token:
-            principal = await anyio.to_thread.run_sync(principal_from_key, self.platform, token)
+            def lookup():
+                p = principal_from_key(platform, token)
+                return p, (platform.store.get_tenant(p.tenant_id) if p else None)
+            principal, tenant = await anyio.to_thread.run_sync(lookup)
             if principal is None:
-                return await self._reply(send, 401, "Invalid or revoked API key",
-                                         [(b"www-authenticate", b'Bearer realm="tradecomply"')])
-            tenant = await anyio.to_thread.run_sync(self.platform.store.get_tenant, principal.tenant_id)
+                return await self._reply(send, 401, "Invalid, expired or revoked API key. Create a new key in "
+                                                    "TradeComply under Settings > AI assistant (MCP).", www_auth,
+                                         self._key_help(headers, scope))
             if not entitlement(tenant)["ok"]:
                 return await self._reply(send, 402, "Subscription required: this account's trial or subscription "
                                                     "has ended. Subscribe in Settings > Billing.")
-        elif self.platform.settings.mcp_require_key:
-            return await self._reply(send, 401, "An API key is required. Create one in the TradeComply app under "
-                                                "Settings > AI agents and send it as 'Authorization: Bearer <key>'.",
-                                     [(b"www-authenticate", b'Bearer realm="tradecomply"')])
+        elif platform.settings.mcp_require_key:
+            return await self._reply(
+                send, 401, "An API key is required for this MCP server. An owner or office user creates one in "
+                           "TradeComply under Settings > AI assistant (MCP) > Create API key, and the AI assistant "
+                           "sends it as 'Authorization: Bearer <key>'.", www_auth, self._key_help(headers, scope))
         scope.setdefault("state", {})["tc_principal"] = principal
 
         if scope.get("method") != "POST":
             return await self.app(scope, receive, send)
 
-        # Buffer the request so the tool name and arguments can be audited, then replay it downstream.
+        # Buffer the request so the tool name and arguments can be checked and audited, then replay it downstream.
         chunks, size, more = [], 0, True
         while more:
             message = await receive()
@@ -583,73 +664,148 @@ class MCPGate:
                 return {"type": "http.request", "body": body, "more_body": False}
             return await receive()
 
-        calls = [m for m in _parse_jsonrpc(body) if m.get("method") == "tools/call" and "id" in m]
-        if not calls:
+        if not body.strip():
+            return await self.app(scope, replay, send)
+        try:
+            parsed = json.loads(body)
+        except (ValueError, RecursionError):
+            # Fail closed: a body this gate can't read is never passed on, so no tool call can slip past the
+            # scope and rate checks because two JSON parsers disagree.
+            return await self._reply(send, 400, "Parse error: the request body is not valid JSON", code=-32700)
+        msgs = [m for m in (parsed if isinstance(parsed, list) else [parsed]) if isinstance(m, dict)]
+        calls = [m for m in msgs if m.get("method") == "tools/call"]
+        lists = [m for m in msgs if m.get("method") == "tools/list"]
+        if not calls and not lists:
             return await self.app(scope, replay, send)
         if len(calls) > self.MAX_CALLS:
             # MCP (2025-06-18) has no JSON-RPC batching; without this cap one request could write thousands of
             # audit rows.
             return await self._reply(send, 413, f"Too many tool calls in one request (max {self.MAX_CALLS})")
-        if principal:
-            limits = [(self.platform.mcp_key_limiter, f"key|{principal.key_id}")]
-        else:
-            limits = [(self.platform.mcp_anon_limiter, f"ip|{_scope_ip(scope, headers, self.platform)}"),
-                      (self.platform.mcp_anon_global_limiter, "all")]
-        wait = max(lim.retry_after(k) for lim, k in limits)
-        if not wait:
-            for _ in calls:
-                for lim, k in limits:
-                    lim.hit(k)
-        if wait:
-            return await self._reply(send, 429, "Too many tool calls. Slow down"
-                                     + ("" if principal else ", or use an API key from the TradeComply app")
-                                     + f" and retry in {wait} s.", [(b"retry-after", str(wait).encode())])
 
-        captured, ctype, written = bytearray(), "", False
+        index = await gov.tool_index(platform)
+        policy = principal.scopes if principal else None
+        ip = _scope_ip(scope, headers, platform)
         tenant_id = principal.tenant_id if principal else None
+        key_id = principal.key_id if principal else None
+
+        def entry(call: dict, status: str, duration_ms=None) -> dict:
+            name, args = _call_params(call)
+            return {"tenant_id": tenant_id, "api_key_id": key_id, "tool": name, "status": status, "ip": ip,
+                    "args_sha256": gov.args_sha256(args if args is not None else {}), "duration_ms": duration_ms}
+
+        async def record(entries, activity=()):
+            with anyio.CancelScope(shield=True):      # a client that hangs up must not cost the audit row
+                await gov.record(platform, entries, activity)
+
+        if calls:
+            if principal:
+                limits = [(platform.mcp_key_limiter, f"key|{key_id}", principal.rate_limit),
+                          (platform.mcp_tenant_limiter, f"tenant|{tenant_id}", None)]
+            else:
+                limits = [(platform.mcp_anon_limiter, f"ip|{ip}", None),
+                          (platform.mcp_anon_global_limiter, "all", None)]
+            wait = max(lim.retry_after(k, cap) for lim, k, cap in limits)
+            if wait:
+                await self._reply(send, 429, "Too many tool calls. Slow down"
+                                  + ("" if principal else ", or use an API key from the TradeComply app")
+                                  + f" and retry in {wait} s.", [(b"retry-after", str(wait).encode())])
+                if gov.reject_logging_allowed(platform, limits[0][1]):
+                    await record([entry(c, "rate_limited") for c in calls])
+                return
+            for _ in calls:
+                for lim, k, _cap in limits:
+                    lim.hit(k)
+            refused = [c for c in calls if not gov.scope_allows(policy, _call_params(c)[0], index)]
+            if refused:
+                errors = []
+                for c in calls:
+                    name = _call_params(c)[0]
+                    msg = (f"This API key is not allowed to use the tool {name!r}. An owner or office user can "
+                           "change the key's tools in TradeComply under Settings > AI assistant (MCP) > API keys."
+                           if c in refused else "Not run: another tool call in this request is not allowed for "
+                                                "this API key.")
+                    if principal is None:
+                        msg = f"The tool {name!r} needs an API key that is allowed to use it."
+                    errors.append({"jsonrpc": "2.0", "id": c.get("id"), "error": {
+                        "code": self.DENIED, "message": msg, "data": {"tool": name, "reason": "not_in_key_scope"}}})
+                await self._send_json(send, 200, errors if isinstance(parsed, list) else errors[0])
+                if gov.reject_logging_allowed(platform, limits[0][1]):
+                    await record([entry(c, "denied") for c in calls])
+                return
+
+        allowed = None                    # tools/list: only the tools this key may call
+        if lists:
+            names = {n for n in index if gov.scope_allows(policy, n, index)}
+            if len(names) < len(index):
+                allowed = names
+
+        captured, ctype, finished = bytearray(), "", False
+        held: dict = {"start": None, "body": bytearray()}
+        started, ended = time.monotonic(), None
         user = principal.label if principal else "anonymous (MCP)"
 
-        def write_audit():
+        async def finish():
+            nonlocal finished
+            if finished or not calls:
+                finished = True
+                return
+            finished = True
+            duration = int(((ended or time.monotonic()) - started) * 1000)
             results = _responses_from(bytes(captured), ctype)
+            entries, activity = [], []
             for call in calls:
-                params = call.get("params") or {}
-                res = results.get(call["id"]) or {}
-                result = res.get("result") or {}
-                sc = result.get("structuredContent") if isinstance(result, dict) else None
-                verified = sc.get("verified") if isinstance(sc, dict) and isinstance(sc.get("verified"), bool) else None
+                name, args = _call_params(call)
+                res = results.get(_rpc_key(call.get("id"))) or {}
+                result = res.get("result") if isinstance(res.get("result"), dict) else {}
+                sc = result.get("structuredContent")
+                verified = sc.get("verified") if isinstance(sc, dict) and isinstance(sc.get("verified"), bool) \
+                    else None
                 ok = bool(res) and "error" not in res and not result.get("isError", False)
-                self.platform.store.audit(tenant_id, user, str(params.get("name", "?"))[:200],
-                                          _summarize_args(params.get("arguments") or {}), verified, ok=ok,
-                                          source="mcp")
-            if tenant_id is None:
-                self.platform.anon_audit_writes += len(calls)
-                if self.platform.anon_audit_writes >= 1000:      # keep the anonymous demo log bounded
-                    self.platform.anon_audit_writes = 0
-                    self.platform.store.trim_anonymous_audit(ANON_AUDIT_KEEP)
+                entries.append(entry(call, "ok" if ok else "error", duration))
+                activity.append({"tenant_id": tenant_id, "user": user, "tool": name, "verified": verified, "ok": ok,
+                                 "args": gov.activity_args(args if args is not None else {}), "source": "mcp"})
+            await record(entries, activity)
 
-        async def capture(message):
-            nonlocal ctype, written
-            if message["type"] == "http.response.start":
+        async def out(message):
+            nonlocal ctype, ended
+            kind = message["type"]
+            if kind == "http.response.start":
                 for k, v in message.get("headers", []):
                     if k.lower() == b"content-type":
                         ctype = v.decode("latin-1")
-            elif message["type"] == "http.response.body":
-                if len(captured) < self.MAX_CAPTURE:
-                    captured.extend(message.get("body", b""))
-                if not message.get("more_body") and not written:
-                    written = True
-                    try:
-                        await anyio.to_thread.run_sync(write_audit)
-                    except Exception:      # never fail the MCP call because of the audit log (e.g. a DB blip)
-                        log.exception("MCP audit write failed")
+                if allowed is not None:
+                    held["start"] = message           # sent once the tool list has been filtered
+                    return
+            elif kind == "http.response.body":
+                chunk = message.get("body", b"")
+                more = message.get("more_body", False)
+                if calls and len(captured) < self.MAX_CAPTURE:
+                    captured.extend(chunk)
+                if held["start"] is not None:
+                    held["body"].extend(chunk)
+                    if more and len(held["body"]) <= self.MAX_LIST_BODY:
+                        return
+                    start, raw = held["start"], bytes(held["body"])
+                    held["start"] = None
+                    new = None if more else gov.filter_tools_list(raw, ctype, allowed)
+                    if new is not None:
+                        hs = list(start.get("headers", []))
+                        had_length = any(k.lower() == b"content-length" for k, _ in hs)
+                        hs = [(k, v) for k, v in hs if k.lower() != b"content-length"]
+                        if had_length:
+                            hs.append((b"content-length", str(len(new)).encode()))
+                        start = {**start, "headers": hs}
+                    await send(start)
+                    message = {**message, "body": raw if new is None else new}
+                await send(message)
+                if not more and ended is None:
+                    ended = time.monotonic()
+                return
             await send(message)
 
         try:
-            await self.app(scope, replay, capture)
+            await self.app(scope, replay, out)
         finally:
-            if not written:
-                written = True
-                try:
-                    await anyio.to_thread.run_sync(write_audit)
-                except Exception:          # never fail the MCP call because of the audit log
-                    log.exception("MCP audit write failed")
+            # Only now, after the last byte of the response went out, are the audit rows written: the client never
+            # waits for the database.
+            await finish()

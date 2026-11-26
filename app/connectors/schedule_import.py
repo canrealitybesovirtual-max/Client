@@ -4,32 +4,40 @@ dates that drive California lien and notice deadlines, put them on the project, 
 What it reads (no network, no vendor account: the customer exports a file and uploads it):
 
 Microsoft Project XML (MSPDI), File > Save As > XML Format (*.xml). From Microsoft's Project XML Data Interchange
-reference (github.com/MicrosoftDocs/office-developer-msproject-xml-docs, the source of learn.microsoft.com
-/office-project/xml-data-interchange, read this session): the root element is Project (XSD targetNamespace
-http://schemas.microsoft.com/project/2007 in the 2007 schema; any http://schemas.microsoft.com/project namespace is
-accepted), with Name, Title, StartDate, FinishDate, StatusDate and Tasks/Task. Task children used: UID (xsd:integer,
-required), ID, Name (max 512), WBS, OutlineNumber, OutlineLevel, Start, Finish, ActualStart, ActualFinish
-(xsd:dateTime "YYYY-MM-DDTHH:MM:SS"), Milestone, Summary, IsNull (xsd:boolean, 1/0), PercentComplete. Nested
-elements (Baseline, ExtendedAttribute, PredecessorLink, TimephasedData) are skipped, so a baseline Start never
-overrides the task's own Start.
+reference, re-read on 2026-11-26 from its source repository github.com/MicrosoftDocs/office-developer-msproject-xml-docs
+(project-xml-data-interchange/*.md, published at https://learn.microsoft.com/en-us/office-project/xml-data-interchange/,
+which the sandbox could not reach directly): project-element.md (Project is the top-level element; Name, Title,
+StartDate, FinishDate, StatusDate), xml-schema-for-the-project-element.md (targetNamespace
+http://schemas.microsoft.com/project/2007; the element pages' examples use http://schemas.microsoft.com/project, so
+any namespace starting with that is accepted), task-element.md (Tasks/Task; UID required, ID, Name, WBS,
+OutlineNumber, OutlineLevel, Start, Finish, ActualStart, ActualFinish, Milestone, Summary, IsNull, PercentComplete;
+its example writes dates as 2007-11-14T08:00:00), uid-element.md (UID is an integer, unique within one project),
+milestone-element.md / summary-element.md / isnull-element.md (boolean 0 = False, 1 = True), start-element.md /
+actualstart-element.md (DateTimeValue). Nested elements (Baseline, ExtendedAttribute, PredecessorLink,
+TimephasedData) are skipped, so a baseline Start never overrides the task's own Start.
 
-Primavera P6 XER (Oracle's tab-delimited export). From Oracle's XER Import/Export Data Map Guide (as summarized in
-tradecomply/data/integrations.json; docs.oracle.com was not reachable this session): TASK.task_code (Activity ID),
-task_name, target_start_date (Planned Start), act_start_date, act_end_date, early_start_date, clndr_id. The record
-syntax (ERMHDR header line; %T table, %F field names, %R record, %E end; tab separated), the yyyy-MM-dd HH:mm date
-form, target_end_date (Planned Finish), early_end_date, restart_date/reend_date, task_type values TT_Task, TT_Rsrc,
-TT_LOE, TT_Mile, TT_FinMile, TT_WBS and status_code values TK_NotStart, TK_Active, TK_Complete come from MPXJ's
-reader (github.com/joniles/mpxj: XerFile.java, ActivityTypeHelper.java, ActivityStatusHelper.java), a widely used
-open-source implementation, not an Oracle spec: listed in `unconfirmed`. Text is read as UTF-8 when it decodes as
-UTF-8, otherwise as Windows-1252 (MPXJ's default for XER).
+Primavera P6 XER (tab-delimited). Oracle's XER Import/Export Data Map Guide is on docs.oracle.com, which the sandbox
+could not reach, so the format comes from MPXJ (github.com/joniles/mpxj, the open-source reader most tools use),
+re-read on 2026-11-26: XerFile.java (the first record must be ERMHDR; record types %T table, %F field names, %R
+record, %E end; tab separated; dates "yyyy-MM-dd", "yyyy-MM-dd HH:mm" or "yyyy-MM-dd HH:mm:ss", with a fallback that
+also takes "HH.mm"), PrimaveraXERFileReader.java (Windows-1252 by default), TableProjectReader.java (PROJECT:
+proj_short_name, last_recalc_date = status date, plan_start_date, scd_end_date = scheduled finish, plan_end_date =
+must finish by; TASK: task_code = Activity ID, task_name, act_start_date, act_end_date, early_start_date,
+early_end_date, restart_date / reend_date = remaining early start/finish, target_start_date / target_end_date =
+planned start/finish), ActivityTypeHelper.java (task_type TT_Task, TT_Rsrc, TT_LOE, TT_Mile, TT_FinMile, TT_WBS) and
+ActivityStatusHelper.java (status_code TK_NotStart, TK_Active, TK_Complete). Not an Oracle spec: in `unconfirmed`.
+Text is read as UTF-8 when it decodes as UTF-8, otherwise as Windows-1252.
 
-Primavera P6 XML. Root APIBusinessObjects in namespace http://xmlns.oracle.com/Primavera/P6/V<version>/API/
-BusinessObjects, Project (Id, Name, ObjectId, DataDate, PlannedStartDate, ScheduledFinishDate) and Activity (nested
-in Project or at the root with ProjectObjectId): ObjectId, Id, Name, Type ("Task Dependent", "Resource Dependent",
-"Level of Effort", "Start Milestone", "Finish Milestone", "WBS Summary"), Status ("Not Started", "In Progress",
-"Completed"), PlannedStartDate, PlannedFinishDate, StartDate, FinishDate, ActualStartDate, ActualFinishDate
-("yyyy-MM-ddTHH:mm:ss"). Element names from MPXJ's classes generated from Oracle's p6apibo.xsd (not publicly
-downloadable); BaselineProject activities are skipped.
+Primavera P6 XML. From MPXJ's JAXB classes generated from Oracle's p6apibo.xsd (src/main/java/org/mpxj/primavera/
+schema: package-info.java namespace http://xmlns.oracle.com/Primavera/P6/V25.12/API/BusinessObjects, APIBusinessObjects
+.java root with Project, BaselineProject and Activity lists, ProjectType.java, ActivityType.java) and
+ActivityTypeHelper / ActivityStatusHelper (the XML values below); NamespaceFilter.java shows that real exports differ
+in the version part of the namespace and may name the root BusinessObjects, so both are accepted. Project (ObjectId,
+Id, Name, DataDate, PlannedStartDate, ScheduledFinishDate) and Activity (nested in Project or at the root with
+ProjectObjectId): ObjectId, Id, Name, Type ("Task Dependent", "Resource Dependent", "Level of Effort", "Start
+Milestone", "Finish Milestone", "WBS Summary"), Status ("Not Started", "In Progress", "Completed"),
+PlannedStartDate, PlannedFinishDate, StartDate, FinishDate, ActualStartDate, ActualFinishDate. BaselineProject
+activities are skipped.
 
 Safety: files are capped at the server's request size (8 MB by default). XML is parsed with expat directly: any
 DOCTYPE, entity or notation declaration is refused (no XXE, no entity expansion), external entities and parameter
@@ -40,10 +48,11 @@ How dates are mapped (activity names, case-insensitive; a milestone's actual dat
   construction start   notice to proceed / NTP / mobilization / construction start / groundbreaking -> start_date
   first furnishing     "first furnishing" / "first delivery" milestone, or the earliest start of your activities
   substantial / final  "substantial completion", "final completion", "final acceptance", "project completion"
-  completion           -> completion_date: the EARLIER of substantial and final completion, which can only make the
-                          lien and stop payment notice deadlines earlier (safer); Civil Code 8180 completion (actual
-                          completion, occupation or use with labor stopped, 60 days' cessation, or a recorded notice
-                          after 30 days' cessation) may be later
+  completion           -> completion_date: whichever of substantial and final completion gives the EARLIEST lien
+                          recording and stop payment notice deadlines (see propose_dates: an earlier completion
+                          date is not always safer, because it can make a notice of completion look late); Civil
+                          Code 8180 completion (actual completion, occupation or use with labor stopped, 60 days'
+                          cessation, or a recorded notice after 30 days' cessation) may differ
   notice of completion "notice of completion" / "notice of cessation" / NOC -> noc_date
   last furnishing      "last furnishing" / "last day of work" milestone, or the latest finish of your activities
 "Your activities": with activity_filter (words in your activity names, e.g. "electrical, lighting"), the matching
@@ -110,7 +119,7 @@ class ScheduleError(ValueError):
 
 
 # ---------------------------------------------------------------------------- dates
-_DT = re.compile(r"^\s*(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?"
+_DT = re.compile(r"^\s*(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2})[:.]?(\d{2})(?:[:.]?(\d{2})(?:\.\d+)?)?)?"
                  r"\s*(Z|[+-]\d{2}:?\d{2})?\s*$")
 
 
@@ -122,15 +131,14 @@ def parse_date(value) -> date | None:
         return None
     y, mo, d, hh, mm, ss, tz = m.groups()
     try:
+        dt = datetime(int(y), int(mo), int(d), int(hh or 0), int(mm or 0), int(ss or 0))   # validates the time too
         if tz:
             off = tz.replace(":", "")
             sign = 1 if off == "Z" or off[0] == "+" else -1
             minutes = 0 if off == "Z" else sign * (int(off[1:3]) * 60 + int(off[3:5]))
-            dt = datetime(int(y), int(mo), int(d), int(hh or 0), int(mm or 0), int(ss or 0),
-                          tzinfo=timezone(timedelta(minutes=minutes)))
-            day = dt.astimezone(CA_TZ).date()
+            day = dt.replace(tzinfo=timezone(timedelta(minutes=minutes))).astimezone(CA_TZ).date()
         else:
-            day = date(int(y), int(mo), int(d))
+            day = dt.date()
     except (ValueError, OverflowError):
         return None
     return day if MIN_YEAR <= day.year <= MAX_YEAR else None
@@ -319,7 +327,8 @@ def parse_mspdi(data: bytes) -> Schedule:
             sched.project_finish = sched.project_finish or parse_date(t.get("Finish"))
             continue                                   # the project summary task
         kind = "summary" if _flag(t.get("Summary")) else ("milestone" if _flag(t.get("Milestone")) else "task")
-        a = Activity(uid=(t.get("UID") or "")[:40], code=(t.get("WBS") or t.get("OutlineNumber") or t.get("ID") or "")[:60],
+        code = t.get("WBS") or t.get("OutlineNumber") or t.get("ID") or ""
+        a = Activity(uid=(t.get("UID") or "")[:40], code=code[:60],
                      name=(t.get("Name") or "")[:512], kind=kind, start=parse_date(t.get("Start")),
                      finish=parse_date(t.get("Finish")), actual_start=parse_date(t.get("ActualStart")),
                      actual_finish=parse_date(t.get("ActualFinish")))
@@ -345,9 +354,15 @@ def _p6_record(path: tuple[str, ...]) -> bool:
                                                                                                          "Activity"))
 
 
+def _p6_key(project: dict) -> str:
+    return project.get("ObjectId") or project.get("Id") or ""
+
+
 def parse_p6_xml(data: bytes, source_project: str | None = None) -> Schedule:
     col = parse_xml_safely(data, _p6_record, P6_ACTIVITY_FIELDS | P6_PROJECT_FIELDS)
-    if col.root != "APIBusinessObjects" or not P6_NS_RE.match(col.root_ns or ""):
+    # MPXJ (NamespaceFilter.java) reads any namespace and also a root named BusinessObjects; the namespace carries
+    # the P6 version (V25.12 in its current schema), so any Primavera P6 BusinessObjects namespace is accepted.
+    if col.root not in ("APIBusinessObjects", "BusinessObjects") or not P6_NS_RE.match(col.root_ns or ""):
         raise ScheduleError("This XML is not a Primavera P6 XML export (APIBusinessObjects).")
     projects = [rec for path, rec in col.records if path[-1] == "Project"]
     by_id = {rec["_id"]: rec for rec in projects}
@@ -356,10 +371,11 @@ def parse_p6_xml(data: bytes, source_project: str | None = None) -> Schedule:
         if path[-1] != "Activity":
             continue
         parent = by_id.get(rec["_parent"])            # nested in a Project, else ProjectObjectId names it
-        activities.append(((parent or {}).get("ObjectId") or rec.get("ProjectObjectId") or "", _p6_activity(rec)))
+        activities.append(((_p6_key(parent) if parent else "") or rec.get("ProjectObjectId") or "",
+                           _p6_activity(rec)))
     return _choose_project(
         "p6_xml",
-        [{"key": p.get("ObjectId") or p.get("Id") or "", "code": p.get("Id"), "name": p.get("Name"),
+        [{"key": _p6_key(p), "code": p.get("Id"), "name": p.get("Name"),
           "data_date": parse_date(p.get("DataDate")),
           "start": parse_date(p.get("PlannedStartDate") or p.get("StartDate")),
           "finish": parse_date(p.get("ScheduledFinishDate") or p.get("FinishDate"))} for p in projects],
@@ -503,7 +519,7 @@ def parse_schedule(data: bytes, source_project: str | None = None) -> Schedule:
     elif stripped.startswith(b"<") or data.startswith((b"\xff\xfe", b"\xfe\xff")):
         sniff = data[:4096].decode("utf-8", errors="ignore") if not data.startswith((b"\xff\xfe", b"\xfe\xff")) \
             else data[:8192].decode("utf-16", errors="ignore")
-        if "APIBusinessObjects" in sniff:
+        if "BusinessObjects" in sniff and ("APIBusinessObjects" in sniff or "Primavera" in sniff):
             sched = parse_p6_xml(data, source_project)
         else:
             sched = parse_mspdi(data)
@@ -573,7 +589,8 @@ def find_milestones(sched: Schedule, *, role: str, activity_filter: str | None, 
         for a in work:
             if not pattern.search(a.name):
                 continue
-            if key in ("substantial_completion", "final_completion") and PATTERNS["notice_of_completion"].search(a.name):
+            if key in ("substantial_completion", "final_completion") and \
+                    PATTERNS["notice_of_completion"].search(a.name):
                 continue                               # "Record notice of completion" is not completion itself
             d, basis = a.anchor(ANCHOR[key])
             if d:
@@ -590,6 +607,11 @@ def find_milestones(sched: Schedule, *, role: str, activity_filter: str | None, 
     words = _keywords(activity_filter)
     mine = ([a for a in work if any(w in a.name.lower() or w in a.code.lower() for w in words)] if words
             else (work if role == "direct_contractor" else []))
+    # Furnishing means labor, services, equipment or materials: recording a notice of completion is paperwork, and
+    # milestones (notice to proceed, completion) take no time, so the work tasks decide; milestones only when the
+    # matching activities are all milestones.
+    mine = [a for a in mine if not PATTERNS["notice_of_completion"].search(a.name)]
+    mine = [a for a in mine if a.kind == "task"] or mine
     if words and not mine:
         warnings.append("No activity matched your activity filter, so your own first and last furnishing dates "
                         "could not be read.")
@@ -618,22 +640,70 @@ def find_milestones(sched: Schedule, *, role: str, activity_filter: str | None, 
     return found, warnings
 
 
-def propose_dates(found: dict) -> dict:
-    """{project field: Found} for every field the schedule gives a date for (any basis)."""
-    out = {}
+def _earliest_deadline(completion: date, row: dict, found: dict, role: str, today: date) -> date | None:
+    """The earliest of the lien recording and stop payment notice deadlines if `completion` were the completion
+    date, with the other dates taken from the schedule, else from the project."""
+    def pick(key, fld):
+        return found[key].date.isoformat() if key in found else (row.get(fld) or None)
+    noc, last = pick("notice_of_completion", "noc_date"), pick("last_furnishing", "last_furnishing_date")
+    first, start = pick("first_furnishing", "first_furnishing_date"), pick("construction_start", "start_date")
+    comp = completion.isoformat()
+    public = row.get("public_or_private") == "public"
+    out = []
+    try:
+        if not public:
+            r = logic.lien_deadlines(role, last or comp, first, comp, noc, today=today, construction_start_date=start)
+            out.append(parse_date(r.lien_recording_deadline))
+    except (ValueError, OverflowError, TypeError):
+        pass
+    try:
+        if role in payments.Claimant.__args__:
+            s = payments.stop_payment_notice_deadline(
+                "public" if public else "private", role, completion_date=comp, noc_recorded_date=noc,
+                last_furnishing_date=last, first_furnishing_date=first, as_of=today,
+                construction_lender=bool(row.get("lender_name")))
+            if s.applicable:
+                out.append(parse_date(s.deadline))
+    except (ValueError, OverflowError, TypeError):
+        pass
+    out = [d for d in out if d]
+    return min(out) if out else None
+
+
+def propose_dates(found: dict, row: dict | None = None, role: str = "direct_contractor",
+                  today: date | None = None) -> tuple[dict, list[str]]:
+    """({project field: Found} for every field the schedule gives a date for (any basis), notes).
+
+    Completion: Civil Code 8180 completion is actual completion (or occupation or use with labor stopped, or a
+    cessation), which a schedule shows as substantial or final completion. Neither is always the safe choice: an
+    earlier completion date starts the 90-day period sooner, but it can also make a notice of completion look
+    recorded too late (more than 15 days after completion), which moves the deadline from 30 or 60 days after the
+    notice to 90 days after completion. So of the candidates (actual dates first) the one giving the EARLIEST lien
+    recording and stop payment notice deadlines is used, and the earlier date on a tie."""
+    row, today = row or {}, today or logic.today_ca()
+    out, notes = {}, []
     if "construction_start" in found:
         out["start_date"] = found["construction_start"]
     if "first_furnishing" in found:
         out["first_furnishing_date"] = found["first_furnishing"]
     completions = [found[k] for k in ("substantial_completion", "final_completion") if k in found]
-    actual = [f for f in completions if f.basis == "actual"]
-    if actual or completions:
-        out["completion_date"] = min(actual or completions, key=lambda f: f.date)   # earlier = safer deadlines
+    candidates = [f for f in completions if f.basis == "actual"] or completions
+    if candidates:
+        by_date = sorted(candidates, key=lambda f: f.date)
+        scored = [(_earliest_deadline(f.date, row, found, role, today), f) for f in by_date]
+        known = [(d, f) for d, f in scored if d]
+        chosen = min(known, key=lambda s: (s[0], s[1].date))[1] if known else by_date[0]
+        out["completion_date"] = chosen
+        if chosen is not by_date[0]:
+            notes.append(f"Completion date: used {chosen.date.isoformat()} rather than the earlier "
+                         f"{by_date[0].date.isoformat()}, because with the notice of completion it gives the earlier "
+                         "lien and stop payment notice deadlines (an earlier completion date would make the notice "
+                         "look recorded too late).")
     if "notice_of_completion" in found:
         out["noc_date"] = found["notice_of_completion"]
     if "last_furnishing" in found:
         out["last_furnishing_date"] = found["last_furnishing"]
-    return out
+    return out, notes
 
 
 def plan_apply(row: dict, proposed: dict, mode: str, today: date) -> tuple[dict, dict, dict, list[str]]:
@@ -792,7 +862,8 @@ def import_schedule(store, tenant_id: str, project_id: int, data: bytes, *, mode
     if role not in dashboard.CLAIMANT_ROLES:
         role = "direct_contractor"
     found, warnings = find_milestones(sched, role=role, activity_filter=activity_filter, today=today)
-    proposed = propose_dates(found)
+    proposed, choice_notes = propose_dates(found, row, role, today)
+    warnings += choice_notes
     result: dict = {}
 
     def change(current: dict) -> dict:
@@ -895,10 +966,13 @@ class ScheduleImportConnector(Connector):
         "P6 XML element names come from MPXJ's classes generated from Oracle's p6apibo.xsd; the XML namespace changes "
         "with the P6 version.",
         "Microsoft Project exports are read in any http://schemas.microsoft.com/project namespace; the 2007 schema "
-        "documents http://schemas.microsoft.com/project/2007. Task Active (inactive tasks, Project 2010+) is not in the "
-        "2007 schema pages read; inactive tasks are skipped when it is 0.",
+        "documents http://schemas.microsoft.com/project/2007. Task Active (inactive tasks, Project 2010+) is not in "
+        "the 2007 schema pages read; inactive tasks are skipped when it is 0.",
         "Activity names are matched by wording (notice to proceed, substantial completion, notice of completion, "
         "first/last furnishing); check the milestones TradeComply found before relying on the dates.",
+        "Which schedule date is 'completion' under Civil Code 8180 is a legal question. When a schedule has both "
+        "substantial and final completion, TradeComply uses the one that gives the earlier lien and stop payment "
+        "notice deadlines and says so; confirm the completion date with your attorney.",
     )
 
     def test(self) -> TestResult:
@@ -906,7 +980,8 @@ class ScheduleImportConnector(Connector):
         ok = len(sched.activities) == 1 and sched.activities[0].planned_start == date(2026, 12, 7)
         return TestResult(ok, "Schedule import is ready. Upload a Primavera P6 XER or XML file or a Microsoft Project "
                               "XML file on a project." if ok else "The schedule reader failed its self-check.",
-                          details={"formats": list(FORMAT_LABELS.values()), "max_file_mb": DEFAULT_MAX_BYTES // 2 ** 20})
+                          details={"formats": list(FORMAT_LABELS.values()),
+                                   "max_file_mb": DEFAULT_MAX_BYTES // 2 ** 20})
 
 
 # ---------------------------------------------------------------------------- HTTP route
@@ -960,16 +1035,22 @@ async def upload_schedule(project_id: int, request: Request, file: UploadFile = 
             activity_filter=activity_filter if activity_filter is not None else config.get("activity_filter"),
             source_project=source_project or None, setup_args=setup_args, file_name=file.filename))
     except ScheduleError as e:
-        _audit(platform, p, {"project_id": project_id, "error": "unreadable"}, ok=False)
+        await anyio.to_thread.run_sync(lambda: _audit(platform, p, {"project_id": project_id, "error": "unreadable"},
+                                                      ok=False))
         raise HTTPException(422, str(e))
     if result is None:
         raise HTTPException(404, "Project not found")
-    _audit(platform, p, {"project_id": project_id, "format": result["file"]["format"],
-                         "activities": result["file"]["activities"], "apply": mode,
-                         "applied": sorted(result["applied"])})
-    if result["applied"] and inst.status()["status"] != "connected":
-        await anyio.to_thread.run_sync(lambda: inst.save(status="connected", last_error=None))
+    await anyio.to_thread.run_sync(_audit, platform, p, {
+        "project_id": project_id, "format": result["file"]["format"], "activities": result["file"]["activities"],
+        "apply": mode, "applied": sorted(result["applied"])})
+    if result["applied"]:            # the database is never called on the event loop
+        await anyio.to_thread.run_sync(_mark_connected, inst)
     return result
+
+
+def _mark_connected(inst: ScheduleImportConnector) -> None:
+    if inst.status()["status"] != "connected":
+        inst.save(status="connected", last_error=None)
 
 
 def _audit(platform, p: Principal, args: dict, ok: bool = True) -> None:

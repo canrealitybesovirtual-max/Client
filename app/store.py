@@ -28,7 +28,7 @@ from datetime import datetime, timedelta, timezone
 log = logging.getLogger("tradecomply.store")
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 TENANT_STATUSES = ("trialing", "active", "past_due", "canceled")
 ROLES = ("owner", "office", "field")
@@ -280,6 +280,13 @@ MIGRATIONS: dict[int, str] = {
         revoked integer not null default 0
     );
     create index if not exists calendar_tokens_tenant on calendar_tokens(tenant_id);
+    """,
+    # MCP governance (docs/mcp-security.md): per-key tool scopes, a per-key rate limit and an optional expiry date.
+    # NULL keeps what every key had before: all read-only tools, the platform's default rate, no expiry.
+    6: """
+    alter table api_keys add column scopes_json text;
+    alter table api_keys add column rate_limit_per_min integer;
+    alter table api_keys add column expires_at text;
     """,
 }
 
@@ -560,6 +567,12 @@ PG_MIGRATIONS: dict[int, str] = {
     end
     $rls5$;
     """,
+    # MCP governance (see the SQLite migration 6). New columns on api_keys, which already has row level security.
+    6: """
+    alter table api_keys add column if not exists scopes_json text;
+    alter table api_keys add column if not exists rate_limit_per_min integer;
+    alter table api_keys add column if not exists expires_at text collate "C";
+    """,
 }
 APP_TABLES = ("tenants", "users", "api_keys", "projects", "subs", "documents", "field_logs", "audit", "stripe_events",
               "revoked_sessions", "app_secrets", "schema_version", "integration_connections", "webhooks",
@@ -639,6 +652,18 @@ def _limit(limit, top: int = 1000) -> int:
     except (TypeError, ValueError):
         return 100
 MIGRATION_LOCK_ID = 7_310_442_871_201      # pg_advisory_xact_lock key for schema migrations (any fixed bigint)
+
+
+_ADD_COLUMN_RE = re.compile(r"alter table (\w+) add column (\w+)[^;]*;", re.I)
+
+
+def _skip_existing_columns(con, script: str) -> str:
+    """SQLite has no `add column if not exists`: drop ALTER TABLE ... ADD COLUMN statements (from the fixed migration
+    text above, never user input) whose column is already there, so a migration can run again safely."""
+    def keep(m):
+        cols = {r[1] for r in con.execute(f"pragma table_info({m.group(1)})").fetchall()}
+        return "" if m.group(2) in cols else m.group(0)
+    return _ADD_COLUMN_RE.sub(keep, script)
 
 
 def _check_table(table: str) -> None:
@@ -1092,7 +1117,7 @@ class Store:
             version = con.execute("pragma user_version").fetchone()[0]
             for v in sorted(MIGRATIONS):
                 if v > version:
-                    con.executescript(MIGRATIONS[v])
+                    con.executescript(_skip_existing_columns(con, MIGRATIONS[v]))
                     con.execute(f"pragma user_version = {int(v)}")
 
     def _migrate_pg(self):
@@ -1425,11 +1450,44 @@ class Store:
             return con.execute("delete from users where tenant_id = ? and id = ?", (tenant_id, user_id)).rowcount > 0
 
     # ------------------------------------------------------------------ API keys
-    def create_api_key(self, tenant_id: str, name: str, key_hash: str, prefix: str, created_by: int | None) -> dict:
+    # Governance fields (schema 6, docs/mcp-security.md). The store checks types and sizes only; which tool names
+    # and categories a scope may name is decided by app/mcp_governance.py.
+    KEY_POLICY_FIELDS = ("scopes", "rate_limit_per_min", "expires_at")
+    MAX_KEY_RATE = 100_000
+    LAST_USED_EVERY_S = 60          # last_used is a hint: rewritten at most once a minute, not on every call
+
+    @staticmethod
+    def _key_policy_values(fields: dict) -> dict:
+        out = {}
+        if "scopes" in fields:
+            sc = fields["scopes"]
+            if sc is not None and not isinstance(sc, dict):
+                raise ValueError("scopes must be a dict or None")
+            text = None if sc is None else _dumps(sc)
+            if text is not None and len(text) > MAX_CONFIG_JSON:
+                raise ValueError("scopes are too large")
+            out["scopes_json"] = text
+        if "rate_limit_per_min" in fields:
+            v = fields["rate_limit_per_min"]
+            if v is not None and (isinstance(v, bool) or not isinstance(v, int) or not 1 <= v <= Store.MAX_KEY_RATE):
+                raise ValueError(f"rate_limit_per_min must be a whole number from 1 to {Store.MAX_KEY_RATE}, or None")
+            out["rate_limit_per_min"] = v
+        if "expires_at" in fields:
+            v = fields["expires_at"]
+            out["expires_at"] = None if v in (None, "") else to_store_time(v)
+        return out
+
+    def create_api_key(self, tenant_id: str, name: str, key_hash: str, prefix: str, created_by: int | None, *,
+                       scopes: dict | None = None, rate_limit_per_min: int | None = None,
+                       expires_at=None) -> dict:
+        pol = self._key_policy_values({"scopes": scopes, "rate_limit_per_min": rate_limit_per_min,
+                                       "expires_at": expires_at})
         with self.connect() as con:
             kid = self._insert_id(con, "insert into api_keys (tenant_id, name, key_hash, prefix, created_by, "
-                                       "created) values (?,?,?,?,?,?)",
-                                  (tenant_id, name, key_hash, prefix, created_by, now_iso()))
+                                       "created, scopes_json, rate_limit_per_min, expires_at) "
+                                       "values (?,?,?,?,?,?,?,?,?)",
+                                  (tenant_id, name, key_hash, prefix, created_by, now_iso(), pol["scopes_json"],
+                                   pol["rate_limit_per_min"], pol["expires_at"]))
             return self._key(con.execute("select * from api_keys where id = ?", (kid,)).fetchone())
 
     @staticmethod
@@ -1439,12 +1497,44 @@ class Store:
         d = dict(row)
         d.pop("key_hash", None)          # never leaves the store
         d["revoked"] = bool(d["revoked"])
+        d["scopes"] = _loads(d.pop("scopes_json", None), {}) or None     # None = the default scope
         return d
 
     def list_api_keys(self, tenant_id: str) -> list[dict]:
         with self.connect() as con:
             return [self._key(r) for r in con.execute("select * from api_keys where tenant_id = ? order by id desc",
                                                       (tenant_id,)).fetchall()]
+
+    def get_api_key(self, tenant_id: str, key_id) -> dict | None:
+        if not _id_ok(key_id):
+            return None
+        with self.connect() as con:
+            return self._key(con.execute("select * from api_keys where tenant_id = ? and id = ?",
+                                         (tenant_id, key_id)).fetchone())
+
+    def update_api_key(self, tenant_id: str, key_id, **fields) -> dict | None:
+        """Change an active key's name or policy (scopes, rate_limit_per_min, expires_at; None = the default).
+        Revoked keys can't be changed. Returns the key, or None if this tenant has no such active key."""
+        bad = set(fields) - {"name", *self.KEY_POLICY_FIELDS}
+        if bad:
+            raise ValueError(f"unknown API key field(s) {sorted(bad)}")
+        values = self._key_policy_values(fields)
+        if "name" in fields:
+            name = str(fields["name"] or "").strip()
+            if not 1 <= len(name) <= 100:
+                raise ValueError("name must be 1 to 100 characters")
+            values["name"] = name
+        if not _id_ok(key_id):
+            return None
+        with self.connect() as con:
+            if values:
+                sets = ", ".join(f"{k} = ?" for k in values)
+                if con.execute(f"update api_keys set {sets} where tenant_id = ? and id = ? and revoked = 0",
+                               (*values.values(), tenant_id, key_id)).rowcount == 0:
+                    return None
+            row = con.execute("select * from api_keys where tenant_id = ? and id = ? and revoked = 0",
+                              (tenant_id, key_id)).fetchone()
+            return self._key(row)
 
     def revoke_api_key(self, tenant_id: str, key_id: int) -> bool:
         if not _id_ok(key_id):
@@ -1467,8 +1557,10 @@ class Store:
             if row is None:
                 return None
             d = self._key(row)
-            if not d["revoked"]:
-                con.execute("update api_keys set last_used = ? where id = ?", (now_iso(), d["id"]))
+            now = now_iso()
+            if not d["revoked"] and (not d.get("last_used") or d["last_used"] < iso_in(-self.LAST_USED_EVERY_S)):
+                con.execute("update api_keys set last_used = ? where id = ?", (now, d["id"]))
+                d["last_used"] = now
             return d
 
     # ------------------------------------------------------------------ sessions revoked by logout
@@ -1934,6 +2026,70 @@ class Store:
                                    (tenant_id, api_key_id, str(tool)[:200], args_sha256, status, dur,
                                     None if ip is None else str(ip)[:64], now_iso()))
 
+    @staticmethod
+    def _mcp_row(entry: dict) -> tuple:
+        status = entry.get("status")
+        if status not in MCP_AUDIT_STATUSES:
+            raise ValueError(f"status must be one of {MCP_AUDIT_STATUSES}")
+        sha = entry.get("args_sha256")
+        if sha is not None and not SHA256_RE.match(str(sha)):
+            raise ValueError("args_sha256 must be a lowercase hex SHA-256")
+        dur = entry.get("duration_ms")
+        dur = None if dur is None else max(0, min(int(dur), 2 ** 31 - 1))
+        ip = entry.get("ip")
+        return (entry.get("tenant_id"), entry.get("api_key_id"), str(entry.get("tool") or "?")[:200], sha, status,
+                dur, None if ip is None else str(ip)[:64])
+
+    def log_mcp_calls(self, entries: list[dict], activity: list[dict] = ()) -> int:
+        """Several MCP call rows (the fields of log_mcp_call, plus tenant_id) and their activity-log rows (the
+        arguments of audit(): tenant_id, user, tool, args, verified, ok, source) in ONE transaction: the /mcp gate
+        writes a request's rows with a single database round trip, after the response has been sent."""
+        rows = [self._mcp_row(e) for e in entries]
+        created = now_iso()
+        with self.connect() as con:
+            for r in rows:
+                con.execute("insert into mcp_audit_log (tenant_id, api_key_id, tool, args_sha256, status, "
+                            "duration_ms, ip, created) values (?,?,?,?,?,?,?,?)", (*r, created))
+            for a in activity:
+                v = a.get("verified")
+                con.execute('insert into audit (tenant_id, "user", tool, args_json, verified, ok, source, created) '
+                            "values (?,?,?,?,?,?,?,?)",
+                            (a.get("tenant_id"), a.get("user"), str(a.get("tool") or "?")[:200],
+                             json.dumps(a.get("args") or {}, separators=(",", ":"), default=str)[:20000],
+                             None if v is None else int(bool(v)), int(bool(a.get("ok", True))),
+                             a.get("source") or "mcp", created))
+        return len(rows)
+
+    def trim_anonymous_mcp_audit(self, keep: int) -> int:
+        """Anonymous (public demo) MCP call rows belong to no company: keep only the newest `keep`."""
+        with self.connect() as con:
+            row = con.execute("select id from mcp_audit_log where tenant_id is null order by id desc limit 1 "
+                              "offset ?", (int(keep),)).fetchone()
+            if not row:
+                return 0
+            return con.execute("delete from mcp_audit_log where tenant_id is null and id <= ?", (row[0],)).rowcount
+
+    def mcp_audit_rows(self, tenant_id: str, *, start=None, end=None, api_key_id=None, status=None, tool=None,
+                       after_id: int = 0, limit: int = 500) -> list[dict]:
+        """This tenant's MCP call rows, OLDEST first, with id > after_id (for exports that page forward), created in
+        [start, end), optionally one API key, status or tool."""
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        where, params = ["tenant_id = ?", "id > ?"], [tenant_id, int(after_id)]
+        for col, val in (("api_key_id", api_key_id), ("status", status), ("tool", tool)):
+            if val is not None:
+                where.append(f"{col} = ?")
+                params.append(val)
+        if start is not None:
+            where.append("created >= ?")
+            params.append(to_store_time(start))
+        if end is not None:
+            where.append("created < ?")
+            params.append(to_store_time(end))
+        with self.connect() as con:
+            return [dict(r) for r in con.execute(f"select * from mcp_audit_log where {' and '.join(where)} "
+                                                 "order by id limit ?", (*params, _limit(limit, 5000))).fetchall()]
+
     def _audit_page(self, where: list[str], params: list, start, end, limit, cursor) -> dict:
         if start is not None:
             where.append("created >= ?")
@@ -1959,12 +2115,19 @@ class Store:
         return {"items": rows, "next_cursor": f"{rows[-1]['created']}|{rows[-1]['id']}" if more else None}
 
     def list_mcp_audit(self, tenant_id: str, *, start=None, end=None, limit: int = 100,
-                       cursor: str | None = None) -> dict:
-        """This tenant's MCP calls, newest first, created in [start, end). Returns {"items", "next_cursor"}; pass
-        next_cursor back as `cursor` for the next page (None = no more)."""
+                       cursor: str | None = None, api_key_id: int | None = None, status: str | None = None,
+                       tool: str | None = None) -> dict:
+        """This tenant's MCP calls, newest first, created in [start, end), optionally only one API key, status or
+        tool. Returns {"items", "next_cursor"}; pass next_cursor back as `cursor` for the next page (None = no
+        more)."""
         if not tenant_id:
             raise ValueError("tenant_id is required")
-        return self._audit_page(["tenant_id = ?"], [tenant_id], start, end, limit, cursor)
+        where, params = ["tenant_id = ?"], [tenant_id]
+        for col, val in (("api_key_id", api_key_id), ("status", status), ("tool", tool)):
+            if val is not None:
+                where.append(f"{col} = ?")
+                params.append(val)
+        return self._audit_page(where, params, start, end, limit, cursor)
 
     def admin_mcp_audit(self, *, start=None, end=None, tenant_id: str | None = None, anonymous: bool = False,
                         limit: int = 100, cursor: str | None = None) -> dict:

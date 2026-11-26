@@ -17,6 +17,13 @@ research/web_federal-works.verified.json (rule ids "fed-...").
                                  FHWA Buy America (23 CFR 635.410) or FTA Buy America (49 CFR 661.5), with the
                                  domestic-content math and the waiver / exception test (FAA airport terms are not in
                                  the rulebook, so FAA is refused rather than tested as BABA)
+  cmmc_requirements              DoD or civilian contract + what information you will hold (CUI, FCI only, none) + award
+                                 date + your subcontract tier (+ the solicitation's CMMC level, your SPRS score and
+                                 current CMMC status) -> the CMMC phase on the award date, the level you must hold (32
+                                 CFR 170.23 for subcontractors), the assessment, POA&M and affirmation rules, SPRS / CMMC
+                                 UID steps, DFARS 252.204-7012/-7019/-7020 (NIST SP 800-171 Rev 2, 72-hour DIBNet
+                                 reporting), FAR 52.204-21, Section 889, Kaspersky, TikTok and SAM.gov items, renewal
+                                 dates and one next step (rules "cmmc-..." from research/web_cmmc-federal-cyber)
 
 Every legal number, date and threshold is read from the rulebook with core.rule(id).param(key) at call time, and every
 rule a result relies on is cited through core.Result.cite(), so `verified` is True only when all of them are verified.
@@ -499,7 +506,8 @@ class Line(BaseModel):
 
 class Requirement(BaseModel):
     area: str = Field(description="Wages, Payroll, Overtime, California, Bonds, Registration, Hiring, "
-                                  "Subcontracting, Domestic content, DBE, Payments, Contract clauses, Leave")
+                                  "Subcontracting, Domestic content, DBE, Payments, Contract clauses, Leave; CMMC tool: "
+                                  "CMMC, Safeguarding, Incident reporting, Subcontracts, Supply chain, SAM.gov")
     item: str
     applies: Optional[bool] = Field(description="True / False at this contract value, or None when the facts given "
                                                 "cannot settle it (plan as if it applies)")
@@ -2531,6 +2539,661 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
     return ctx.finish(res)
 
 
+# ---------------------------------------------------------------- tool 5: CMMC and federal cybersecurity
+# Rules from research/web_cmmc-federal-cyber.verified.json ("cmmc-..."): 32 CFR part 170, DFARS 204.73 / 204.75,
+# DFARS 252.204-7012/-7019/-7020/-7021/-7025, FAR 52.204-21/-23/-24/-25/-26/-27 and 52.204-7/-8.
+CMMC_SCOPE, CMMC_PHASES, CMMC_PRESCRIBE = ("cmmc-program-scope-dod-fci-cui", "cmmc-implementation-phases",
+                                           "cmmc-dfars-7021-prescription-2028")
+CMMC_L1, CMMC_L2, CMMC_REV3, CMMC_L3 = ("cmmc-level1-15-far-requirements", "cmmc-level2-nist-800-171-r2-110",
+                                        "cmmc-nist-800-171-rev3-not-cmmc-baseline", "cmmc-level3-24-nist-800-172")
+CMMC_L1_SELF, CMMC_L2_SELF, CMMC_L2_C3PAO = ("cmmc-level1-annual-self-assessment", "cmmc-level2-self-assessment-3-years",
+                                             "cmmc-level2-c3pao-certification-3-years")
+CMMC_POAM, CMMC_SCORING, CMMC_AFFIRM, CMMC_SUBS = ("cmmc-poam-80pct-180-day-closeout", "cmmc-level2-scoring-5-3-1",
+                                                   "cmmc-affirmation-annual-sprs", "cmmc-subcontractor-flowdown-levels")
+CMMC_SCOPE_L1, CMMC_CLOUD = "cmmc-level1-scope-fci-assets", "cmmc-cloud-fedramp-moderate"
+CMMC_7021, CMMC_CURRENT, CMMC_AWARD, CMMC_7025 = ("cmmc-dfars-7021-contractor-duties", "cmmc-current-status-definition",
+                                                  "cmmc-award-eligibility-sprs", "cmmc-dfars-7025-notice-uids")
+DFARS_7012, DFARS_INCIDENT, DFARS_MEDIA, DFARS_7012_FLOW, CDI_DEF = (
+    "cmmc-dfars-7012-nist-800-171-safeguarding", "cmmc-dfars-7012-incident-72-hours", "cmmc-dfars-7012-media-90-days",
+    "cmmc-dfars-7012-flowdown", "cmmc-cdi-definition")
+DFARS_7019, DFARS_7020 = "cmmc-dfars-7019-assessment-3-years", "cmmc-dfars-7020-access-rebuttal-subs"
+FCI_DEF, CUI_DEF, FAR_21, NON_DOD = ("cmmc-fci-definition", "cmmc-cui-definition",
+                                     "cmmc-far-52-204-21-basic-safeguarding", "cmmc-non-dod-no-cmmc")
+KASPERSKY, SEC889, SEC889_REPS, BYTEDANCE, SAM_REPS = (
+    "cmmc-kaspersky-52-204-23", "cmmc-section-889-52-204-25", "cmmc-section-889-representations",
+    "cmmc-bytedance-52-204-27", "cmmc-sam-annual-reps-12-months")
+
+CMMC_RULE_IDS = (CMMC_SCOPE, CMMC_PHASES, CMMC_PRESCRIBE, CMMC_L1, CMMC_L2, CMMC_REV3, CMMC_L3, CMMC_L1_SELF,
+                 CMMC_L2_SELF, CMMC_L2_C3PAO, CMMC_POAM, CMMC_SCORING, CMMC_AFFIRM, CMMC_SUBS, CMMC_SCOPE_L1,
+                 CMMC_CLOUD, CMMC_7021, CMMC_CURRENT, CMMC_AWARD, CMMC_7025, DFARS_7012, DFARS_INCIDENT, DFARS_MEDIA,
+                 DFARS_7012_FLOW, CDI_DEF, DFARS_7019, DFARS_7020, FCI_DEF, CUI_DEF, FAR_21, NON_DOD, KASPERSKY,
+                 SEC889, SEC889_REPS, BYTEDANCE, SAM_REPS)
+RULE_IDS = RULE_IDS + CMMC_RULE_IDS
+# Every "cmmc-" pack rule is in CMMC_RULE_IDS; none is unused.
+CMMC_NOT_USED: dict[str, str] = {}
+
+MAX_TIER = 20               # typo guard on subcontract_tier, not a legal number
+SCORE_FLOOR = -1000         # typo guard on sprs_score (a Level 2 score can be negative), not a legal number
+
+CmmcLevel = Literal["Level 1 (Self)", "Level 2 (Self)", "Level 2 (C3PAO)", "Level 3 (DIBCAC)"]
+LEVELS: tuple[str, ...] = ("Level 1 (Self)", "Level 2 (Self)", "Level 2 (C3PAO)", "Level 3 (DIBCAC)")
+# "or higher" (32 CFR 170.16(a), 170.17(a), 170.18(a): a higher status satisfies the lower ones; DFARS 204.7502(b))
+LEVEL_RANK = {lvl: i for i, lvl in enumerate(LEVELS, 1)}
+Phase = Literal["before_phase_1", "phase_1", "phase_2", "phase_3", "phase_4"]
+CmmcStatus = Literal["Final Level 1 (Self)", "Conditional Level 2 (Self)", "Final Level 2 (Self)",
+                     "Conditional Level 2 (C3PAO)", "Final Level 2 (C3PAO)", "Conditional Level 3 (DIBCAC)",
+                     "Final Level 3 (DIBCAC)"]
+
+
+def normalize_cmmc_level(value, field: str = "solicitation_cmmc_level") -> Optional[str]:
+    """'L2 C3PAO', 'level 2 (c3pao)', 'CMMC Level 1 (Self)' -> a LEVELS label; 'none' / 'no CMMC' -> 'none';
+    None / '' -> None. A bare 'Level 2' is refused: Self and C3PAO are different requirements."""
+    t = _words(value)
+    if not t:
+        return None
+    if t in ("none", "no", "no cmmc", "not required", "no cmmc requirement", "n a", "na", "no clause"):
+        return "none"
+    m = re.search(r"(?:^| )(?:level|lvl|l)? ?([123])(?: |$)", t) or re.search(r"(?:^| )l([123])(?: |$)", t)
+    level = m.group(1) if m else None
+    c3pao, dibcac, self_ = _has(t, "c3pao", "third party", "certification"), _has(t, "dibcac", "dcma"), _has(t, "self")
+    if level == "1" and not (c3pao or dibcac):
+        return LEVELS[0]
+    if level == "2" and self_ and not (c3pao or dibcac):
+        return LEVELS[1]
+    if level == "2" and c3pao and not (self_ or dibcac):
+        return LEVELS[2]
+    if level == "3" or (level is None and dibcac):
+        return LEVELS[3]
+    if level == "2":
+        raise ValueError(f"{field} {value!r}: say 'Level 2 (Self)' or 'Level 2 (C3PAO)'; DFARS 252.204-7025(b)(1) "
+                         "names one of them")
+    raise ValueError(f"Unknown CMMC level {value!r} in {field}. Use one of: {', '.join(LEVELS)}, or 'none' when the "
+                     "solicitation has no CMMC requirement")
+
+
+def normalize_cmmc_status(value) -> Optional[str]:
+    """'final L2 c3pao' -> 'Final Level 2 (C3PAO)'. The status names are DFARS 204.7501's seven statuses."""
+    t = _words(value)
+    if not t:
+        return None
+    kind = "Conditional" if _has(t, "conditional", "cond") else ("Final" if _has(t, "final") else None)
+    level = normalize_cmmc_level(re.sub(r"(?:^| )(?:conditional|cond|final)(?= |$)", " ", t).strip() or t,
+                                 "current_cmmc_status")
+    if level in (None, "none"):
+        raise ValueError(f"current_cmmc_status {value!r} is not a CMMC status; use e.g. 'Final Level 2 (C3PAO)'")
+    if level == LEVELS[0]:
+        if kind == "Conditional":
+            raise ValueError("There is no Conditional Level 1: 32 CFR 170.21(a)(1) allows no POA&M at Level 1, so the "
+                             "only Level 1 status is 'Final Level 1 (Self)'")
+        kind = "Final"
+    if kind is None:
+        raise ValueError(f"current_cmmc_status {value!r}: say Final or Conditional (e.g. 'Conditional Level 2 (Self)')")
+    return f"{kind} {level}"
+
+
+def normalize_tier(value) -> int:
+    """0 = prime; 1 = first-tier subcontractor; 'prime', 'sub', '2nd tier' are understood."""
+    if isinstance(value, bool) or (isinstance(value, str) and re.search(r"-\s*\d", value)):
+        raise ValueError(f"subcontract_tier must be a whole number of at least 0 (0 = prime), got {value!r}")
+    if isinstance(value, (int, float)):
+        if not math.isfinite(value) or value != int(value):
+            raise ValueError(f"subcontract_tier must be a whole number (0 = prime), got {value!r}")
+        tier = int(value)
+    else:
+        t = _words(value)
+        words = {"prime": 0, "prime contractor": 0, "gc": 0, "general contractor": 0, "sub": 1, "subcontractor": 1,
+                 "first tier": 1, "first tier sub": 1, "first tier subcontractor": 1, "second tier": 2,
+                 "third tier": 3}
+        m = re.fullmatch(r"(?:tier )?(\d+)(?:st|nd|rd|th)?(?: tier)?(?: sub(?:contractor)?)?", t)
+        if t in words:
+            tier = words[t]
+        elif m:
+            tier = int(m.group(1))
+        else:
+            raise ValueError(f"subcontract_tier must be 0 for the prime contractor or 1, 2, ... for a subcontractor "
+                             f"tier, got {value!r}")
+    if not 0 <= tier <= MAX_TIER:
+        raise ValueError(f"subcontract_tier must be between 0 (prime) and {MAX_TIER}, got {value!r}")
+    return tier
+
+
+def _add_years(d: date, years: int) -> date:
+    """d + whole years; Feb 29 -> Feb 28 (the earlier day, so a 'not older than' limit is never overstated)."""
+    try:
+        return d.replace(year=d.year + years)
+    except ValueError:
+        return d.replace(year=d.year + years, day=28)
+
+
+def _cmmc_phase(on: date) -> tuple[str, Optional[date], Optional[date]]:
+    """(phase, start of that phase, start of the next phase) for a contract awarded on `on` (32 CFR 170.3(e))."""
+    starts = [_iso_param(CMMC_PHASES, f"phase_{i}_start") for i in (1, 2, 3, 4)]
+    if on < starts[0]:
+        return "before_phase_1", None, starts[0]
+    for i in (3, 2, 1, 0):
+        if on >= starts[i]:
+            return f"phase_{i + 1}", starts[i], starts[i + 1] if i < 3 else None
+    raise AssertionError("unreachable")
+
+
+class CmmcRequirementsResult(core.Result):
+    as_of: str
+    dod_contract: bool
+    your_role: Literal["prime", "subcontractor"]
+    subcontract_tier: int
+    information: Literal["cui", "fci_only", "none"]
+    contract_award_date: str
+    cmmc_phase: Phase = Field(description="Implementation phase on the award date (32 CFR 170.3(e))")
+    cmmc_phase_started_on: Optional[str] = None
+    next_phase_starts_on: Optional[str] = None
+    cmmc_applies: Optional[bool] = Field(description=(
+        "True / False, or None when only the solicitation can settle it (Phases 1-3: the program office decides "
+        "whether a CMMC level goes in; plan as if it applies)"))
+    required_cmmc_level: Optional[CmmcLevel] = Field(None, description=(
+        "The level you must hold (or higher): the solicitation's level for a prime, the 32 CFR 170.23 level for a "
+        "subcontractor, or the minimum for your information when the solicitation's level was not given"))
+    required_level_is_minimum_only: bool = Field(False, description=(
+        "True when the solicitation's level was not given, so required_cmmc_level is only the floor for your "
+        "information"))
+    plan_for_cmmc_level: Optional[CmmcLevel] = Field(None, description=(
+        "What DoD said it intends for the award date's phase (32 CFR 170.3(e)) when the solicitation's level is not "
+        "known; the solicitation controls"))
+    assessment: Optional[str] = None
+    nist_sp_800_171_revision_for_cmmc: Optional[str] = None
+    sprs_score_outcome: Optional[Literal["final", "conditional_possible", "not_eligible"]] = None
+    status_meets_required_level: Optional[bool] = None
+    status_current_at_award: Optional[bool] = None
+    summary: str
+    next_step: str
+    requirements: list[Requirement] = Field(default_factory=list)
+    key_dates: list[KeyDate] = Field(default_factory=list)
+    line_items: list[Line] = Field(default_factory=list)
+    unverified_rule_ids: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+def _min_conditional_score() -> int:
+    """Lowest whole Level 2 score with score / max >= ratio (32 CFR 170.21(a)(2)(i)): 0.8 x 110 = 88."""
+    return math.ceil(round(P(CMMC_POAM, "min_score_ratio") * P(CMMC_L2, "max_score"), 9))
+
+
+def _assessment_text(level: str) -> str:
+    yrs, l1 = P(CMMC_L2_SELF, "reassessment_interval_years"), P(CMMC_L1_SELF, "reassessment_interval_months")
+    keep = P(CMMC_L1_SELF, "artifact_retention_years")
+    if level == LEVELS[0]:
+        return (f"Self-assessment of all {P(CMMC_L1, 'requirement_count')} FAR 52.204-21 requirements every {l1} "
+                f"months, all MET (no POA&M), results and an affirmation in SPRS; keep evidence {keep} years")
+    if level == LEVELS[1]:
+        return (f"Self-assessment of all {P(CMMC_L2, 'requirement_count')} NIST SP 800-171 Rev 2 requirements every "
+                f"{yrs} years, score and affirmation in SPRS, yearly affirmation; keep evidence {keep} years")
+    if level == LEVELS[2]:
+        return (f"Certification assessment by an authorized C3PAO every {P(CMMC_L2_C3PAO, 'reassessment_interval_years')}"
+                f" years (results to eMASS and SPRS), affirmation at each assessment and yearly; keep hashed evidence "
+                f"{P(CMMC_L2_C3PAO, 'artifact_retention_years')} years")
+    return (f"DCMA DIBCAC assessment of {P(CMMC_L3, 'requirement_count')} NIST SP 800-172 requirements every "
+            f"{P(CMMC_L3, 'reassessment_years')} years, on top of a Final Level 2 (C3PAO) renewed every "
+            f"{P(CMMC_L3, 'level_2_c3pao_reassessment_years')} years; yearly affirmations of both")
+
+
+def _level_rule(level: str) -> list[str]:
+    return {LEVELS[0]: [CMMC_L1, CMMC_L1_SELF], LEVELS[1]: [CMMC_L2, CMMC_L2_SELF],
+            LEVELS[2]: [CMMC_L2, CMMC_L2_C3PAO], LEVELS[3]: [CMMC_L3, CMMC_L2_C3PAO]}[level]
+
+
+def _status_dates(ctx: _Ctx, status: str, status_date: date, last_aff: Optional[date], award: date) -> bool:
+    """Adds the renewal and affirmation dates of a CMMC status you hold; True if it is still current on `award`
+    (DFARS 204.7501 'Current') without a renewal."""
+    level = status.split(" ", 1)[1]
+    cond = status.startswith("Conditional")
+    if cond:
+        days = P(CMMC_CURRENT, "conditional_level_2_max_days" if level != LEVELS[3] else "conditional_level_3_max_days")
+        expires = status_date + timedelta(days=days)
+        ctx.date(f"POA&M closeout assessment posted for your {status} ({days} days from the {status_date} status "
+                 "date) or the Conditional status expires", expires, CMMC_POAM, CMMC_CURRENT)
+    else:
+        key = {LEVELS[0]: "final_level_1_max_years", LEVELS[1]: "final_level_2_max_years",
+               LEVELS[2]: "final_level_2_max_years", LEVELS[3]: "final_level_3_max_years"}[level]
+        yrs = P(CMMC_CURRENT, key)
+        expires = _add_years(status_date, yrs)
+        rule = {LEVELS[0]: CMMC_L1_SELF, LEVELS[1]: CMMC_L2_SELF, LEVELS[2]: CMMC_L2_C3PAO, LEVELS[3]: CMMC_L3}[level]
+        ctx.date(f"New {level} assessment posted before your {status} ({status_date}) is {yrs} year"
+                 f"{'s' if yrs != 1 else ''} old", expires, rule, CMMC_CURRENT)
+    aff_from = last_aff or status_date
+    aff_due = _add_years(aff_from, P(CMMC_CURRENT, "affirmation_max_years"))
+    ctx.date("Affirming Official's annual affirmation in SPRS (from the "
+             + (f"last affirmation on {last_aff}" if last_aff else f"{status_date} status date; give "
+                "last_affirmation_date if you affirmed since") + ")", aff_due, CMMC_AFFIRM, CMMC_CURRENT)
+    if not cond and level == LEVELS[3]:
+        ctx.notes.append("Level 3 also needs its Final Level 2 (C3PAO) renewed and affirmed yearly (32 CFR 170.18(a), "
+                         "170.22(b)(4)); give that status separately to date it.")
+    return award <= expires and award <= aff_due
+
+
+def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_award_date=None, subcontract_tier=0,
+                      solicitation_cmmc_level=None, sprs_score=None, current_cmmc_status=None, cmmc_status_date=None,
+                      last_affirmation_date=None, as_of=None) -> CmmcRequirementsResult:
+    """CMMC level, assessments, SPRS steps, incident reporting and federal cyber clauses for one contract."""
+    today = _today(as_of)
+    cui = _flag(handles_cui, "handles_cui")
+    fci_only = _flag(handles_fci_only, "handles_fci_only")
+    dod = _flag(dod_contract, "dod_contract")
+    if cui and fci_only:
+        raise ValueError("handles_fci_only means FCI and no CUI, but handles_cui is true. Set handles_fci_only=false "
+                         "when you will handle CUI (Level 2 also covers the FCI requirements, 32 CFR 170.16(a)).")
+    tier = normalize_tier(subcontract_tier)
+    prime = tier == 0
+    award = _opt_date(contract_award_date, "contract_award_date") or today
+    sol = normalize_cmmc_level(solicitation_cmmc_level)
+    if sol is not None and not dod:
+        raise ValueError("A CMMC level is set only in DoD solicitations (DFARS 252.204-7025); dod_contract is false. "
+                         "Leave solicitation_cmmc_level empty or set dod_contract=true.")
+    status = normalize_cmmc_status(current_cmmc_status)
+    status_date = _opt_date(cmmc_status_date, "cmmc_status_date")
+    last_aff = _opt_date(last_affirmation_date, "last_affirmation_date")
+    if status_date and status_date > today:
+        raise ValueError(f"cmmc_status_date ({status_date}) is after as_of ({today}); give the date the status was "
+                         "posted in SPRS or eMASS")
+    if last_aff and status_date and last_aff < status_date:
+        raise ValueError(f"last_affirmation_date ({last_aff}) is before cmmc_status_date ({status_date}); an "
+                         "affirmation is due with each new status (32 CFR 170.22(a)(3))")
+    if last_aff and last_aff > today:
+        raise ValueError(f"last_affirmation_date ({last_aff}) is after as_of ({today})")
+    score = None
+    if sprs_score is not None and not (isinstance(sprs_score, str) and not sprs_score.strip()):
+        if isinstance(sprs_score, bool):
+            raise ValueError(f"sprs_score must be a whole number, got {sprs_score!r}")
+        try:
+            s = float(_clean_num(sprs_score)) if isinstance(sprs_score, str) else float(sprs_score)
+        except (TypeError, ValueError):
+            raise ValueError(f"sprs_score must be a whole number like 104, got {sprs_score!r}") from None
+        top = P(CMMC_L2, "max_score")
+        if not math.isfinite(s) or s != int(s) or s > top or s < SCORE_FLOOR:
+            raise ValueError(f"sprs_score must be a whole number of at most {top} (it can be negative), got "
+                             f"{sprs_score!r}")
+        score = int(s)
+
+    info = "cui" if cui else ("fci_only" if fci_only else "none")
+    phase, started, nxt = _cmmc_phase(award)
+    ctx = _Ctx(today)
+    role = "prime" if prime else "subcontractor"
+    phase4 = _iso_param(CMMC_PRESCRIBE, "from")
+
+    # ------------------------------------------------ CMMC level
+    required = plan = None
+    minimum_only = False
+    applies: Optional[bool]
+    level_ids = [CMMC_SCOPE, CMMC_PHASES, CMMC_PRESCRIBE]
+    if not dod:
+        applies = False
+        why = ("CMMC applies only to DoD contracts and subcontracts (32 CFR 170.3(a)(1)); this is not a DoD "
+               "contract.")
+        level_ids = [CMMC_SCOPE, NON_DOD]
+    elif info == "none":
+        applies = False
+        why = ("CMMC applies to contractors and subcontractors that will process, store or transmit FCI or CUI on "
+               "their own systems; you said you will handle neither. If you will hold any information provided by or "
+               "generated for the government under the contract that is not meant for public release (other than "
+               "simple transactional data such as payment information), that is FCI: set handles_fci_only=true.")
+        level_ids += [FCI_DEF]
+        if sol not in (None, "none"):
+            ctx.notes.append(f"The solicitation names {sol}: the moment any of your systems will hold FCI or CUI for "
+                             "this contract, you need that status for them (DFARS 252.204-7025(b)).")
+    elif sol == "none":
+        applies = False
+        why = ("The solicitation (or prime contract) has no CMMC level, so no CMMC status is a condition of this "
+               "award.")
+        if award >= phase4:
+            why += (f" From {phase4} DFARS 204.7504(a)(2) prescribes the clause whenever contractor systems will "
+                    "handle FCI or CUI, unless DoD waived it (32 CFR 170.5(d)) or the buy is COTS-only: confirm with "
+                    "the contracting officer.")
+    else:
+        floor = LEVELS[1] if cui else LEVELS[0]
+        if prime:
+            if sol:
+                required = sol
+                if cui and LEVEL_RANK[sol] < LEVEL_RANK[LEVELS[1]]:
+                    ctx.notes.append("The solicitation names Level 1 (Self) but you will handle CUI: Level 1 covers only "
+                                     "the FCI safeguards. Ask the contracting officer; DFARS 252.204-7012 and NIST SP "
+                                     "800-171 apply to the CUI either way.")
+            else:
+                required, minimum_only = floor, True
+        else:
+            level_ids.append(CMMC_SUBS)
+            if fci_only:
+                required = LEVELS[0]
+            elif sol and LEVEL_RANK[sol] >= LEVEL_RANK[LEVELS[2]]:
+                required = LEVELS[2]
+            else:
+                required, minimum_only = LEVELS[1], sol is None
+            if sol == LEVELS[0] and cui:
+                ctx.notes.append("The prime contract names Level 1 (Self), but a subcontractor that handles CUI needs "
+                                 "at least Level 2 (Self) (32 CFR 170.23(a)(2)); tell the prime.")
+        if sol:
+            applies = True
+        elif phase == "phase_4":
+            applies = True
+        else:
+            applies = None
+        if not sol and phase != "before_phase_1" and cui:
+            plan = LEVELS[1] if phase == "phase_1" else LEVELS[2]
+        elif not sol and phase != "before_phase_1":
+            plan = LEVELS[0]
+        level_ids += _level_rule(required)
+        whose = "the solicitation" if prime else "the prime contract"
+        info_txt = "CUI" if cui else "FCI only"
+        if sol and prime:
+            why = f"{whose.capitalize()} requires {sol} (DFARS 252.204-7025(b)(1)); you must hold it or higher."
+        elif not prime:
+            why = (f"You are a tier-{tier} subcontractor handling {info_txt}; under 32 CFR 170.23 that needs at least "
+                   f"{required}" + (f" because the prime contract requires {sol}" if sol and cui and
+                                    LEVEL_RANK[sol] >= LEVEL_RANK[LEVELS[2]] else "") + ".")
+        else:
+            why = (f"You will handle {info_txt}; the CMMC level that protects it is {required} at least (Level 1 = the "
+                   f"FAR 52.204-21 safeguards for FCI, Level 2 = NIST SP 800-171 Rev 2 for CUI). The solicitation's "
+                   "DFARS 252.204-7025 notice names the level that binds you.")
+        if applies is None:
+            if phase == "before_phase_1":
+                why += (f" The award date {award} is before Phase 1 ({_iso_param(CMMC_PHASES, 'phase_1_start')}), "
+                        "when the current DFARS 252.204-7021 (NOV 2025) took effect: a CMMC status is required only "
+                        "if your contract includes a CMMC clause.")
+            else:
+                why += (f" Until {_iso_param(CMMC_PRESCRIBE, 'until')} the clause goes in only when the program office "
+                        f"sets a level (DFARS 204.7504(a)(1)); plan as if it applies.")
+        elif phase == "phase_4" and not sol:
+            why += (f" From {phase4} DFARS 204.7504(a)(2) puts the clause in whenever contractor systems will handle "
+                    "FCI or CUI (unless waived or COTS-only).")
+    item = f"CMMC status {required} (or higher)" if required else "CMMC status"
+    if not required:
+        what = ("No CMMC status is needed for this award; the "
+                + ("FAR 52.204-21 safeguards and " if info != "none" else "") + "supply-chain clauses below still "
+                "apply." if dod else "No CMMC. Follow the federal clauses below.")
+    elif prime:
+        what = (f"Hold a current {required} status in SPRS for every system that will handle {'CUI' if cui else 'FCI'} "
+                f"before award, and list the CMMC UIDs in your proposal.")
+    else:
+        what = (f"Hold a current {required} status and an affirmation in SPRS before your subcontract is awarded; the "
+                "prime must check it (DFARS 252.204-7021(f)(2)).")
+    ctx.req("CMMC", item, applies, why, what, level_ids)
+
+    if required and applies is not False:
+        lvl = required
+        ctx.req("CMMC", f"Assessment for {lvl}", applies, _assessment_text(lvl) + ".",
+                ("Define the assessment scope first: every system that handles FCI (IoT, OT and other specialized "
+                 "assets are outside the Level 1 scope)." if lvl == LEVELS[0] else
+                 "Write the system security plan first: without an up-to-date SSP the assessment cannot be "
+                 "completed (32 CFR 170.24(c)(2)(i)(B)(5))."),
+                _level_rule(lvl) + ([CMMC_SCOPE_L1] if lvl == LEVELS[0] else [CMMC_SCORING]))
+        ratio = P(CMMC_POAM, "min_score_ratio")
+        if lvl == LEVELS[0]:
+            ctx.req("CMMC", "No POA&M at Level 1", applies,
+                    "Every Level 1 requirement must be MET; a plan of action and milestones is never allowed at Level "
+                    "1 and award needs a Final Level 1 (Self) status (DFARS 204.7502(b)(2)).",
+                    "Fix every gap before you post the self-assessment.", [CMMC_POAM, CMMC_L1_SELF, CMMC_AWARD])
+        elif lvl == LEVELS[3]:
+            top3 = P(CMMC_POAM, "level_3_max_score")
+            mn3 = math.ceil(round(ratio * top3, 9))
+            ctx.line("Lowest Level 3 score for a Conditional status", mn3, "count",
+                     f"ceil({_n(ratio)} x {top3}) = {mn3} (score / {top3} >= {_n(ratio)}; 1 point per requirement)",
+                     CMMC_POAM, CMMC_L3)
+            ctx.req("CMMC", "POA&M rules for a Conditional Level 3", applies,
+                    f"Level 3 starts only from a Final Level 2 (C3PAO) (all {P(CMMC_L2, 'max_score')} points). A "
+                    f"Conditional Level 3 needs at least {mn3} of {top3} ({_n(ratio)} x {top3}), none of "
+                    f"{len(P(CMMC_POAM, 'level_3_never_on_poam'))} listed requirements open, and a DIBCAC closeout "
+                    f"within {P(CMMC_POAM, 'closeout_days')} days.",
+                    "Never on a Level 3 POA&M: " + "; ".join(P(CMMC_POAM, "level_3_never_on_poam")) + ".",
+                    [CMMC_POAM, CMMC_L3, CMMC_SCORING])
+        else:
+            mn = _min_conditional_score()
+            ctx.line("Lowest Level 2 score for a Conditional status", mn, "count",
+                     f"ceil({_n(ratio)} x {P(CMMC_L2, 'max_score')}) = {mn} (score / {P(CMMC_L2, 'max_score')} >= "
+                     f"{_n(ratio)})", CMMC_POAM, CMMC_L2)
+            ctx.req("CMMC", "POA&M rules for a Conditional status", applies,
+                    f"A Conditional status needs a score of at least {mn} of {P(CMMC_L2, 'max_score')} "
+                    f"({_n(ratio)} x {P(CMMC_L2, 'max_score')}), only {P(CMMC_POAM, 'level_2_poam_item_max_points')}-point "
+                    f"items on the POA&M (SC.L2-3.13.11 non-FIPS encryption excepted), none of "
+                    f"{len(P(CMMC_POAM, 'level_2_never_on_poam'))} listed requirements open, and a closeout assessment "
+                    f"within {P(CMMC_POAM, 'closeout_days')} days or the status expires.",
+                    "Never on a POA&M: " + "; ".join(P(CMMC_POAM, "level_2_never_on_poam")) + ".",
+                    [CMMC_POAM, CMMC_SCORING])
+        ctx.req("CMMC", "Annual affirmation by your Affirming Official", applies,
+                f"A senior official affirms continuing compliance in SPRS at each assessment, after a POA&M closeout "
+                f"and every {P(CMMC_AFFIRM, 'affirmation_interval_months')} months; an affirmation older than "
+                f"{P(CMMC_CURRENT, 'affirmation_max_years')} year makes the status not current.",
+                "Name the Affirming Official now and calendar the yearly affirmation.", [CMMC_AFFIRM, CMMC_CURRENT])
+        if prime:
+            ctx.req("CMMC", "CMMC UIDs in the proposal; SPRS check before award", applies,
+                    f"The contracting officer checks SPRS and cannot award, exercise an option or extend without a "
+                    f"current status at the required level for every CMMC UID (each UID is "
+                    f"{P(CMMC_7025, 'cmmc_uid_characters')} characters, issued by SPRS).",
+                    "Post the assessment in SPRS early enough to get the UIDs and put them in the proposal.",
+                    [CMMC_AWARD, CMMC_7025, CMMC_CURRENT])
+        ctx.req("CMMC", "DFARS 252.204-7021 duties during performance", applies,
+                "Keep the status current for the whole contract, handle FCI/CUI only on systems that hold it, affirm "
+                "yearly per CMMC UID" + (", report new or changed UIDs to the contracting officer" if prime else "")
+                + " and close any POA&M to a Final status.",
+                "Do not move contract FCI or CUI onto a system outside your assessed scope.", [CMMC_7021, CMMC_CURRENT])
+        ctx.req("Subcontracts", "Flow CMMC down to your own subcontractors that will handle FCI or CUI", applies,
+                f"32 CFR 170.23: FCI only = {P(CMMC_SUBS, 'fci_only')}; CUI = at least {P(CMMC_SUBS, 'cui_minimum')}, "
+                f"or {P(CMMC_SUBS, 'cui_when_prime_requires_level_2_c3pao')} when the prime contract requires Level 2 "
+                "(C3PAO) or Level 3. The clause flows to subcontracts that will involve FCI or CUI, COTS excluded.",
+                "Before awarding each such subcontract, confirm its current status and affirmation (DFARS "
+                "252.204-7021(f)(2)).", [CMMC_SUBS, CMMC_7021])
+        if cui:
+            ctx.req("CMMC", "Cloud services holding CUI: FedRAMP Moderate or equivalent", applies,
+                    "A cloud service that processes, stores or transmits CUI must be FedRAMP Authorized at Moderate "
+                    "(or higher) or meet the equivalent under DoD policy; your connecting systems stay in scope.",
+                    "Get the provider's customer responsibility matrix into your SSP.", [CMMC_CLOUD])
+
+    # ------------------------------------------------ safeguarding and incident reporting
+    if info != "none":
+        ctx.req("Safeguarding", "FAR 52.204-21 basic safeguarding (the 15 requirements)", True,
+                f"Any federal contract where your systems may hold FCI carries FAR 52.204-21: "
+                f"{P(FAR_21, 'requirement_count')} basic safeguards, flowed to subcontractors that may hold FCI"
+                + (" (CUI you receive under the contract is also non-public contract information)" if cui else "")
+                + ".", "Apply all 15 to every system that holds contract information.", [FAR_21, FCI_DEF, CMMC_L1])
+    else:
+        ctx.req("Safeguarding", "FAR 52.204-21 basic safeguarding (the 15 requirements)", False,
+                "Only applies when your systems may hold FCI; you said they will not.",
+                "Re-check if the agency sends you non-public drawings, schedules or other contract information.",
+                [FAR_21, FCI_DEF])
+    if dod and cui:
+        rev = P(CMMC_L2, "standard")
+        ctx.req("Safeguarding", "DFARS 252.204-7012: NIST SP 800-171 on systems holding covered defense information",
+                True, f"DFARS 252.204-7012 is in all DoD contracts except COTS-only buys; CUI you receive or create "
+                "in performing the contract meets its covered defense information definition, so NIST SP 800-171 "
+                "applies to the systems holding it. CMMC Level 2 "
+                f"uses {rev}; 32 CFR part 170 does not adopt Revision 3. For 7012 itself the version is the one 'in "
+                "effect at the time the solicitation is issued or as authorized by the Contracting Officer'.",
+                "Ask the contracting officer which NIST SP 800-171 revision applies to 7012 compliance and write the "
+                "SSP to it.", [DFARS_7012, CDI_DEF, CUI_DEF, CMMC_REV3, CMMC_L2])
+        if prime:
+            ctx.req("Safeguarding", "NIST SP 800-171 DoD Assessment in SPRS (DFARS 252.204-7019)", True,
+                    f"To be considered for award you need a NIST SP 800-171 DoD Assessment no more than "
+                    f"{P(DFARS_7019, 'max_age_years')} years old (unless the solicitation sets less) with its summary "
+                    f"score (out of {P(DFARS_7019, 'max_score')}) in SPRS.",
+                    f"No score yet: do a Basic Assessment and email the summary to "
+                    f"{P(DFARS_7019, 'basic_submission_email')}.", [DFARS_7019, DFARS_7020])
+        else:
+            ctx.req("Subcontracts", "Basic NIST SP 800-171 Assessment before your subcontract award (DFARS "
+                    "252.204-7020)", True,
+                    f"Your prime may not award a subcontract that requires NIST SP 800-171 unless you completed at "
+                    f"least a Basic Assessment within the last {P(DFARS_7020, 'subcontract_assessment_max_age_years')} "
+                    "years.",
+                    f"Post a Basic Assessment (email {P(DFARS_7019, 'basic_submission_email')}) before the subcontract "
+                    "is signed.", [DFARS_7020, DFARS_7019])
+        hrs, keep = P(DFARS_INCIDENT, "report_within_hours"), P(DFARS_MEDIA, "preserve_days")
+        ctx.req("Incident reporting", f"Report cyber incidents to DoD within {hrs} hours", True,
+                f"A cyber incident affecting a system with covered defense information must be reported at "
+                f"{P(DFARS_INCIDENT, 'report_to')} within {hrs} hours of discovery (a DoD-approved medium assurance "
+                f"certificate is needed to file); preserve images and packet captures for {keep} days from the report "
+                "and send isolated malware to DC3."
+                + ("" if prime else " Give the DoD incident report number to the prime (or next higher tier)."),
+                "Get the medium assurance certificate now and put the 72-hour clock in your incident response plan.",
+                [DFARS_INCIDENT, DFARS_MEDIA] + ([] if prime else [DFARS_7012_FLOW]))
+        ctx.req("Subcontracts", "Flow DFARS 252.204-7012 to subcontracts with covered defense information", True,
+                "Put 252.204-7012 unaltered in subcontracts whose performance involves covered defense information "
+                "or operationally critical support; subcontractors report variance requests and incident numbers up "
+                "the chain.", "Check each subcontract package for CUI markings before you send it.", [DFARS_7012_FLOW])
+    elif dod and fci_only:
+        ctx.req("Safeguarding", "DFARS 252.204-7012: NIST SP 800-171", False,
+                "The clause is in nearly every DoD contract, but its NIST SP 800-171 and 72-hour reporting duties "
+                "attach to systems holding covered defense information; you said you will handle FCI only.",
+                "If the government later sends CUI-marked documents, 7012 and NIST SP 800-171 apply to them.",
+                [DFARS_7012, CDI_DEF])
+    if not dod and cui:
+        ctx.req("Safeguarding", "CUI safeguarding on a civilian contract", None,
+                "No CMMC and no FAR-wide CUI clause (eCFR 48 CFR part 52, checked as of "
+                f"{P(NON_DOD, 'checked_as_of')}); CUI rules come from the agency, and FAR 52.204-21 does not relieve "
+                "you of them.", "Ask the contracting officer which CUI clauses and standard the contract uses.",
+                [NON_DOD, CUI_DEF])
+
+    # ------------------------------------------------ supply chain prohibitions (every federal contract)
+    d889 = P(SEC889, "report_within_business_days")
+    ctx.req("Supply chain", "Section 889: no Huawei/ZTE/Hytera/Hikvision/Dahua telecom or video surveillance", True,
+            f"FAR 52.204-25 is in all solicitations and contracts. Report covered equipment found during performance "
+            f"within {d889} business day" + ("" if prime else "; your flowed-down clause omits the company-wide 'use' "
+                                              "ban of (b)(2), which binds the prime") + ".",
+            "Check jobsite cameras, radios and network gear against the covered producers before you install or "
+            "deliver them.", [SEC889])
+    if prime:
+        ctx.req("SAM.gov", "Section 889 representations (FAR 52.204-26 in SAM, 52.204-24 in the offer)", True,
+                "52.204-26 is answered in your SAM.gov annual representations and applies to all solicitations; "
+                "complete 52.204-24 only for an answer that was 'does'. A reasonable inquiry needs no audit.",
+                "Review the SAM.gov exclusions list for covered telecom entities and confirm your answers.",
+                [SEC889_REPS])
+    ctx.req("Supply chain", "No Kaspersky products for the government or contract deliverables", True,
+            f"FAR 52.204-23 is in all solicitations and contracts and flows to all subcontracts; report a covered "
+            f"article provided to the government within {P(KASPERSKY, 'report_within_business_days')} business days.",
+            "Remove Kaspersky software from machines used on the contract.", [KASPERSKY])
+    ctx.req("Supply chain", "No TikTok on devices used for the contract", True,
+            "FAR 52.204-27 bars TikTok (or any ByteDance successor app) on IT used or provided under the contract, "
+            "including employees' own devices, unless the contracting officer gives written notice of an exception.",
+            "Tell crews and office staff; check phones used for project email, photos and apps.", [BYTEDANCE])
+    if prime:
+        ctx.req("SAM.gov", "SAM.gov registration and annual representations", True,
+                f"Be registered in SAM.gov when you bid and at award; by bidding you confirm the SAM.gov "
+                f"representations were updated within the last {P(SAM_REPS, 'updated_within_months')} months and are "
+                "current, accurate and complete.", "Update SAM.gov before the bid if anything changed.",
+                [SAM_REPS, SAM_REG, SAM_ANNUAL])
+    else:
+        cage = bool(dod and required and applies is not False)
+        ctx.req("SAM.gov", "SAM.gov registration and representations", False,
+                "FAR 52.204-7 and 52.204-8 bind offerors on the prime contract, not subcontractors"
+                + ("; your SPRS entries must still list the CAGE codes of the systems in scope (32 CFR "
+                   "170.15(a)(1)(i)(D), 170.16(a)(1)(i)(D))." if cage else "."),
+                "Ask your prime what it needs from you.", [SAM_REPS] + ([CMMC_L1_SELF, CMMC_L2_SELF] if cage else []))
+
+    # ------------------------------------------------ key dates
+    p_dates = [(f"Phase {i} of CMMC implementation begins", _iso_param(CMMC_PHASES, f"phase_{i}_start"))
+               for i in (1, 2, 3, 4)]
+    for what, when in p_dates:
+        if when > today and dod:
+            ctx.date(what, when, CMMC_PHASES, kind="milestone")
+    if dod and applies is not False and required:
+        ctx.date((f"Current {required} status and affirmation in SPRS, CMMC UIDs in the proposal" if prime else
+                  f"Current {required} status and affirmation in SPRS before your subcontract award"),
+                 award, CMMC_AWARD if prime else CMMC_7021, CMMC_CURRENT,
+                 kind="deadline" if award >= today else "milestone")
+
+    # ------------------------------------------------ SPRS score and a status you hold
+    outcome = None
+    if score is not None:
+        if not cui:
+            ctx.notes.append("sprs_score was ignored: Level 1 has no score (every requirement MET or NOT MET), and the "
+                             "Level 2 score applies only to CUI.")
+        else:
+            mn, top = _min_conditional_score(), P(CMMC_L2, "max_score")
+            outcome = "final" if score == top else ("conditional_possible" if score >= mn else "not_eligible")
+            ctx.line("Your Level 2 score short of a Final status", top - score, "count",
+                     f"{top} - {score} = {top - score} points open", CMMC_SCORING, CMMC_L2)
+            ctx.notes.append({
+                "final": f"A score of {top} means every requirement is MET: a Final Level 2 status.",
+                "conditional_possible": (f"{score} >= {mn}: a Conditional status is possible only if every open item is a "
+                                         "1-point item (or SC.L2-3.13.11 non-FIPS encryption) and none of the listed "
+                                         f"requirements is open; close out within {P(CMMC_POAM, 'closeout_days')} "
+                                         "days."),
+                "not_eligible": (f"{score} < {mn}: no Level 2 status (Conditional needs score / {top} >= "
+                                 f"{_n(P(CMMC_POAM, 'min_score_ratio'))}); fix items before the assessment."),
+            }[outcome])
+    meets = current = None
+    if status and not status_date:
+        ctx.notes.append("current_cmmc_status was given without cmmc_status_date, so its renewal and affirmation dates "
+                         "were not computed.")
+    if status_date and not status:
+        ctx.notes.append("cmmc_status_date was given without current_cmmc_status, so it was not used.")
+    if status:
+        level = status.split(" ", 1)[1]
+        if required and dod:
+            meets = LEVEL_RANK[level] >= LEVEL_RANK[required]
+            if not meets:
+                ctx.notes.append(f"Your {status} is below the required {required}; a higher status satisfies a "
+                                 "lower requirement, never the reverse.")
+        if status_date:
+            current = _status_dates(ctx, status, status_date, last_aff, award)
+            if not current:
+                ctx.notes.append(f"Your {status} will not be current on the {award} award date unless renewed (age "
+                                 "limit or yearly affirmation, DFARS 204.7501 'Current').")
+    ctx.dates.sort(key=lambda d: d.due)
+
+    # ------------------------------------------------ summary and next step
+    info_txt = {"cui": "CUI", "fci_only": "FCI only", "none": "no FCI or CUI"}[info]
+    who = "prime contractor" if prime else f"tier-{tier} subcontractor"
+    if not dod:
+        head = f"Non-DoD federal contract, {who}, {info_txt}: no CMMC."
+    elif applies is False:
+        head = f"DoD contract, {who}, {info_txt}: no CMMC status needed for this award."
+    else:
+        lvl = required + (" at least" if minimum_only else "")
+        head = (f"DoD contract awarded {award} ({phase.replace('_', ' ')}), {who}, {info_txt}: CMMC "
+                f"{'applies' if applies else 'may apply'}, {lvl}"
+                + (f"; plan for {plan}" if plan and plan != required else "") + ".")
+    on = [r for r in ctx.reqs if r.applies]
+    summary = head + f" {_count(len(on), 'requirement applies', 'requirements apply')}."
+    soon = [d for d in ctx.dates if d.kind == "deadline" and d.status in ("overdue", "due_soon")]
+    first = ""
+    if soon:
+        d = soon[0]
+        first = f"OVERDUE since {d.due}: {d.what}. " if d.status == "overdue" else f"By {d.due}: {d.what}. "
+    if not dod:
+        step = ("Apply the 15 FAR 52.204-21 safeguards to every system holding contract information"
+                + (" and ask the contracting officer which CUI clauses apply" if cui else "") + "; keep Kaspersky, "
+                "TikTok and Section 889 equipment off the job." if info != "none" else
+                "No CMMC or FAR 52.204-21 duties; keep Kaspersky, TikTok and Section 889 equipment off the job"
+                + (" and keep SAM.gov current." if prime else "."))
+    elif applies is False:
+        step = ("Keep Kaspersky, TikTok and Section 889 equipment off the job" + (" and keep SAM.gov current" if prime
+                                                                                 else "")
+                + ("; apply the FAR 52.204-21 safeguards to systems holding contract information." if info != "none"
+                   else "."))
+    elif required == LEVELS[0]:
+        step = (f"Self-assess the {P(CMMC_L1, 'requirement_count')} FAR 52.204-21 requirements on every system "
+                f"holding FCI, post the result in SPRS and have your Affirming Official affirm before {award}.")
+    else:
+        lv = plan if (minimum_only and plan) else required
+        step = ("Read the solicitation's DFARS 252.204-7025 paragraph (b)(1) for the level. " if minimum_only and prime
+                else "Ask the prime which CMMC level its contract requires. " if minimum_only else "")
+        step += (f"Plan for {lv}: write the system security plan, assess all {P(CMMC_L2, 'requirement_count')} NIST SP "
+                 f"800-171 Rev 2 requirements")
+        step += (" with an authorized C3PAO (book early)" if lv in (LEVELS[2], LEVELS[3]) else "")
+        step += (f", then the DCMA DIBCAC Level 3 assessment of the {P(CMMC_L3, 'requirement_count')} NIST SP 800-172 "
+                 "requirements" if lv == LEVELS[3] else "")
+        step += (f", and keep a NIST SP 800-171 DoD Assessment no more than {P(DFARS_7019, 'max_age_years')} years old "
+                 "in SPRS meanwhile.")
+    res = CmmcRequirementsResult(
+        as_of=today.isoformat(), dod_contract=dod, your_role=role, subcontract_tier=tier, information=info,
+        contract_award_date=award.isoformat(), cmmc_phase=phase,
+        cmmc_phase_started_on=started.isoformat() if started else None,
+        next_phase_starts_on=nxt.isoformat() if nxt else None, cmmc_applies=applies, required_cmmc_level=required,
+        required_level_is_minimum_only=minimum_only, plan_for_cmmc_level=plan,
+        assessment=_assessment_text(required) if required and applies is not False else None,
+        nist_sp_800_171_revision_for_cmmc=("Revision 2 (32 CFR 170.2(a)(9)); Revision 3 is not adopted"
+                                           if cui and dod else None),
+        sprs_score_outcome=outcome, status_meets_required_level=meets, status_current_at_award=current,
+        summary=summary, next_step=first + step, requirements=ctx.reqs, key_dates=ctx.dates, line_items=ctx.lines,
+        notes=ctx.notes)
+    return ctx.finish(res)
+
+
 # ---------------------------------------------------------------- MCP tools
 def _tool_docs() -> dict[str, str]:
     """Tool descriptions for AI agents, with every legal number read from the rulebook so they never go stale."""
@@ -2611,6 +3274,26 @@ def _tool_docs() -> dict[str, str]:
             f"{_n(P(FHWA_ALT, 'award_to_foreign_if_lowest_domestic_exceeds_lowest_foreign_by_pct_more_than'))}% "
             "alternate bid, FTA lowest foreign bid x "
             f"{_n(P(FTA_BA, 'price_differential_waiver_if_lowest_foreign_bid_times'))} vs lowest domestic). Returns complies true/false/null with what is missing, the math and a next step."),
+        "cmmc": (
+            "CMMC and federal cybersecurity rules for one contract you are bidding or performing. Give whether it is a "
+            "DoD contract (USACE, NAVFAC, Air Force, Army, ...), whether your systems will hold CUI (incl. covered "
+            "defense information) or FCI only, the award date and your subcontract tier (0 = prime). Optional: the "
+            "CMMC level the solicitation or prime contract names (DFARS 252.204-7025), your Level 2 SPRS score, and a "
+            "CMMC status you hold with its date. Returns the CMMC phase on the award date (Phase 1 from "
+            f"{P(CMMC_PHASES, 'phase_1_start')}, Phase 2 from {P(CMMC_PHASES, 'phase_2_start')}, Phase 3 from "
+            f"{P(CMMC_PHASES, 'phase_3_start')}, full implementation from {P(CMMC_PHASES, 'phase_4_start')}), "
+            "cmmc_applies true/false/null, the level you must hold (subcontractors per 32 CFR 170.23: FCI only = "
+            "Level 1 (Self), CUI = Level 2 (Self), or Level 2 (C3PAO) under a C3PAO or Level 3 prime), what to plan "
+            f"for when the level is unknown, the assessment (Level 1: {P(CMMC_L1, 'requirement_count')} FAR "
+            f"52.204-21 requirements yearly, no POA&M; Level 2: {P(CMMC_L2, 'requirement_count')} NIST SP 800-171 "
+            f"Rev 2 requirements every {P(CMMC_L2_SELF, 'reassessment_interval_years')} years, Conditional status "
+            f"from a score of {_min_conditional_score()} with a {P(CMMC_POAM, 'closeout_days')}-day POA&M closeout; "
+            f"Level 3: {P(CMMC_L3, 'requirement_count')} NIST SP 800-172 requirements by DCMA DIBCAC), yearly "
+            "affirmations and CMMC UIDs in SPRS, DFARS 252.204-7012 NIST SP 800-171 and "
+            f"{P(DFARS_INCIDENT, 'report_within_hours')}-hour DIBNet incident reporting, the "
+            f"{P(DFARS_7019, 'max_age_years')}-year NIST SP 800-171 DoD Assessment in SPRS, FAR 52.204-21, Section "
+            "889, Kaspersky and TikTok bans, SAM.gov representations, renewal dates and a next step. Not legal "
+            "advice; the solicitation's own CMMC level controls."),
     }
 
 
@@ -2771,3 +3454,38 @@ def register(mcp) -> None:
                                  all_manufacturing_in_us, delivery_date, cots, critical_item, total_contract_cost_usd,
                                  contract_foreign_iron_steel_cost_usd, fhwa_obligation_date, cost_if_domestic_usd,
                                  cost_if_foreign_usd, stafford_act_disaster_funds, as_of)
+
+    top = P(CMMC_L2, "max_score")
+
+    @mcp.tool(name="cmmc_requirements", annotations=ro, description=docs["cmmc"])
+    def _cmmc_requirements(
+        handles_cui: Annotated[bool, Field(description=(
+            "Will your systems process, store or transmit CUI for this contract (e.g. CUI-marked drawings or specs, "
+            "controlled technical information)?"))],
+        handles_fci_only: Annotated[bool, Field(description=(
+            "FCI but no CUI: non-public information provided by or generated for the government under the contract "
+            "(not public or simple payment information)"))],
+        dod_contract: Annotated[bool, Field(description=(
+            "Is the prime contract with the Department of Defense (USACE, NAVFAC, Army, Air Force, DLA, ...)?"))],
+        contract_award_date: Annotated[Optional[str], Field(description=(
+            "ISO award date of the contract you are signing (subcontractors: your subcontract); sets the CMMC "
+            "phase. Default: today in California"))] = None,
+        subcontract_tier: Annotated[Union[int, str], Field(description=(
+            "0 = prime contractor, 1 = first-tier subcontractor, 2 = second tier, ..."))] = 0,
+        solicitation_cmmc_level: Annotated[Optional[str], Field(description=(
+            "CMMC level the solicitation or prime contract names (DFARS 252.204-7025(b)(1)): 'Level 1 (Self)', "
+            "'Level 2 (Self)', 'Level 2 (C3PAO)', 'Level 3 (DIBCAC)', or 'none'. Leave empty if unknown"))] = None,
+        sprs_score: Annotated[Optional[int], Field(le=top, description=(
+            f"Your Level 2 score (out of {top}; may be negative) to test Final / Conditional eligibility"))] = None,
+        current_cmmc_status: Annotated[Optional[str], Field(description=(
+            "A CMMC status you hold, e.g. 'Final Level 1 (Self)', 'Conditional Level 2 (Self)', 'Final Level 2 "
+            "(C3PAO)'"))] = None,
+        cmmc_status_date: Annotated[Optional[str], Field(description=(
+            "ISO date that status was posted in SPRS or eMASS (the CMMC Status Date)"))] = None,
+        last_affirmation_date: Annotated[Optional[str], Field(description=(
+            "ISO date of your Affirming Official's last affirmation in SPRS"))] = None,
+        as_of: Annotated[Optional[str], Field(description="ISO date to evaluate as of; default today in California")] = None,
+    ) -> CmmcRequirementsResult:
+        return cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_award_date, subcontract_tier,
+                                 solicitation_cmmc_level, sprs_score, current_cmmc_status, cmmc_status_date,
+                                 last_affirmation_date, as_of)

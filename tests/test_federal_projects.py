@@ -874,7 +874,7 @@ def test_register_and_call_through_mcp_client():
                 ba.structured_content, bad
     tools, reqs, wages, ot, ba, bad = asyncio.run(run())
     assert set(tools) == {"federal_project_requirements", "davis_bacon_vs_ca_prevailing", "federal_overtime_exposure",
-                          "buy_america_check"}
+                          "buy_america_check", "cmmc_requirements"}
     for t in tools.values():
         assert t.annotations.read_only_hint is True and t.annotations.open_world_hint is False
     assert "$150,000" in tools["federal_project_requirements"].description            # Miller Act, from the rulebook
@@ -1071,3 +1071,292 @@ def test_ignored_inputs_are_reported():
     assert any(n.startswith("stafford_act_disaster_funds was ignored") for n in r.notes)
     assert any(n.startswith("infrastructure_project was ignored") for n in r.notes)
     assert req(r, "FHWA Buy America").applies is True                  # not switched off by the stray flags
+
+
+# ================================================================ CMMC and federal cybersecurity (cmmc_requirements)
+# Rules: research/web_cmmc-federal-cyber.verified.json ("cmmc-..."), checked against eCFR text current as of
+# 2026-11-24. Every expected value below is traced to the regulation text in a comment.
+CMMC_AS_OF = "2026-11-26"
+
+
+def cmmc(**kw):
+    args = dict(handles_cui=True, handles_fci_only=False, dod_contract=True, contract_award_date="2026-12-15",
+                subcontract_tier=0, as_of=CMMC_AS_OF)
+    args.update(kw)
+    return fp.cmmc_requirements(**args)
+
+
+def test_cmmc_pack_rules_all_used_and_verified():
+    book = {r.id: r for r in core.all_rules()}
+    pack = {i for i, r in book.items() if r.pack == "web_cmmc-federal-cyber"}
+    # 36 rules: 30 confirmed + 6 corrected by the independent verifier, none unverifiable
+    assert len(pack) == 36 and all(i.startswith("cmmc-") for i in pack)
+    assert set(fp.CMMC_RULE_IDS) == pack and not fp.CMMC_NOT_USED
+    assert set(fp.CMMC_RULE_IDS) <= set(fp.RULE_IDS)
+    assert all(book[i].verified for i in pack)
+    assert sorted(i for i in pack if book[i].status == "corrected") == sorted([
+        "cmmc-program-scope-dod-fci-cui", "cmmc-level3-24-nist-800-172", "cmmc-fci-definition",
+        "cmmc-kaspersky-52-204-23", "cmmc-section-889-52-204-25", "cmmc-non-dod-no-cmmc"])
+    # the level labels the tool uses are the DFARS 252.204-7021(d)(1) fill-ins without the "CMMC " prefix
+    assert [x.replace("CMMC ", "") for x in core.rule(fp.CMMC_7021).param("level_inserted_by_co")] == list(fp.LEVELS)
+    # the seven statuses are DFARS 204.7501's
+    assert core.rule(fp.CMMC_CURRENT).param("statuses") == list(fp.CmmcStatus.__args__)
+
+
+def test_cmmc_phase_dates_and_boundaries():
+    # 32 CFR 170.3(e): Phase 1 begins on the effective date of the 48 CFR part 204 rule (eCFR: DFARS 204.7504 and
+    # 252.204-7021 (NOV 2025) first in effect 2025-11-10); each later phase "one calendar year following".
+    cases = [("2025-11-09", "before_phase_1", None, "2025-11-10"), ("2025-11-10", "phase_1", "2025-11-10", "2026-11-10"),
+             ("2026-11-09", "phase_1", "2025-11-10", "2026-11-10"), ("2026-11-10", "phase_2", "2026-11-10", "2027-11-10"),
+             ("2027-11-10", "phase_3", "2027-11-10", "2028-11-10"), ("2028-11-09", "phase_3", "2027-11-10", "2028-11-10"),
+             ("2028-11-10", "phase_4", "2028-11-10", None)]
+    for award, phase, started, nxt in cases:
+        r = cmmc(contract_award_date=award)
+        assert (r.cmmc_phase, r.cmmc_phase_started_on, r.next_phase_starts_on) == (phase, started, nxt), award
+    # future phase starts are milestones; the award date is the deadline for the status
+    r = cmmc()
+    assert [d.due for d in r.key_dates if d.kind == "milestone"] == ["2027-11-10", "2028-11-10"]
+    assert kdate(r, "Current Level 2 (Self) status").due == "2026-12-15"
+
+
+def test_cmmc_prime_cui_unknown_level_phase_2():
+    # $ DoD prime, CUI, award 2026-12-15 (Phase 2), solicitation level not given:
+    # DFARS 204.7504(a)(1): until 2028-11-09 the clause goes in only if the program office sets a level -> None.
+    # Floor for CUI = Level 2 (Self); Phase 2 intent (170.3(e)(2)) = Level 2 (C3PAO) for applicable contracts.
+    r = cmmc()
+    assert r.cmmc_applies is None and r.cmmc_phase == "phase_2"
+    assert (r.required_cmmc_level, r.required_level_is_minimum_only, r.plan_for_cmmc_level) == (
+        "Level 2 (Self)", True, "Level 2 (C3PAO)")
+    assert r.nist_sp_800_171_revision_for_cmmc.startswith("Revision 2")
+    assert r.verified and r.disclaimer == core.DISCLAIMER and not r.unverified_rule_ids
+    assert "Until 2028-11-09" in req(r, "CMMC status").why
+    assert "with an authorized C3PAO" in r.next_step and "DFARS 252.204-7025 paragraph (b)(1)" in r.next_step
+    # 170.21(a)(2)(i): score / 110 >= 0.8 -> lowest whole score 88
+    assert line(r, "Lowest Level 2 score").value == 88
+    # DFARS 252.204-7012 + 7019 + 72-hour reporting apply to CUI on a DoD contract
+    assert req(r, "DFARS 252.204-7012").applies is True and "Revision 3" in req(r, "DFARS 252.204-7012").why
+    assert req(r, "NIST SP 800-171 DoD Assessment in SPRS").applies is True
+    assert "3 years old" in req(r, "NIST SP 800-171 DoD Assessment in SPRS").why
+    assert req(r, "Report cyber incidents to DoD within 72 hours").applies is True
+    assert "90 days" in req(r, "Report cyber incidents").why                  # 252.204-7012(e)
+    assert req(r, "CMMC UIDs in the proposal").applies is None                # prime only
+    assert req(r, "SAM.gov registration and annual representations").applies is True
+    cited = {c.rule_id for c in r.citations}
+    assert {fp.SAM_REG, fp.SAM_ANNUAL, fp.DFARS_7012, fp.CMMC_REV3} <= cited
+
+
+def test_cmmc_solicitation_level_settles_applies_and_level():
+    r = cmmc(solicitation_cmmc_level="L2 C3PAO")
+    assert r.cmmc_applies is True and r.required_cmmc_level == "Level 2 (C3PAO)"
+    assert not r.required_level_is_minimum_only and r.plan_for_cmmc_level is None
+    assert "authorized C3PAO" in r.assessment and "every 3 years" in r.assessment      # 170.17(a)(1)
+    none = cmmc(solicitation_cmmc_level="none")
+    assert none.cmmc_applies is False and none.required_cmmc_level is None
+    assert not any(q.item.startswith("Assessment for") for q in none.requirements)
+    assert req(none, "DFARS 252.204-7012").applies is True                    # 7012 is separate from CMMC
+    # Phase 4 (from 2028-11-10, DFARS 204.7504(a)(2)): no clause is unusual -> ask about a waiver
+    late = cmmc(solicitation_cmmc_level="none", contract_award_date="2028-11-10")
+    assert late.cmmc_applies is False and "170.5(d)" in req(late, "CMMC status").why
+    l3 = cmmc(solicitation_cmmc_level="Level 3 (DIBCAC)")
+    assert l3.required_cmmc_level == "Level 3 (DIBCAC)" and "DCMA DIBCAC" in l3.assessment
+    # 24 Level 3 requirements, Conditional from ceil(0.8 x 24) = 20 (170.21(a)(3)(i), 170.24(c)(3))
+    assert line(l3, "Lowest Level 3 score").value == 20
+    assert "Final Level 2 (C3PAO)" in req(l3, "POA&M rules for a Conditional Level 3").why
+
+
+@pytest.mark.parametrize("fci_only,cui,prime_level,expected", [
+    (True, False, "Level 2 (C3PAO)", "Level 1 (Self)"),   # 170.23(a)(1): FCI only -> Level 1 (Self)
+    (False, True, "Level 2 (Self)", "Level 2 (Self)"),    # 170.23(a)(2)
+    (False, True, "Level 2 (C3PAO)", "Level 2 (C3PAO)"),  # 170.23(a)(3)
+    (False, True, "Level 3 (DIBCAC)", "Level 2 (C3PAO)"), # 170.23(a)(4): not Level 3
+    (False, True, "Level 1 (Self)", "Level 2 (Self)"),    # CUI never below Level 2 (Self) for a sub
+])
+def test_cmmc_subcontractor_levels_follow_170_23(fci_only, cui, prime_level, expected):
+    r = cmmc(handles_cui=cui, handles_fci_only=fci_only, subcontract_tier=2, solicitation_cmmc_level=prime_level)
+    assert r.your_role == "subcontractor" and r.subcontract_tier == 2
+    assert r.required_cmmc_level == expected and r.cmmc_applies is True
+    assert fp.CMMC_SUBS in req(r, "CMMC status").rule_ids
+    assert not any(q.item.startswith("CMMC UIDs in the proposal") for q in r.requirements)   # 7021(f): no (e)(1)
+    assert req(r, "SAM.gov registration and representations").applies is False
+
+
+def test_cmmc_subcontractor_cui_gets_basic_assessment_and_incident_chain():
+    r = cmmc(subcontract_tier="first tier", solicitation_cmmc_level="Level 2 (Self)")
+    # 252.204-7020(g)(2): no subcontract award without a Basic Assessment within the last 3 years
+    b = req(r, "Basic NIST SP 800-171 Assessment before your subcontract award")
+    assert b.applies is True and "last 3 years" in b.why and fp.DFARS_7020 in b.rule_ids
+    assert "incident report number" in req(r, "Report cyber incidents").why     # 252.204-7012(m)(2)(ii)
+    assert "(b)(2)" in req(r, "Section 889").why                                 # 52.204-25(e) excludes (b)(2)
+    assert kdate(r, "Current Level 2 (Self) status and affirmation in SPRS before your subcontract award").due == \
+        "2026-12-15"
+
+
+def test_cmmc_fci_only_prime_phase_4_applies():
+    # DFARS 204.7504(a)(2): on or after 2028-11-10 the clause goes in whenever contractor systems handle FCI or CUI
+    r = cmmc(handles_cui=False, handles_fci_only=True, contract_award_date="2028-11-10")
+    assert r.cmmc_applies is True and r.required_cmmc_level == "Level 1 (Self)"
+    assert "every 12 months" in r.assessment and "15 FAR 52.204-21" in r.assessment
+    assert req(r, "No POA&M at Level 1").applies is True                        # 170.21(a)(1)
+    assert req(r, "DFARS 252.204-7012").applies is False                         # no covered defense information
+    assert "Self-assess the 15 FAR 52.204-21 requirements" in r.next_step
+    day_before = cmmc(handles_cui=False, handles_fci_only=True, contract_award_date="2028-11-09")
+    assert day_before.cmmc_applies is None
+    assert not any(x.item.startswith("Lowest Level 2") for x in r.line_items)
+
+
+def test_cmmc_before_phase_1_and_no_information():
+    r = cmmc(contract_award_date="2025-06-01", as_of="2025-05-01")
+    assert r.cmmc_phase == "before_phase_1" and r.cmmc_applies is None and r.plan_for_cmmc_level is None
+    assert "before Phase 1 (2025-11-10)" in req(r, "CMMC status").why
+    none = cmmc(handles_cui=False, handles_fci_only=False)
+    assert none.cmmc_applies is False and none.information == "none" and none.required_cmmc_level is None
+    assert req(none, "FAR 52.204-21").applies is False and "handles_fci_only=true" in req(none, "CMMC status").why
+    assert req(none, "Section 889").applies is True and req(none, "No TikTok").applies is True
+
+
+def test_cmmc_civilian_contract_has_no_cmmc():
+    r = cmmc(dod_contract=False)
+    assert r.cmmc_applies is False and r.required_cmmc_level is None and r.assessment is None
+    assert fp.NON_DOD in req(r, "CMMC status").rule_ids
+    assert req(r, "FAR 52.204-21").applies is True
+    cui = req(r, "CUI safeguarding on a civilian contract")
+    assert cui.applies is None and "2026-11-24" in cui.why                     # absence check date in the rule
+    assert not any("252.204-70" in q.item for q in r.requirements)            # no DFARS items off DoD contracts
+    assert not any(d.kind == "milestone" for d in r.key_dates)
+    assert r.nist_sp_800_171_revision_for_cmmc is None and r.verified
+    with pytest.raises(ValueError, match="only in DoD solicitations"):
+        cmmc(dod_contract=False, solicitation_cmmc_level="Level 1 (Self)")
+
+
+@pytest.mark.parametrize("score,outcome,open_pts", [(110, "final", 0), (88, "conditional_possible", 22),
+                                                   (87, "not_eligible", 23), (-15, "not_eligible", 125)])
+def test_cmmc_sprs_score_outcomes(score, outcome, open_pts):
+    # 170.24(c)(2): max 110, may go negative; 170.21(a)(2)(i): Conditional needs score / 110 >= 0.8 (88 of 110)
+    r = cmmc(sprs_score=score)
+    assert r.sprs_score_outcome == outcome
+    assert line(r, "Your Level 2 score short of a Final status").value == open_pts
+
+
+def test_cmmc_bad_inputs():
+    with pytest.raises(ValueError, match="handles_fci_only means FCI and no CUI"):
+        cmmc(handles_fci_only=True)
+    with pytest.raises(ValueError, match="at most 110"):
+        cmmc(sprs_score=111)
+    with pytest.raises(ValueError, match="whole number"):
+        cmmc(sprs_score=88.5)
+    with pytest.raises(ValueError, match="whole number"):
+        cmmc(sprs_score=True)
+    with pytest.raises(ValueError, match="'Level 2 \\(Self\\)' or 'Level 2 \\(C3PAO\\)'"):
+        cmmc(solicitation_cmmc_level="Level 2")
+    with pytest.raises(ValueError, match="Unknown CMMC level"):
+        cmmc(solicitation_cmmc_level="gold")
+    with pytest.raises(ValueError, match="no Conditional Level 1"):
+        cmmc(current_cmmc_status="Conditional Level 1", cmmc_status_date="2026-10-01")
+    with pytest.raises(ValueError, match="say Final or Conditional"):
+        cmmc(current_cmmc_status="Level 2 (Self)", cmmc_status_date="2026-10-01")
+    with pytest.raises(ValueError, match="after as_of"):
+        cmmc(current_cmmc_status="Final Level 2 (Self)", cmmc_status_date="2026-12-01")
+    with pytest.raises(ValueError, match="before cmmc_status_date"):
+        cmmc(current_cmmc_status="Final Level 2 (Self)", cmmc_status_date="2026-10-01",
+             last_affirmation_date="2026-09-01")
+    with pytest.raises(ValueError, match="contract_award_date must be a date"):
+        cmmc(contract_award_date="next spring")
+    with pytest.raises(ValueError, match="handles_cui must be true or false"):
+        cmmc(handles_cui="maybe")
+
+
+@pytest.mark.parametrize("raw,tier", [(0, 0), ("prime", 0), ("GC", 0), ("sub", 1), ("first tier", 1), ("2nd tier", 2),
+                                      ("3", 3), (2.0, 2)])
+def test_cmmc_tier_words(raw, tier):
+    assert fp.normalize_tier(raw) == tier
+
+
+@pytest.mark.parametrize("raw", [-1, "-1", 1.5, "boss", True, 21])
+def test_cmmc_bad_tiers(raw):
+    with pytest.raises(ValueError, match="subcontract_tier"):
+        fp.normalize_tier(raw)
+
+
+@pytest.mark.parametrize("raw,level", [("L1", "Level 1 (Self)"), ("CMMC Level 1 (Self)", "Level 1 (Self)"),
+                                       ("level 2 self", "Level 2 (Self)"), ("L2 (C3PAO)", "Level 2 (C3PAO)"),
+                                       ("Level 2 certification", "Level 2 (C3PAO)"), ("L3", "Level 3 (DIBCAC)"),
+                                       ("DIBCAC", "Level 3 (DIBCAC)"), ("No CMMC", "none"), ("", None)])
+def test_cmmc_level_words(raw, level):
+    assert fp.normalize_cmmc_level(raw) == level
+
+
+def test_cmmc_string_flags_are_parsed_not_truthy():
+    r = cmmc(handles_cui="false", handles_fci_only="yes", dod_contract="TRUE")
+    assert r.information == "fci_only" and r.required_cmmc_level == "Level 1 (Self)"
+    assert cmmc(dod_contract="no").cmmc_applies is False
+
+
+def test_cmmc_conditional_status_closeout_and_award_currency():
+    # DFARS 204.7501 'Current': Conditional not older than 180 days. 2026-10-01 + 180 days = 2027-03-30
+    # (Oct 30 + Nov 30 + Dec 31 + Jan 31 + Feb 28 + Mar 30 = 180).
+    r = cmmc(current_cmmc_status="conditional L2 self", cmmc_status_date="2026-10-01", sprs_score=95)
+    assert kdate(r, "POA&M closeout assessment").due == "2027-03-30"
+    assert r.status_meets_required_level is True and r.status_current_at_award is True     # award 2026-12-15
+    # affirmation: not older than 1 year -> 2027-10-01 from the status date
+    assert kdate(r, "Affirming Official's annual affirmation").due == "2027-10-01"
+    late = cmmc(current_cmmc_status="Conditional Level 2 (Self)", cmmc_status_date="2026-10-01",
+                contract_award_date="2027-04-15")
+    assert late.status_current_at_award is False and any("will not be current" in n for n in late.notes)
+
+
+def test_cmmc_final_status_renewals_and_rank():
+    # Final Level 1 (Self): current for 1 year (204.7501) -> 2025-12-01 + 1 year = 2026-12-01, 5 days after as_of
+    r = cmmc(handles_cui=False, handles_fci_only=True, current_cmmc_status="Final Level 1 (Self)",
+             cmmc_status_date="2025-12-01")
+    d = kdate(r, "New Level 1 (Self) assessment")
+    assert d.due == "2026-12-01" and d.status == "due_soon" and d.days_left == 5
+    assert r.next_step.startswith("By 2026-12-01: New Level 1 (Self) assessment")
+    assert r.status_current_at_award is False                                  # award 2026-12-15 > 2026-12-01
+    # Final Level 2 (C3PAO) satisfies a Level 2 (Self) requirement; Level 2 (Self) does not satisfy C3PAO
+    up = cmmc(solicitation_cmmc_level="Level 2 (Self)", current_cmmc_status="Final Level 2 (C3PAO)",
+              cmmc_status_date="2025-12-01", last_affirmation_date="2026-06-01")
+    assert up.status_meets_required_level is True and up.status_current_at_award is True
+    assert kdate(up, "New Level 2 (C3PAO) assessment").due == "2028-12-01"      # 3 years
+    assert kdate(up, "Affirming Official's annual affirmation").due == "2027-06-01"
+    down = cmmc(solicitation_cmmc_level="Level 2 (C3PAO)", current_cmmc_status="Final Level 2 (Self)",
+                cmmc_status_date="2025-12-01")
+    assert down.status_meets_required_level is False and any("below the required" in n for n in down.notes)
+
+
+def test_cmmc_leap_day_status_date_never_overstates_currency():
+    assert fp._add_years(fp.date(2024, 2, 29), 1) == fp.date(2025, 2, 28)
+    r = cmmc(handles_cui=False, handles_fci_only=True, current_cmmc_status="Final Level 1 (Self)",
+             cmmc_status_date="2024-02-29", as_of="2024-03-01", contract_award_date="2024-06-01")
+    assert kdate(r, "New Level 1 (Self) assessment").due == "2025-02-28"
+
+
+def test_cmmc_tool_description_and_mcp_call():
+    docs = fp._tool_docs()["cmmc"]
+    for s in ("Phase 2 from 2026-11-10", "full implementation from 2028-11-10", "a score of 88", "72-hour",
+              "110 NIST SP 800-171", "15 FAR 52.204-21", "24 NIST SP 800-172"):
+        assert s in docs
+    mcp = FastMCP("t")
+    fp.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            tools = {t.name: t for t in await c.list_tools()}
+            ok = await c.call_tool("cmmc_requirements", {
+                "handles_cui": True, "handles_fci_only": False, "dod_contract": True,
+                "contract_award_date": "2026-12-15", "subcontract_tier": "first tier",
+                "solicitation_cmmc_level": "Level 3 (DIBCAC)", "sprs_score": 90, "as_of": CMMC_AS_OF})
+            bad = [await c.call_tool("cmmc_requirements", args, raise_on_error=False) for args in [
+                {"handles_cui": True, "handles_fci_only": True, "dod_contract": True},
+                {"handles_cui": True, "handles_fci_only": False, "dod_contract": True, "sprs_score": 120},
+                {"handles_cui": True, "handles_fci_only": False, "dod_contract": True, "subcontract_tier": "-2"},
+            ]]
+            return tools, ok.structured_content, bad
+    tools, ok, bad = asyncio.run(run())
+    t = tools["cmmc_requirements"]
+    assert t.annotations.read_only_hint is True and t.annotations.open_world_hint is False
+    assert set(t.input_schema["required"]) == {"handles_cui", "handles_fci_only", "dod_contract"}
+    assert ok["required_cmmc_level"] == "Level 2 (C3PAO)" and ok["your_role"] == "subcontractor"   # 170.23(a)(4)
+    assert ok["sprs_score_outcome"] == "conditional_possible" and ok["verified"] is True
+    assert ok["disclaimer"] == core.DISCLAIMER
+    assert all(b.is_error for b in bad)
+    assert "handles_fci_only means FCI and no CUI" in bad[0].content[0].text

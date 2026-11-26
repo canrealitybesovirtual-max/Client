@@ -31,11 +31,15 @@ rfc-editor.org (the site itself was not reachable from the sandbox):
     (negative = before), here 9:00 local time N days before (TRIGGER:-P6DT15H is a week before);
   - 3.8.7.2 DTSTAMP is UTC (with METHOD present it is when the object was created);
   - 3.7 VERSION:2.0 and PRODID are required; METHOD:PUBLISH, CALSCALE:GREGORIAN.
-RFC 7986 (https://www.rfc-editor.org/rfc/rfc7986): calendar NAME, DESCRIPTION and REFRESH-INTERVAL;VALUE=DURATION,
-and its UID guidance (no host names or other identifying data: UIDs here are UUIDs derived from the tenant and the
-deadline's identity, never its date, so a moved date updates the same event instead of adding a new one).
-X-WR-CALNAME and X-PUBLISHED-TTL are de facto extensions (not in an RFC) that Apple, Google and Microsoft clients
-are commonly reported to read; see `unconfirmed`.
+RFC 7986 (https://www.rfc-editor.org/rfc/rfc7986), re-read the same way: calendar NAME, DESCRIPTION and
+REFRESH-INTERVAL;VALUE=DURATION (a suggested minimum polling interval), and its UID guidance (no host names, IP
+addresses or other identifying data; random UUIDs recommended). UIDs here are name-based UUIDs of the tenant and the
+deadline's identity (what the deadline is: project and kind, sub and kind), never its date, so a moved date updates
+the same event instead of adding a new one; only recurring filings carry their period, since each quarter's return
+is its own deadline.
+Dates: every event is an all-day DATE (floating, no time zone: RFC 5545 3.3.4), computed from California's calendar
+day (America/Los_Angeles, tradecomply.logic.today_ca). X-WR-CALNAME, X-WR-TIMEZONE and X-PUBLISHED-TTL are de facto
+extensions (not in an RFC) that Apple, Google and Microsoft clients are commonly reported to read; see `unconfirmed`.
 
 HTTP API (`router`; app/main.py must include it before the catch-all MCP mount at "/", as for the Docusign and Procore
 routers):
@@ -89,6 +93,7 @@ ALARM_HOUR = 9                                     # reminders at 9:00 local tim
 PRODID = "-//TradeComply CA//Compliance deadlines 2.0//EN"
 UID_NAMESPACE = uuid.UUID("77ce439c-97a8-4220-aa04-0a6ab24c0139")   # fixed: changing it changes every UID
 FEED_PATH = "/cal/{token}.ics"
+CA_TZID = "America/Los_Angeles"                    # whose calendar day the all-day dates are
 
 REMINDER_CHOICES = (("7,1", "A week before and the day before (9 AM)"),
                     ("14,7,1", "Two weeks, one week and the day before"),
@@ -237,7 +242,7 @@ def render_ics(items: list[FeedItem], *, tenant_id: str, company_name: str, stam
                app_url: str | None = None) -> str:
     name = escape_text(f"TradeComply: {company_name}")
     lines = ["BEGIN:VCALENDAR", "VERSION:2.0", f"PRODID:{PRODID}", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
-             f"NAME:{name}", f"X-WR-CALNAME:{name}",
+             f"NAME:{name}", f"X-WR-CALNAME:{name}", f"X-WR-TIMEZONE:{CA_TZID}",
              "DESCRIPTION:" + escape_text("California compliance deadlines from TradeComply. Not legal advice."),
              f"REFRESH-INTERVAL;VALUE=DURATION:{REFRESH}", f"X-PUBLISHED-TTL:{REFRESH}"]
     dtstamp = ics_utc(stamp)
@@ -410,7 +415,8 @@ def build_items(store, tenant: dict, config: dict | None = None, today: date | N
         if day:
             cites, _, checked = dashboard._rule_citation(dashboard.LICENSE_RULE)
             items.append(FeedItem(identity="license_expiry:company", kind="license_expiry",
-                                  title="Your CSLB license expires", day=day, detail="Renew with CSLB before this date.",
+                                  title="Your CSLB license expires", day=day,
+                                  detail="Renew with CSLB before this date.",
                                   category="License", citations=_cites(cites), verified=bool(lic.get("verified")),
                                   checked_on=checked, alarms=tuple(sorted(set(alarms) | ({30} if alarms else set()),
                                                                           reverse=True)),
@@ -546,8 +552,10 @@ class CalendarFeedConnector(Connector):
         "support.google.com and support.microsoft.com could not be read for this connector.",
         "Whether each calendar app shows the reminders (VALARM) of a subscribed calendar; Google Calendar is commonly "
         "reported to ignore them in favor of the calendar's own notification settings.",
-        "X-WR-CALNAME and X-PUBLISHED-TTL are de facto extensions, not standards; webcal:// is a convention, not a "
-        "registered URI scheme. Use the https:// link if webcal doesn't open.",
+        "X-WR-CALNAME, X-WR-TIMEZONE and X-PUBLISHED-TTL are de facto extensions, not standards; webcal:// is a "
+        "convention, not a registered URI scheme. Use the https:// link if webcal doesn't open.",
+        "The steps to subscribe (Google Calendar: Other calendars > From URL; Outlook: Add calendar > Subscribe from "
+        "web) are as commonly described; Google's and Microsoft's help pages could not be read for this connector.",
         "Render's own HTTP request logs, if turned on for the service, may record request paths, which hold the link's "
         "secret. TradeComply's access log redacts it.",
     )
@@ -576,7 +584,7 @@ class CalendarFeedConnector(Connector):
         return token, {"id": row["token_hash"][:LINK_ID_LEN], "created": row["created"]}
 
     def revoke_link(self, link_id: str) -> bool:
-        if not LINK_ID_RE.match(str(link_id or "")):
+        if not LINK_ID_RE.fullmatch(str(link_id or "")):
             return False
         for t in self.ctx.store.list_calendar_tokens(self.ctx.tenant_id):
             if t["token_hash"].startswith(link_id):
@@ -671,14 +679,15 @@ def _ics_response(request: Request, body: str, filename: str = "tradecomply.ics"
     sent = request.headers.get("if-none-match") or ""
     if tag in [v.strip() for v in sent.split(",")]:
         return Response(status_code=304, headers=headers)
-    return Response(body, media_type="text/calendar; charset=utf-8", headers=headers)   # HEAD: the server drops the body
+    # For HEAD the server sends the headers only.
+    return Response(body, media_type="text/calendar; charset=utf-8", headers=headers)
 
 
 @router.api_route(FEED_PATH, methods=["GET", "HEAD"], include_in_schema=False)
 async def calendar_feed(token: str, request: Request):
     """The private feed. The token is the credential (calendar apps can't sign in); it is never logged."""
     platform = platform_of(request)
-    hashed = token_hash(token) if TOKEN_RE.match(token or "") else None
+    hashed = token_hash(token) if TOKEN_RE.fullmatch(token or "") else None
     tid = await anyio.to_thread.run_sync(platform.store.calendar_token_tenant, hashed) if hashed else None
     tenant = await anyio.to_thread.run_sync(platform.store.get_tenant, tid) if tid else None
     if not tenant:

@@ -33,8 +33,9 @@ services:
         generateValue: true
       - key: INTEGRATIONS_KEY
         generateValue: true   # AES-256-GCM key for integration secrets at rest (Render generates base64 of 256 bits)
-      - key: MCP_REQUIRE_KEY
-        value: "0"            # "1" once customers use their own API keys; "0" keeps the public MCP demo open
+      - key: MCP_PUBLIC_DEMO
+        value: "0"            # On Render /mcp needs an API key unless this is "1" (anonymous demo, audited and
+                              # throttled). MCP_REQUIRE_KEY=0 no longer opens it here. docs/mcp-security.md
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_PRICE_ID

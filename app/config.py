@@ -15,7 +15,11 @@ def _flag(name: str) -> bool:
 class Settings:
     data_dir: str = field(default_factory=default_data_dir)
     database_url: str | None = None       # postgres:// or postgresql:// selects PostgreSQL; unset = SQLite in data_dir
-    mcp_require_key: bool = False
+    mcp_require_key: bool = False         # see mcp_governance.resolve_mcp_access (on Render: on unless MCP_PUBLIC_DEMO=1)
+    mcp_public_demo: bool = False
+    mcp_access_reason: str = "default"
+    mcp_access_warnings: tuple = ()
+    mcp_allowed_origins: tuple = ()        # extra browser origins allowed to call /mcp (MCP_ALLOWED_ORIGINS)
     stripe_secret_key: str | None = None
     stripe_price_id: str | None = None
     stripe_webhook_secret: str | None = None
@@ -29,10 +33,16 @@ class Settings:
 
     @classmethod
     def from_env(cls, **overrides) -> "Settings":
+        from .mcp_governance import parse_origins, resolve_mcp_access
+        access = resolve_mcp_access(os.environ)
         s = cls(
             data_dir=default_data_dir(),
             database_url=database_url_from_env(),
-            mcp_require_key=_flag("MCP_REQUIRE_KEY"),
+            mcp_require_key=access.require_key,
+            mcp_public_demo=access.public_demo,
+            mcp_access_reason=access.reason,
+            mcp_access_warnings=access.warnings,
+            mcp_allowed_origins=parse_origins(os.getenv("MCP_ALLOWED_ORIGINS")),
             stripe_secret_key=os.getenv("STRIPE_SECRET_KEY") or None,
             stripe_price_id=os.getenv("STRIPE_PRICE_ID") or None,
             stripe_webhook_secret=os.getenv("STRIPE_WEBHOOK_SECRET") or None,
@@ -45,6 +55,9 @@ class Settings:
         )
         for k, v in overrides.items():
             setattr(s, k, v)
+        if "mcp_require_key" in overrides and "mcp_public_demo" not in overrides:
+            s.mcp_public_demo = not s.mcp_require_key and s.mcp_public_demo
+            s.mcp_access_reason = "set by the caller"
         return s
 
     @property
@@ -79,7 +92,13 @@ class Platform:
         self.signup_global_limiter = RateLimiter(limit=500, window_s=60 * 60)   # all signups (IPs can be spoofed)
         self.mcp_anon_limiter = RateLimiter(limit=60, window_s=60)        # anonymous /mcp tool calls per IP
         self.mcp_anon_global_limiter = RateLimiter(limit=300, window_s=60)    # all anonymous calls (IP spoofing)
-        self.mcp_key_limiter = RateLimiter(limit=600, window_s=60)        # /mcp tool calls per API key
+        self.mcp_key_limiter = RateLimiter(limit=600, window_s=60)        # /mcp tool calls per API key (default)
+        self.mcp_tenant_limiter = RateLimiter(limit=1200, window_s=60)    # all of a company's keys together
+        self.mcp_reject_log_limiter = RateLimiter(limit=30, window_s=60)  # denied/rate-limited rows logged per key/IP
+        self.mcp_export_limiter = RateLimiter(limit=20, window_s=10 * 60)  # MCP log downloads per company
+        self.mcp_audit_pending = 0                                       # audit rows waiting for the database
+        self.mcp_audit_dropped = 0
+        self.mcp_tool_index = None
         self.local_login_token: str | None = None                        # one-time link printed by app.local
         self.local_user_id: int | None = None
         self.tool_cache: tuple[float, list] | None = None

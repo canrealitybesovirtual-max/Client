@@ -1,0 +1,1224 @@
+{
+ "domain": "CMMC and federal cybersecurity rules for contractors bidding DoD and other federal construction in California: 32 CFR part 170 (CMMC program: levels 1-3, self-assessment vs C3PAO vs DIBCAC, SPRS, affirmations, POA&M, scoring, subcontractor flowdown, phased implementation), the DFARS CMMC acquisition rule (DFARS 204.75, 252.204-7021 and 252.204-7025, effective 2025-11-10), DFARS 252.204-7012/-7019/-7020 (NIST SP 800-171, 72-hour DIBNet incident reporting, SPRS assessments), FAR 52.204-21 basic safeguarding of FCI (the 15 Level 1 requirements), NIST SP 800-171 Rev 2 vs Rev 3 status for CMMC, FAR 52.204-23 (Kaspersky), 52.204-24/-25/-26 (Section 889 covered telecom), 52.204-27 (ByteDance) and SAM.gov registration and representations.",
+ "source_doc": "Official sources fetched and read on 2026-11-26 from the eCFR versioner API (full-text XML current as of 2026-11-24, with point-in-time copies of 2025-09-10, 2025-11-09 and 2025-11-10 and version histories): 32 CFR part 170 (all sections, unchanged since 2024-12-16) and 32 CFR 2002.4; 48 CFR (DFARS) 204.7300-204.7304, 204.7500-204.7504, 252.204-7008, -7009, -7012, -7019, -7020, -7021, -7024, -7025; 48 CFR (FAR) 2.101, 4.1102, 4.1103, 4.1901-4.1903, 4.2001-4.2004, 4.2101-4.2105, 4.2203, 52.204-7, -8, -13, -21, -23, -24, -25, -26, -27 and 52.212-3. Could NOT be fetched (network proxy refusal or DNS failure; no bot protection was bypassed): www.acquisition.gov, www.federalregister.gov, dodcio.defense.gov, csrc.nist.gov, nvlpubs.nist.gov, www.govinfo.gov, sam.gov, dibnet.dod.mil, www.law.cornell.edu. Consequently NIST SP 800-171 Rev 3 details, any DoD class deviation on Rev 2/Rev 3 for DFARS 252.204-7012, the Federal Register preambles, DoD CIO guidance and C3PAO pricing are not stated; FAR and DFARS text was read from eCFR, which publishes the same Code of Federal Regulations text acquisition.gov republishes.",
+ "rules": [
+  {
+   "id": "cmmc-program-scope-dod-fci-cui",
+   "title": "CMMC applies to DoD contracts and subcontracts where you will handle FCI or CUI on your own systems",
+   "plain_english": "The CMMC program covers every DoD prime contractor and subcontractor that will process, store or transmit Federal Contract Information (FCI) or Controlled Unclassified Information (CUI) on its own unclassified information systems while performing the DoD contract, commercial buys included, but not buys only for commercially available off-the-shelf (COTS) items, and not federal systems a contractor runs on the government's behalf. 32 CFR 170.3(c) words the reach as solicitations and contracts 'valued at greater than the micro-purchase threshold' ($2,000 for Davis-Bacon construction, $15,000 otherwise), but the DFARS clause prescription (204.7504) states no dollar limit, so do not treat a small contract as outside CMMC: if the solicitation includes DFARS 252.204-7021, it applies. During Phases 1-3 the phase rules decide which contracts get it, and DoD may waive it for a procurement in advance; a waiver leaves every other cybersecurity requirement in place.",
+   "category": "threshold",
+   "parameters": {
+    "agency": "Department of Defense (DoD) only",
+    "information_types": [
+     "Federal Contract Information (FCI)",
+     "Controlled Unclassified Information (CUI)"
+    ],
+    "contract_value_greater_than": "micro-purchase threshold (FAR 2.101), as worded in 32 CFR 170.3(c)",
+    "micro_purchase_threshold_usd": 15000,
+    "micro_purchase_threshold_dba_construction_usd": 2000,
+    "includes_commercial_items": true,
+    "excludes_cots_only_acquisitions": true,
+    "excludes_federal_systems_operated_for_government": true,
+    "all_tiers": true,
+    "waiver": "in advance of the solicitation at DoD's discretion (170.3(c)(2)); by a Service or Component Acquisition Executive in very limited circumstances (170.5(d))",
+    "waiver_keeps_other_requirements": true,
+    "micro_purchase_wording_ambiguous": true,
+    "dfars_prescription_states_dollar_threshold": false,
+    "rely_on_threshold_to_exclude": false
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "32 CFR 170.3(a)-(c); 32 CFR 170.5(c)-(d); FAR 2.101 (Micro-purchase threshold)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.3 (paragraphs (a)-(c)); https://www.ecfr.gov/current/title-32/section-170.5 (paragraphs (c)-(d)); https://www.ecfr.gov/current/title-48/section-2.101 (Micro-purchase threshold) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "CMMC Program requirements apply to all DoD solicitations and contracts pursuant to which a defense contractor or subcontractor will process, store, or transmit FCI or CUI on unclassified contractor information systems, including those for the acquisition of commercial items (except those exclusively for COTS items) valued at greater than the micro-purchase threshold",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "FAR 2.101 sets the micro-purchase threshold at $15,000, except $2,000 for construction subject to 40 U.S.C. chapter 31, subchapter IV (Davis-Bacon). DFARS 204.7504, which prescribes the clause, does not restate a dollar threshold; the micro-purchase limit comes from 32 CFR 170.3(c). 170.5(d): with a waiver, contractors 'will remain obligated to comply with all applicable cybersecurity and information security requirements' (e.g., FAR 52.204-21, DFARS 252.204-7012).",
+   "verification": {
+    "status": "corrected",
+    "checked_against": "eCFR 170.23, 170.3, 170.5, 2.101, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 32 CFR 170.5(c)-(d); FAR 2.101 'Micro-purchase threshold' ($15,000; $2,000 for Davis-Bacon construction); DFARS 204.7504 (no dollar threshold); 170.23(a) (all tiers). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.3. 12 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": "The quote and every parameter are confirmed. In 170.3(c) the phrase 'valued at greater than the micro-purchase threshold' follows 'including those for the acquisition of commercial items (except those exclusively for COTS items)', so it can be read as limiting only the commercial-item clause or the whole sentence, and DFARS 204.7504 (the operative clause prescription, re-read) states no dollar threshold. The original plain_english presented the micro-purchase limit as a settled exclusion. plain_english was rewritten to say the limit is worded in 32 CFR 170.3(c) but is not restated in the DFARS prescription and should not be relied on to exclude a contract that carries 252.204-7021; parameters micro_purchase_wording_ambiguous, dfars_prescription_states_dollar_threshold and rely_on_threshold_to_exclude were added. The FR preamble that may resolve the reading (federalregister.gov) could not be fetched."
+   }
+  },
+  {
+   "id": "cmmc-implementation-phases",
+   "title": "CMMC phase-in: Phase 1 from Nov. 10, 2025, Phase 2 from Nov. 10, 2026, Phase 3 from Nov. 10, 2027, full implementation from Nov. 10, 2028",
+   "plain_english": "DoD is phasing CMMC into solicitations in four one-year steps. Phase 1 began when the DFARS CMMC acquisition rule took effect on November 10, 2025: DoD intends to require Level 1 (Self) or Level 2 (Self) as a condition of award, and may require Level 2 (C3PAO) instead. Phase 2 (from November 10, 2026) adds Level 2 (C3PAO) as a condition of award for applicable contracts (DoD may delay it to an option period) and may add Level 3 (DIBCAC). Phase 3 (from November 10, 2027): Level 2 (C3PAO) for all applicable contracts at award and for options on contracts awarded after the effective date, and Level 3 (DIBCAC) for all applicable contracts. Phase 4 (from November 10, 2028): CMMC in all applicable DoD solicitations and contracts, including option periods on contracts awarded earlier. These are DoD's stated intentions; the level written into your solicitation is the one that binds you.",
+   "category": "deadline",
+   "parameters": {
+    "phase_1_start": "2025-11-10",
+    "phase_2_start": "2026-11-10",
+    "phase_3_start": "2027-11-10",
+    "phase_4_start": "2028-11-10",
+    "phase_length": "one calendar year after the start of the previous phase",
+    "phase_1_intent": [
+     "Level 1 (Self) or Level 2 (Self) as a condition of award",
+     "may require Level 2 (C3PAO) in place of Level 2 (Self)",
+     "may require Level 1 (Self) or Level 2 (Self) to exercise an option on a contract awarded before the effective date"
+    ],
+    "phase_2_intent": [
+     "Level 2 (C3PAO) as a condition of award for applicable contracts",
+     "may delay Level 2 (C3PAO) to an option period",
+     "may require Level 3 (DIBCAC)"
+    ],
+    "phase_3_intent": [
+     "Level 2 (C3PAO) for all applicable contracts at award and to exercise an option on a contract awarded after the effective date",
+     "Level 3 (DIBCAC) for all applicable contracts at award (may be delayed to an option period)"
+    ],
+    "phase_4_intent": [
+     "CMMC in all applicable DoD solicitations and contracts, including option periods on contracts awarded before Phase 4"
+    ],
+    "binding_level_source": "the CMMC level the contracting officer inserts in DFARS 252.204-7025(b)(1) and 252.204-7021(d)(1)"
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "32 CFR 170.3(e)(1)-(4); DFARS 204.7504(a); DFARS 252.204-7021 (NOV 2025)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.3 (paragraph (e)); https://www.ecfr.gov/current/title-48/section-204.7504 (paragraph (a)); https://www.ecfr.gov/current/title-48/section-252.204-7021 (eCFR point-in-time copies of 2025-11-09 and 2025-11-10) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Phase 1. Begins on the effective date of the complementary 48 CFR part 204 CMMC Acquisition final rule.",
+   "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "Phase 1 date: the eCFR point-in-time copy of DFARS 252.204-7021 for 2025-11-09 is still the 2020 interim clause (JAN 2023), the copy for 2025-11-10 is the NOV 2025 clause [90 FR 43575, Sept. 10, 2025], and DFARS 204.7504 first exists on 2025-11-10 (subpart 204.75 source: 90 FR 43574, Sept. 10, 2025). Phases 2-4 are computed as one calendar year after the previous phase start (170.3(e)(2)-(4)); DFARS 204.7504(a)(2) independently names November 10, 2028 for the broader clause prescription, matching Phase 4. The Federal Register preamble and the DoD CIO CMMC pages (federalregister.gov, dodcio.defense.gov) could not be fetched from this session (network proxy refusal; no bot protection was bypassed).",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.3, 204.7504, 252.204-7025, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: eCFR point-in-time copies of DFARS 252.204-7021 for 2025-11-09 (JAN 2023 interim clause) and 2025-11-10 (NOV 2025 clause, 90 FR 43575); DFARS 204.7504 absent on 2025-11-09 and present on 2025-11-10; subpart 204.75 source 90 FR 43574, Sept. 10, 2025; 204.7504(a)(2) 'On or after November 10, 2028'. Phase 2-4 dates recomputed as one calendar year steps from 2025-11-10; every phase-intent string matched in 170.3(e)(1)-(4). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.3. 21 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7021-prescription-2028",
+   "title": "Until Nov. 9, 2028 the CMMC clause goes in only when the program office sets a level; from Nov. 10, 2028 whenever contractor systems will handle FCI or CUI",
+   "plain_english": "The DFARS CMMC clause (252.204-7021) and its solicitation notice (252.204-7025) go into DoD solicitations, contracts and orders, commercial buys included and COTS-only buys excluded. Until November 9, 2028 they are used only when the program office or requiring activity decides the contractor must have a specific CMMC level. On or after November 10, 2028 they are used whenever the contractor must use its own information systems to process, store or transmit FCI or CUI. A waiver under 32 CFR 170.5(d) can keep the clause out.",
+   "category": "required_contract_clause",
+   "parameters": {
+    "until": "2028-11-09",
+    "until_condition": "program office or requiring activity determines the contractor is required to have a specific CMMC level",
+    "from": "2028-11-10",
+    "from_condition": "program office or requiring activity determines the contractor is required to use contractor information systems to process, store, or transmit FCI or CUI",
+    "includes_far_part_12_commercial": true,
+    "excludes_cots_only": true,
+    "notice_provision": "DFARS 252.204-7025 in solicitations that include 252.204-7021",
+    "waiver": "32 CFR 170.5(d)"
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "DFARS 204.7504(a)-(b)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-204.7504 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "On or after November 10, 2028, in solicitations and contracts, task orders, or delivery orders, including those using FAR part 12 procedures for the acquisition of commercial products and commercial services, except for those solely for the acquisition of COTS items, if the program office or requiring activity determines that the contractor is required to use contractor information systems in the performance of the contract, task order, or delivery order to process, store, or transmit FCI or CUI.",
+   "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 204.7504, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 204.7504(a)(1) 'Until November 9, 2028', (b) 252.204-7025 notice, 32 CFR 170.5(d) waiver reference, COTS exclusion. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 204.7504. 5 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-level1-15-far-requirements",
+   "title": "CMMC Level 1 = the 15 basic safeguarding requirements of FAR 52.204-21(b)(1)",
+   "plain_english": "Level 1 protects FCI and consists of exactly the 15 basic safeguarding requirements listed in FAR 52.204-21(b)(1)(i)-(xv): access control, identification and authentication, media sanitization, physical protection, boundary protection and system integrity (patching, malware protection and scans). They are self-assessed with the NIST SP 800-171A objectives that 32 CFR 170.15 maps to each one, reading 'FCI' wherever an objective says 'CUI'.",
+   "category": "definition",
+   "parameters": {
+    "level": 1,
+    "information_protected": "FCI",
+    "requirement_count": 15,
+    "source_paragraphs": "FAR 52.204-21(b)(1)(i)-(xv)",
+    "requirements": [
+     "(i) limit system access to authorized users, processes acting for them, and devices",
+     "(ii) limit system access to the transactions and functions authorized users may execute",
+     "(iii) verify and control/limit connections to and use of external information systems",
+     "(iv) control information posted or processed on publicly accessible systems",
+     "(v) identify users, processes acting for users, and devices",
+     "(vi) authenticate users, processes or devices before allowing access",
+     "(vii) sanitize or destroy media containing FCI before disposal or reuse",
+     "(viii) limit physical access to systems, equipment and operating environments to authorized individuals",
+     "(ix) escort visitors and monitor visitor activity, keep physical access audit logs, control physical access devices",
+     "(x) monitor, control and protect communications at external and key internal boundaries",
+     "(xi) put publicly accessible system components on subnetworks separated from internal networks",
+     "(xii) identify, report and correct information and system flaws in a timely manner",
+     "(xiii) provide protection from malicious code at appropriate locations",
+     "(xiv) update malicious code protection when new releases are available",
+     "(xv) run periodic system scans and real-time scans of files from external sources"
+    ],
+    "assessment_objectives": "NIST SP 800-171A (June 2018) objectives mapped in table 2 to 170.15(c)(1)(ii); FCI substituted for CUI"
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "32 CFR 170.14(c)(2); FAR 52.204-21(b)(1)(i)-(xv); 32 CFR 170.15(c)(1)(i)-(ii)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.14 (paragraph (c)(2)); https://www.ecfr.gov/current/title-48/section-52.204-21 (paragraph (b)(1)); https://www.ecfr.gov/current/title-32/section-170.15 (paragraph (c)(1), table 2) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The security requirements in CMMC Level 1 are those set forth in 48 CFR 52.204-21(b)(1)(i) through (xv).",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.14, 170.15, 52.204-21, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: FAR 52.204-21(b)(1)(i)-(xv) (all 15 items matched; no (xvi)); 32 CFR 170.15(c)(1)(i)-(ii) table 2 and the FCI-for-CUI substitution. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.14. 20 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-level2-nist-800-171-r2-110",
+   "title": "CMMC Level 2 = the 110 security requirements of NIST SP 800-171 Revision 2",
+   "plain_english": "Level 2 protects CUI. Its requirements are identical to NIST SP 800-171 Revision 2 (February 2020, with updates as of January 28, 2021), assessed with the NIST SP 800-171A objectives. The maximum score equals the number of Level 2 requirements: 110.",
+   "category": "definition",
+   "parameters": {
+    "level": 2,
+    "information_protected": "CUI",
+    "standard": "NIST SP 800-171 Revision 2, February 2020 (includes updates as of January 28, 2021)",
+    "requirement_count": 110,
+    "max_score": 110,
+    "assessment_objectives": "NIST SP 800-171A, June 2018"
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "32 CFR 170.14(c)(3); 32 CFR 170.2(a)(9)-(10); 32 CFR 170.24(c)(2); 32 CFR 170.16(a)(1)(i)(E); DFARS 252.204-7019(d)(1)(i)(F)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.14 (paragraph (c)(3)); https://www.ecfr.gov/current/title-32/section-170.2 (paragraph (a)(9)-(10)); https://www.ecfr.gov/current/title-32/section-170.24 (paragraph (c)(2)); https://www.ecfr.gov/current/title-48/section-252.204-7019 (paragraph (d)(1)(i)(F)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The security requirements in CMMC Level 2 are identical to the requirements in NIST SP 800-171 R2.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "The count 110: 170.24(c)(2) makes the maximum Level 2 score 'equal to the total number of CMMC Level 2 security requirements'; DFARS 252.204-7019(d)(1)(i)(F) and 252.204-7020(d)(1)(i)(F) describe full implementation as 'a score of 110'; 170.16(a)(1)(i)(E) gives '105 out of 110' as an example score. NIST SP 800-171 itself (csrc.nist.gov) could not be fetched from this session.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.14, 170.16, 170.2, 170.24, 252.204-7019, 252.204-7020, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.2(a)(9)-(10) (Rev 2 Feb 2020 with Jan 28, 2021 updates; 800-171A June 2018); 170.24(c)(2) maximum score = number of requirements; 252.204-7019 and -7020 '(i.e., a score of 110 is expected to be achieved)'; 170.16 '105 out of 110'. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.14. 7 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-nist-800-171-rev3-not-cmmc-baseline",
+   "title": "NIST SP 800-171 Revision 3 is not the CMMC standard: 32 CFR part 170 incorporates Revision 2",
+   "plain_english": "The CMMC rule incorporates NIST SP 800-171 Revision 2 by reference and says Level 2 is identical to it; 32 CFR part 170 never mentions a Revision 3 of SP 800-171. CMMC Level 2 assessments are therefore against Revision 2's 110 requirements. DFARS 252.204-7012, a separate clause, points to the version of NIST SP 800-171 'in effect at the time the solicitation is issued or as authorized by the Contracting Officer', so check your contract and ask the contracting officer which revision applies to 7012 compliance.",
+   "category": "definition",
+   "parameters": {
+    "cmmc_level_2_revision": "Revision 2 (February 2020, includes updates as of January 28, 2021)",
+    "revision_3_in_32_cfr_170": false,
+    "dfars_7012_version_rule": "NIST SP 800-171 in effect at the time the solicitation is issued or as authorized by the Contracting Officer",
+    "revision_3_details_read": false
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "32 CFR 170.2(a)(9); 32 CFR 170.14(c)(3); DFARS 252.204-7012(b)(2)(i)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.2 (paragraph (a)(9)); https://www.ecfr.gov/current/title-32/section-170.14 (paragraph (c)(3)); https://www.ecfr.gov/current/title-48/section-252.204-7012 (paragraph (b)(2)(i)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "SP 800-171, Protecting Controlled Unclassified Information in Nonfederal Systems and Organizations, Revision 2, February 2020 (includes updates as of January 28, 2021), (NIST SP 800-171 R2); IBR approved for §§ 170.4(b) and 170.14(a) through (c).",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "Absence check: the full text of 32 CFR part 170 (eCFR, current as of 2026-11-24) was searched for '800-171 R3', '800-171r3', '800-171 Rev' and 'Revision 3'; none occurs (the only 'r3' is NIST SP 800-82r3, the OT guide). NOT read and NOT stated here: Revision 3's publication date and requirement count, and any DoD class deviation fixing the revision for DFARS 252.204-7012 contracts (csrc.nist.gov, dodcio.defense.gov and acq.osd.mil are not reachable from this session).",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.14, 170.2, 252.204-7012, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Absence check repeated on the fresh full text of 32 CFR part 170: no '800-171 R3/r3/Rev 3/Revision 3'; the only 'r3' is SP 800-82r3. Also read: 252.204-7012(b)(2)(i) 'in effect at the time the solicitation is issued or as authorized by the Contracting Officer'. Rev 3 itself and any DoD class deviation remain unread (csrc.nist.gov, dodcio.defense.gov not reachable) and the rule makes no claim about them. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.2. 4 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-level3-24-nist-800-172",
+   "title": "CMMC Level 3 = 24 selected NIST SP 800-172 requirements, assessed by DCMA DIBCAC after a Final Level 2 (C3PAO)",
+   "plain_english": "DoD generally reserves Level 3 for solicitations supporting its most critical programs and technologies. It adds 24 enhanced requirements selected from NIST SP 800-172 (February 2021) with DoD-set parameters, such as a 24/7 security operations center, an incident response team deployable within 24 hours and penetration testing at least annually. Only DCMA DIBCAC performs Level 3 assessments, and only for systems that already hold a Final Level 2 (C3PAO) status; both the Level 3 and the Level 2 (C3PAO) assessment are repeated every three years. Each Level 3 requirement is worth 1 point.",
+   "category": "definition",
+   "parameters": {
+    "level": 3,
+    "requirement_count": 24,
+    "standard": "selected NIST SP 800-172 (February 2021) requirements with DoD organization-defined parameters",
+    "assessor": "DCMA DIBCAC",
+    "prerequisite": "Final Level 2 (C3PAO) on the Level 3 CMMC Assessment Scope",
+    "reassessment_years": 3,
+    "level_2_c3pao_reassessment_years": 3,
+    "points_per_requirement": 1,
+    "examples": [
+     "IR.L3-3.6.1e 24/7 security operations center",
+     "IR.L3-3.6.2e cyber-incident response team deployable within 24 hours",
+     "CA.L3-3.12.1e penetration testing at least annually"
+    ]
+   },
+   "applies_to": "DoD contractors whose solicitation requires CMMC Level 3 (DIBCAC)",
+   "citation": "32 CFR 170.14(c)(4) (table 1); 32 CFR 170.18(a); 32 CFR 170.24(c)(3); 32 CFR 170.5(a)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.14 (paragraph (c)(4), table 1); https://www.ecfr.gov/current/title-32/section-170.18 (paragraph (a)); https://www.ecfr.gov/current/title-32/section-170.24 (paragraph (c)(3)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "A CMMC Status of Final Level 2 (C3PAO) for information systems within the Level 3 CMMC Assessment Scope is a prerequisite to undergo a Level 3 certification assessment.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "corrected",
+    "checked_against": "eCFR 170.14, 170.18, 170.24, 170.5, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: table 1 to 170.14(c)(4) (24 rows, (i)-(xxiv)); 170.18(a)(1) DIBCAC, 3-year Level 3 and Level 2 (C3PAO) cycles; 170.24(c)(3) 1 point each; 170.5(a). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.18. 9 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": "The 24 table rows (i)-(xxiv), the DIBCAC assessor, the Final Level 2 (C3PAO) prerequisite, the 3-year cycles and the 1-point scoring are confirmed. 'Level 3 is for DoD's most critical programs' overstated 170.5(a), which says 'In general, the Department will identify a requirement for a CMMC Status of Level 3 (DIBCAC) for solicitations and resulting contracts supporting its most critical programs and technologies'; the first sentence of plain_english was reworded to that text."
+   }
+  },
+  {
+   "id": "cmmc-level1-annual-self-assessment",
+   "title": "Level 1 (Self): all 15 requirements MET, no POA&M, self-assess and post to SPRS every year, affirm before award",
+   "plain_english": "To get Final Level 1 (Self) you must meet all 15 Level 1 requirements; a plan of action (POA&M) is never allowed at Level 1. Self-assess, enter the results in SPRS (level, status date, assessment scope, every CAGE code in scope, result) and have your Affirming Official affirm compliance in SPRS before any award that requires Level 1. Repeat the self-assessment and affirmation every year, and keep the evidence for 6 years from the CMMC Status Date.",
+   "category": "deadline",
+   "parameters": {
+    "status": "Final Level 1 (Self)",
+    "assessment_type": "self-assessment",
+    "reassessment_interval_months": 12,
+    "all_requirements_met": true,
+    "poam_allowed": false,
+    "results_posted_in": "SPRS",
+    "sprs_inputs": [
+     "CMMC Level",
+     "CMMC Status Date",
+     "CMMC Assessment Scope",
+     "all industry CAGE codes in the assessment scope",
+     "compliance result"
+    ],
+    "affirmation_required": true,
+    "before_award": "Level 1 (Self) status and an affirmation in SPRS for all information systems in scope",
+    "artifact_retention_years": 6
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "32 CFR 170.15(a)-(c); 32 CFR 170.21(a)(1); 32 CFR 170.24(c)(1)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.15; https://www.ecfr.gov/current/title-32/section-170.21 (paragraph (a)(1)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "To maintain compliance with the requirements for the CMMC Status of Final Level 1 (Self), the OSA must conduct a Level 1 self-assessment on an annual basis and submit the results in SPRS, or its successor capability.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.15, 170.21, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.15(a)(1)(i)(A)-(E) SPRS inputs, (a)(2), (b), (c)(2) six-year retention; 170.21(a)(1). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.15. 12 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-level2-self-assessment-3-years",
+   "title": "Level 2 (Self): self-assess against all 110 requirements every 3 years, post the score in SPRS, affirm yearly",
+   "plain_english": "For Level 2 (Self) you assess your own CUI systems against all Level 2 requirements with NIST SP 800-171A, score them with the CMMC scoring method and enter the results in SPRS (including the overall score, e.g. 105 out of 110, and any POA&M). A score of 110 gives Final Level 2 (Self); a qualifying POA&M gives Conditional Level 2 (Self). Repeat every three years, have the Affirming Official affirm at each assessment and every year, and keep the evidence for 6 years. Level 2 (Self) also satisfies Level 1 (Self) for the same scope. DoD may still audit you (DCMA DIBCAC), and those results override your self-assessment.",
+   "category": "deadline",
+   "parameters": {
+    "statuses": [
+     "Conditional Level 2 (Self)",
+     "Final Level 2 (Self)"
+    ],
+    "assessment_type": "self-assessment",
+    "reassessment_interval_years": 3,
+    "results_posted_in": "SPRS",
+    "sprs_inputs": [
+     "CMMC Level",
+     "CMMC Status Date",
+     "CMMC Assessment Scope",
+     "all industry CAGE codes in the assessment scope",
+     "overall Level 2 self-assessment score (e.g., 105 out of 110)",
+     "POA&M usage and compliance status, if applicable"
+    ],
+    "affirmation": "at each assessment and annually thereafter",
+    "satisfies_level_1_self": true,
+    "artifact_retention_years": 6,
+    "dibcac_results_take_precedence": true
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "32 CFR 170.16(a)-(c)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.16 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "To maintain compliance with the requirements for a CMMC Status of Level 2 (Self), the OSA must conduct a Level 2 self-assessment every three years and submit the results in SPRS, within three years of the CMMC Status Date associated with the Conditional Level 2 (Self).",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.16, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.16(a)(1)(i)-(iv), (a)(2), (c)(4). 'Final' = all requirements MET (170.16(a)(1)), which under 170.24(c)(2) is the maximum score of 110. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.16. 8 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-level2-c3pao-certification-3-years",
+   "title": "Level 2 (C3PAO): certification assessment by an authorized C3PAO every 3 years; results go to eMASS and SPRS",
+   "plain_english": "When the solicitation requires Level 2 (C3PAO), an authorized or accredited CMMC Third-Party Assessment Organization must assess your CUI systems against all Level 2 requirements; the C3PAO enters the results in the CMMC instance of eMASS, which feeds SPRS. A NOT MET item can be re-evaluated during the assessment and for 10 business days after it (before the findings report is delivered). Hash your evidence files with a NIST-approved algorithm and keep them 6 years. Repeat every three years and affirm at each assessment and every year. Level 2 (C3PAO) also satisfies Level 1 (Self) and Level 2 (Self).",
+   "category": "deadline",
+   "parameters": {
+    "statuses": [
+     "Conditional Level 2 (C3PAO)",
+     "Final Level 2 (C3PAO)"
+    ],
+    "assessor": "authorized or accredited C3PAO",
+    "reassessment_interval_years": 3,
+    "results_submitted_by": "the C3PAO, into the CMMC instantiation of eMASS (automated transmission to SPRS)",
+    "re_evaluation_window_business_days": 10,
+    "artifact_retention_years": 6,
+    "artifact_hashing": "NIST-approved hashing algorithm; artifact names, hash values and algorithm uploaded",
+    "affirmation": "at each assessment and annually thereafter",
+    "satisfies": [
+     "Level 1 (Self)",
+     "Level 2 (Self)"
+    ]
+   },
+   "applies_to": "DoD contractors and subcontractors whose solicitation or prime contract requires Level 2 (C3PAO)",
+   "citation": "32 CFR 170.17(a)-(c)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.17 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The OSC must obtain a Level 2 certification assessment from an authorized or accredited C3PAO following the procedures outlined in paragraph (c) of this section.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "C3PAO fees are set by the assessment organizations and are not in any regulation; none are stated here.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.17, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.17(a)(1)-(2), (c)(2) 10-business-day re-evaluation and its three conditions, (c)(4) hashing and six-year retention. No fee figures appear in the regulation. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.17. 8 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-poam-80pct-180-day-closeout",
+   "title": "Conditional status: a POA&M is allowed only at Levels 2 and 3, with a score of at least 80%, closed out within 180 days",
+   "plain_english": "A plan of action and milestones (POA&M) is never allowed at Level 1. At Level 2 you can get a Conditional status only if your score divided by 110 is at least 0.8 (a score of 88 or more), every POA&M item is worth 1 point (except SC.L2-3.13.11 encryption that is not FIPS-validated, worth 3), and none of six listed requirements (external connections, public information, the system security plan, visitor escort, physical access logs, physical access devices) is on the POA&M. At Level 3 the score must be at least 80% of the 24 requirements (20 or more) and seven listed requirements may not be on the POA&M. All NOT MET items must be fixed and confirmed by a closeout assessment within 180 days of the Conditional CMMC Status Date, or the status expires; then contract remedies apply and you cannot win new awards at that level until you get a new status.",
+   "category": "deadline",
+   "parameters": {
+    "level_1_poam_allowed": false,
+    "min_score_ratio": 0.8,
+    "level_2_max_score": 110,
+    "level_2_min_score_for_conditional": 88,
+    "level_2_poam_item_max_points": 1,
+    "level_2_poam_point_exception": "SC.L2-3.13.11 CUI Encryption (3 points) if encryption is employed but not FIPS-validated",
+    "level_2_never_on_poam": [
+     "AC.L2-3.1.20 External Connections (CUI Data)",
+     "AC.L2-3.1.22 Control Public Information (CUI Data)",
+     "CA.L2-3.12.4 System Security Plan",
+     "PE.L2-3.10.3 Escort Visitors (CUI Data)",
+     "PE.L2-3.10.4 Physical Access Logs (CUI Data)",
+     "PE.L2-3.10.5 Manage Physical Access (CUI Data)"
+    ],
+    "level_3_max_score": 24,
+    "level_3_min_score_for_conditional": 20,
+    "level_3_never_on_poam": [
+     "IR.L3-3.6.1e Security Operations Center",
+     "IR.L3-3.6.2e Cyber Incident Response Team",
+     "RA.L3-3.11.1e Threat-Informed Risk Assessment",
+     "RA.L3-3.11.6e Supply Chain Risk Response",
+     "RA.L3-3.11.7e Supply Chain Risk Plan",
+     "RA.L3-3.11.4e Security Solution Rationale",
+     "SI.L3-3.14.3e Specialized Asset Security"
+    ],
+    "closeout_days": 180,
+    "closeout_from": "the Conditional CMMC Status Date",
+    "closeout_by": {
+     "level_2_self": "the OSA (self-assessment)",
+     "level_2_c3pao": "an authorized or accredited C3PAO",
+     "level_3": "DCMA DIBCAC"
+    },
+    "on_expiry": "Conditional status expires; standard contractual remedies; ineligible for additional awards at that level for the system until a new CMMC Status is achieved",
+    "award_with_conditional": "allowed for Levels 2 and 3; Level 1 requires a Final status (DFARS 204.7502(b)(2))"
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "32 CFR 170.21(a)-(b); 32 CFR 170.16(a)(1)(ii); 32 CFR 170.17(a)(1)(ii); 32 CFR 170.18(a)(1)(ii); DFARS 204.7502(b)(2)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.21; https://www.ecfr.gov/current/title-32/section-170.16 (paragraph (a)(1)(ii)); https://www.ecfr.gov/current/title-48/section-204.7502 (paragraph (b)(2)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The assessment score divided by the total number of CMMC Level 2 security requirements is greater than or equal to 0.8;",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "88 and 20 are derived: 0.8 x 110 = 88 (Level 2 maximum score 110, see cmmc-level2-nist-800-171-r2-110) and 0.8 x 24 = 19.2, so the lowest whole Level 3 score that qualifies is 20 (Level 3 scores 1 point per requirement, 170.24(c)(3)). The CMMC Status Date stays the Conditional date after a successful closeout (170.4, 'CMMC Status Date').",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.16, 170.21, 170.4, 204.7502, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.21(a)(1)-(3), (b)(1)-(3) (all 13 excluded requirements matched); 170.16(a)(1)(ii)(B) expiry consequences; DFARS 204.7502(b)(2); 170.4 'CMMC Status Date'. Derived thresholds recomputed: 88/110 = 0.8 > 87/110; 20/24 >= 0.8 > 19/24. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.21. 25 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-level2-scoring-5-3-1",
+   "title": "Level 2 scoring: start at 110 and subtract 5, 3 or 1 point for each requirement NOT MET; the score can go negative",
+   "plain_english": "A Level 2 assessment starts at the maximum score (the number of Level 2 requirements, 110) and subtracts each NOT MET requirement's value: 5 points for requirements whose absence could lead to significant exploitation or CUI exfiltration, 3 for a specific and confined effect, 1 for a limited or indirect effect. Multi-factor authentication only for remote and privileged users costs 3 instead of 5; encryption that is not FIPS-validated costs 3 instead of 5. The score can be negative. A requirement that does not apply (N/A) counts as MET. Without an up-to-date system security plan the assessment cannot be completed. At Level 3 each requirement is worth 1 point.",
+   "category": "process_step",
+   "parameters": {
+    "level_2_max_score": 110,
+    "points_subtracted_per_not_met": [
+     5,
+     3,
+     1
+    ],
+    "mfa_partial_points": 3,
+    "mfa_none_points": 5,
+    "encryption_not_fips_points": 3,
+    "encryption_none_points": 5,
+    "score_can_be_negative": true,
+    "not_applicable_counts_as_met": true,
+    "ssp_required_at_assessment": true,
+    "level_3_points_per_requirement": 1
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "32 CFR 170.24(b)-(c)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.24 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "For each requirement NOT MET, the associated value of the security requirement is subtracted from the maximum score, which may result in a negative score.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.24, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.24(b)(3) N/A = MET; (c)(2)(i)(B)(1)-(5) 5/3/1 values, MFA 3/5, FIPS encryption 3/5, SSP; (c)(3). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.24. 7 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-affirmation-annual-sprs",
+   "title": "A senior Affirming Official must affirm continuing compliance in SPRS after every assessment and every year",
+   "plain_english": "Each organization assessed, prime or subcontractor, names an Affirming Official: a senior person responsible for CMMC compliance with authority to affirm it. That person enters an affirmation in SPRS (name, title, contact information and a statement that all applicable requirements are implemented and will be maintained) when a Conditional or Final status is reached, after a POA&M closeout, and every year after the Final status date. An affirmation older than one year is not current. Level 3 holders also affirm their Level 2 (C3PAO) status every year.",
+   "category": "required_document",
+   "parameters": {
+    "who": "Affirming Official: the senior level representative of each OSA (prime or subcontractor) responsible for CMMC compliance, with authority to affirm continuing compliance",
+    "where": "SPRS",
+    "when": [
+     "upon a Conditional CMMC Status",
+     "upon a Final CMMC Status",
+     "annually following a Final CMMC Status Date",
+     "following a POA&M closeout assessment"
+    ],
+    "content": [
+     "name, title and contact information of the Affirming Official",
+     "statement that the OSA has implemented and will maintain all applicable CMMC security requirements for all information systems in the CMMC Assessment Scope"
+    ],
+    "affirmation_interval_months": 12,
+    "max_age_years": 1,
+    "level_3_also_affirm_level_2_c3pao_annually": true
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "32 CFR 170.22; 32 CFR 170.4 (Affirming Official); DFARS 252.204-7021(d)(3), (e)(3); DFARS 204.7501 (Current)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.22; https://www.ecfr.gov/current/title-48/section-252.204-7021 (paragraphs (d)(3), (e)(3)); https://www.ecfr.gov/current/title-48/section-204.7501 (Current, paragraph (3)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "An Affirming Official from each OSA, whether a prime or subcontractor, must affirm the continuing compliance of their respective organizations with the specified security requirement after every assessment, including POA&M closeout, and annually thereafter.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.22, 204.7501, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.22(a)(1)-(3), (b), (b)(4) Level 3 holders also affirm Level 2 (C3PAO) annually; DFARS 252.204-7021(d)(3), (e)(3); DFARS 204.7501 'Current' (affirmation not older than 1 year). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.22. 9 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-subcontractor-flowdown-levels",
+   "title": "Subcontractors: FCI only = Level 1 (Self); CUI = at least Level 2 (Self), or Level 2 (C3PAO) when the prime contract requires Level 2 (C3PAO) or Level 3",
+   "plain_english": "CMMC reaches every subcontractor tier that will process, store or transmit FCI or CUI. The prime must comply, require its subcontractors to comply and make them flow the requirement down. A subcontractor that handles only FCI needs Level 1 (Self). One that handles CUI needs at least Level 2 (Self); if the prime contract requires Level 2 (C3PAO) or Level 3 (DIBCAC), the CUI subcontractor needs at least Level 2 (C3PAO). DoD may give contract-specific flowdown guidance.",
+   "category": "required_contract_clause",
+   "parameters": {
+    "fci_only": "Level 1 (Self)",
+    "cui_minimum": "Level 2 (Self)",
+    "cui_when_prime_requires_level_2_c3pao": "Level 2 (C3PAO)",
+    "cui_when_prime_requires_level_3_dibcac": "Level 2 (C3PAO)",
+    "all_tiers": true,
+    "applies_only_if_sub_handles_fci_or_cui": true,
+    "dod_may_give_specific_guidance": true
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier under a DoD contract that has a CMMC requirement",
+   "citation": "32 CFR 170.23; 32 CFR 170.5(c); DFARS 252.204-7021(d)(1)(ii), (f)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.23; https://www.ecfr.gov/current/title-48/section-252.204-7021 (paragraphs (d)(1)(ii), (f)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "If a subcontractor will only process, store, or transmit FCI (and not CUI) in performance of the subcontract, then a CMMC Status of Level 1 (Self) is required for the subcontractor.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.23, 252.204-7021, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.23(a)(1)-(4) and (b); DFARS 252.204-7021(d)(1)(ii). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.23. 5 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-level1-scope-fci-assets",
+   "title": "Level 1 scope: every system that processes, stores or transmits FCI; IoT, OT and other specialized assets are outside Level 1 scope",
+   "plain_english": "Before a Level 1 self-assessment you must define the assessment scope: every information system that processes, stores or transmits FCI is in scope; systems that do not are out of scope and need no documentation. Specialized assets that can handle FCI but cannot be fully secured (IoT and industrial IoT devices, operational technology, government-furnished equipment, restricted information systems, test equipment) are not part of the Level 1 scope. Consider the people, technology, facilities and outside service providers that handle FCI.",
+   "category": "definition",
+   "parameters": {
+    "scope_defined_before_assessment": true,
+    "in_scope": "OSA information systems that process, store, or transmit FCI",
+    "out_of_scope": "systems that do not process, store, or transmit FCI (no documentation requirements)",
+    "specialized_assets_in_level_1_scope": false,
+    "specialized_assets": [
+     "Internet of Things (IoT) devices",
+     "Industrial IoT (IIoT) devices",
+     "Operational Technology (OT)",
+     "Government Furnished Equipment (GFE)",
+     "Restricted Information Systems",
+     "Test Equipment"
+    ],
+    "scope_considerations": [
+     "people",
+     "technology",
+     "facilities",
+     "External Service Providers (ESP)"
+    ]
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "32 CFR 170.19(a)-(b)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.19 (paragraphs (a)-(b)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "OSA information systems which process, store, or transmit FCI are in scope for CMMC Level 1 and must be self-assessed against applicable CMMC security requirements.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "Level 2 scoping (170.19(c)) uses asset categories (CUI assets, security protection assets, contractor risk managed assets, specialized assets); it is not summarized in this rule.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.19, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.19(a)(1), (b)(1)-(3); table 3 to 170.19(c)(1) (confirms the asset categories named in the note). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.19. 7 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-cloud-fedramp-moderate",
+   "title": "Cloud services holding CUI must be FedRAMP Moderate (or higher) authorized or FedRAMP Moderate equivalent",
+   "plain_english": "If you use a cloud service to process, store or transmit CUI for a Level 2 contract, the cloud offering must be FedRAMP Authorized at the Moderate (or higher) baseline in the FedRAMP Marketplace, or meet equivalent requirements under DoD policy. Your on-premises systems that connect to it stay in your assessment scope, and the provider's customer responsibility matrix must be documented in your system security plan. Outside IT providers that are not cloud providers are assessed as part of your scope. DFARS 252.204-7012 separately requires any cloud provider holding covered defense information to meet FedRAMP Moderate-equivalent requirements and the clause's incident-reporting, malware, media and forensics paragraphs.",
+   "category": "threshold",
+   "parameters": {
+    "cloud_baseline": "FedRAMP Moderate or higher",
+    "options": [
+     "FedRAMP Authorized at Moderate (or higher) per the FedRAMP Marketplace",
+     "not authorized but meets requirements equivalent to FedRAMP Moderate (or higher) per DoD Policy"
+    ],
+    "customer_responsibility_matrix_in_ssp": true,
+    "on_premises_connection_in_scope": true,
+    "esp_not_csp": "documented in the SSP, the ESP's service description and CRM; assessed within the OSA's scope",
+    "applies_to_levels": [
+     "Level 2 (Self)",
+     "Level 2 (C3PAO)"
+    ],
+    "dfars_7012_csp": "FedRAMP Moderate baseline equivalent plus 252.204-7012(c)-(g)"
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "32 CFR 170.16(c)(2)-(3); 32 CFR 170.17(c)(5)-(6); DFARS 252.204-7012(b)(2)(ii)(D)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.16 (paragraph (c)(2)-(3)); https://www.ecfr.gov/current/title-32/section-170.17 (paragraph (c)(5)-(6)); https://www.ecfr.gov/current/title-48/section-252.204-7012 (paragraph (b)(2)(ii)(D)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The CSP product or service offering is FedRAMP Authorized at the FedRAMP Moderate (or higher) baseline in accordance with the FedRAMP Marketplace; or",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "The FedRAMP Marketplace and the DoD FedRAMP-equivalency memorandum were not read (outside the reachable hosts).",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.16, 170.17, 252.204-7012, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 170.16(c)(2)(i)-(iii), (c)(3)(i)-(iii); 170.17(c)(5)-(6); DFARS 252.204-7012(b)(2)(ii)(D). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 170.16. 6 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7021-contractor-duties",
+   "title": "DFARS 252.204-7021 duties: keep a current status, use only assessed systems, affirm yearly per CMMC UID, report UIDs, check subcontractors before award",
+   "plain_english": "Under the NOV 2025 CMMC clause you must keep a current CMMC status at the level the contract names (or higher) for every system that handles FCI or CUI for the contract, for the whole contract; handle FCI or CUI only on systems with that status; enter self-assessment results and a yearly affirmation in SPRS for each CMMC UID; give the contracting officer your CMMC UIDs and any changes; close out any POA&M to reach Final status; and before awarding a subcontract that involves FCI or CUI, make sure the subcontractor has a current status at the 32 CFR 170.23 level and has affirmed. The clause flows down (without the UID-reporting paragraph (e)(1)) to every subcontract that will involve FCI or CUI, commercial ones included, COTS excluded.",
+   "category": "required_contract_clause",
+   "parameters": {
+    "clause": "DFARS 252.204-7021 (NOV 2025)",
+    "level_inserted_by_co": [
+     "CMMC Level 1 (Self)",
+     "CMMC Level 2 (Self)",
+     "CMMC Level 2 (C3PAO)",
+     "CMMC Level 3 (DIBCAC)"
+    ],
+    "maintain_status": "for the duration of the contract, at the level or higher",
+    "systems": "only process, store, or transmit FCI or CUI on systems with the required CMMC status",
+    "affirmation_interval_months": 12,
+    "report_to_co": [
+     "CMMC UIDs issued by SPRS for systems that will handle FCI or CUI",
+     "any changes in CMMC UIDs"
+    ],
+    "self_assessment_results_in_sprs": true,
+    "close_poam_to_final": true,
+    "subs_affirm_before_subcontract_award": true,
+    "check_subs_before_award": "current CMMC certificate or status at the level appropriate under 32 CFR 170.23",
+    "flowdown": "substance of the clause including (f) and excluding (e)(1), in subcontracts that will require processing, storing or transmitting FCI or CUI; commercial included; COTS excluded"
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "DFARS 252.204-7021(d)-(f) (NOV 2025)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7021 (paragraphs (d)-(f)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Only process, store, or transmit FCI or CUI on contractor information systems that have a CMMC status at the CMMC level required in paragraph (d)(1) of this clause, or higher;",
+   "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 252.204-7021, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7021 (NOV 2025) (d)(1)-(5), (e)(1)-(3), (f)(1)-(2). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7021. 11 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-current-status-definition",
+   "title": "'Current' CMMC status: Conditional up to 180 days; Final Level 1 one year; Final Level 2 or 3 three years; affirmation no older than one year",
+   "plain_english": "A CMMC status counts as current only if nothing has changed in your compliance since the status date and your affirmation is current: a Conditional Level 2 or Level 3 status for no more than 180 days, a Final Level 1 (Self) for no more than one year, and a Final Level 2 or Level 3 status for no more than three years, each with an affirmation of continuous compliance no older than one year.",
+   "category": "definition",
+   "parameters": {
+    "conditional_level_2_max_days": 180,
+    "conditional_level_3_max_days": 180,
+    "final_level_1_max_years": 1,
+    "final_level_2_max_years": 3,
+    "final_level_3_max_years": 3,
+    "affirmation_max_years": 1,
+    "condition": "no changes in compliance with 32 CFR part 170 since the status date",
+    "statuses": [
+     "Final Level 1 (Self)",
+     "Conditional Level 2 (Self)",
+     "Final Level 2 (Self)",
+     "Conditional Level 2 (C3PAO)",
+     "Final Level 2 (C3PAO)",
+     "Conditional Level 3 (DIBCAC)",
+     "Final Level 3 (DIBCAC)"
+    ]
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "DFARS 204.7501 (Current; CMMC status); DFARS 252.204-7021(a)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-204.7501; https://www.ecfr.gov/current/title-48/section-252.204-7021 (paragraph (a)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "With regard to affirmation of continuous compliance (32 CFR 170.22), not older than 1 year with no changes in compliance with the requirements at 32 CFR part 170.",
+   "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 204.7501, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: DFARS 204.7501 'Current' (1)-(3) and 'CMMC status' (seven statuses), identical in 252.204-7021(a). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 204.7501. 14 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-award-eligibility-sprs",
+   "title": "No award, option or extension without a current CMMC status in SPRS at the required level for every CMMC UID",
+   "plain_english": "The contracting officer checks SPRS and may not award a contract, task order or delivery order, exercise an option or extend performance unless you have a current CMMC status at the required level (or higher) for each CMMC UID of the systems that will handle FCI or CUI. Levels 2 and 3 may be Conditional at award (for up to 180 days from the status date); Level 1 must be Final.",
+   "category": "prohibition",
+   "parameters": {
+    "check_system": "SPRS",
+    "actions_blocked": [
+     "award of a contract, task order or delivery order",
+     "exercise of an option",
+     "extension of the period of performance"
+    ],
+    "level": "the required level or higher",
+    "conditional_allowed_at_award_for_levels": [
+     2,
+     3
+    ],
+    "level_1_requires": "Final Level 1 (Self)",
+    "conditional_max_days": 180,
+    "per": "each CMMC UID for systems that will process, store or transmit FCI or CUI"
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "DFARS 204.7502(a)-(b); DFARS 204.7503(b)-(d)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-204.7502; https://www.ecfr.gov/current/title-48/section-204.7503 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Contracting officers shall not award a contract, task order, or delivery order to an offeror that does not have a current CMMC status at the CMMC level required by the solicitation.",
+   "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 204.7502, 204.7503, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: DFARS 204.7502(a)(1)-(3), (b)(1)-(2); 204.7503(a)-(d). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 204.7502. 5 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7025-notice-uids",
+   "title": "DFARS 252.204-7025 notice: the solicitation states the CMMC level; list your CMMC UIDs in the proposal",
+   "plain_english": "A DoD solicitation with a CMMC requirement includes the 252.204-7025 notice, which names the required level. You are not eligible for award unless, for every system that will handle FCI or CUI, SPRS shows a current CMMC status at that level and a current affirmation. List in your proposal the CMMC UIDs (10 alphanumeric characters each) that SPRS issued for those systems, and update the list if new UIDs are generated.",
+   "category": "required_document",
+   "parameters": {
+    "provision": "DFARS 252.204-7025 (NOV 2025)",
+    "level_stated_in": "paragraph (b)(1)",
+    "ineligible_without": [
+     "a current CMMC status in SPRS at the required level",
+     "a current affirmation of continuous compliance in SPRS"
+    ],
+    "proposal_must_list": "CMMC UIDs issued by SPRS for each system that will handle FCI or CUI",
+    "cmmc_uid_characters": 10,
+    "update_list_when_new_uids": true
+   },
+   "applies_to": "Offerors on DoD solicitations that include DFARS 252.204-7021",
+   "citation": "DFARS 252.204-7025(b)-(d); DFARS 204.7501 (CMMC UID); DFARS 204.7504(b)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7025; https://www.ecfr.gov/current/title-48/section-204.7501 (CMMC UID) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The Offeror shall provide, in the proposal, the CMMC unique identifier(s) (CMMC UIDs) issued by SPRS for each contractor information system that will process, store, or transmit FCI or CUI during performance of a contract, task order, or delivery order resulting from this solicitation.",
+   "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 204.7501, 252.204-7025, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7025 (NOV 2025) (b)(1)-(2), (c), (d); DFARS 204.7501 'CMMC UID' (10 alpha-numeric characters). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7025. 6 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7012-nist-800-171-safeguarding",
+   "title": "DFARS 252.204-7012: protect covered defense information with NIST SP 800-171; cloud providers must meet FedRAMP Moderate equivalent",
+   "plain_english": "DFARS 252.204-7012 is in nearly every DoD solicitation and contract (all but COTS-only buys). On your own systems that hold covered defense information you must provide adequate security, at a minimum the NIST SP 800-171 requirements in effect when the solicitation was issued (or as the contracting officer authorizes). Requests to vary from a requirement go in writing to the contracting officer for the DoD CIO to decide. A cloud provider that holds covered defense information must meet FedRAMP Moderate-equivalent requirements and the clause's incident reporting, malware, media and forensic-access paragraphs. CMMC does not replace this clause.",
+   "category": "required_contract_clause",
+   "parameters": {
+    "clause": "DFARS 252.204-7012 (MAY 2024)",
+    "prescribed_in": "all DoD solicitations and contracts except those solely for COTS items (DFARS 204.7304(c))",
+    "standard": "NIST SP 800-171 in effect at the time the solicitation is issued or as authorized by the Contracting Officer",
+    "variance_requests": "in writing to the Contracting Officer, for adjudication by the DoD CIO",
+    "cloud_service_provider": "FedRAMP Moderate baseline equivalent, and 252.204-7012(c)-(g)",
+    "offer_representation": "DFARS 252.204-7008(c): by submitting an offer you represent you will implement NIST SP 800-171",
+    "cmmc_does_not_alter": true
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "DFARS 252.204-7012(b)(2) (MAY 2024); DFARS 204.7304(a), (c); DFARS 252.204-7008(c); 32 CFR 170.5(e)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7012 (paragraph (b)); https://www.ecfr.gov/current/title-48/section-204.7304; https://www.ecfr.gov/current/title-48/section-252.204-7008; https://www.ecfr.gov/current/title-32/section-170.5 (paragraph (e)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "If the Contractor intends to use an external cloud service provider to store, process, or transmit any covered defense information in performance of this contract, the Contractor shall require and ensure that the cloud service provider meets security requirements equivalent to those established by the Government for the Federal Risk and Authorization Management Program (FedRAMP) Moderate baseline",
+   "effective": "2024-05-30 (clause date MAY 2024; 89 FR 46821, May 30, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.5, 204.7304, 252.204-7008, 252.204-7012, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7012 (MAY 2024) (b)(1)-(3); DFARS 204.7304(a), (c); 252.204-7008(c) offer representation; 32 CFR 170.5(e); clause citation 89 FR 46821, May 30, 2024. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7012. 8 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7012-incident-72-hours",
+   "title": "Report cyber incidents affecting covered defense information to DoD at dibnet.dod.mil within 72 hours of discovery",
+   "plain_english": "When you discover a cyber incident that affects a system holding covered defense information (or the information on it), or your ability to perform operationally critical support, review your systems for evidence of compromise and report the incident to DoD at https://dibnet.dod.mil within 72 hours of discovery. You need a DoD-approved medium assurance certificate to file. Subcontractors report directly to DoD and give the DoD-assigned incident report number to the prime (or next higher-tier subcontractor) as soon as practicable.",
+   "category": "deadline",
+   "parameters": {
+    "report_within_hours": 72,
+    "clock_starts": "discovery of the cyber incident",
+    "report_to": "https://dibnet.dod.mil",
+    "medium_assurance_certificate_required": true,
+    "certificate_info": "https://public.cyber.mil/eca/",
+    "triggers": [
+     "cyber incident affecting a covered contractor information system or the covered defense information on it",
+     "cyber incident affecting the ability to perform operationally critical support"
+    ],
+    "review_for_compromise": true,
+    "subcontractor_reports_to": "DoD directly; gives the DoD incident report number to the prime or next higher-tier subcontractor",
+    "report_not_by_itself_evidence_of_noncompliance": true
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "DFARS 252.204-7012(a) (Rapidly report), (c)(1)-(3), (m)(2)(ii); DFARS 204.7302(b), (d)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7012 (paragraphs (a), (c), (m)(2)(ii)); https://www.ecfr.gov/current/title-48/section-204.7302 (paragraphs (b), (d)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Rapidly report means within 72 hours of discovery of any cyber incident.",
+   "effective": "2024-05-30 (clause date MAY 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "The report fields are posted at https://dibnet.dod.mil, which could not be fetched from this session.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 204.7302, 252.204-7012, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7012(a) 'Rapidly report', (c)(1)-(3), (m)(2)(ii); DFARS 204.7302(b), (d). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7012. 9 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7012-media-90-days",
+   "title": "After a reported cyber incident, preserve system images and packet captures for at least 90 days; send malware to DC3",
+   "plain_english": "When you discover a cyber incident, preserve and protect images of all known affected systems and the relevant monitoring and packet-capture data for at least 90 days from submitting the incident report, so DoD can ask for them. Malicious software you isolate goes to the DoD Cyber Crime Center (DC3), not to the contracting officer. Give DoD access for forensic analysis when asked.",
+   "category": "deadline",
+   "parameters": {
+    "preserve_days": 90,
+    "preserve_from": "submission of the cyber incident report",
+    "preserve": [
+     "images of all known affected information systems",
+     "relevant monitoring/packet capture data"
+    ],
+    "malware_to": "DoD Cyber Crime Center (DC3); do not send it to the Contracting Officer",
+    "forensic_access_on_request": true
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "DFARS 252.204-7012(d)-(g)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7012 (paragraphs (d)-(g)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "preserve and protect images of all known affected information systems identified in paragraph (c)(1)(i) of this clause and all relevant monitoring/packet capture data for at least 90 days from the submission of the cyber incident report to allow DoD to request the media or decline interest.",
+   "effective": "2024-05-30 (clause date MAY 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 252.204-7012, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7012(d) DC3, (e), (f), (g). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7012. 3 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7012-flowdown",
+   "title": "Flow DFARS 252.204-7012 down, unaltered, to subcontracts that involve covered defense information or operationally critical support",
+   "plain_english": "Put DFARS 252.204-7012 without alteration in every subcontract (commercial ones included) whose performance will involve covered defense information or that is for operationally critical support. The prime decides whether the information it passes down is still covered defense information and consults the contracting officer if necessary. Subcontractors must tell the prime (or next higher tier) when they ask to vary from a NIST SP 800-171 requirement and give it the DoD incident report number after reporting an incident.",
+   "category": "required_contract_clause",
+   "parameters": {
+    "flow_down_when": [
+     "subcontract performance will involve covered defense information",
+     "subcontract is for operationally critical support"
+    ],
+    "without_alteration": true,
+    "commercial_included": true,
+    "prime_determines_cdi": "prime determines whether the information keeps its identity as covered defense information; consult the Contracting Officer if necessary",
+    "subcontractor_must": [
+     "notify the prime (or next higher tier) when requesting to vary from NIST SP 800-171",
+     "give the DoD incident report number to the prime (or next higher tier) as soon as practicable"
+    ]
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "DFARS 252.204-7012(m)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7012 (paragraph (m)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Include this clause, including this paragraph (m), in subcontracts, or similar contractual instruments, for operationally critical support, or for which subcontract performance will involve covered defense information, including subcontracts for commercial products or commercial services, without alteration, except to identify the parties.",
+   "effective": "2024-05-30 (clause date MAY 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 252.204-7012, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7012(m)(1)-(2). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7012. 2 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-cdi-definition",
+   "title": "Covered defense information: CUI (including controlled technical information) DoD marks or provides, or that you develop for the contract",
+   "plain_english": "Covered defense information is unclassified controlled technical information or other CUI-Registry information needing safeguarding or dissemination controls that is either marked or identified in the contract and provided by or for DoD, or collected, developed, received, transmitted, used or stored by or for you in performing the contract. Controlled technical information is technical information with military or space application that would carry distribution statements B through F. A covered contractor information system is any unclassified system you own or operate (or that is operated for you) that handles covered defense information.",
+   "category": "definition",
+   "parameters": {
+    "includes": [
+     "unclassified controlled technical information",
+     "other information in the CUI Registry that requires safeguarding or dissemination controls"
+    ],
+    "and_is_one_of": [
+     "marked or otherwise identified in the contract and provided by or on behalf of DoD",
+     "collected, developed, received, transmitted, used, or stored by or on behalf of the contractor in support of contract performance"
+    ],
+    "controlled_technical_information": "technical information with military or space application; would meet distribution statements B through F (DoDI 5230.24); excludes lawfully publicly available information",
+    "covered_contractor_information_system": "unclassified information system owned, or operated by or for, a contractor that processes, stores, or transmits covered defense information"
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "DFARS 252.204-7012(a)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7012 (paragraph (a)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Covered contractor information system means an unclassified information system that is owned, or operated by or for, a contractor and that processes, stores, or transmits covered defense information.",
+   "effective": "2024-05-30 (clause date MAY 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "Whether particular project drawings, specifications or site data are covered defense information depends on their marking and the contract; 252.204-7012(m)(1) tells the prime to consult the contracting officer when unsure.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 252.204-7012, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7012(a) 'Controlled technical information', 'Covered defense information' (1)-(2). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7012. 6 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7019-assessment-3-years",
+   "title": "DFARS 252.204-7019: a NIST SP 800-171 DoD Assessment no more than 3 years old must be in SPRS to be considered for award",
+   "plain_english": "If you must implement NIST SP 800-171 (DFARS 252.204-7012), you are considered for award only with a current NIST SP 800-171 DoD Assessment (no more than 3 years old unless the solicitation sets a shorter time) for each covered system, with its summary score posted in SPRS. If you have none, do a Basic (self) Assessment with the DoD Assessment Methodology and send the summary to webptsmh@navy.mil for posting: the standard assessed, who assessed, the CAGE codes per system security plan, the completion date, the summary score (out of 110) and the date you expect to reach 110. The contracting officer checks SPRS before award and before exercising options.",
+   "category": "deadline",
+   "parameters": {
+    "max_age_years": 3,
+    "unless": "a lesser time is specified in the solicitation",
+    "assessment_types": [
+     "Basic (contractor self-assessment; Low confidence)",
+     "Medium (Government)",
+     "High (Government, using NIST SP 800-171A)"
+    ],
+    "posted_in": "SPRS",
+    "basic_submission_email": "webptsmh@navy.mil",
+    "basic_email_contents": [
+     "cybersecurity standard assessed",
+     "organization conducting the assessment",
+     "CAGE codes per system security plan, and plan architecture if more than one",
+     "date the assessment was completed",
+     "summary level score (e.g., 95 out of 110)",
+     "date a score of 110 is expected"
+    ],
+    "max_score": 110,
+    "summary_scores_posted_days_after_assessment": 30,
+    "co_checks_before": [
+     "award",
+     "option exercise",
+     "period of performance extension"
+    ],
+    "prescribed_in": "all DoD solicitations except COTS-only (DFARS 204.7304(d))"
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "DFARS 252.204-7019(b)-(d) (NOV 2023); DFARS 204.7302(a)(2); DFARS 204.7303(b); DFARS 204.7304(d)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7019; https://www.ecfr.gov/current/title-48/section-204.7302 (paragraph (a)(2)); https://www.ecfr.gov/current/title-48/section-204.7303 (paragraph (b)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "In order to be considered for award, if the Offeror is required to implement NIST SP 800-171, the Offeror shall have a current assessment (i.e., not more than 3 years old unless a lesser time is specified in the solicitation) (see 252.204-7020) for each covered contractor information system that is relevant to the offer, contract, task order, or delivery order.",
+   "effective": "2023-11-17 (clause date NOV 2023; 88 FR 80466, Nov. 17, 2023; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "The DoD Assessment Methodology document (acq.osd.mil) could not be fetched; the clause names it.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 204.7302, 204.7303, 204.7304, 252.204-7019, 252.204-7020, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7019 (NOV 2023) (b), (c)(1)-(2), (d)(1)(i)(A)-(F), (d) 30-day posting; 252.204-7020(a) assessment definitions; DFARS 204.7302(a)(2), 204.7303(b), 204.7304(d). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7019. 14 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-dfars-7020-access-rebuttal-subs",
+   "title": "DFARS 252.204-7020: allow Government Medium/High assessments, rebut within 14 business days, and award no covered subcontract without a Basic Assessment from the last 3 years",
+   "plain_english": "Under DFARS 252.204-7020 you must give the Government access to your facilities, systems and people for a Medium or High NIST SP 800-171 DoD Assessment if needed, and you have 14 business days after an assessment to send more information or rebut findings. Flow the clause to all subcontracts except COTS, and do not award a subcontract that requires NIST SP 800-171 under 252.204-7012 unless the subcontractor has completed at least a Basic Assessment within the last 3 years for its covered systems.",
+   "category": "required_contract_clause",
+   "parameters": {
+    "clause": "DFARS 252.204-7020 (NOV 2023)",
+    "access_for": [
+     "Medium Assessment",
+     "High Assessment"
+    ],
+    "rebuttal_business_days": 14,
+    "flowdown": "all subcontracts and other contractual instruments, commercial included, COTS excluded",
+    "subcontract_award_requires": "subcontractor completed at least a Basic NIST SP 800-171 DoD Assessment within the last 3 years for covered systems relevant to its offer",
+    "subcontract_assessment_max_age_years": 3,
+    "sub_without_score": "may conduct and submit a Basic Assessment to webptsmh@navy.mil"
+   },
+   "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
+   "citation": "DFARS 252.204-7020(c)-(g) (NOV 2023); DFARS 204.7304(e)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7020; https://www.ecfr.gov/current/title-48/section-204.7304 (paragraph (e)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The Contractor shall not award a subcontract or other contractual instrument, that is subject to the implementation of NIST SP 800-171 security requirements, in accordance with DFARS clause 252.204-7012 of this contract, unless the subcontractor has completed, within the last 3 years, at least a Basic NIST SP 800-171 DoD Assessment",
+   "effective": "2023-11-17 (clause date NOV 2023; 88 FR 80466, Nov. 17, 2023; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 204.7304, 252.204-7020, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7020 (NOV 2023) (c), (e)(2) 14 business days, (g)(1)-(3); DFARS 204.7304(e). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7020. 5 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-fci-definition",
+   "title": "Federal Contract Information: non-public information provided by or generated for the government under a contract",
+   "plain_english": "FCI is information not intended for public release that the government provides, or that is generated for the government, under a contract to develop or deliver a product or service. It does not include information the government gives the public (such as on public websites) or simple transactional information such as what is needed to process payments.",
+   "category": "definition",
+   "parameters": {
+    "is": "information, not intended for public release, provided by or generated for the Government under a contract to develop or deliver a product or service to the Government",
+    "excludes": [
+     "information provided by the Government to the public (such as on public websites)",
+     "simple transactional information, such as that necessary to process payments"
+    ],
+    "covered_contractor_information_system": "an information system owned or operated by a contractor that processes, stores, or transmits FCI"
+   },
+   "applies_to": "Prime contractors and subcontractors on contracts with any federal executive agency that uses the FAR (DoD, GSA, VA, Interior, ...), including construction contracts",
+   "citation": "FAR 4.1901; FAR 52.204-21(a); DFARS 204.7501 (Federal contract information); 32 CFR 170.4",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-4.1901; https://www.ecfr.gov/current/title-48/section-52.204-21 (paragraph (a)); https://www.ecfr.gov/current/title-48/section-204.7501 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Federal contract information means information, not intended for public release, that is provided by or generated for the Government under a contract to develop or deliver a product or service to the Government, but not including information provided by the Government to the public (such as that on public Web sites) or simple transactional information, such as that necessary to process payments.",
+   "effective": "in eCFR since its earliest version date, 2017-01-01 (FAR subpart 4.19 added at 81 FR 30445, May 16, 2016; that rule's own effective date was not read)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "corrected",
+    "checked_against": "eCFR 170.4, 204.7501, 4.1901, 52.204-21, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: FAR 4.1901; FAR 52.204-21(a); DFARS 204.7501; 32 CFR 170.4 'Federal Contract Information (FCI) is defined in 48 CFR 4.1901'. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 4.1901. 4 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": "The definition, its two exclusions and the covered contractor information system definition are confirmed in FAR 4.1901, 52.204-21(a) and DFARS 204.7501. The effective field implied an effective date of 2017-01-01; that is only the earliest point in time eCFR's version history covers, and the 2016 rule's effective date was not read. The effective field was reworded accordingly."
+   }
+  },
+  {
+   "id": "cmmc-cui-definition",
+   "title": "Controlled Unclassified Information: information a law, regulation or government-wide policy requires or permits to be safeguarded",
+   "plain_english": "CUI is information the government creates or possesses, or that someone creates or possesses for or on behalf of the government, that a law, regulation or government-wide policy requires or permits an agency to handle with safeguarding or dissemination controls. It is not classified information, and not information a private entity keeps in its own systems that did not come from, or was not created for, an executive branch agency.",
+   "category": "definition",
+   "parameters": {
+    "defined_in": "32 CFR 2002.4(h)",
+    "excludes": [
+     "classified information",
+     "information a non-executive branch entity possesses and maintains in its own systems that did not come from, or was not created or possessed by or for, an executive branch agency"
+    ],
+    "kinds": [
+     "CUI Basic",
+     "CUI Specified"
+    ]
+   },
+   "applies_to": "Prime contractors and subcontractors on contracts with any federal executive agency that uses the FAR (DoD, GSA, VA, Interior, ...), including construction contracts",
+   "citation": "32 CFR 2002.4(h); DFARS 204.7501; DFARS 252.204-7021(a); 32 CFR 170.4",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-2002.4 (paragraph (h)); https://www.ecfr.gov/current/title-48/section-204.7501 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Controlled unclassified information means information the Government creates or possesses, or information an entity creates or possesses for or on behalf of the Government, that a law, regulation, or Governmentwide policy requires or permits an agency to handle using safeguarding or dissemination controls (32 CFR 2002.4(h)).",
+   "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 170.4, 2002.4, 204.7501, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 32 CFR 2002.4(h) (exclusions, CUI Basic and Specified); DFARS 204.7501; 32 CFR 170.4. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 204.7501. 6 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-far-52-204-21-basic-safeguarding",
+   "title": "FAR 52.204-21: any federal contract where your systems may hold FCI requires the 15 basic safeguards, flowed down to subcontractors",
+   "plain_english": "Every federal agency using the FAR, not only DoD, puts FAR 52.204-21 in solicitations and contracts (commercial ones included, COTS excluded) when the contractor or a subcontractor at any tier may have FCI in or passing through its information systems. You must apply the 15 basic safeguarding requirements to those systems and put the clause in subcontracts where the subcontractor may have FCI on its systems. The clause itself requires no assessment or SPRS posting (CMMC Level 1 adds that on DoD contracts) and does not replace agency-specific or CUI safeguarding rules.",
+   "category": "required_contract_clause",
+   "parameters": {
+    "clause": "FAR 52.204-21 (NOV 2021)",
+    "agencies": "all executive agencies using the FAR",
+    "prescribed_when": "the contractor or a subcontractor at any tier may have FCI residing in or transiting through its information system",
+    "includes_commercial": true,
+    "excludes_cots": true,
+    "requirement_count": 15,
+    "flowdown": "subcontracts in which the subcontractor may have FCI residing in or transiting through its information system (commercial included, COTS excluded)",
+    "does_not_relieve": "agency-specific safeguarding requirements and CUI requirements under Executive Order 13556",
+    "assessment_required_by_clause": false
+   },
+   "applies_to": "Prime contractors and subcontractors on contracts with any federal executive agency that uses the FAR (DoD, GSA, VA, Interior, ...), including construction contracts",
+   "citation": "FAR 4.1902; FAR 4.1903; FAR 52.204-21(b)-(c)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-4.1902; https://www.ecfr.gov/current/title-48/section-4.1903; https://www.ecfr.gov/current/title-48/section-52.204-21 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The contracting officer shall insert the clause at 52.204-21, Basic Safeguarding of Covered Contractor Information Systems, in solicitations and contracts when the contractor or a subcontractor at any tier may have Federal contract information residing in or transiting through its information system.",
+   "effective": "2021-12-06 (clause date NOV 2021; 86 FR 61032, Nov. 4, 2021; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "assessment_required_by_clause=false reflects that the clause text contains no assessment, scoring or reporting step.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 4.1902, 4.1903, 52.204-21, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: FAR 4.1902, 4.1903; 52.204-21 (NOV 2021) (b)(2), (c); absence check: no assessment, SPRS or scoring step in the clause text. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 4.1903. 5 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-non-dod-no-cmmc",
+   "title": "Non-DoD federal contracts: no CMMC; FAR 52.204-21 covers FCI and CUI rules come from the agency",
+   "plain_english": "CMMC applies only to DoD contracts and subcontracts. On a contract with another federal agency (for example GSA or VA), FAR 52.204-21 sets the basic safeguards for FCI. As of November 24, 2026 the FAR has no government-wide clause on safeguarding CUI, so CUI requirements on a civilian contract come from that agency (its own clauses or contract requirements); FAR 52.204-21 says it does not relieve you of agency safeguarding requirements or of federal CUI requirements established by Executive Order 13556.",
+   "category": "definition",
+   "parameters": {
+    "cmmc_applies_to": "DoD contract and subcontract awardees only (32 CFR 170.3(a)(1))",
+    "far_cui_clause_in_48_cfr_part_52": false,
+    "checked_as_of": "2026-11-24",
+    "fci_rule_non_dod": "FAR 52.204-21",
+    "cui_rule_non_dod": "agency-specific requirements (FAR 52.204-21(b)(2); Executive Order 13556)"
+   },
+   "applies_to": "Contractors on federal contracts with agencies other than DoD",
+   "citation": "32 CFR 170.3(a)(1); FAR 52.204-21(b)(2)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.3 (paragraph (a)(1)); https://www.ecfr.gov/current/title-48/section-52.204-21 (paragraph (b)(2)); eCFR versioner API section list for 48 CFR part 52 (52.204-1 through 52.204-30) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "This clause does not relieve the Contractor of any other specific safeguarding requirements specified by Federal agencies and departments relating to covered contractor information systems generally or other Federal safeguarding requirements for controlled unclassified information (CUI) as established by Executive Order 13556.",
+   "effective": "2021-12-06 (FAR 52.204-21 NOV 2021; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "Absence check: the eCFR version list for 48 CFR part 52 (current as of 2026-11-24) has no clause on CUI safeguarding in the 52.204 series (52.204-1 through 52.204-30) or elsewhere by title. A FAR CUI rule, if issued later, would change this rule.",
+   "verification": {
+    "status": "corrected",
+    "checked_against": "eCFR 52.204-21, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 32 CFR 170.3(a)(1); fresh eCFR version list for 48 CFR part 52 (section titles). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 52.204-21. 2 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": "32 CFR 170.3(a)(1) ('All DoD contract and subcontract awardees') and the 52.204-21(b)(2) quote are confirmed, and the verifier repeated the absence check on a fresh eCFR version list for 48 CFR part 52: no section title mentions controlled unclassified information and the 52.204 series ends at 52.204-30. plain_english said CUI requirements come 'from the agency's own clauses'; 52.204-21(b)(2) also preserves 'other Federal safeguarding requirements for controlled unclassified information (CUI) as established by Executive Order 13556', so the sentence was widened to say so."
+   }
+  },
+  {
+   "id": "cmmc-kaspersky-52-204-23",
+   "title": "No Kaspersky hardware, software or services for the government or in producing contract deliverables; report within 3 business days",
+   "plain_english": "Every federal solicitation and contract carries FAR 52.204-23. You may not provide any Kaspersky Lab covered article (anything developed or provided by Kaspersky or its affiliates, or containing their hardware or software) that the government will use, and you may not use one to produce data or deliverables first produced under the contract (both since October 1, 2018). If you identify a covered article provided to the government during performance, or a subcontractor or anyone else tells you of one, report it within 3 business days (DoD contracts: at https://dibnet.dod.mil; others: in writing to the contracting officer) and send mitigation details within 10 business days after that report. Flow the clause to all subcontracts.",
+   "category": "prohibition",
+   "parameters": {
+    "prohibited": "Kaspersky Lab covered articles (hardware, software or services developed or provided by a Kaspersky Lab covered entity, or containing its hardware or software)",
+    "since": "2018-10-01",
+    "no_providing_for_government_use": true,
+    "no_use_in_contract_deliverables": true,
+    "report_within_business_days": 3,
+    "followup_within_business_days": 10,
+    "dod_report_to": "https://dibnet.dod.mil",
+    "other_agencies_report_to": "the Contracting Officer, in writing",
+    "prescribed_in": "all solicitations and contracts (FAR 4.2004)",
+    "flowdown": "all subcontracts, including commercial"
+   },
+   "applies_to": "Prime contractors and subcontractors on contracts with any federal executive agency that uses the FAR (DoD, GSA, VA, Interior, ...), including construction contracts",
+   "citation": "FAR 4.2002; FAR 4.2004; FAR 52.204-23 (DEC 2023)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-52.204-23; https://www.ecfr.gov/current/title-48/section-4.2002; https://www.ecfr.gov/current/title-48/section-4.2004 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Using any Kaspersky Lab covered article on or after October 1, 2018, in the development of data or deliverables first produced in the performance of the contract.",
+   "effective": "2023-12-04 (clause date DEC 2023; 88 FR 69513, Oct. 5, 2023; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "corrected",
+    "checked_against": "eCFR 4.2004, 52.204-23, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 52.204-23 (DEC 2023) (a)-(d); FAR 4.2002; 4.2004 'in all solicitations and contracts'. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 52.204-23. 8 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": "The prohibitions, dates, 3 and 10 business-day deadlines, reporting channels and flowdown are confirmed in 52.204-23(b)-(d) and FAR 4.2002/4.2004. plain_english said 'If you find one, report it'; 52.204-23(c)(1) triggers the report when the contractor 'identifies a Kaspersky Lab covered article provided to the Government during contract performance, or the Contractor is notified of such by a subcontractor at any tier or any other source'. The trigger was restated and 'within 10 more business days' was changed to 'within 10 business days after that report' (52.204-23(c)(2)(ii))."
+   }
+  },
+  {
+   "id": "cmmc-section-889-52-204-25",
+   "title": "Section 889: no Huawei, ZTE, Hytera, Hikvision or Dahua telecom or video surveillance equipment as a substantial or essential component of what you provide the government or of any system you use; report within 1 business day",
+   "plain_english": "Every federal solicitation and contract carries FAR 52.204-25. Since August 13, 2019 you may not provide the government any equipment, system or service that uses covered telecommunications equipment or services (Huawei or ZTE telecom equipment; Hytera, Hikvision or Dahua video surveillance and telecom equipment for public safety, government facility security, critical infrastructure surveillance and other national security purposes; their subsidiaries and affiliates; services using that equipment; or entities DoD designates) as a substantial or essential component of any system or as critical technology. Since August 13, 2020 the government may not contract with a company that uses any equipment, system or service that uses covered equipment or services that way, even in work that has nothing to do with the federal contract. Backhaul, roaming and interconnection services and equipment that cannot route or see user data are excepted. If during performance you identify covered equipment or services used as a substantial or essential component of any system (or a subcontractor tells you), report within 1 business day (DoD: https://dibnet.dod.mil; others: the contracting officer) and follow up within 10 business days. Flow the clause to all subcontracts, but without the company-wide 'use' prohibition of paragraph (b)(2).",
+   "category": "prohibition",
+   "parameters": {
+    "covered_producers": [
+     "Huawei Technologies Company",
+     "ZTE Corporation",
+     "Hytera Communications Corporation",
+     "Hangzhou Hikvision Digital Technology Company",
+     "Dahua Technology Company"
+    ],
+    "hytera_hikvision_dahua_purposes": "public safety, security of Government facilities, physical security surveillance of critical infrastructure, and other national security purposes",
+    "includes_subsidiaries_affiliates": true,
+    "includes_secdef_designated_entities": true,
+    "providing_prohibited_since": "2019-08-13",
+    "contractor_use_prohibited_since": "2020-08-13",
+    "use_prohibition_regardless_of_federal_work": true,
+    "exceptions": [
+     "service that connects to the facilities of a third party (backhaul, roaming, interconnection)",
+     "telecommunications equipment that cannot route or redirect user data traffic or permit visibility into user data or packets"
+    ],
+    "report_within_business_days": 1,
+    "followup_within_business_days": 10,
+    "dod_report_to": "https://dibnet.dod.mil",
+    "prescribed_in": "all solicitations and contracts (FAR 4.2105(b))",
+    "flowdown": "all subcontracts, including commercial, excluding paragraph (b)(2)",
+    "waivers": "FAR 4.2104"
+   },
+   "applies_to": "Prime contractors and subcontractors on contracts with any federal executive agency that uses the FAR (DoD, GSA, VA, Interior, ...), including construction contracts",
+   "citation": "FAR 52.204-25(a)-(e) (NOV 2021); FAR 4.2105(b)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-52.204-25; https://www.ecfr.gov/current/title-48/section-4.2105 (paragraph (b)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "This prohibition applies to the use of covered telecommunications equipment or services, regardless of whether that use is in performance of work under a Federal contract.",
+   "effective": "2021-12-06 (clause date NOV 2021; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "Federal grant-funded work follows 2 CFR 200.216 instead (rulebook rule fed-telecom-889-grant-prohibition).",
+   "verification": {
+    "status": "corrected",
+    "checked_against": "eCFR 4.2105, 52.204-25, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 52.204-25 (NOV 2021) (a) definitions, (b)(1)-(2), (c), (d)(1)-(2), (e); FAR 4.2105(b). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 52.204-25. 13 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": "Covered producers, purposes, dates, exceptions, the 1 and 10 business-day reports, the DIBNet channel, the flowdown excluding (b)(2) and FAR 4.2105(b) are confirmed. The title ('anywhere in your company') and plain_english dropped the qualifier in 52.204-25(b)(2): the use prohibition covers equipment, systems or services that use covered telecommunications equipment or services 'as a substantial or essential component of any system, or as critical technology as part of any system'. The qualifier was restored in the title and plain_english, and the reporting trigger was stated as in (d)(1)."
+   }
+  },
+  {
+   "id": "cmmc-section-889-representations",
+   "title": "Section 889 representations: annual 52.204-26 answers in SAM.gov, and 52.204-24 in the offer only if you answered 'does'",
+   "plain_english": "Before bidding, check the SAM.gov excluded-parties list for covered telecommunications entities. FAR 52.204-26 (completed in your SAM.gov annual representations; it applies to all solicitations) asks whether you provide covered telecom equipment or services to the government and, after a reasonable inquiry, whether you use any. FAR 52.204-24 in each solicitation must be completed only for the answer you gave as 'does' in 52.204-26 (or 52.212-3(v) for commercial buys); 'will' or 'does' answers require the disclosures in 52.204-24(e). A reasonable inquiry means checking the information you have; no internal or third-party audit is needed.",
+   "category": "required_document",
+   "parameters": {
+    "annual_representation": "FAR 52.204-26 (OCT 2020), in SAM; applies to all solicitations (52.204-8(c)(1)(vi))",
+    "offer_representation": "FAR 52.204-24 (NOV 2021), in all solicitations (FAR 4.2105(a))",
+    "skip_52_204_24_d1_if": "52.204-26(c)(1) or 52.212-3(v)(2)(i) answered 'does not provide'",
+    "skip_52_204_24_d2_if": "52.204-26(c)(2) or 52.212-3(v)(2)(ii) answered 'does not use'",
+    "must_review": "SAM excluded parties list for 'covered telecommunications equipment or services'",
+    "reasonable_inquiry_needs_audit": false,
+    "commercial_equivalent": "FAR 52.212-3(v)",
+    "disclosure_required_if": [
+     "'will' provide (52.204-24(d)(1) -> (e)(1))",
+     "'does' use (52.204-24(d)(2) -> (e)(2))"
+    ]
+   },
+   "applies_to": "Offerors (prime bidders) on federal solicitations",
+   "citation": "FAR 52.204-24 (NOV 2021); FAR 52.204-26 (OCT 2020); FAR 52.204-25(a) (Reasonable inquiry); FAR 52.212-3(v); FAR 52.204-8(c)(1)(vi); FAR 4.2103(a); FAR 4.2105(a), (c)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-52.204-24; https://www.ecfr.gov/current/title-48/section-52.204-26; https://www.ecfr.gov/current/title-48/section-52.204-25 (paragraph (a)); https://www.ecfr.gov/current/title-48/section-52.204-8 (paragraph (c)(1)(vi)); https://www.ecfr.gov/current/title-48/section-4.2103 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "Reasonable inquiry means an inquiry designed to uncover any information in the entity's possession about the identity of the producer or provider of covered telecommunications equipment or services used by the entity that excludes the need to include an internal or third-party audit.",
+   "effective": "2021-12-06 (52.204-24 NOV 2021; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 4.2103, 4.2105, 52.204-24, 52.204-25, 52.204-26, 52.204-8, 52.212-3, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 52.204-24 (NOV 2021) preamble, (c), (d), (e) triggers; 52.204-26 (OCT 2020) (b)-(c); 52.212-3(v); 52.204-8(c)(1)(vi); FAR 4.2103(a); 4.2105(a), (c). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 52.204-25. 12 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-bytedance-52-204-27",
+   "title": "No TikTok (or other ByteDance app) on government IT or on any IT used under the contract, including employees' own devices",
+   "plain_english": "Every federal solicitation and contract carries FAR 52.204-27 unless an OMB M-23-13 exception is granted. You may not have or use TikTok or any successor ByteDance application on government IT or on any information technology you use or provide under the contract, including equipment your employees provide, unless the contracting officer notifies you in writing of an exception. Flow the clause to all subcontracts.",
+   "category": "prohibition",
+   "parameters": {
+    "covered_application": "TikTok or any successor application or service developed or provided by ByteDance Limited or an entity it owns",
+    "prohibited_on": [
+     "information technology owned or managed by the Government",
+     "information technology used or provided by the Contractor under the contract, including equipment provided by the Contractor's employees"
+    ],
+    "exception": "written notice from the Contracting Officer of an exception under OMB M-23-13",
+    "prescribed_in": "all solicitations and contracts unless an exception is granted (FAR 4.2203)",
+    "flowdown": "all subcontracts, including commercial",
+    "it_excludes": "equipment acquired by a Federal contractor incidental to a Federal contract"
+   },
+   "applies_to": "Prime contractors and subcontractors on contracts with any federal executive agency that uses the FAR (DoD, GSA, VA, Interior, ...), including construction contracts",
+   "citation": "FAR 52.204-27 (JUN 2023); FAR 4.2203",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-52.204-27; https://www.ecfr.gov/current/title-48/section-4.2203 (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "The Contractor is prohibited from having or using a covered application on any information technology owned or managed by the Government, or on any information technology used or provided by the Contractor under this contract, including equipment provided by the Contractor's employees;",
+   "effective": "2023-06-02 (clause date JUN 2023; 88 FR 36434, June 2, 2023; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 4.2203, 52.204-27, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 52.204-27 (JUN 2023) (a)-(c); FAR 4.2203. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 52.204-27. 5 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-sam-annual-reps-12-months",
+   "title": "SAM.gov representations and certifications must be entered or updated within the last 12 months and be current when you bid",
+   "plain_english": "When a solicitation includes the SAM provision (52.204-7), you must be registered in SAM.gov when you submit the offer and at award, and by submitting the offer you confirm that the representations and certifications in SAM.gov that apply to the solicitation were entered or updated within the last 12 months and are current, accurate, complete and applicable (including the size standard for the solicitation's NAICS code). List any changes in the offer by clause number, title and date.",
+   "category": "deadline",
+   "parameters": {
+    "updated_within_months": 12,
+    "confirmed_by": "submission of the offer",
+    "must_be": [
+     "current",
+     "accurate",
+     "complete",
+     "applicable to the solicitation (incl. the NAICS size standard)"
+    ],
+    "changes": "identify in the offer by clause number, title and date",
+    "registered_at": [
+     "offer or quotation submission",
+     "award"
+    ],
+    "registration_includes": [
+     "unique entity identifier (and EFT indicator, if any)",
+     "CAGE code",
+     "Core, Assertions, Representations and Certifications, and Points of Contact sections",
+     "TIN validated with the IRS",
+     "record marked Active"
+    ]
+   },
+   "applies_to": "Offerors (prime bidders) on federal solicitations that include FAR 52.204-7 and 52.204-8",
+   "citation": "FAR 52.204-8(b)(1), (d) (MAR 2026); FAR 52.204-7(a)-(b) (NOV 2024)",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-52.204-8 (paragraphs (b), (d)); https://www.ecfr.gov/current/title-48/section-52.204-7 (paragraphs (a)-(b)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "the representations and certifications currently posted electronically that apply to this solicitation as indicated in paragraph (c) of this provision have been entered or updated within the last 12 months, are current, accurate, complete, and applicable to this solicitation",
+   "effective": "2026-03-13 (52.204-8 MAR 2026; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "SAM.gov itself (sam.gov) could not be fetched; registration processing times are not stated here.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR 52.204-7, 52.204-8, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 52.204-8 (MAR 2026) (b)(1), (d); 52.204-7 (NOV 2024) (a) 'Registered in SAM' (1)-(4), (b)(1). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 52.204-8. 10 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  }
+ ],
+ "refuted": [],
+ "verification_meta": {
+  "verified_on": "2026-11-26",
+  "method": "Independent re-verification of all 36 rules (every id starts with 'cmmc-'; none collides with tradecomply/data/rulebook.json or any other research pack). Sources were fetched fresh on 2026-11-26 into a new scratch folder with a separately written XML-to-text extractor; nothing was reused from the author's downloads. Sources: eCFR versioner API full-text XML current as of 2026-11-24 (titles 32 and 48 'up_to_date_as_of' 2026-11-24 per /api/versioner/v1/titles.json) for 32 CFR part 170 (all sections and appendix A), 32 CFR 2002.4, DFARS 204.7302-204.7304, subpart 204.75, 252.204-7008, -7012, -7019, -7020, -7021, -7025, FAR 2.101, 4.1901-4.1903, 4.2002, 4.2004, 4.2103, 4.2105, 4.2203, 52.204-7, -8, -21, -23, -24, -25, -26, -27 and 52.212-3; point-in-time copies of 252.204-7021, 252.204-7025 and 204.7504 for 2025-11-09 and 2025-11-10; and the eCFR version histories of 32 CFR part 170 and 48 CFR parts 52, 204 and 252 (latest version dates: 170.x 2024-12-16; 204.7501/204.7504/252.204-7021/-7025 2025-11-10; 252.204-7012 2024-05-30; 252.204-7019/-7020 2023-11-17; 52.204-21/-24/-25 2021-12-06; 52.204-23 2023-12-04; 52.204-27 2023-06-02; 52.204-8 2026-03-13). Each verbatim_quote was string-matched against the fresh text after collapsing whitespace and normalizing quotes and dashes, and checked to fall inside a section named in source_location. Every parameter value, list item, date, count and derived number (88 = lowest whole Level 2 score with score/110 >= 0.8; 20 for Level 3 of 24; phase dates) was then checked against the section text by an explicit needle or computation (349 checks plus 17 effective-date checks, all passing), and every title and plain_english sentence was read against the text. Statuses: confirmed = the official text states the rule and parameters. corrected = a parameter, scope, effective date or wording was fixed against the text, in place, with the change described in verification.correction. unverifiable = the primary text could not be read (none). refuted = contradicted by or absent from the source (none). Not reachable from this session (network proxy refusal or DNS failure; no bot protection was bypassed): www.acquisition.gov, www.federalregister.gov, dodcio.defense.gov, csrc.nist.gov, nvlpubs.nist.gov, www.govinfo.gov, sam.gov, dibnet.dod.mil, www.law.cornell.edu. Consequences: NIST SP 800-171 Rev 3 content, any DoD class deviation on the SP 800-171 revision for DFARS 252.204-7012, the Federal Register preambles (including how DoD reads the micro-purchase wording of 170.3(c)), DoD CIO guidance documents and the DIBNet report form are not stated in any rule. This file does not rebuild tradecomply/data/rulebook.json; scripts/build_rulebook.py must be re-run to pick up this pack.",
+  "in_scope_rules_checked": 36,
+  "out_of_scope_rules_unchanged": 0,
+  "counts": {
+   "confirmed": 30,
+   "corrected": 6
+  }
+ }
+}

@@ -19,11 +19,12 @@ import anyio
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from fastmcp import Client
-from pydantic import BaseModel, BeforeValidator, Field, ValidationError
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError
 
 from tradecomply import logic
 
 from . import dashboard
+from . import mcp_governance as governance
 from .auth import (EMAIL_RE, Principal, anyone, get_principal, hash_password, license_digits, new_api_key, office_up,
                    owner_only, platform_of)
 from .billing import PRICE_USD_MONTH, base_url, entitlement, require_entitled
@@ -158,8 +159,31 @@ class UserPatch(BaseModel):
     name: Optional[str] = Field(None, max_length=200)
 
 
+class ScopesIn(BaseModel):
+    """Which tools an API key may call (docs/mcp-security.md). Leave tools and categories out for the default (every
+    read-only tool); give either one, even empty, for an allow-list."""
+    model_config = ConfigDict(extra="forbid")
+    tools: Optional[list[Annotated[str, Field(max_length=100)]]] = Field(None, max_length=500)
+    categories: Optional[list[Annotated[str, Field(max_length=100)]]] = Field(None, max_length=100)
+    rest_api: bool = True
+
+
 class KeyIn(BaseModel):
     name: str = Field(min_length=1, max_length=100)
+    scopes: Optional[ScopesIn] = None
+    rate_limit_per_min: Optional[int] = None
+    expires_in_days: Optional[int] = None
+    expires_at: Optional[str] = Field(None, max_length=40)
+
+
+class KeyPatch(BaseModel):
+    """Fields left out stay as they are; null resets scopes and rate_limit_per_min to the default and removes the
+    expiry."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    scopes: Optional[ScopesIn] = None
+    rate_limit_per_min: Optional[int] = None
+    expires_in_days: Optional[int] = None
+    expires_at: Optional[str] = Field(None, max_length=40)
 
 
 # ---------------------------------------------------------------------------- helpers
@@ -221,6 +245,7 @@ def _mcp_url(request: Request) -> str:
 async def config(request: Request):
     s = _p(request).settings
     return {"product": "TradeComply CA", "mcp_url": _mcp_url(request), "mcp_require_key": s.mcp_require_key,
+            "mcp_public_demo": s.mcp_public_demo,
             "stripe_enabled": s.stripe_enabled, "local_mode": s.local_mode, "price_usd_month": PRICE_USD_MONTH,
             "trial_days": s.trial_days, "claimant_roles": dashboard.ROLE_LABELS}
 
@@ -306,22 +331,97 @@ def delete_user(user_id: int, request: Request, p: Principal = Depends(owner_onl
     return {"ok": True}
 
 
+def _person_only(p: Principal, what: str = "manage API keys") -> None:
+    """An API key can't create, widen or revoke keys: otherwise a narrowly scoped key could mint itself a broad
+    one (OWASP MCP02, privilege escalation via scope creep)."""
+    if p.via != "cookie":
+        raise HTTPException(403, f"Sign in to TradeComply to {what}; an API key can't do this.")
+
+
+def _key_policy(body, index: dict, patch: bool) -> dict:
+    """Validated policy fields from a KeyIn/KeyPatch body (only those the client sent, for a patch)."""
+    sent = body.model_fields_set
+    out = {}
+    try:
+        if "scopes" in sent or not patch:
+            out["scopes"] = governance.normalize_scopes(body.scopes.model_dump() if body.scopes else None, index)
+        if "rate_limit_per_min" in sent or not patch:
+            out["rate_limit_per_min"] = governance.validate_rate(body.rate_limit_per_min)
+        if "expires_in_days" in sent and body.expires_in_days is not None:
+            out["expires_at"] = governance.validate_expiry(expires_in_days=body.expires_in_days)
+        elif "expires_at" in sent or not patch:
+            out["expires_at"] = governance.validate_expiry(expires_at=body.expires_at)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return out
+
+
+def _key_out(k: dict, index: dict) -> dict:
+    return {**k, "scope": governance.describe_scopes(k.get("scopes"), index),
+            "expired": governance.key_expired(k)}
+
+
 @router.get("/keys")
-def list_keys(request: Request, p: Principal = Depends(office_up)):
-    return _store(request).list_api_keys(p.tenant_id)
+async def list_keys(request: Request, p: Principal = Depends(office_up)):
+    platform = _p(request)
+    index = await governance.tool_index(platform)
+    keys = await anyio.to_thread.run_sync(platform.store.list_api_keys, p.tenant_id)
+    return [_key_out(k, index) for k in keys]
 
 
 @router.post("/keys")
-def create_key(body: KeyIn, request: Request, p: Principal = Depends(office_up)):
+async def create_key(body: KeyIn, request: Request, p: Principal = Depends(office_up)):
+    _person_only(p)
+    platform = _p(request)
+    index = await governance.tool_index(platform)
+    policy = _key_policy(body, index, patch=False)
     plain, prefix, key_hash = new_api_key()
-    k = _store(request).create_api_key(p.tenant_id, body.name.strip(), key_hash, prefix, p.user_id)
-    return {**k, "key": plain, "message": "Copy this key now. It won't be shown again."}
+
+    def save():
+        k = platform.store.create_api_key(p.tenant_id, body.name.strip(), key_hash, prefix, p.user_id, **policy)
+        platform.store.audit(p.tenant_id, p.label, "api_key.create", {"key_id": k["id"], "name": k["name"],
+                             "default_scope": policy["scopes"] is None,
+                             "rate_limit_per_min": policy["rate_limit_per_min"],
+                             "expires_at": policy["expires_at"]}, None, source="api")
+        return k
+    k = await anyio.to_thread.run_sync(save)
+    return {**_key_out(k, index), "key": plain, "message": "Copy this key now. It won't be shown again."}
+
+
+@router.patch("/keys/{key_id}")
+async def update_key(key_id: int, body: KeyPatch, request: Request, p: Principal = Depends(office_up)):
+    """Change an active key's name, tool scope, rate limit or expiry. Every change is in the activity log."""
+    _person_only(p)
+    platform = _p(request)
+    index = await governance.tool_index(platform)
+    fields = _key_policy(body, index, patch=True)
+    if "name" in body.model_fields_set and body.name is not None:
+        fields["name"] = body.name.strip()
+
+    def save():
+        before = platform.store.get_api_key(p.tenant_id, key_id)
+        if not before or before["revoked"]:
+            return None
+        k = platform.store.update_api_key(p.tenant_id, key_id, **fields)
+        if k:
+            platform.store.audit(p.tenant_id, p.label, "api_key.update", {
+                "key_id": key_id, "fields": sorted(fields),
+                "scope_before": governance.describe_scopes(before.get("scopes"), index)["summary"],
+                "scope_after": governance.describe_scopes(k.get("scopes"), index)["summary"]}, None, source="api")
+        return k
+    k = await anyio.to_thread.run_sync(save)
+    if not k:
+        _not_found("Active API key")
+    return _key_out(k, index)
 
 
 @router.delete("/keys/{key_id}")
 def revoke_key(key_id: int, request: Request, p: Principal = Depends(office_up)):
-    if not _store(request).revoke_api_key(p.tenant_id, key_id):
+    _person_only(p, "revoke API keys")
+    store = _store(request)
+    if not store.revoke_api_key(p.tenant_id, key_id):
         _not_found("Active API key")
+    store.audit(p.tenant_id, p.label, "api_key.revoke", {"key_id": key_id}, None, source="api")
     return {"ok": True}
 
 
@@ -425,6 +525,9 @@ async def tool_specs(platform, refresh: bool = False) -> list[dict]:
 @router.get("/tools")
 async def list_tools(request: Request, p: Principal = Depends(anyone)):
     specs = await tool_specs(_p(request))
+    if p.via == "key":                                     # a key sees only the tools it may call
+        index = await governance.tool_index(_p(request))
+        specs = [s for s in specs if governance.scope_allows(p.scopes, s["name"], index)]
     modules: dict[str, dict] = {}
     for s in specs:
         modules.setdefault(s["module"], {"id": s["module"], "label": s["module_label"], "tools": []})["tools"].append(s)
@@ -489,6 +592,9 @@ async def call_tool(name: str, request: Request, p: Principal = Depends(anyone))
         names = {s["name"] for s in await tool_specs(platform, refresh=True)}
         if name not in names:
             raise HTTPException(404, f"No tool named {name!r} on this server")
+    if p.via == "key" and not governance.scope_allows(p.scopes, name, await governance.tool_index(platform)):
+        raise HTTPException(403, f"This API key is not allowed to use the tool {name!r}. An owner or office user "
+                                 "can change the key's tools in Settings > AI assistant (MCP) > API keys.")
     try:
         args = await request.json() if (await request.body()) else {}
     except ValueError:

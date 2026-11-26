@@ -1683,10 +1683,13 @@
     };
     drawSnippets(null);
     const nameIn = input('key_name', { value: 'Claude Desktop', id: 'key-name-' + (++fieldSeq) });
+    const expIn = select('key_expiry', [['', 'Never expires'], ['30', 'Expires in 30 days'], ['90', 'Expires in 90 days'], ['365', 'Expires in 1 year']], '', { id: 'key-exp-' + fieldSeq, 'aria-label': 'Key expiry' });
     const btn = h('button', { type: 'button', class: 'btn', onclick: async () => {
       busy(btn, true, 'Creating…');
       try {
-        const k = await api('/api/keys', { method: 'POST', body: { name: nameIn.value.trim() || 'AI assistant' } });
+        const body = { name: nameIn.value.trim() || 'AI assistant' };
+        if (expIn.value) body.expires_in_days = Number(expIn.value);
+        const k = await api('/api/keys', { method: 'POST', body });
         keySlot.replaceChildren(h('div', { class: 'secret' }, h('p', {}, h('strong', {}, 'Your new API key. Copy it now: it will not be shown again.'), ' The setup below already includes it.'), copyBox(k.key, 'API key')));
         drawSnippets(k.key);
         if (state.onKeysChanged) state.onKeysChanged().catch(() => {});
@@ -1696,9 +1699,139 @@
       h('p', {}, 'Your AI assistant (Claude, ChatGPT, Copilot or a Procore/Autodesk agent) can run the same California checks. It connects over MCP, the standard way assistants plug into tools. Every call is logged in your activity log.'),
       h('div', { class: 'field' }, h('span', { class: 'label' }, 'Server address (MCP URL)'), copyBox(url, 'MCP URL')),
       can.write() ? h('div', { class: 'key-create' }, h('h3', {}, '1. Create a key for your assistant'),
-        h('p', { class: 'small muted' }, state.config && state.config.mcp_require_key ? 'An API key is required. It acts with office permissions; revoke it any time below.' : 'With a key, your assistant\'s checks count toward your account and show in your activity log. It acts with office permissions; revoke it any time.'),
-        h('div', { class: 'field' }, h('label', { for: nameIn.id }, 'Name this key (so you know where it is used)'), h('div', { class: 'row' }, nameIn, btn))) : null,
+        h('p', { class: 'small muted' }, (state.config && state.config.mcp_require_key ? 'An API key is required. ' : 'With a key, your assistant\'s checks count toward your account and show in your logs. ') + 'A new key can run every read-only check and acts with office permissions. Use one key per assistant or gateway, then narrow its tools, rate and lifetime with Edit access under API keys below. Revoke it any time.'),
+        h('div', { class: 'field' }, h('label', { for: nameIn.id }, 'Name this key (so you know where it is used)'), h('div', { class: 'row' }, nameIn, expIn, btn))) : null,
       keySlot, snippetSlot);
+  }
+
+  // ======================================================================== MCP governance: key access + MCP call log
+  // Owners and office users choose which tools each API key may call, its rate and its lifetime; owners see and
+  // download every /mcp tool call (docs/mcp-security.md). Text from the server is always set as text, never HTML.
+  async function mcpPolicy() {
+    if (!state.mcpPolicy) state.mcpPolicy = await api('/api/mcp/policy');
+    return state.mcpPolicy;
+  }
+  function keyAccessText(k) {
+    const s = k.scope || {};
+    return [s.summary || 'All read-only tools', s.rest_api === false ? 'tool calls only' : null].filter(Boolean).join(' · ');
+  }
+  function keyExpiryCell(k) {
+    if (!k.expires_at) return 'Never';
+    return k.expired ? h('span', { class: 'pill red' }, `Expired ${fmtDate(k.expires_at)}`) : fmtDate(k.expires_at);
+  }
+  async function editKeyAccess(k, onSaved) {
+    const pol = await mcpPolicy();
+    const sc = k.scopes || null;
+    const custom = !!(sc && (sc.tools || sc.categories));
+    const chosenTools = new Set((sc && sc.tools) || []);
+    const chosenCats = new Set((sc && sc.categories) || []);
+    const uid = ++fieldSeq;
+    const err = h('div', { role: 'alert' });
+    const modeAll = h('input', { type: 'radio', name: `ka-mode-${uid}`, value: 'all', id: `ka-all-${uid}`, checked: !custom });
+    const modePick = h('input', { type: 'radio', name: `ka-mode-${uid}`, value: 'pick', id: `ka-pick-${uid}`, checked: custom });
+    const picker = h('div', { class: 'scope-picker', hidden: !custom });
+    const catBoxes = [];
+    const toolBoxes = [];
+    for (const c of pol.categories) {
+      const cb = h('input', { type: 'checkbox', value: c.id, checked: chosenCats.has(c.id), id: `ka-c-${uid}-${c.id}` });
+      catBoxes.push(cb);
+      const items = c.tools.map((t) => {
+        const tb = h('input', { type: 'checkbox', value: t.name, checked: chosenTools.has(t.name), id: `ka-t-${uid}-${t.name}` });
+        toolBoxes.push(tb);
+        return h('li', {}, h('label', { for: tb.id }, tb, ' ', t.title), t.read_only ? null : h('span', { class: 'pill amber' }, 'Changes data: only by name'));
+      });
+      picker.append(h('div', { class: 'scope-cat' },
+        h('label', { for: cb.id }, cb, ' ', h('strong', {}, c.label), h('span', { class: 'small muted' }, ` (all ${plural(c.tools.length, 'tool')})`)),
+        h('details', {}, h('summary', { class: 'small' }, 'Or pick single tools'), h('ul', { class: 'scope-tools' }, items))));
+    }
+    const toggle = () => { picker.hidden = !modePick.checked; };
+    modeAll.addEventListener('change', toggle);
+    modePick.addEventListener('change', toggle);
+    const rest = h('input', { type: 'checkbox', id: `ka-rest-${uid}`, checked: !sc || sc.rest_api !== false });
+    const rate = input('rate_limit_per_min', { type: 'number', min: '1', max: String(pol.key_rate_limit_max), inputmode: 'numeric', value: k.rate_limit_per_min ?? '', placeholder: `${pol.key_rate_limit_per_min} (default)` });
+    const expiry = select('expiry', [['keep', k.expires_at ? `Keep: ${fmtDate(k.expires_at)}` : 'Keep: never expires'], ['never', 'Never expires'], ['30', '30 days from today'], ['90', '90 days from today'], ['365', '1 year from today']], 'keep');
+    const save = h('button', { type: 'submit', class: 'btn' }, 'Save access');
+    let dlg = null;
+    const form = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren();
+      const body = { rate_limit_per_min: rate.value === '' ? null : Number(rate.value) };
+      if (modePick.checked) body.scopes = { tools: toolBoxes.filter((b) => b.checked).map((b) => b.value), categories: catBoxes.filter((b) => b.checked).map((b) => b.value), rest_api: rest.checked };
+      else body.scopes = rest.checked ? null : { rest_api: false };
+      if (expiry.value === 'never') body.expires_at = null; else if (expiry.value !== 'keep') body.expires_in_days = Number(expiry.value);
+      busy(save, true, 'Saving…');
+      try { await api(`/api/keys/${k.id}`, { method: 'PATCH', body }); toast('Key access saved'); if (dlg) dlg.close(); if (onSaved) onSaved(); }
+      catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); } finally { busy(save, false); }
+    } },
+    h('fieldset', { class: 'scope-mode' }, h('legend', {}, 'Tools this key may call'),
+      h('div', {}, h('label', { for: modeAll.id }, modeAll, ` All read-only checks (${pol.read_only_tools}), the default`)),
+      h('div', {}, h('label', { for: modePick.id }, modePick, ' Only the ones I choose'))),
+    picker,
+    h('div', { class: 'field check' }, h('label', { for: rest.id }, rest, ' Also let this key read and change company data through the REST API (projects, subs, documents, imports)'),
+      h('span', { class: 'hint' }, 'Leave this off for an AI assistant that only runs checks. Recipes that import subs (for example Workato) need it on.')),
+    h('div', { class: 'form-grid' },
+      field('Tool calls per minute', rate, { hint: `Up to ${pol.key_rate_limit_max}. Blank uses the default.` }),
+      field('Expires', expiry)),
+    err, h('div', { class: 'row' }, save));
+    dlg = openDialog(`Access for “${k.name}”`, form);
+  }
+  function nextDay(iso) {
+    const d = new Date(iso + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+  const MCP_STATUS = { ok: ['green', 'OK'], error: ['red', 'Error'], denied: ['amber', 'Not allowed'], rate_limited: ['amber', 'Rate limited'] };
+  function mcpLogSection() {
+    const slot = h('div', { 'aria-live': 'polite' });
+    const keySel = select('key_id', [['', 'All keys']], '', { id: 'mcp-log-key' });
+    const statusSel = select('status', [['', 'Any result'], ...Object.entries(MCP_STATUS).map(([v, [, t]]) => [v, t])], '', { id: 'mcp-log-status' });
+    const from = input('start', { type: 'date', id: 'mcp-log-from' });
+    const to = input('end', { type: 'date', id: 'mcp-log-to' });
+    const csvLink = h('a', { class: 'btn secondary small', href: '/api/mcp/audit/export?format=csv', download: '' }, 'Download CSV');
+    const jsonLink = h('a', { class: 'btn ghost small', href: '/api/mcp/audit/export?format=json', download: '' }, 'Download JSON');
+    let rows = [];
+    let cursor = null;
+    let keysLoaded = false;
+    const params = () => {
+      const q = new URLSearchParams();
+      if (keySel.value) q.set('key_id', keySel.value);
+      if (statusSel.value) q.set('status', statusSel.value);
+      if (from.value) q.set('start', from.value);
+      if (to.value) q.set('end', nextDay(to.value));
+      return q;
+    };
+    const draw = () => slot.replaceChildren(...[rows.length ? table([
+      { label: 'When', render: (r) => fmtDateTime(r.created) },
+      { label: 'Key', render: (r) => r.key_name ? `${r.key_name} (${r.key_prefix}…)` : (r.api_key_id ? `Key #${r.api_key_id}` : 'No key') },
+      { label: 'Tool', render: (r) => humanize(r.tool) },
+      { label: 'Result', render: (r) => { const [c, t] = MCP_STATUS[r.status] || ['gray', r.status]; return h('span', { class: `pill ${c}` }, t); } },
+      { label: 'Time', render: (r) => r.duration_ms === null || r.duration_ms === undefined ? '—' : `${r.duration_ms} ms` },
+      { label: 'From', render: (r) => r.ip || '—' },
+      { label: 'Arguments', render: (r) => r.args_sha256 ? h('code', { title: `SHA-256 of the arguments: ${r.args_sha256}` }, r.args_sha256.slice(0, 12) + '…') : '—' }], rows) :
+      h('p', { class: 'muted' }, 'No AI assistant tool calls match.'),
+    cursor ? h('button', { type: 'button', class: 'btn secondary small', onclick: () => load(true).catch((e) => toast(e.message, true)) }, 'Show older') : null].filter(Boolean));
+    const load = async (more = false) => {
+      const q = params();
+      if (more && cursor) q.set('cursor', cursor);
+      const r = await api(`/api/mcp/audit?${q}`);
+      rows = more ? rows.concat(r.items) : r.items;
+      cursor = r.next_cursor;
+      if (!keysLoaded) {
+        keysLoaded = true;
+        r.keys.forEach((k) => keySel.append(h('option', { value: String(k.id) }, `${k.name} (${k.prefix}…)${k.revoked ? ', revoked' : ''}`)));
+      }
+      const e = params();
+      e.set('format', 'csv'); csvLink.href = `/api/mcp/audit/export?${e}`;
+      e.set('format', 'json'); jsonLink.href = `/api/mcp/audit/export?${e}`;
+      draw();
+    };
+    const reload = () => load().catch((e) => slot.replaceChildren(h('p', {}, e.message)));
+    [keySel, statusSel, from, to].forEach((el) => el.addEventListener('change', reload));
+    reload();
+    return h('section', { class: 'card', id: 'mcp-log' },
+      h('div', { class: 'card-head' }, h('h2', {}, 'AI assistant call log (MCP)'), h('button', { type: 'button', class: 'btn ghost small', onclick: reload }, 'Refresh')),
+      h('p', { class: 'small muted' }, 'Every tool call made through the MCP server: which key, which tool, the result, how long it took and where it came from. Arguments are never stored, because they can hold employee data; each row keeps a SHA-256 fingerprint of them instead.'),
+      h('div', { class: 'form-grid' }, field('API key', keySel), field('Result', statusSel), field('From', from), field('To', to)),
+      h('div', { class: 'row' }, csvLink, jsonLink), slot);
   }
 
   // ======================================================================== onboarding
@@ -2365,8 +2498,14 @@
         const rows = await api('/api/keys');
         keys.replaceChildren(rows.length ? table([
           { label: 'Name', key: 'name' }, { label: 'Key', render: (k) => h('code', {}, `${k.prefix}…`) }, { label: 'Created', render: (k) => fmtDateTime(k.created) },
-          { label: 'Last used', render: (k) => fmtDateTime(k.last_used) }, { label: 'Status', render: (k) => k.revoked ? h('span', { class: 'pill gray' }, 'Revoked') : h('span', { class: 'pill green' }, 'Active') },
-          { label: 'Actions', bare: true, render: (k) => k.revoked ? null : h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Revoke "${k.name}"? Anything using it stops working.`)) { await api(`/api/keys/${k.id}`, { method: 'DELETE' }); toast('Key revoked'); drawKeys(); } } }, 'Revoke') }], rows) : h('p', { class: 'muted' }, 'No API keys yet.'));
+          { label: 'Last used', render: (k) => fmtDateTime(k.last_used) },
+          { label: 'Access', render: (k) => k.revoked ? '—' : keyAccessText(k) },
+          { label: 'Calls/min', render: (k) => k.revoked ? '—' : (k.rate_limit_per_min ? String(k.rate_limit_per_min) : 'Default') },
+          { label: 'Expires', render: (k) => k.revoked ? '—' : keyExpiryCell(k) },
+          { label: 'Status', render: (k) => k.revoked ? h('span', { class: 'pill gray' }, 'Revoked') : k.expired ? h('span', { class: 'pill red' }, 'Expired') : h('span', { class: 'pill green' }, 'Active') },
+          { label: 'Actions', bare: true, render: (k) => k.revoked ? null : h('div', { class: 'row' },
+            h('button', { type: 'button', class: 'btn ghost small', onclick: () => editKeyAccess(k, drawKeys).catch((e) => toast(e.message, true)) }, 'Edit access'),
+            h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Revoke "${k.name}"? Anything using it stops working.`)) { await api(`/api/keys/${k.id}`, { method: 'DELETE' }); toast('Key revoked'); drawKeys(); } } }, 'Revoke')) }], rows) : h('p', { class: 'muted' }, 'No API keys yet.'));
       };
       await drawKeys();
       state.onKeysChanged = drawKeys;
@@ -2388,13 +2527,14 @@
         const all = await api('/api/audit?limit=200');
         const rows = all.slice(0, auditShown);
         const moreBtn = all.length > auditShown ? h('button', { type: 'button', class: 'btn secondary small', onclick: () => { auditShown += 25; loadAudit(); } }, `Show more (${all.length - auditShown} older)`) : null;
-        auditSlot.replaceChildren(rows.length ? table([
+        auditSlot.replaceChildren(...[rows.length ? table([
           { label: 'When', render: (r) => fmtDateTime(r.created) }, { label: 'Who', key: 'user' }, { label: 'Check', render: (r) => humanize(r.tool) },
           { label: 'Via', render: (r) => r.source === 'mcp' ? 'AI assistant' : 'Web/API' },
-          { label: 'Result', render: (r) => r.ok ? (r.verified === true ? h('span', { class: 'pill green' }, 'Verified') : r.verified === false ? h('span', { class: 'pill amber' }, 'Not yet verified') : h('span', { class: 'pill gray' }, 'Done')) : h('span', { class: 'pill red' }, 'Error') }], rows) : h('p', { class: 'muted' }, 'No checks run yet.'), moreBtn);
+          { label: 'Result', render: (r) => r.ok ? (r.verified === true ? h('span', { class: 'pill green' }, 'Verified') : r.verified === false ? h('span', { class: 'pill amber' }, 'Not yet verified') : h('span', { class: 'pill gray' }, 'Done')) : h('span', { class: 'pill red' }, 'Error') }], rows) : h('p', { class: 'muted' }, 'No checks run yet.'), moreBtn].filter(Boolean));
       };
       sections.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Activity log'), h('button', { type: 'button', class: 'btn ghost small', onclick: loadAudit }, 'Refresh')), auditSlot));
       loadAudit().catch((e) => auditSlot.replaceChildren(h('p', {}, e.message)));
+      if (can.owner()) sections.push(mcpLogSection());
     }
     if (can.owner()) {
       const b = await api('/api/billing/status').catch(() => null);

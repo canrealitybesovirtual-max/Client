@@ -1,0 +1,32 @@
+ERMHDR	19.12	2026-11-20	Project	admin	Administrator	dbxDatabaseNoName	Project Management	USD
+%T	CURRTYPE
+%F	curr_id	decimal_digit_cnt	curr_symbol	decimal_symbol	digit_group_symbol	pos_curr_fmt_type	neg_curr_fmt_type	curr_type	curr_short_name	group_digit_cnt	base_exch_rate
+%R	1	2	$	.	,	#1.1	(#1.1)	US Dollar	USD	3	1
+%T	PROJECT
+%F	proj_id	fy_start_month_num	proj_short_name	clndr_id	plan_start_date	plan_end_date	scd_end_date	last_recalc_date	add_date
+%R	4512	1	HL-A	597	2026-03-02 08:00		2026-11-06 17:00	2026-11-20 17:00	2026-02-10 09:12
+%R	4513	1	HL-GAR	597	2026-05-04 08:00		2027-02-05 17:00	2026-11-20 17:00	2026-02-10 09:15
+%T	PROJWBS
+%F	wbs_id	proj_id	obs_id	seq_num	proj_node_flag	wbs_short_name	wbs_name
+%R	9100	4512	565	0	Y	HL-A	Harbor Lofts - Building A
+%R	9101	4512	565	10	N	ELEC	Electrical
+%R	9200	4513	565	0	Y	HL-GAR	Harbor Lofts - Garage
+%T	TASK
+%F	task_id	proj_id	wbs_id	clndr_id	phys_complete_pct	task_type	duration_type	status_code	task_code	task_name	total_float_hr_cnt	target_drtn_hr_cnt	act_start_date	act_end_date	late_start_date	late_end_date	early_start_date	early_end_date	restart_date	reend_date	target_start_date	target_end_date
+%R	70001	4512	9100	597	100	TT_Mile	DT_FixedDUR2	TK_Complete	A1000	Notice to Proceed		0	2026-03-02 08:00								2026-03-02 08:00	2026-03-02 08:00
+%R	70002	4512	9100	597	100	TT_Task	DT_FixedDUR2	TK_Complete	A1010	Mobilization and site fencing		40	2026-03-02 08:00	2026-03-06 17:00							2026-03-02 08:00	2026-03-06 17:00
+%R	70003	4512	9100	597	60	TT_LOE	DT_FixedDUR2	TK_Active	A0900	General conditions (level of effort)		1480	2026-02-16 08:00				2026-11-23 08:00	2026-11-06 17:00	2026-11-23 08:00	2026-11-06 17:00	2026-02-16 08:00	2026-11-06 17:00
+%R	70004	4512	9101	597	100	TT_WBS	DT_FixedDUR2	TK_Complete	E1999	WBS summary - Electrical		2160	2026-02-02 08:00	2026-09-25 17:00							2026-02-02 08:00	2026-09-25 17:00
+%R	70005	4512	9101	597	100	TT_Task	DT_FixedDUR2	TK_Complete	E2000	Electrical rough-in		400	2026-04-13 08:00	2026-06-19 17:00							2026-04-01 08:00	2026-06-05 17:00
+%R	70006	4512	9101	597	100	TT_Task	DT_FixedDUR2	TK_Complete	E2010	Electrical trim & devices		320	2026-08-03 08:00	2026-09-25 17:00							2026-08-03 08:00	2026-09-18 17:00
+%R	70007	4512	9100	597	100	TT_FinMile	DT_FixedDUR2	TK_Complete	A3000	Substantial Completion		0		2026-10-16 17:00							2026-10-09 17:00	2026-10-09 17:00
+%R	70008	4512	9100	597	100	TT_Task	DT_FixedDUR2	TK_Complete	A3010	Punch list		80	2026-10-19 08:00	2026-10-30 17:00							2026-10-12 08:00	2026-10-23 17:00
+%R	70009	4512	9100	597	100	TT_FinMile	DT_FixedDUR2	TK_Complete	A3020	Final Completion		0		2026-10-30 17:00							2026-10-23 17:00	2026-10-23 17:00
+%R	70010	4512	9100	597	100	TT_FinMile	DT_FixedDUR2	TK_Complete	A3030	Record Notice of Completion		0		2026-11-06 08:00							2026-10-30 08:00	2026-10-30 08:00
+%R	71001	4513	9200	597	100	TT_Mile	DT_FixedDUR2	TK_Complete	G1000	Garage notice to proceed		0	2026-05-04 08:00								2026-05-04 08:00	2026-05-04 08:00
+%R	71002	4513	9200	597	0	TT_Task	DT_FixedDUR2	TK_NotStart	G1010	Garage deck pour – owner’s inspection	120	160			2027-01-25 08:00	2027-02-19 17:00	2027-01-11 08:00	2027-02-05 17:00	2027-01-11 08:00	2027-02-05 17:00	2027-01-11 08:00	2027-02-05 17:00
+%T	TASKPRED
+%F	task_pred_id	task_id	pred_task_id	proj_id	pred_proj_id	pred_type	lag_hr_cnt
+%R	80001	70005	70002	4512	4512	PR_FS	0
+%R	80002	70006	70005	4512	4512	PR_FS	0
+%E

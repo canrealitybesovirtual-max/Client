@@ -29,7 +29,7 @@ def blob(text="secret", ctx="c"):
 
 
 def test_schema_version_and_tables(st):
-    assert SCHEMA_VERSION == 5 and st.schema_version() == 5
+    assert SCHEMA_VERSION >= 5 and st.schema_version() == SCHEMA_VERSION
     with st.connect() as con:
         for table in ("integration_connections", "webhooks", "outbound_events", "mcp_audit_log", "sso_configs",
                       "calendar_tokens"):
@@ -50,7 +50,7 @@ def test_upgrade_from_version_4_keeps_data(tmp_path, backend):
         else:
             con.execute("update schema_version set version = 4")
     s.migrate()
-    assert s.schema_version() == 5 and s.get_tenant(tid)["company_name"] == "Old Co"
+    assert s.schema_version() == SCHEMA_VERSION and s.get_tenant(tid)["company_name"] == "Old Co"
     assert s.save_connection(tid, "procore", status="pending")["status"] == "pending"
 
 

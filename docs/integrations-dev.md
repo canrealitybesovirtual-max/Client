@@ -28,7 +28,7 @@ rest. Tests use made-up values and `httpx.MockTransport`.
 | `app/webhooks.py` | Slack / Microsoft Teams / signed generic webhook formats and one delivery attempt |
 | `app/safe_http.py` | `SafeHTTP`: the only way to make outbound HTTP calls (SSRF-guarded) |
 | `app/crypto.py` | `SecretBox`: AES-256-GCM encryption of secrets at rest |
-| `app/store.py` | Schema version 5 tables and their tenant-scoped methods |
+| `app/store.py` | Schema version 5 tables and their tenant-scoped methods (version 6 adds API key policy columns: docs/mcp-security.md) |
 | `tests/support.py` | Test fixtures and helpers: both backends, `make_app`, `mock_http`, `json_response` |
 
 ---
@@ -376,7 +376,7 @@ limited to 30 per tenant per 10 minutes (429). Changes are written to the tenant
 
 ---
 
-## 8. Storage (schema version 5)
+## 8. Storage (schema version 5; version 6 adds the API key policy columns)
 
 Both SQLite and PostgreSQL; on Postgres every new table has row level security on and no privileges for Supabase's
 `anon`/`authenticated` roles, like migration 4. All methods filter by `tenant_id` except those marked OPERATOR ONLY.
@@ -413,9 +413,17 @@ claim_outbound(limit=20, lease_s=300, now=None)                 # OPERATOR ONLY 
 finish_outbound(tenant_id, id, status, *, next_attempt=None, last_error=None) -> bool
 get_outbound(tenant_id, id); list_outbound(tenant_id, status=None, limit=100, before_id=None)
 purge_outbound(older_than) -> int                               # OPERATOR ONLY
-# MCP audit log (not yet written by the /mcp gate: whoever wires it calls log_mcp_call)
+# MCP audit log (written by the /mcp gate after each response: docs/mcp-security.md)
 log_mcp_call(tenant_id, tool, status, *, api_key_id=None, args_sha256=None, duration_ms=None, ip=None) -> int
-list_mcp_audit(tenant_id, *, start=None, end=None, limit=100, cursor=None) -> {"items", "next_cursor"}
+log_mcp_calls(entries, activity=()) -> int     # several rows + their activity-log rows, one transaction
+list_mcp_audit(tenant_id, *, start=None, end=None, limit=100, cursor=None, api_key_id=None, status=None,
+               tool=None) -> {"items", "next_cursor"}
+mcp_audit_rows(tenant_id, *, start=None, end=None, api_key_id=None, status=None, tool=None, after_id=0,
+               limit=500)                       # oldest first, for exports
+trim_anonymous_mcp_audit(keep) -> int
+# API key policy (schema 6: api_keys.scopes_json, rate_limit_per_min, expires_at; NULL = the default)
+create_api_key(tenant_id, name, key_hash, prefix, created_by, *, scopes=None, rate_limit_per_min=None,
+               expires_at=None); get_api_key(tenant_id, id); update_api_key(tenant_id, id, **fields)
 admin_mcp_audit(*, start=None, end=None, tenant_id=None, anonymous=False, limit=100, cursor=None)   # OPERATOR ONLY
 # SSO
 get_sso_config(tenant_id, with_secret=False); delete_sso_config(tenant_id)

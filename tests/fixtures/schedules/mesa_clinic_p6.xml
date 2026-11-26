@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hand-written test fixture in the Primavera P6 XML (APIBusinessObjects) format, with element names and values
+     from MPXJ's classes generated from Oracle's p6apibo.xsd (ProjectType, ActivityType, ActivityTypeHelper,
+     ActivityStatusHelper). The namespace version (V23.12) differs from MPXJ's current V25.12 on purpose: exports
+     carry their P6 version. A made-up job, still under construction on the data date. -->
+<APIBusinessObjects xmlns="http://xmlns.oracle.com/Primavera/P6/V23.12/API/BusinessObjects" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Currency>
+    <ObjectId>1</ObjectId>
+    <Id>USD</Id>
+    <Name>US Dollar</Name>
+  </Currency>
+  <Project>
+    <ObjectId>7001</ObjectId>
+    <Id>MC-TI</Id>
+    <Name>Mesa Clinic Tenant Improvement</Name>
+    <DataDate>2026-11-16T08:00:00</DataDate>
+    <PlannedStartDate>2026-06-01T08:00:00</PlannedStartDate>
+    <ScheduledFinishDate>2027-02-26T17:00:00</ScheduledFinishDate>
+    <WBS>
+      <ObjectId>3101</ObjectId>
+      <Code>MEP</Code>
+      <Name>Mechanical, electrical and plumbing</Name>
+      <ProjectObjectId>7001</ProjectObjectId>
+    </WBS>
+    <Activity>
+      <ObjectId>51000</ObjectId>
+      <Id>MC1000</Id>
+      <Name>Notice to Proceed</Name>
+      <Type>Start Milestone</Type>
+      <Status>Completed</Status>
+      <PlannedStartDate>2026-06-01T08:00:00</PlannedStartDate>
+      <PlannedFinishDate>2026-06-01T08:00:00</PlannedFinishDate>
+      <StartDate>2026-06-01T08:00:00</StartDate>
+      <FinishDate>2026-06-01T08:00:00</FinishDate>
+      <ActualStartDate>2026-06-01T08:00:00</ActualStartDate>
+      <ActualFinishDate xsi:nil="true"/>
+    </Activity>
+    <Activity>
+      <ObjectId>51005</ObjectId>
+      <Id>MC0900</Id>
+      <Name>General conditions</Name>
+      <Type>Level of Effort</Type>
+      <Status>In Progress</Status>
+      <PlannedStartDate>2026-05-18T08:00:00</PlannedStartDate>
+      <PlannedFinishDate>2027-02-19T17:00:00</PlannedFinishDate>
+      <StartDate>2026-05-18T08:00:00</StartDate>
+      <FinishDate>2027-02-26T17:00:00</FinishDate>
+      <ActualStartDate>2026-05-18T08:00:00</ActualStartDate>
+    </Activity>
+    <Activity>
+      <ObjectId>51010</ObjectId>
+      <Id>MC1010</Id>
+      <Name>Selective demolition</Name>
+      <Type>Task Dependent</Type>
+      <Status>Completed</Status>
+      <PlannedStartDate>2026-06-01T08:00:00</PlannedStartDate>
+      <PlannedFinishDate>2026-06-19T17:00:00</PlannedFinishDate>
+      <StartDate>2026-06-01T08:00:00</StartDate>
+      <FinishDate>2026-06-19T17:00:00</FinishDate>
+      <ActualStartDate>2026-06-01T08:00:00</ActualStartDate>
+      <ActualFinishDate>2026-06-19T17:00:00</ActualFinishDate>
+    </Activity>
+    <Activity>
+      <ObjectId>52000</ObjectId>
+      <Id>MC2000</Id>
+      <Name>HVAC ductwork and units</Name>
+      <Type>Resource Dependent</Type>
+      <Status>In Progress</Status>
+      <PlannedStartDate>2026-07-06T08:00:00</PlannedStartDate>
+      <PlannedFinishDate>2026-12-18T17:00:00</PlannedFinishDate>
+      <StartDate>2026-07-06T08:00:00</StartDate>
+      <FinishDate>2027-01-08T17:00:00</FinishDate>
+      <ActualStartDate>2026-07-06T08:00:00</ActualStartDate>
+    </Activity>
+    <Activity>
+      <ObjectId>53000</ObjectId>
+      <Id>MC3000</Id>
+      <Name>Substantial Completion</Name>
+      <Type>Finish Milestone</Type>
+      <Status>Not Started</Status>
+      <PlannedStartDate>2027-01-29T17:00:00</PlannedStartDate>
+      <PlannedFinishDate>2027-01-29T17:00:00</PlannedFinishDate>
+      <StartDate>2027-02-05T17:00:00</StartDate>
+      <FinishDate>2027-02-05T17:00:00</FinishDate>
+    </Activity>
+    <Activity>
+      <ObjectId>53010</ObjectId>
+      <Id>MC3010</Id>
+      <Name>Final Acceptance by Owner</Name>
+      <Type>Finish Milestone</Type>
+      <Status>Not Started</Status>
+      <PlannedFinishDate>2027-02-12T17:00:00</PlannedFinishDate>
+      <FinishDate>2027-02-19T17:00:00</FinishDate>
+    </Activity>
+    <Activity>
+      <ObjectId>53020</ObjectId>
+      <Id>MC3020</Id>
+      <Name>Notice of Completion recorded</Name>
+      <Type>Finish Milestone</Type>
+      <Status>Not Started</Status>
+      <PlannedFinishDate>2027-02-19T17:00:00</PlannedFinishDate>
+      <FinishDate>2027-02-26T17:00:00</FinishDate>
+    </Activity>
+    <Activity>
+      <ObjectId>51999</ObjectId>
+      <Id>MC-WBS</Id>
+      <Name>WBS summary - MEP</Name>
+      <Type>WBS Summary</Type>
+      <Status>In Progress</Status>
+      <StartDate>2026-04-06T08:00:00</StartDate>
+      <FinishDate>2027-01-08T17:00:00</FinishDate>
+      <ActualStartDate>2026-04-06T08:00:00</ActualStartDate>
+    </Activity>
+  </Project>
+  <Project>
+    <ObjectId>7002</ObjectId>
+    <Id>MC-SITE</Id>
+    <Name>Mesa Clinic Site Work</Name>
+    <DataDate>2026-11-16T08:00:00</DataDate>
+    <PlannedStartDate>2026-09-08T08:00:00</PlannedStartDate>
+    <ScheduledFinishDate>2026-12-11T17:00:00</ScheduledFinishDate>
+  </Project>
+  <Activity>
+    <ObjectId>61000</ObjectId>
+    <Id>S1000</Id>
+    <Name>Site paving</Name>
+    <ProjectObjectId>7002</ProjectObjectId>
+    <Type>Task Dependent</Type>
+    <Status>In Progress</Status>
+    <StartDate>2026-09-08T08:00:00</StartDate>
+    <FinishDate>2026-12-11T17:00:00</FinishDate>
+    <ActualStartDate>2026-09-08T08:00:00</ActualStartDate>
+  </Activity>
+  <BaselineProject>
+    <ObjectId>8001</ObjectId>
+    <Id>MC-TI-B1</Id>
+    <Name>Mesa Clinic TI - original baseline</Name>
+    <Activity>
+      <ObjectId>91000</ObjectId>
+      <Id>MC3000</Id>
+      <Name>Substantial Completion</Name>
+      <Type>Finish Milestone</Type>
+      <Status>Completed</Status>
+      <FinishDate>2026-12-04T17:00:00</FinishDate>
+      <ActualFinishDate>2026-11-02T17:00:00</ActualFinishDate>
+    </Activity>
+  </BaselineProject>
+</APIBusinessObjects>

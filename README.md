@@ -35,7 +35,7 @@ The same tools (whatever is registered on `server.mcp`; the app discovers them a
 | Who | Many companies (tenants), web app + `/mcp` | One company, `127.0.0.1` only | One person's AI assistant |
 | Data | `$DATA_DIR/tradecomply.sqlite` (put `DATA_DIR` on a persistent disk) | `~/.tradecomply` (app DB, signing key, CSLB snapshot) | none (tools only) |
 | Accounts | Sign up, 14-day trial, $1,000/month via Stripe | Owner account created on first run; login printed and saved to `~/.tradecomply/LOCAL-LOGIN.txt`; browser opens already logged in | none |
-| MCP | `https://<host>/mcp`, API key optional or required (`MCP_REQUIRE_KEY=1`) | `http://127.0.0.1:<port>/mcp` | stdio |
+| MCP | `https://<host>/mcp`, API key required on Render unless `MCP_PUBLIC_DEMO=1` ([docs/mcp-security.md](docs/mcp-security.md)) | `http://127.0.0.1:<port>/mcp` | stdio |
 | License data | `CSLB_AUTO_DOWNLOAD=1`: bundled snapshot on boot, refreshed daily | bundled snapshot (`seed/`) loaded on first run; `--update-licenses` refreshes when online | `data/cslb.sqlite` if present, else demo fixtures |
 
 The launchers create `.venv`, `pip install -r requirements.txt` (internet needed once) and run `python -m app.local`.
@@ -50,7 +50,8 @@ sub table, calendar download), Projects, Subcontractors (CSV import), Tools (for
 schema; results show "Verified against official source on <date>" or "Not yet verified", citations, disclaimer,
 Save as document, Print / PDF), Documents, Field (toolbox talks, inspections, incident reports with on-screen
 signatures; saved to IndexedDB offline and synced via `/api/field_logs/sync`), Settings (company, password, team
-invites, API keys and MCP config snippets, calendar feed, activity log, billing). The service worker caches the app
+invites, API keys with per-key tool scope, rate limit and expiry, MCP config snippets, calendar feed, activity log,
+the owner's MCP call log with CSV/JSON download, billing). The service worker caches the app
 shell plus `/api/tools`, `/api/me`, `/api/config` and `/api/projects` (network first) so the Field screen opens offline.
 
 Tool descriptions and parameter docs are written for AI agents as well as people, so the web app rewrites them for
@@ -62,14 +63,17 @@ project's details (name, city, county, address, owner, contract price, furnishin
 a "Fill in from a project" picker, and the saved result is linked to that project.
 
 Roles: **owner** (everything, incl. billing, team and keys), **office** (projects, subs, documents, tools, keys),
-**field** (read projects/subs/documents, run tools, create field logs). API keys act with the office role.
+**field** (read projects/subs/documents, run tools, create field logs). API keys act with the office role, limited to
+their tool scope (default: every read-only tool); a key with `rest_api: false` can only list and run tools. Keys
+can't create, change or revoke keys.
 
 ### API (`/api/*`, reference at `/api/docs`, OpenAPI JSON at `/api/openapi.json`)
 
 | Area | Endpoints |
 |---|---|
 | Auth | `POST /api/auth/signup` `login` `logout` `password`; `GET /api/auth/local?token=` (local mode one-time link) |
-| Account | `GET /api/me`, `GET /api/config`, `PATCH /api/tenant`, `GET/POST /api/users`, `PATCH/DELETE /api/users/{id}`, `GET/POST /api/keys`, `DELETE /api/keys/{id}` (revoke), `GET /api/audit`, `GET /api/audit/{id}` |
+| Account | `GET /api/me`, `GET /api/config`, `PATCH /api/tenant`, `GET/POST /api/users`, `PATCH/DELETE /api/users/{id}`, `GET/POST /api/keys`, `PATCH /api/keys/{id}` (name, tool scope, rate limit, expiry), `DELETE /api/keys/{id}` (revoke), `GET /api/audit`, `GET /api/audit/{id}` |
+| MCP governance | `GET /api/mcp/audit` (owner: MCP call log, filters, paging), `GET /api/mcp/audit/export?format=csv\|json` (owner), `GET /api/mcp/policy` (access mode, limits, tool categories), `GET /api/mcp/tool-hashes` (SHA-256 of every tool definition, for pinning). See [docs/mcp-security.md](docs/mcp-security.md) |
 | Tools | `GET /api/tools` (name, description, input schema, module), `POST /api/tools/{name}` (JSON body = arguments; runs in-process through `fastmcp.Client(server.mcp)`, writes an audit row) |
 | Records | `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/{id}`, `GET /api/projects/{id}/deadlines`; `GET/POST /api/subs`, `GET/PATCH/DELETE /api/subs/{id}`, `GET /api/subs/{id}/check`, `POST /api/subs/import` (CSV: multipart `file`, `text/csv` body or JSON `{"csv": ...}`); `GET/POST /api/documents`, `POST /api/documents/from_result`, `GET/PATCH/DELETE /api/documents/{id}`; `GET/POST /api/field_logs`, `GET/DELETE /api/field_logs/{id}`, `POST /api/field_logs/sync` (idempotent by `client_uuid`) |
 | Compliance view | `GET /api/dashboard`, `GET /api/license/{number}`, `GET /api/calendar.ics` (cookie, API key, or the private feed link from `GET /api/calendar/feed`; rotate with `POST /api/calendar/feed/rotate`) |
@@ -84,7 +88,9 @@ Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<
 | `DATABASE_URL` | unset (SQLite) | `postgres://` or `postgresql://` URL: keep customer data in PostgreSQL instead of SQLite. See [Durable storage (Postgres)](#durable-storage-postgres) |
 | `DATA_DIR` | `./data` | SQLite app database (when `DATABASE_URL` is unset) and generated signing key. When set (and `LICENSE_DB` isn't), CSLB data goes here too |
 | `SECRET_KEY` | generated: in the database with Postgres, else in `DATA_DIR/secret_key` | Signs session cookies, CSRF tokens, calendar links and tool results. At least 32 characters (shorter values are refused at startup). Set it on Render (render.yaml generates one), use Postgres, or keep `DATA_DIR` on a persistent disk so sessions survive deploys |
-| `MCP_REQUIRE_KEY` | off | `1`: `/mcp` needs `Authorization: Bearer <API key>` of an active or trialing account. Off: anonymous public demo, still audited and throttled (60 tool calls/min per IP, 300/min in total). Turn it on for production: off gives every tool away free |
+| `MCP_REQUIRE_KEY` | off, but on Render a key is required anyway | `1`: `/mcp` always needs `Authorization: Bearer <API key>` of an active or trialing account. On Render (`RENDER` is set) `/mcp` needs a key unless `MCP_PUBLIC_DEMO=1`; `MCP_REQUIRE_KEY=0` alone no longer opens it there (a startup warning says so). Elsewhere (a laptop, local mode) off means anonymous calls are allowed |
+| `MCP_PUBLIC_DEMO` | off | `1`: run `/mcp` as an anonymous public demo even on Render: every tool free to anyone, audited and throttled (60 tool calls/min per IP, 300/min in total). Ignored when `MCP_REQUIRE_KEY=1`. **Changing to the new default (no `MCP_PUBLIC_DEMO`) changes the live behavior of a Render deploy: anonymous `/mcp` callers get 401** |
+| `MCP_ALLOWED_ORIGINS` | unset | Comma-separated browser origins (`https://app.example.com`) allowed to call `/mcp` besides this server's own; a request with any other `Origin` header gets 403. Requests without `Origin` (every non-browser MCP client) are never refused for that. `*` turns the check off |
 | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` | unset | Enable checkout and the billing portal. The price is the $1,000/month recurring price from the Stripe dashboard |
 | `STRIPE_WEBHOOK_SECRET` | unset | Verifies `/api/billing/webhook` (send `checkout.session.completed`, `customer.subscription.updated`/`deleted`, `invoice.payment_failed`, `invoice.paid`) |
 | `APP_URL` | `RENDER_EXTERNAL_URL` or request host | Public base URL for Stripe return links, the MCP URL and calendar links, OAuth redirect URIs (`<APP_URL>/api/integrations/<provider>/oauth/callback`) and links in Slack/Teams alerts |
@@ -172,8 +178,12 @@ security headers; gzip only on public, secret-free responses (app shell, static 
 account data or keys; the markdown renderer never emits markup from input; "Verified" on a saved document only comes
 from a tool result signed by this server, and editing the text drops it; dates outside 1900-2200 are rejected;
 calendar and login tokens are redacted from the access log; local mode rejects any Host header other than
-`127.0.0.1`/`localhost` (DNS rebinding). Audit rows keep tool arguments in summarized form (long strings such as a
-payroll CSV are stored as length + hash); anonymous `/mcp` rows are capped at the newest 50,000.
+`127.0.0.1`/`localhost` (DNS rebinding). `/mcp` tool calls are logged in `mcp_audit_log` with the SHA-256 of the
+arguments, never the arguments, and their activity-log rows keep only the argument names and that hash; rows are
+written after the response has been sent. Tool runs from the web app (`/api/tools/{name}`) keep arguments in
+summarized form (long strings such as a payroll CSV are stored as length + hash). Anonymous rows are capped at the
+newest 50,000 in each log. MCP governance (scopes, limits, Origin check, OWASP MCP Top 10 self-assessment):
+[docs/mcp-security.md](docs/mcp-security.md).
 
 ### Known limits
 
@@ -182,7 +192,7 @@ payroll CSV are stored as length + hash); anonymous `/mcp` rows are capped at th
   threads (up to `DATABASE_POOL_MAX` connections at once), but each is still a network round trip, so keep Postgres
   in or near the service's region.
 - Per-IP limits use the first `X-Forwarded-For` entry, which a client can spoof; per-email and global limits back
-  them up. Sessions are stateless signed cookies (revoked on logout); keys don't expire until revoked.
+  them up. Sessions are stateless signed cookies (revoked on logout); API keys expire only when given an expiry date.
 - Team invites set "must change password", but the server doesn't force the change before other use.
 - No email: team invites show a temporary password to share; there is no password-reset email yet (an owner can
   remove and re-invite a user).
@@ -216,6 +226,8 @@ Each item: check the source, update the value, set `verified: True` and `checked
 - `app/store.py` (SQLite, tenant-scoped), `app/auth.py` (accounts, sessions, CSRF, API keys, `/mcp` gate and audit),
   `app/billing.py` (Stripe), `app/api.py` (JSON API), `app/dashboard.py` (RAG dashboard, lien calendar, iCalendar),
   `app/local.py` (offline mode), `app/static/` (web app, service worker, manifest)
+- `app/mcp_governance.py` (MCP access mode, Origin check, per-key tool scopes, the MCP call log, `/api/mcp/*`):
+  see [docs/mcp-security.md](docs/mcp-security.md)
 - `app/integrations_api.py` (`/api/integrations`), `app/connectors/` (one file per connector, auto-discovered),
   `app/events.py` (event bus and delivery worker), `app/webhooks.py` (Slack, Teams, signed generic webhooks),
   `app/safe_http.py` (SSRF-guarded outbound HTTP), `app/crypto.py` (secrets at rest): see
