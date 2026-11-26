@@ -5,8 +5,10 @@ controls in the code, says how they hold up against the OWASP MCP Top 10 and the
 gives advice for customers who put TradeComply behind an MCP gateway (Workato, Arcade, MintMCP, Barndoor).
 
 Code: `app/auth.py` (`MCPGate`, the ASGI gate in front of FastMCP), `app/mcp_governance.py` (access mode, Origin
-check, key scopes, the call log, `/api/mcp/*`), `app/api.py` (`/api/keys`), `app/store.py` (schema 6: `api_keys`
-policy columns, `mcp_audit_log`). Tests: `tests/test_mcp_governance.py`.
+check, key scopes, the call log, `/api/mcp/*`), `app/api.py` (`/api/keys`), `app/oauth.py` ("Sign in with
+TradeComply": the OAuth 2.1 authorization server for MCP clients such as Claude), `app/store.py` (schema 6: `api_keys`
+policy columns, `mcp_audit_log`; schema 7: the OAuth tables). Tests: `tests/test_mcp_governance.py`,
+`tests/test_oauth.py`.
 
 ## Sources read for this page
 
@@ -15,6 +17,7 @@ policy columns, `mcp_audit_log`). Tests: `tests/test_mcp_governance.py`.
 | OWASP MCP Top 10, version label "v0.1" (2025 list) | `tab_top10.md` and the ten `2025/MCP*.md` pages of github.com/OWASP/www-project-mcp-top-10, commit `165fe0f` (2026-07-29) | git clone of the public repo. owasp.org itself could not be reached from this build environment |
 | OWASP MCP Security Cheat Sheet | `cheatsheets/MCP_Security_Cheat_Sheet.md` of github.com/OWASP/CheatSheetSeries, commit `05861f2` (2026-11-25) | git clone; also Context7's index of the same file |
 | Render default environment variables | render.com/docs/environment-variables: "`RENDER`: This value is always `true`." | Context7's index of Render's docs |
+| MCP authorization | The MCP specification's authorization pages for 2025-06-18, 2025-11-25 and 2026-07-28 (and the 2025-11-25 transports page), OAuth 2.1 (draft-ietf-oauth-v2-1, the working group's editor copy), the Client ID Metadata Document draft, Claude's connector docs (claude.com/docs/connectors/building: authentication, lazy authentication, troubleshooting, testing; "add an unlisted connector"; support article 11175166), Anthropic's published IP ranges, and the `mcp` 2.3.0 Python SDK's OAuth client and reference server | Read 2026-11-26. modelcontextprotocol.io, rfc-editor.org and datatracker.ietf.org could not be reached: the spec pages were read from the specification's own source files, and the RFCs themselves (6749, 6750, 7009, 7591, 7636, 8252, 8414, 8707, 9207, 9728) were not read, so rules taken only from them are marked unconfirmed below |
 | Gateway facts | TradeComply's research entries for Workato, Arcade, MintMCP and Barndoor | Search extracts of the vendors' official pages; the vendor sites could not be fetched directly. Every gateway statement below is marked with what is confirmed and what is not |
 
 One naming difference in the OWASP source: the Top 10 list calls MCP06 "Prompt Injection via Contextual Payloads",
@@ -69,7 +72,7 @@ Every `tools/call` that reaches the gate gets one row in `mcp_audit_log`:
 | `args_sha256` | SHA-256 of the arguments as canonical JSON: `json.dumps(args, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`, UTF-8 |
 | `status` | `ok`, `error` (the tool or server returned an error), `denied` (outside the key's scope, not run), `rate_limited` (not run) |
 | `duration_ms` | from the gate passing the request on to the last byte of the answer (NULL for denied and rate-limited calls) |
-| `ip` | the client address (first `X-Forwarded-For` entry behind Render's proxy; behind a gateway this is the gateway) |
+| `ip` | the client address (first `X-Forwarded-For` entry behind Render's proxy, or the trusted hop with `TRUSTED_PROXY_HOPS`; behind a gateway this is the gateway) |
 | `created` | when the row was written (at most moments after the call) |
 
 The arguments themselves are never stored: assistants pass payroll CSVs, employee names and wages through them. The
@@ -122,9 +125,13 @@ revoking keys is recorded in the activity log (`api_key.create`, `api_key.update
 
 ### Other checks in the gate
 
-- **Origin.** A request with an `Origin` header from another site gets 403. Allowed: this server's own origin
-  (`APP_URL` or the request's host), `MCP_ALLOWED_ORIGINS`, and `http://localhost`/`127.0.0.1` in local mode.
-  Requests without `Origin`, which is every non-browser MCP client and every gateway, are not affected.
+- **Origin.** A request with an `Origin` header from another site gets 403, and a server log line names the refused
+  value (at most 30 a minute per value). Allowed: this server's own origin (`APP_URL` or the request's host),
+  Claude's (`https://claude.ai`, `https://claude.com`: Claude's connector testing guide names strict Origin checks
+  as a cause of failed connections; which value, if any, its server-side calls send is not confirmed),
+  `MCP_ALLOWED_ORIGINS`, and `http://localhost`/`127.0.0.1` in local mode. `/mcp` takes no cookies, so an allowed
+  origin gives a web page no ambient credentials. Requests without `Origin`, which is every non-browser MCP client
+  and every gateway, are not affected.
 - **Bodies the gate can't read fail closed.** A POST body that is not valid JSON (or nests too deeply) gets a
   JSON-RPC parse error (400) and is never passed on, so a call can't slip past the scope check because two JSON
   parsers disagree.
@@ -132,6 +139,116 @@ revoking keys is recorded in the activity log (`api_key.create`, `api_key.update
 - **Tool definition hashes.** `GET /api/mcp/tool-hashes` returns the SHA-256 of every tool definition as `tools/list`
   sends it (name, title, description, inputSchema, outputSchema, annotations; canonical JSON) and a manifest hash,
   so a reviewer or gateway can pin the reviewed definitions and notice any change.
+
+### Sign in with TradeComply (OAuth 2.1 for MCP clients, Claude custom connectors)
+
+`app/oauth.py` is a small OAuth 2.1 authorization server that follows the MCP authorization spec, so a customer can
+add TradeComply to Claude (web, Desktop, mobile) by pasting `<APP_URL>/mcp`. API keys keep working unchanged.
+
+It needs a stable public https address: `APP_URL`, or Render's `RENDER_EXTERNAL_URL`. Without one (or with an
+`http://` one on a public host) no OAuth is offered, as for SSO: the discovery documents answer 404, `/oauth/*`
+503 with "set APP_URL", and the `/mcp` 401 challenge names no `resource_metadata`. MCP requires every authorization
+server endpoint to be https, and an issuer taken from a public request's `Host` or `X-Forwarded-Host` would be
+whatever the caller says. Only a loopback host (`http://127.0.0.1`, a developer's machine) works without it.
+
+How a connection is made (what Claude and the `mcp` SDK do, confirmed in their docs and code):
+1. `POST /mcp` without a token gets 401 with `WWW-Authenticate: Bearer realm="tradecomply",
+   resource_metadata="<base>/.well-known/oauth-protected-resource/mcp", scope="tradecomply"` (an invalid or expired
+   token adds `error="invalid_token"`, so the client refreshes). Claude starts the sign-in only on a 401: with the
+   key optional (`MCP_PUBLIC_DEMO=1`, or off Render) anonymous calls succeed and Claude never asks.
+2. Protected resource metadata (RFC 9728) at `/.well-known/oauth-protected-resource/mcp` and at the root variant:
+   `resource` `<base>/mcp`, `authorization_servers` `[<base>]`, `scopes_supported` `["tradecomply"]`.
+3. Authorization server metadata (RFC 8414) at `/.well-known/oauth-authorization-server`: issuer `<base>`, S256
+   only, `authorization_response_iss_parameter_supported: true` (`iss` is on every redirect, errors and denials
+   included). No `openid-configuration` (clients need one of the two and try this one first) and no
+   `client_id_metadata_document_supported` (Claude would then switch to Client ID Metadata Documents, which this
+   server doesn't fetch yet).
+4. Dynamic client registration (RFC 7591, `POST /oauth/register`): Claude registers itself as a public client on
+   every new connection. Redirect URIs must be `https://` or `http://` on 127.0.0.1, [::1] or localhost, without a
+   fragment, plain ASCII with a plain DNS name or IP address as the host (the consent card shows the host as the
+   thing an app can't fake; `https://clаude.ai` with a Cyrillic а would read as claude.ai while the browser goes to
+   `xn--clude-5ve.ai`, so an internationalized domain registers in its `xn--` form and is shown that way). At most 5
+   redirect URIs of at most 512 characters. An omitted `token_endpoint_auth_method` means `client_secret_basic` (the
+   RFC default): a secret is returned once and stored as a SHA-256. A registration that never gets a grant is
+   deleted an hour after it was made once no sign-in request of it is pending, and after a day in any case.
+5. `GET /oauth/authorize`: an unknown client or a redirect URI it didn't register gets an error page, never a
+   redirect. Exact string match, except loopback URIs, which match on any port (OAuth 2.1 section 8.4.2: Claude Code
+   and the SDK listen on a port chosen at sign-in). PKCE S256 is required (no `plain`), repeated parameters are
+   refused, `resource` (RFC 8707) is compared in canonical form (lowercase scheme and host, no default port, no
+   trailing slash) with `<base>/mcp`, unknown scopes get `invalid_scope` (`offline_access` is accepted and ignored:
+   refresh tokens are always issued). These errors are shown on a page with a "Back to <app>" link carrying
+   `error`, `state` and `iss`, not redirected automatically: anyone can register a redirect address, and an
+   automatic redirect would make TradeComply an open redirector (MCP security considerations; OAuth 2.1 section
+   7.12.2). `state` may be at most 1,024 characters. The pending request is kept for 10 minutes (only the newest 10
+   per app: the endpoint needs no sign-in, so one caller can't fill the table), it is tied to this browser by an
+   HttpOnly, SameSite=Lax cookie scoped to `/api/oauth/requests/` whose name and value are a MAC of the request id,
+   and the browser goes to the web app, `/#/connect?request=<id>`. The id is in the URL fragment; the web app's
+   calls carry it in their path, which the access log redacts (`/api/oauth/requests/[redacted]`).
+6. The consent card (signed-in person only, in the browser that started the sign-in: anywhere else the request's
+   API answers 403 "started in another browser", so an id someone was sent or found can't connect the waiting app
+   to their company; an API key can't approve) shows the address the app returns to next to the name it
+   registered, because anyone can register an app called "Claude", and warns when it only returns to this computer.
+   Approve binds the request to the person's company, account and session counter (read again, and held, in the
+   transaction that writes the grant, so a person removed at that moment gets none) and answers
+   `{redirect_to}` (`redirect_uri?code&state&iss`); the page navigates there itself, because the CSP's
+   `form-action 'self'` would block a form post that redirects to claude.ai.
+7. `POST /oauth/token` (form-encoded, `Cache-Control: no-store`): the code is single use and lives 60 seconds; PKCE
+   is checked; `redirect_uri` only when sent (OAuth 2.1 removed it); `resource` when sent. A code presented again
+   with otherwise valid parameters revokes the connection (OAuth 2.1 section 4.1.3); a replay with a wrong verifier
+   or client changes nothing, so it can't be used to cut off the real client. Access tokens (`tco_...`) last 1 hour;
+   refresh tokens (`tcr_...`) rotate on every use and the connection lasts 30 days from its last refresh. An old
+   refresh token presented again revokes the whole connection (reuse detection), except within 5 seconds of its
+   use: a duplicate sent at the same moment (a client refreshing from two places at once) gets `invalid_grant`
+   without cutting off the connection it just renewed. A longer window would let a thief who rotated a stolen
+   token first keep the connection when the real app then sends it. (A retry after a lost answer can't be saved
+   either way: the app never got the new token.) Expired, revoked or reused tokens get `invalid_grant`; a request
+   without `grant_type` gets `invalid_request`. A public client may leave `client_id` out of a refresh (OAuth 2.1
+   section 4.3.1: the refresh token names its client); a confidential one always authenticates.
+8. `POST /oauth/revoke` (RFC 7009): a refresh token ends its connection, an access token only itself; 200 for
+   unknown tokens. A public client may leave `client_id` out here too.
+
+On `/mcp`, an access token acts as the person who approved it: the gate reads their company, role and email from the
+users row on every request (a removed person, a password change, or SSO enforcement that signs non-owners out ends
+the connection at once), checks expiry, revocation and the audience (`<base>/mcp`: a token issued under another
+`APP_URL` is refused), applies the subscription check (402), the per-connection rate limit (`oauth|<id>`, 600 a
+minute) plus the company limit, and the default tool scope (every read-only tool; a tool that changes data needs an
+API key that names it). Each call's `mcp_audit_log` row carries `oauth_grant_id`; the MCP log view and download show
+the app's name and who approved it. Access tokens are never accepted on `/api` (their audience is `/mcp`; MCP spec:
+servers MUST only accept tokens issued for them).
+
+Rate limits: Claude makes registration, token and refresh calls from Anthropic's servers (a few addresses shared by
+every customer, 160.79.104.0/21), so a tight per-IP limit would throttle every customer at once. Registration:
+600 an hour per IP and 2,000 an hour in total; authorize, token and revoke: 1,200 a minute per IP; tokens issued:
+60 a minute per app. The per-IP key is the whole `X-Forwarded-For` chain (or, with `TRUSTED_PROXY_HOPS`, the
+trusted hop): a caller chooses the first entries, not the ones the proxies append, so it can't fill the bucket of
+another address such as Claude's. The per-app limit counts only tokens actually issued (a client_id is no secret,
+so failed attempts naming it count against the sender's address instead). Discovery is never limited (the SDK gives
+up on a 429 there). Known limit: without `TRUSTED_PROXY_HOPS` a caller can still start a fresh per-IP bucket by
+changing its own part of the chain, so one caller can use up the 2,000-an-hour registration cap and block new
+connections until it resets; what that costs in storage is bounded (5 short redirect URIs per registration,
+deleted after an hour or a day).
+
+Storage (schema 7): `oauth_clients` and `oauth_requests` are shared tables (no company yet); `oauth_grants` (one per
+approval: who, which app, where it returns, when, last used, revoked) and `oauth_tokens` (the one-time code, access
+and refresh tokens, by SHA-256 only) belong to the company: exported without hashes, deleted with it, row level
+security and no Data API privileges on Postgres like every other table.
+
+People manage connections in Settings > Connected apps (`GET /api/oauth/connections`, `DELETE
+/api/oauth/connections/{id}`): their own, or (owners) everyone's in the company. Connecting, denying and
+disconnecting are written to the activity log (`oauth.connect`, `oauth.deny`, `oauth.disconnect`), and so is every
+connection that ends any other way (`oauth.revoked` by "TradeComply (automatic)", in the same transaction, with the
+reason: `refresh_token_reused` or `code_reused`, which mean a token was copied and also get a server log warning,
+`revoked_by_app`, `password_changed`, `person_removed`, `sso_required`).
+
+Not done, and why: Client ID Metadata Documents (the spec's SHOULD in 2025-11-25; dynamic registration is deprecated
+in 2026-07-28 but kept for at least 12 months, and it is what Claude uses when CIMD isn't advertised); refresh tokens
+bound to the client by DPoP; a per-person "consent once" memory (every new connection asks again). Unconfirmed:
+whether Claude's server-side calls send an `Origin` header (claude.ai's and claude.com's are allowed; another one is
+named in the server log: add it to `MCP_ALLOWED_ORIGINS`), how Render fills `X-Forwarded-For` (so
+`TRUSTED_PROXY_HOPS` is off by default), whether Claude's callback ties `state` to the browser session (the
+browser binding here stops a shared consent link, not an authorize URL an attacker sends someone), and
+the `https://claude.com/api/mcp/auth_callback` callback some pages mention (with dynamic registration nothing is
+hard-coded: the server matches whatever Claude registers).
 
 ## Self-assessment against the OWASP MCP Top 10
 
@@ -145,8 +262,8 @@ Status: **Met** (done in code or configuration), **Partial** (done in part, or o
 | No hard-coded tokens or keys in configuration | Met | `SECRET_KEY` and `INTEGRATIONS_KEY` come from the environment (render.yaml generates them); integration secrets are AES-256-GCM encrypted per company (`app/crypto.py`); tests use fake values |
 | Logs and telemetry don't record full prompts, arguments or secrets | Met | MCP arguments are stored only as SHA-256; tokens, keys and OAuth `code`/`state` are redacted from the access log. Web-app tool runs (`/api/tools`) still keep summarized arguments (strings up to 300 characters); plan: the same fingerprint there |
 | API keys are not stored in a readable form | Met | Shown once, stored as SHA-256 only |
-| Short-lived, scoped tokens; renewal per session | Partial | Keys are long-lived bearer tokens. They now have a tool scope and an optional expiry; nothing forces renewal. Plan: MCP authorization (OAuth 2.1) with short-lived access tokens |
-| Tokens bound to the agent or session | Not met | A key works from anywhere until revoked or expired. Plan: optional IP allow-list per key; OAuth with audience-bound tokens |
+| Short-lived, scoped tokens; renewal per session | Partial | Connected apps (OAuth, "Sign in with TradeComply") get 1-hour access tokens and rotating refresh tokens. API keys are long-lived bearer tokens with a tool scope and an optional expiry; nothing forces their renewal |
+| Tokens bound to the agent or session | Partial | OAuth tokens are bound to one app registration, one person and this server's `/mcp` (audience). An API key works from anywhere until revoked or expired. Plan: optional IP allow-list per key |
 | Revoke and rotate on suspected exposure | Partial | Revocation is immediate (one click, or automatic when the key's creator is removed). Rotation is manual: create a new key, update the assistant, revoke the old one |
 | No secrets in model context | Met | The tools are read-only compliance logic; none returns a credential |
 
@@ -211,10 +328,10 @@ Status: **Met** (done in code or configuration), **Partial** (done in part, or o
 | Fine-grained authorization, deny by default | Met | Per-key scopes; tools that change data are never in the default scope |
 | Subscription and tenant checked per request | Met | A key of a company whose trial or subscription ended gets 402 |
 | Expiration, rotation and revocation | Partial | Revocation and optional expiry; no forced rotation |
-| Short-lived OAuth 2.1 tokens, audience validation (MCP authorization spec) | Not met | `/mcp` accepts static API keys only. Plan: the MCP authorization profile (protected resource metadata, audience-bound tokens) |
+| Short-lived OAuth 2.1 tokens, audience validation (MCP authorization spec) | Met | "Sign in with TradeComply" (`app/oauth.py`): protected resource metadata, PKCE, 1-hour audience-bound access tokens, rotating refresh tokens. API keys remain for clients without OAuth |
 | Mutual TLS | Not met | TLS ends at Render's proxy; no client certificates. Not planned for the hosted service; a gateway can add it |
 | Every authorization decision logged | Partial | Denied and rate-limited calls are logged (throttled); requests with an invalid or expired key are refused without a row, because they belong to no company. Plan: count them per IP in the application log |
-| Integration with the company's identity provider | Partial | People can sign in to the web app with OIDC single sign-on (`app/sso.py`); API keys are not tied to IdP identities |
+| Integration with the company's identity provider | Partial | People can sign in to the web app with OIDC single sign-on (`app/sso.py`), and a connected app acts as the person who approved it after signing in that way; API keys are not tied to IdP identities |
 | Origin and Host validation | Partial | Origin is checked (cheat sheet section 6). Host is checked in local mode; the hosted service relies on Render's routing |
 
 ### MCP08: Lack of Audit and Telemetry
@@ -257,7 +374,7 @@ Status: **Met** (done in code or configuration), **Partial** (done in part, or o
 | 3. Sandbox and isolate | Partial | Hosted in a Render container; local installs use stdio or `127.0.0.1` |
 | 4. Human approval for sensitive actions | Met | No tool changes data or spends money |
 | 5. Input and output validation, SSRF | Met | Schema validation; no caller-chosen URLs; SafeHTTP for connectors |
-| 6. Authentication, transport, rate limits, Origin | Partial | Keys, TLS via Render, per-key and per-company limits, Origin check. No OAuth 2.1 profile |
+| 6. Authentication, transport, rate limits, Origin | Met | OAuth 2.1 (MCP authorization) or keys, TLS via Render, per-key, per-connection and per-company limits, Origin check |
 | 7. Optional message-level integrity | Not met | Optional in the cheat sheet; not implemented |
 | 10. Monitoring, logging and auditing; SIEM; redact PII | Partial | Every invocation logged with a hash instead of parameters; Splunk export; no anomaly alerts yet |
 | 12. Treat tool responses as untrusted | Client side | See MCP06: echoed free text is not labelled yet |
@@ -288,7 +405,7 @@ Per gateway, with what is confirmed and what is not:
 
 | Gateway | Confirmed in research (search extracts of the vendor's docs) | Not confirmed: test before relying on it | How to set it up with TradeComply |
 |---|---|---|---|
-| Workato Enterprise MCP | Genies can use external custom MCP servers with header or query-parameter token auth (one shared auth context) or OAuth2; requests to external servers are proxied through Workato (docs.workato.com/en/mcp/genies-as-mcp-clients.html) | Exact field names in the current Genie UI | Add `https://<host>/mcp` as a custom MCP server with the **header** token option, `Authorization: Bearer <key>`. TradeComply has no OAuth for `/mcp`. In token mode every Genie user shares that one key, so TradeComply's log shows the key, not the person; Workato's own logs identify users. Recipes that call `/api/tools/{name}` or `/api/subs/import` with Workato's HTTP connector should use a separate key (REST access on only if they import), stored in a Workato connection, never in recipe text |
+| Workato Enterprise MCP | Genies can use external custom MCP servers with header or query-parameter token auth (one shared auth context) or OAuth2; requests to external servers are proxied through Workato (docs.workato.com/en/mcp/genies-as-mcp-clients.html) | Exact field names in the current Genie UI | Add `https://<host>/mcp` as a custom MCP server with the **header** token option, `Authorization: Bearer <key>` (or the OAuth2 option: TradeComply's `/mcp` supports MCP authorization; not tested with Workato). In token mode every Genie user shares that one key, so TradeComply's log shows the key, not the person; Workato's own logs identify users. Recipes that call `/api/tools/{name}` or `/api/subs/import` with Workato's HTTP connector should use a separate key (REST access on only if they import), stored in a Workato connection, never in recipe text |
 | Arcade MCP Gateways | A gateway has one URL, `https://api.arcade.dev/mcp/<gateway-slug>`, over Streamable HTTP; remote servers can be added to a project ("add remote servers" guide); Arcade recommends fewer than 80 tools per gateway; Arcade warns its own API key is not limited to one gateway | Whether Arcade can send a static `Authorization: Bearer <TradeComply key>` to a remote server, or needs OAuth | Test the remote-server flow with a scoped key first. TradeComply's tools (68 when this was written) fit under 80; a scoped key also shrinks what the gateway lists. Use separate TradeComply keys for separate gateways (for example estimating and payroll) |
 | MintMCP (renamed Mintive, Oct 2026) | Console flow: Add Connector, remote server, server URL, auth mode (a bearer token if the server needs one), Connect, then add to a Virtual MCP; MintMCP brokers per-user credentials to remote connectors (docs.mintmcp.com / mintmcp.com/docs) | Per-user brokering of a static bearer token in practice; the URL format of a Virtual MCP | Use bearer-token mode. If per-user brokering works, give each member their own TradeComply key so TradeComply's log names each one; otherwise one scoped key per Virtual MCP. Virtual MCP bundles and TradeComply key scopes are two layers: keep both narrow |
 | Barndoor AI | Barndoor markets a governed endpoint with per-tool-call policies and its own per-agent credentials (vendor marketing, self-reported) | Whether custom remote MCP servers such as TradeComply's can be added at all; the endpoint format; any docs | No public documentation was found. Don't plan on Barndoor for TradeComply until Barndoor confirms custom remote servers; then apply the general rules above |
@@ -298,6 +415,7 @@ guardrails), not a network proxy, and is not recommended for production.
 
 ## Open items
 
-In order of value: OAuth 2.1 for `/mcp` (short-lived, audience-bound tokens); pinned, hashed dependencies with an
+In order of value: Client ID Metadata Documents for "Sign in with TradeComply" (fetched through `app/safe_http.py`);
+pinned, hashed dependencies with an
 SBOM; tamper-evident log rows (hash chain) and anomaly alerts; session-to-key binding; a company-wide key lifetime;
 labelling echoed free text in tool output; the same argument fingerprints for web-app tool runs.

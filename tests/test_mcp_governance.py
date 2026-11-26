@@ -425,7 +425,11 @@ def test_on_render_mcp_needs_a_key_and_the_401_says_how_to_get_one(tmp_path, mon
     assert app.state.platform.settings.mcp_require_key is True
     with TestClient(app) as c:
         r = c.post("/mcp", json=INIT, headers=MCP_HEADERS)
-        assert r.status_code == 401 and r.headers["www-authenticate"] == 'Bearer realm="tradecomply"'
+        # The challenge also names the OAuth protected resource metadata (RFC 9728), where MCP clients such as
+        # Claude start "Sign in with TradeComply" (app/oauth.py, tests/test_oauth.py).
+        assert r.status_code == 401 and r.headers["www-authenticate"] == (
+            'Bearer realm="tradecomply", resource_metadata="https://tradecomply.example/.well-known/'
+            'oauth-protected-resource/mcp", scope="tradecomply"')
         err = r.json()["error"]
         assert "API key is required" in err["message"] and "Settings > AI assistant (MCP)" in err["message"]
         assert err["data"]["get_a_key"] == "https://tradecomply.example/#/settings"
@@ -709,7 +713,7 @@ def test_upgrade_from_version_5_keeps_keys_with_the_default_policy(tmp_path):
         else:
             con.execute("update schema_version set version = 5")
     s.migrate()
-    assert s.schema_version() == SCHEMA_VERSION == 6
+    assert s.schema_version() == SCHEMA_VERSION == 7          # 7: OAuth tables (app/oauth.py) run after 6 too
     k = s.get_api_key(tid, kid)
     assert (k["name"], k["scopes"], k["rate_limit_per_min"], k["expires_at"]) == ("old key", None, None, None)
     s.migrate()                                       # running it again changes nothing
@@ -736,7 +740,10 @@ def test_store_key_policy_validation(tmp_path):
 def test_invalid_key_gets_401_with_how_to_get_a_new_one(app):
     with TestClient(app) as c:
         r = c.post("/mcp", json=INIT, headers={**MCP_HEADERS, "authorization": "Bearer tck_not_a_real_key"})
-        assert r.status_code == 401 and r.headers["www-authenticate"] == 'Bearer realm="tradecomply"'
+        # RFC 6750 error="invalid_token" for a token that was sent but is no good. No OAuth discovery hint here:
+        # without APP_URL, on a public host, the server offers no OAuth (app/oauth.py issuer_base)
+        assert r.status_code == 401
+        assert r.headers["www-authenticate"] == 'Bearer realm="tradecomply", error="invalid_token"'
         assert "Invalid, expired or revoked API key" in r.json()["error"]["message"]
         assert r.json()["error"]["data"]["get_a_key"] == "http://testserver/#/settings"
 

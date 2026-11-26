@@ -74,6 +74,7 @@ can't create, change or revoke keys.
 | Auth | `POST /api/auth/signup` `login` `logout` `password`; `GET /api/auth/local?token=` (local mode one-time link) |
 | Account | `GET /api/me`, `GET /api/config`, `PATCH /api/tenant`, `GET/POST /api/users`, `PATCH/DELETE /api/users/{id}`, `GET/POST /api/keys`, `PATCH /api/keys/{id}` (name, tool scope, rate limit, expiry), `DELETE /api/keys/{id}` (revoke), `GET /api/audit`, `GET /api/audit/{id}` |
 | Account data | `GET /api/tenant/export` (owner, signed in: one JSON file with every record of the company, no credentials), `DELETE /api/tenant` (owner, signed in: close the account; body `confirm_company_name`, `password`). See [Company data export and account deletion](#company-data-export-and-account-deletion) |
+| Connected apps (OAuth) | `GET /api/oauth/requests/{id}`, `POST /api/oauth/requests/{id}/approve`, `POST .../deny` (the consent screen, signed in), `GET /api/oauth/connections` (yours; owners see the company's), `DELETE /api/oauth/connections/{id}` (disconnect). Protocol endpoints outside `/api`: `/.well-known/oauth-protected-resource[/mcp]`, `/.well-known/oauth-authorization-server`, `POST /oauth/register`, `GET /oauth/authorize`, `POST /oauth/token`, `POST /oauth/revoke`. See [Add TradeComply to Claude](#add-tradecomply-to-claude-custom-connector) |
 | MCP governance | `GET /api/mcp/audit` (owner: MCP call log, filters, paging), `GET /api/mcp/audit/export?format=csv\|json` (owner), `GET /api/mcp/policy` (access mode, limits, tool categories), `GET /api/mcp/tool-hashes` (SHA-256 of every tool definition, for pinning). See [docs/mcp-security.md](docs/mcp-security.md) |
 | Tools | `GET /api/tools` (name, description, input schema, module), `POST /api/tools/{name}` (JSON body = arguments; runs in-process through `fastmcp.Client(server.mcp)`, writes an audit row) |
 | Records | `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/{id}`, `GET /api/projects/{id}/deadlines`; `GET/POST /api/subs`, `GET/PATCH/DELETE /api/subs/{id}`, `GET /api/subs/{id}/check`, `POST /api/subs/import` (CSV: multipart `file`, `text/csv` body or JSON `{"csv": ...}`); `GET/POST /api/documents`, `POST /api/documents/from_result`, `GET/PATCH/DELETE /api/documents/{id}`; `GET/POST /api/field_logs`, `GET/DELETE /api/field_logs/{id}`, `POST /api/field_logs/sync` (idempotent by `client_uuid`) |
@@ -81,6 +82,43 @@ can't create, change or revoke keys.
 | Billing | `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/webhook` |
 
 Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<host>/api/dashboard`.
+
+### Add TradeComply to Claude (custom connector)
+
+Customers can add TradeComply to Claude (claude.ai, Claude Desktop and the Claude mobile apps) with just the address
+`<APP_URL>/mcp`: no API key and no config file. Claude signs in with TradeComply's own OAuth 2.1 server
+(`app/oauth.py`, following the MCP authorization spec), and the person approves the connection in TradeComply.
+
+- Claude Free, Pro or Max: Customize > Connectors > + Add > Add custom connector, name it TradeComply, paste
+  `https://tradecomply.example/mcp` (your `APP_URL` + `/mcp`), keep the detected settings (OAuth client: Register
+  automatically) and choose Add, then Connect. Claude opens TradeComply: sign in (password or SSO) and choose Approve.
+- Claude Team or Enterprise: an Owner adds it once under Organization settings > Connectors > Add > Custom > Web, then
+  each person chooses Connect and approves it in TradeComply.
+- Claude Code: `claude mcp add --transport http tradecomply https://tradecomply.example/mcp`, then `/mcp` to sign in.
+- The `mcp_client_config` tool and Settings > AI assistant (MCP) give the same steps with this server's address.
+
+The connection acts as the person who approved it: their company and their role, read from their account on every
+call (removing the person or changing their password disconnects it at once), with the default tool scope (every
+read-only tool), the same rate limits, the same subscription check (402) and the same MCP call log rows (marked with
+the connection). Each person sees their connections under Settings > Connected apps and can disconnect them; owners
+see and can disconnect everyone's. OAuth access tokens work on `/mcp` only, never on `/api`.
+
+What it needs from the server:
+- A stable public https address in `APP_URL` (or Render's `RENDER_EXTERNAL_URL`, always set on Render): it is the
+  OAuth issuer and the resource Claude checks, and must be exactly the address customers paste. Without it (or with
+  an `http://` one on a public host) the server offers no OAuth at all, like SSO: the discovery documents answer
+  404, `/oauth/*` 503, and the `/mcp` 401 names no sign-in. Only a loopback address (`http://127.0.0.1`, a
+  developer's machine) works without it. Claude calls `/mcp` and the OAuth endpoints from Anthropic's servers, so a
+  laptop install can't be added as a connector.
+- `/mcp` must answer 401 without a token, which is what starts the sign-in: that is the default on Render. With
+  `MCP_PUBLIC_DEMO=1` (or off Render without `MCP_REQUIRE_KEY=1`) anonymous calls succeed and Claude connects without
+  signing in, so no company data is reachable that way.
+- `https://claude.ai` and `https://claude.com` are allowed as `Origin` on `/mcp` (whether Claude's server-side calls
+  carry an Origin header at all was not confirmed when this was written). If a connector still fails with 403
+  "Origin not allowed", the server log names the refused origin: add it to `MCP_ALLOWED_ORIGINS`.
+
+Protocol details, limits and what was checked against which spec: [docs/mcp-security.md](docs/mcp-security.md)
+("Sign in with TradeComply").
 
 ### Company data export and account deletion
 
@@ -153,14 +191,15 @@ operator or of a customer; ask an attorney.
 | `SECRET_KEY` | generated: in the database with Postgres, else in `DATA_DIR/secret_key` | Signs session cookies, CSRF tokens, calendar links and tool results. At least 32 characters (shorter values are refused at startup). Set it on Render (render.yaml generates one), use Postgres, or keep `DATA_DIR` on a persistent disk so sessions survive deploys |
 | `MCP_REQUIRE_KEY` | off, but on Render a key is required anyway | `1`: `/mcp` always needs `Authorization: Bearer <API key>` of an active or trialing account. On Render (`RENDER` is set) `/mcp` needs a key unless `MCP_PUBLIC_DEMO=1`; `MCP_REQUIRE_KEY=0` alone no longer opens it there (a startup warning says so). Elsewhere (a laptop, local mode) off means anonymous calls are allowed |
 | `MCP_PUBLIC_DEMO` | off | `1`: run `/mcp` as an anonymous public demo even on Render: every tool free to anyone, audited and throttled (60 tool calls/min per IP, 300/min in total). Ignored when `MCP_REQUIRE_KEY=1`. **Changing to the new default (no `MCP_PUBLIC_DEMO`) changes the live behavior of a Render deploy: anonymous `/mcp` callers get 401** |
-| `MCP_ALLOWED_ORIGINS` | unset | Comma-separated browser origins (`https://app.example.com`) allowed to call `/mcp` besides this server's own; a request with any other `Origin` header gets 403. Requests without `Origin` (every non-browser MCP client) are never refused for that. `*` turns the check off |
+| `MCP_ALLOWED_ORIGINS` | unset | Comma-separated browser origins (`https://app.example.com`) allowed to call `/mcp` besides this server's own and Claude's (`https://claude.ai`, `https://claude.com`); a request with any other `Origin` header gets 403 (and a server log line naming it). Requests without `Origin` (every non-browser MCP client) are never refused for that. `*` turns the check off |
 | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` | unset | Enable checkout and the billing portal. The price is the $1,000/month recurring price from the Stripe dashboard |
 | `STRIPE_WEBHOOK_SECRET` | unset | Verifies `/api/billing/webhook` (send `checkout.session.completed`, `customer.subscription.updated`/`deleted`, `invoice.payment_failed`, `invoice.paid`) |
-| `APP_URL` | `RENDER_EXTERNAL_URL` or request host | Public base URL for Stripe return links, the MCP URL and calendar links, OAuth redirect URIs (`<APP_URL>/api/integrations/<provider>/oauth/callback`), links in Slack/Teams alerts, and the TradeComply address the `mcp_client_config` tool puts in generated assistant configs (over stdio with no `APP_URL` the caller must pass `tradecomply_mcp_url`). Set it before registering OAuth/SSO redirect URIs or handing out MCP and calendar links |
+| `APP_URL` | `RENDER_EXTERNAL_URL` or request host | Public base URL for Stripe return links, the MCP URL and calendar links, the OAuth issuer and protected resource of "Sign in with TradeComply" (`<APP_URL>`, `<APP_URL>/mcp`: changing it disconnects every connected app; it must be https, and without it connected apps are off except on a loopback address), OAuth redirect URIs (`<APP_URL>/api/integrations/<provider>/oauth/callback`), links in Slack/Teams alerts, and the TradeComply address the `mcp_client_config` tool puts in generated assistant configs (over stdio with no `APP_URL` the caller must pass `tradecomply_mcp_url`). Set it before registering OAuth/SSO redirect URIs or handing out MCP and calendar links |
 | `SUPPORT_EMAIL`, `SUPPORT_URL` | unset | The operator's support contact, shown to customers where they need help from whoever runs the server (billing not set up, an integration not turned on) and returned as `support_contact` by `GET /api/config`. Unset: the app says "ask whoever runs this TradeComply server". Use a business address; malformed values are ignored with a warning |
 | `INTEGRATIONS_KEY` | derived from `SECRET_KEY` (HKDF) | Base64 of 32 random bytes: the AES-256-GCM key for integration secrets at rest (OAuth tokens, API keys, webhook URLs). render.yaml generates one. Older keys go in `INTEGRATIONS_KEY_PREVIOUS` (comma-separated) during a rotation; then run `python -m app.crypto rotate`. See [docs/integrations-dev.md](docs/integrations-dev.md) |
 | `EVENTS_WORKER` | on | `0` turns off the background thread that delivers integration events (webhooks, connectors) |
 | Connector app credentials (e.g. `PROCORE_CLIENT_ID`) | unset | Each connector lists its own `required_env`; it shows as "not set up on this server" until they are set |
+| `TRUSTED_PROXY_HOPS` | `0` | How many proxies in front of the app each append the address they saw to `X-Forwarded-For`. `0`: per-IP limits use the first entry, which a client can set. `N`: the N-th entry from the right, which it can't. How Render fills the header is not confirmed, so check (for example log the header of a request you send with a made-up `X-Forwarded-For`) before setting it: a wrong value makes many people share one address's limits |
 | `COOKIE_SECURE` | auto | `1` forces the Secure cookie flag (it is set automatically when the request is https / `X-Forwarded-Proto: https`) |
 | `CSLB_AUTO_DOWNLOAD` | off | `1`: build CSLB data from the bundled snapshot on boot and refresh it daily |
 | `LICENSE_DB` | `data/cslb.sqlite` | CSLB SQLite path |
@@ -255,8 +294,12 @@ calendar and login tokens are redacted from the access log; local mode rejects a
 arguments, never the arguments, and their activity-log rows keep only the argument names and that hash; rows are
 written after the response has been sent. Tool runs from the web app (`/api/tools/{name}`) keep arguments in
 summarized form (long strings such as a payroll CSV are stored as length + hash). Anonymous rows are capped at the
-newest 50,000 in each log. MCP governance (scopes, limits, Origin check, OWASP MCP Top 10 self-assessment):
-[docs/mcp-security.md](docs/mcp-security.md).
+newest 50,000 in each log. Connected apps (OAuth for Claude and other MCP clients): PKCE S256 required, single-use
+60-second codes, access tokens for 1 hour, rotating refresh tokens with reuse detection, only SHA-256 hashes stored,
+tokens bound to `<APP_URL>/mcp`, the consent screen shows the address the app returns to (plain-ASCII hosts only, so
+a look-alike domain can't pass for another), and approving needs the person's own session (never an API key) in the
+browser that started the sign-in. MCP governance (scopes, limits, Origin check, OAuth, OWASP MCP Top 10
+self-assessment): [docs/mcp-security.md](docs/mcp-security.md).
 
 ### Known limits
 
@@ -264,8 +307,10 @@ newest 50,000 in each log. MCP governance (scopes, limits, Origin check, OWASP M
   (`DATABASE_URL`), but scaling out also needs shared rate limits (e.g. Redis). Database calls run on worker
   threads (up to `DATABASE_POOL_MAX` connections at once), but each is still a network round trip, so keep Postgres
   in or near the service's region.
-- Per-IP limits use the first `X-Forwarded-For` entry, which a client can spoof; per-email and global limits back
-  them up. Sessions are stateless signed cookies (revoked on logout); API keys expire only when given an expiry date.
+- Per-IP limits use the first `X-Forwarded-For` entry, which a client can spoof, unless `TRUSTED_PROXY_HOPS` is set;
+  per-email and global limits back them up. (OAuth's per-IP limits key on the whole chain, so a caller can't aim
+  them at someone else's address, such as Claude's; it can still bypass them, and then one caller can use up the
+  global cap of 2,000 app registrations an hour, which blocks new connections until it resets.) Sessions are stateless signed cookies (revoked on logout); API keys expire only when given an expiry date.
 - Team invites set "must change password", but the server doesn't force the change before other use.
 - No email: team invites show a temporary password to share; there is no password-reset email yet (an owner can
   remove and re-invite a user).

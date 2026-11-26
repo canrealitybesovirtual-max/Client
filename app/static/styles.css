@@ -294,6 +294,23 @@ table.data tr:last-child td { border-bottom: 0; }
 .auth-hero { text-align: center; margin-bottom: 1rem; }
 .auth-hero h1 { margin-bottom: .25rem; }
 .auth-hero p { color: var(--muted); margin: 0; }
+.auth-or { text-align: center; margin: .6rem 0; }
+.auth-or + .btn { margin-bottom: .75rem; }
+[tabindex="-1"]:focus { outline: none; }      /* headings that take the focus when a step changes */
+
+/* ---------- connect an app (OAuth consent), connected apps, Claude connector steps */
+.connect-app { border: 1px solid #bcd3f1; background: var(--blue-soft); border-radius: 10px; padding: .75rem 1rem; margin: 0 0 1rem; }
+.connect-app p { margin: 0; }
+.connect-app .connect-host { font-size: 1.35rem; font-weight: 700; color: var(--navy); margin: .1rem 0 .35rem; overflow-wrap: anywhere; }
+.connect-name { overflow-wrap: anywhere; }
+.connect-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0 .75rem; }
+.connect-actions .btn { flex: 1 1 9rem; }
+.connect-other { margin: 0; }
+.connect-other .btn.ghost { padding-inline: .35rem; }
+ol.steps { margin: 0 0 .75rem; padding-left: 1.4rem; }
+ol.steps li { overflow-wrap: anywhere; }
+ol.steps li + li { margin-top: .5rem; }
+ol.steps .copy-box { margin: .4rem 0 0; }
 .value-list { margin: .5rem 0 0; padding-left: 1.2rem; color: var(--ink-2); font-size: .92rem; }
 
 dialog { border: 0; border-radius: var(--radius); padding: 0; width: min(640px, calc(100vw - 1.5rem)); max-height: calc(100vh - 2rem); box-shadow: 0 10px 40px rgba(0,0,0,.25); }

@@ -552,6 +552,7 @@ def _end_non_owner_sessions(store, tenant_id: str) -> int:
         full = store.user_by_id(u["id"])
         if full and full["tenant_id"] == tenant_id:
             store.update_user(tenant_id, u["id"], session_gen=int(full["session_gen"]) + 1)
+            store.revoke_user_oauth_grants(tenant_id, u["id"], "sso_required")    # their apps sign in again, with SSO
             n += 1
     return n
 

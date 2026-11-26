@@ -4,8 +4,9 @@ One app, three parts:
   /api/*   FastAPI JSON API (accounts, tools, projects, subs, documents, field logs, dashboard, billing,
            integrations: /api/integrations, see docs/integrations-dev.md)
   /        the offline-capable web app (app/static)
-  /mcp     the FastMCP server from server.py (streamable HTTP), behind an API-key gate, per-key tool scopes and rate
-           limits, and the MCP call log (app/auth.py MCPGate, app/mcp_governance.py, docs/mcp-security.md)
+  /mcp     the FastMCP server from server.py (streamable HTTP), behind an API-key / OAuth gate, per-key tool scopes
+           and rate limits, and the MCP call log (app/auth.py MCPGate, app/mcp_governance.py, docs/mcp-security.md)
+  /oauth/*, /.well-known/oauth-*   "Sign in with TradeComply" for MCP clients such as Claude (app/oauth.py)
   /health  health check
 The MCP app is created with path="/mcp" and mounted at the root (after every other route), so the endpoint is
 exactly /mcp with no redirect, and custom routes registered on the MCP server keep working. Its lifespan (the MCP
@@ -25,7 +26,7 @@ from starlette.staticfiles import StaticFiles
 
 from tradecomply import cslb
 
-from . import account, api, auth, billing, connectors, integrations_api, mcp_governance, sso
+from . import account, api, auth, billing, connectors, integrations_api, mcp_governance, oauth, sso
 from .connectors import alerts, calendar_feed, docusign, procore, schedule_import, splunk, twilio_sms
 from .config import Platform, Settings
 
@@ -111,16 +112,19 @@ class GZipPublic:
 
 class RedactTokens(logging.Filter):
     """Keeps secrets that travel in URLs (private calendar feed links, the local one-time login link, the OAuth
-    authorization code and state on /api/integrations/*/oauth/callback) out of the access log: `token=...` becomes
-    `token=[redacted]`."""
+    authorization code and state on /api/integrations/*/oauth/callback, and a pending sign-in request's id in the
+    path of /api/oauth/requests/<id>) out of the access log: `token=...` becomes `token=[redacted]`."""
     PATTERN = re.compile(r"((?:^|[?&])(?:token|key|api_key|access_token|code|state)=)[^&\s\"]+", re.I)
+    PATH = re.compile(r"(/api/oauth/requests/)[^/?\s\"]+")
+
+    def _redact(self, text: str) -> str:
+        return self.PATH.sub(r"\1[redacted]", self.PATTERN.sub(r"\1[redacted]", text))
 
     def filter(self, record):
         if isinstance(record.args, tuple) and record.args:
-            record.args = tuple(self.PATTERN.sub(r"\1[redacted]", a) if isinstance(a, str) else a
-                                for a in record.args)
+            record.args = tuple(self._redact(a) if isinstance(a, str) else a for a in record.args)
         elif isinstance(record.msg, str):
-            record.msg = self.PATTERN.sub(r"\1[redacted]", record.msg)
+            record.msg = self._redact(record.msg)
         return True
 
 
@@ -141,6 +145,30 @@ def _static(name: str, media_type: str | None = None, cache: str = "no-cache"):
     async def handler():
         return FileResponse(path, media_type=media_type, headers={"Cache-Control": cache})
     return handler
+
+
+class StaticNoCache(StaticFiles):
+    """/static/* with Cache-Control: no-cache. Without it a browser treats the files as fresh for a while after
+    they change (heuristic caching from Last-Modified), so a new release's service worker would copy the old
+    app.js into its cache."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers.setdefault("cache-control", "no-cache")
+        return response
+
+
+SHELL_ASSETS = {"app.js": "text/javascript", "styles.css": "text/css"}
+
+
+async def _release_asset(release: str, name: str):
+    """The app shell's script and styles under a per-release path (/static/v<N>/app.js, the path index.html and
+    sw.js name): an earlier release's service worker serves its cached /static/app.js (ignoring any ?query), but
+    has nothing cached for a path it never saw, so the first page load after a deploy gets this release's code."""
+    if not release.isdigit() or len(release) > 6 or name not in SHELL_ASSETS:
+        raise HTTPException(404, "Not Found")
+    return FileResponse(os.path.join(STATIC_DIR, name), media_type=SHELL_ASSETS[name],
+                        headers={"Cache-Control": "no-cache"})
 
 
 def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
@@ -196,6 +224,8 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
     app.include_router(sso.router)
     app.include_router(integrations_api.router)
     app.include_router(mcp_governance.router)
+    app.include_router(oauth.router)       # discovery, /oauth/register, /authorize, /token, /revoke (app/oauth.py)
+    app.include_router(oauth.api)          # /api/oauth: the consent screen and connected apps
 
     @app.get("/health", include_in_schema=False)
     async def health():
@@ -220,7 +250,8 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
                       include_in_schema=False)
     app.add_api_route("/icon.svg", _static("icon.svg", "image/svg+xml", "public, max-age=86400"),
                       include_in_schema=False)
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    app.add_api_route("/static/v{release}/{name}", _release_asset, include_in_schema=False)
+    app.mount("/static", StaticNoCache(directory=STATIC_DIR), name="static")
     app.mount("/", auth.MCPGate(mcp_app, platform))        # last: /mcp plus the MCP server's custom routes
     return app
 

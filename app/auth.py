@@ -7,6 +7,8 @@
   POST/PUT/PATCH/DELETE must echo it in the X-CSRF-Token header. Bearer (API key) requests don't use cookies, so they
   are exempt.
 - API keys: shown once; only the SHA-256 hash is stored. Usable as `Authorization: Bearer <key>` on /api and /mcp.
+- OAuth access tokens (app/oauth.py, "Sign in with TradeComply" for apps such as Claude): `Bearer tco_...` on /mcp
+  only (their audience is <base>/mcp), acting as the person who approved the app, with that person's current role.
 - Nothing here logs a password, cookie or key.
 """
 import base64
@@ -235,7 +237,7 @@ def hash_key(plain: str) -> str:
 class Principal:
     tenant_id: str
     role: str
-    via: str                     # "cookie" | "key"
+    via: str                     # "cookie" | "key" | "oauth" (an app connected with OAuth, on /mcp only)
     user_id: int | None = None
     email: str | None = None
     key_id: int | None = None
@@ -243,9 +245,13 @@ class Principal:
     must_change_password: bool = False
     scopes: dict | None = None        # API keys only: tool scope (None = all read-only tools; mcp_governance.py)
     rate_limit: int | None = None     # API keys only: tool calls per minute (None = the platform default)
+    grant_id: int | None = None       # OAuth only: the connection (oauth_grants row) the access token belongs to
+    client_name: str | None = None    # OAuth only: the app's name as it registered itself
 
     @property
     def label(self) -> str:
+        if self.via == "oauth":
+            return f"{self.email} via {(self.client_name or 'an app')[:60]}"
         return self.email or f"api key {self.key_prefix}…"
 
 
@@ -253,19 +259,54 @@ def platform_of(request: Request):
     return request.app.state.platform
 
 
+def forwarded_ip(settings, fwd: str | None, peer: str) -> str:
+    """The caller's address. Hosted, the app sits behind a proxy that adds to X-Forwarded-For. With
+    TRUSTED_PROXY_HOPS = N (the proxies in front of the app that each append the address they saw), it is the N-th
+    entry from the right, which no client can set; a shorter header didn't pass through them, so the peer is used.
+    With 0 (the default: how Render fills the header is not confirmed) it is the first entry, which a client can
+    set itself, so per-IP limits are best effort; per-email and global limits back them up, and OAuth's per-IP
+    limits use ip_key. Locally there is no proxy, so the header is ignored."""
+    if not fwd or settings.local_mode:
+        return peer
+    hops, n = fwd.split(","), settings.trusted_proxy_hops
+    if not n:
+        return hops[0].strip()[:64]
+    return hops[-n].strip()[:64] if len(hops) >= n else peer
+
+
 def client_ip(request: Request) -> str:
-    """Hosted on Render the app sits behind a proxy that sets X-Forwarded-For (the first entry is the client as the
-    proxy saw it, but a client can prepend its own value, so per-IP limits are best effort; per-email and global
-    limits back them up). Locally there is no proxy, so the header is ignored."""
-    fwd = request.headers.get("x-forwarded-for")
-    if fwd and not platform_of(request).settings.local_mode:
-        return fwd.split(",")[0].strip()[:64]
-    return request.client.host if request.client else "unknown"
+    return forwarded_ip(platform_of(request).settings, request.headers.get("x-forwarded-for"),
+                        request.client.host if request.client else "unknown")
+
+
+def ip_key(request: Request) -> str:
+    """The per-IP rate-limit key for limits that a caller must not be able to aim at someone else (OAuth: Claude's
+    calls for every customer come from a few Anthropic addresses). With TRUSTED_PROXY_HOPS, the trusted address.
+    Otherwise the whole X-Forwarded-For chain: a caller chooses its first entries, not the ones its proxies append,
+    so a forged chain never equals another caller's. (It can still start a fresh bucket; the global caps bound that.)"""
+    settings, fwd = platform_of(request).settings, request.headers.get("x-forwarded-for")
+    if settings.trusted_proxy_hops or settings.local_mode or not fwd:
+        return client_ip(request)
+    return ",".join(h.strip() for h in fwd.split(","))[-256:]
 
 
 def is_https(request: Request) -> bool:
     return (request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").split(",")[0] == "https"
             or platform_of(request).settings.cookie_secure)
+
+
+def public_base(settings, headers, scheme: str | None) -> str:
+    """This server's public address without a trailing slash: APP_URL (or Render's RENDER_EXTERNAL_URL) when set,
+    else from the request (X-Forwarded-Host or Host; https when the request, the proxy or COOKIE_SECURE says so).
+    `headers` is a Starlette Headers or the /mcp gate's lowercase dict. The OAuth issuer, the protected resource
+    (<base>/mcp), the /mcp 401 challenge and the links in the app all come from here, so they always agree."""
+    if settings.app_url:
+        return settings.app_url
+    host = (headers.get("x-forwarded-host") or headers.get("host") or "").split(",")[0].strip()
+    host = re.sub(r"[^A-Za-z0-9.:\[\]-]", "", host)[:255] or "localhost"    # nothing that breaks out of a header
+    https = (scheme == "https" or settings.cookie_secure
+             or (headers.get("x-forwarded-proto") or "").split(",")[0].strip() == "https")
+    return f"{'https' if https else 'http'}://{host}"
 
 
 def principal_from_key(platform, plain: str) -> Principal | None:
@@ -500,6 +541,10 @@ async def change_password(body: PasswordIn, request: Request, p: Principal = Dep
     pw_hash = await anyio.to_thread.run_sync(hash_password, body.new_password)
     user = await anyio.to_thread.run_sync(lambda: platform.store.update_user(
         p.tenant_id, p.user_id, pw_hash=pw_hash, session_gen=user["session_gen"] + 1, must_change_password=0))
+    # Apps this person connected (app/oauth.py) are disconnected too. (Their grants are also bound to the session
+    # counter just bumped, so they would stop working anyway; this records it.)
+    await anyio.to_thread.run_sync(platform.store.revoke_user_oauth_grants, p.tenant_id, p.user_id,
+                                 "password_changed")
     resp = JSONResponse({"ok": True})
     set_session(resp, request, user)          # this device stays logged in, every other session ends
     return resp
@@ -574,11 +619,8 @@ def _responses_from(body: bytes, content_type: str) -> dict:
 
 
 def _scope_ip(scope, headers: dict, platform) -> str:
-    fwd = headers.get("x-forwarded-for")
-    if fwd and not platform.settings.local_mode:
-        return fwd.split(",")[0].strip()[:64]
     client = scope.get("client")
-    return client[0] if client else "unknown"
+    return forwarded_ip(platform.settings, headers.get("x-forwarded-for"), client[0] if client else "unknown")
 
 
 def _call_params(call: dict) -> tuple[str, object]:
@@ -591,13 +633,15 @@ def _call_params(call: dict) -> tuple[str, object]:
 class MCPGate:
     """Wraps the FastMCP HTTP app. On /mcp (see docs/mcp-security.md and app/mcp_governance.py):
 
-    - Origin: a request carrying an Origin header from another site gets 403. Non-browser MCP clients send none
-      and are not affected.
-    - API key: required when settings.mcp_require_key (on Render unless MCP_PUBLIC_DEMO=1), optional otherwise. An
-      invalid, expired or revoked key gets 401, a company whose trial or subscription ended 402.
-    - tools/call: rate limits first (per key: its own limit or 600/min; per company: 1,200/min over all its keys;
-      anonymous: 60/min per IP and 300/min in total), then the key's tool scope: a call outside it gets a JSON-RPC
-      error and never reaches the tool.
+    - Origin: a request carrying an Origin header from another site (not this server's, Claude's or
+      MCP_ALLOWED_ORIGINS) gets 403, logged. Non-browser MCP clients send none and are not affected.
+    - API key or OAuth access token (app/oauth.py): required when settings.mcp_require_key (on Render unless
+      MCP_PUBLIC_DEMO=1), optional otherwise. An invalid, expired or revoked one gets 401 with a WWW-Authenticate
+      challenge naming the protected resource metadata (RFC 9728), which is how MCP clients such as Claude find
+      the sign-in; a company whose trial or subscription ended gets 402.
+    - tools/call: rate limits first (per key or connected app: its own limit or 600/min; per company: 1,200/min
+      over all of them; anonymous: 60/min per IP and 300/min in total), then the key's tool scope (a connected app
+      has the default scope): a call outside it gets a JSON-RPC error and never reaches the tool.
     - tools/list: a key whose scope is narrower than every tool sees only the tools it may call.
     - audit: one mcp_audit_log row per call (ok / error / denied / rate_limited; the SHA-256 of the arguments, never
       the arguments) plus the activity-log row for calls that ran, written after the response has been sent.
@@ -628,46 +672,67 @@ class MCPGate:
             error["data"] = data
         await self._send_json(send, status, {"jsonrpc": "2.0", "id": None, "error": error}, extra_headers)
 
-    def _key_help(self, headers: dict, scope: dict) -> dict:
-        s = self.platform.settings
-        base = s.app_url
-        if not base:
-            proto = (headers.get("x-forwarded-proto") or "").split(",")[0].strip() if not s.local_mode else ""
-            base = f"{proto if proto in ('http', 'https') else scope.get('scheme') or 'http'}://" \
-                   f"{headers.get('host') or 'localhost'}"
-        return {"get_a_key": f"{base}/#/settings", "header": "Authorization: Bearer <API key>",
-                "where": "TradeComply > Settings > AI assistant (MCP) > Create API key (owner or office user)"}
+    @staticmethod
+    def _key_help(base: str, issuer: str | None) -> dict:
+        out = {"get_a_key": f"{base}/#/settings", "header": "Authorization: Bearer <API key>",
+               "where": "TradeComply > Settings > AI assistant (MCP) > Create API key (owner or office user)"}
+        if issuer:
+            out["sign_in"] = (f"MCP clients that support OAuth (Claude custom connectors) can sign in instead: add "
+                              f"{issuer}/mcp and approve it in TradeComply.")
+        return out
+
+    @staticmethod
+    def _challenge(issuer: str | None, error: str | None = None) -> list:
+        """RFC 6750 / RFC 9728: where the protected resource metadata is (MCP clients start OAuth from here). Without
+        an OAuth issuer (no APP_URL: app/oauth.py issuer_base) it names none, so no client tries to sign in."""
+        value = 'Bearer realm="tradecomply"' + (
+            f', resource_metadata="{issuer}/.well-known/oauth-protected-resource/mcp", scope="tradecomply"'
+            if issuer else "") + (f', error="{error}"' if error else "")
+        return [(b"www-authenticate", value.encode("latin-1"))]
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or not _is_mcp(scope.get("path", "")):
             return await self.app(scope, receive, send)
-        from . import mcp_governance as gov     # local imports: both modules import this one
+        from . import mcp_governance as gov     # local imports: these modules import this one
+        from . import oauth
         from .billing import entitlement
         platform = self.platform
         headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
-        www_auth = [(b"www-authenticate", b'Bearer realm="tradecomply"')]
         if not gov.origin_allowed(platform, headers, scope):
+            gov.log_refused_origin(platform, headers.get("origin"))
             return await self._reply(send, 403, "Origin not allowed: web pages on other sites can't call this MCP "
                                                 "server. MCP clients that send no Origin header are not affected.")
+        base = public_base(platform.settings, headers, scope.get("scheme"))
+        issuer = oauth.issuer_base(platform.settings, headers, scope.get("scheme"))
         token = bearer(headers)
         principal = None
         if token:
+            is_oauth = token.startswith(oauth.ACCESS_PREFIX)
+            resource = oauth.resource_of(issuer) if issuer else None
+
             def lookup():
-                p = principal_from_key(platform, token)
+                if is_oauth:
+                    p = oauth.principal_from_token(platform, token, resource) if resource else None
+                else:
+                    p = principal_from_key(platform, token)
                 return p, (platform.store.get_tenant(p.tenant_id) if p else None)
             principal, tenant = await anyio.to_thread.run_sync(lookup)
             if principal is None:
-                return await self._reply(send, 401, "Invalid, expired or revoked API key. Create a new key in "
-                                                    "TradeComply under Settings > AI assistant (MCP).", www_auth,
-                                         self._key_help(headers, scope))
+                return await self._reply(
+                    send, 401, "Invalid, expired or revoked access token: the app should refresh it or sign in to "
+                               "TradeComply again." if is_oauth else
+                               "Invalid, expired or revoked API key. Create a new key in TradeComply under Settings > "
+                               "AI assistant (MCP).", self._challenge(issuer, "invalid_token"),
+                    self._key_help(base, issuer))
             if not entitlement(tenant)["ok"]:
                 return await self._reply(send, 402, "Subscription required: this account's trial or subscription "
                                                     "has ended. Subscribe in Settings > Billing.")
         elif platform.settings.mcp_require_key:
             return await self._reply(
-                send, 401, "An API key is required for this MCP server. An owner or office user creates one in "
-                           "TradeComply under Settings > AI assistant (MCP) > Create API key, and the AI assistant "
-                           "sends it as 'Authorization: Bearer <key>'.", www_auth, self._key_help(headers, scope))
+                send, 401, "An API key is required for this MCP server, unless the MCP client signs in with OAuth "
+                           "(a Claude custom connector does). An owner or office user creates a key in TradeComply "
+                           "under Settings > AI assistant (MCP) > Create API key, and the AI assistant sends it as "
+                           "'Authorization: Bearer <key>'.", self._challenge(issuer), self._key_help(base, issuer))
         scope.setdefault("state", {})["tc_principal"] = principal
 
         if scope.get("method") != "POST":
@@ -718,11 +783,14 @@ class MCPGate:
         ip = _scope_ip(scope, headers, platform)
         tenant_id = principal.tenant_id if principal else None
         key_id = principal.key_id if principal else None
+        grant_id = principal.grant_id if principal else None
+        caller = "connected app" if grant_id else "API key"
 
         def entry(call: dict, status: str, duration_ms=None) -> dict:
             name, args = _call_params(call)
-            return {"tenant_id": tenant_id, "api_key_id": key_id, "tool": name, "status": status, "ip": ip,
-                    "args_sha256": gov.args_sha256(args if args is not None else {}), "duration_ms": duration_ms}
+            return {"tenant_id": tenant_id, "api_key_id": key_id, "oauth_grant_id": grant_id, "tool": name,
+                    "status": status, "ip": ip, "args_sha256": gov.args_sha256(args if args is not None else {}),
+                    "duration_ms": duration_ms}
 
         async def record(entries, activity=()):
             with anyio.CancelScope(shield=True):      # a client that hangs up must not cost the audit row
@@ -730,7 +798,8 @@ class MCPGate:
 
         if calls:
             if principal:
-                limits = [(platform.mcp_key_limiter, f"key|{key_id}", principal.rate_limit),
+                limits = [(platform.mcp_key_limiter, f"oauth|{grant_id}" if grant_id else f"key|{key_id}",
+                           principal.rate_limit),
                           (platform.mcp_tenant_limiter, f"tenant|{tenant_id}", None)]
             else:
                 limits = [(platform.mcp_anon_limiter, f"ip|{ip}", None),
@@ -751,10 +820,15 @@ class MCPGate:
                 errors = []
                 for c in calls:
                     name = _call_params(c)[0]
-                    msg = (f"This API key is not allowed to use the tool {name!r}. An owner or office user can "
-                           "change the key's tools in TradeComply under Settings > AI assistant (MCP) > API keys."
-                           if c in refused else "Not run: another tool call in this request is not allowed for "
-                                                "this API key.")
+                    if c not in refused:
+                        msg = f"Not run: another tool call in this request is not allowed for this {caller}."
+                    elif grant_id:
+                        msg = (f"Apps connected with TradeComply sign-in can use the read-only tools; {name!r} is "
+                               "not one. Use an API key that an owner or office user allowed to use it.")
+                    else:
+                        msg = (f"This API key is not allowed to use the tool {name!r}. An owner or office user can "
+                               "change the key's tools in TradeComply under Settings > AI assistant (MCP) > API "
+                               "keys.")
                     if principal is None:
                         msg = f"The tool {name!r} needs an API key that is allowed to use it."
                     errors.append({"jsonrpc": "2.0", "id": c.get("id"), "error": {

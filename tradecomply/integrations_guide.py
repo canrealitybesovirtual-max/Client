@@ -17,6 +17,7 @@ from collections import Counter
 from contextvars import ContextVar
 from functools import lru_cache
 from typing import Annotated, Optional
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field
 
@@ -237,8 +238,11 @@ class McpClientConfigResult(BaseModel):
     claude_code_mcp_json_text: str
     claude_code_commands: list[str]
     claude_desktop_config: dict = Field(description="TradeComply for claude_desktop_config.json (via mcp-remote)")
-    claude_desktop_connectors: list[dict] = Field(description="Add each in Claude: Settings > Connectors > Add "
-                                                              "custom connector")
+    claude_desktop_connectors: list[dict] = Field(description="Add each in Claude: Customize > Connectors > Add > "
+                                                              "Add custom connector")
+    claude_connector: dict = Field(description="TradeComply itself as a Claude custom connector (claude.ai, "
+                                               "Claude Desktop and the mobile apps): no API key, the person signs "
+                                               "in to TradeComply and approves the connection")
     servers: list[ConfiguredServer]
     env_vars: list[EnvVar]
     skipped: list[SkippedSelection]
@@ -539,16 +543,47 @@ def mcp_client_config(ids: list[str], tradecomply_mcp_url: str | None = None, *,
         "TradeComply's MCP tools are read-only. Other products' servers may be able to change data in those products; "
         "start with read-only access where the vendor offers it.",
         "Claude Desktop: paste claude_desktop_config into claude_desktop_config.json (Settings > Developer > Edit "
-        "config; needs Node.js) and add the other products as custom connectors (Settings > Connectors > Add custom "
-        "connector).",
+        "config; needs Node.js) and add the other products as custom connectors (Customize > Connectors > Add > Add "
+        "custom connector). Or skip the config file and the API key: add TradeComply itself as a custom connector "
+        "(claude_connector).",
     ]
     if not picks:
         notes.insert(0, "Only TradeComply was added: none of the selected products has a confirmed remote MCP endpoint.")
     return McpClientConfigResult(
         claude_code_mcp_json=mcp_json, claude_code_mcp_json_text=json.dumps(mcp_json, indent=2),
         claude_code_commands=commands, claude_desktop_config=desktop, claude_desktop_connectors=connectors,
+        claude_connector=claude_connector(tc_url),
         servers=configured, env_vars=[EnvVar(name=k, used_for=v) for k, v in env.items()], skipped=skipped,
         also_available=also, notes=notes, checked_on=load_catalog()["checked_on"])
+
+
+def claude_connector(tc_url: str) -> dict:
+    """How to add TradeComply to Claude as a custom connector (Claude's help pages "Get started with custom
+    connectors using remote MCP" and "Add an unlisted connector", read 2026-11-26). Claude signs in with
+    TradeComply's OAuth server (app/oauth.py): it registers itself, the person approves in TradeComply, and the
+    connection acts as that person. Claude calls the server from Anthropic's cloud, so only a public https address
+    works."""
+    public = tc_url.startswith("https://") and urlsplit(tc_url).hostname not in ("localhost", "127.0.0.1", "::1")
+    return {
+        "name": "TradeComply", "url": tc_url, "works": public,
+        "sign_in": "Sign in with TradeComply (OAuth). No API key; keep the automatically detected settings "
+                   "(OAuth client: Register automatically).",
+        "steps": ["In Claude, open Customize > Connectors and choose + Add > Add custom connector.",
+                  f"Name it TradeComply, paste {tc_url} as the URL and choose Add.",
+                  "Choose Connect. Sign in to TradeComply if asked, check that the app returns to claude.ai, and "
+                  "choose Approve."],
+        "team_steps": ["Claude Team or Enterprise: an Owner adds it once under Organization settings > Connectors > "
+                       "Add > Custom > Web, with the same URL.",
+                       "Then each person chooses Connect next to TradeComply in Customize > Connectors and approves "
+                       "it in TradeComply."],
+        "claude_code_command": f"claude mcp add --transport http tradecomply {tc_url}   (then /mcp to sign in)",
+        "notes": ["The connection acts as the person who approved it, with their role, and can use TradeComply's "
+                  "read-only tools. Disconnect it in TradeComply (Settings > Connected apps) or remove it in Claude.",
+                  "The same connector works in Claude on the web, Claude Desktop and the Claude mobile apps."]
+                 + ([] if public else ["This address is not a public https:// address. Claude connects from "
+                                       "Anthropic's servers, so a custom connector can't reach it: use the API key "
+                                       "settings above instead."]),
+    }
 
 
 # ---------------------------------------------------------------------------- MCP registration
@@ -593,7 +628,8 @@ def register(mcp) -> None:
         MCP servers in one AI assistant.
 
         Returns claude_code_mcp_json (and its text) for a Claude Code .mcp.json, matching `claude mcp add`
-        commands, a Claude Desktop config for TradeComply plus the custom connectors to add for the others, the
+        commands, a Claude Desktop config for TradeComply plus the custom connectors to add for the others,
+        claude_connector (steps to add TradeComply itself to Claude as a custom connector: sign in, no key), the
         environment variables to set (API keys stay in ${VAR} references, never in the file), and per server
         whether sign-in is needed. Only fixed endpoints confirmed in the vendor's own docs are added; products whose
         address is specific to the customer's account, that run locally, or that have no confirmed endpoint are in

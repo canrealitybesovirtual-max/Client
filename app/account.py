@@ -79,8 +79,9 @@ SECTIONS = (
     ("field_logs", "field_logs", "Toolbox talks, inspections and incident reports, with attendees and their "
                                  "on-screen signatures (PNG images)."),
     ("activity_log", "audit", "Who ran which check or changed what, and when."),
-    ("ai_assistant_calls", "mcp_audit_log", "Calls from AI assistants (MCP): tool, result, time taken, API key and "
-                                            "IP address. The arguments were never stored, only their SHA-256."),
+    ("ai_assistant_calls", "mcp_audit_log", "Calls from AI assistants (MCP): tool, result, time taken, API key or "
+                                            "connected app, and IP address. The arguments were never stored, only "
+                                            "their SHA-256."),
     ("integrations", "integration_connections", "Connected products, their status and non-secret settings. Not the "
                                                 "sign-ins or keys."),
     ("webhooks", "webhooks", "Webhooks (Slack, Teams, other): name, events and last result. Not the addresses or "
@@ -91,6 +92,11 @@ SECTIONS = (
                                       "client secret."),
     ("calendar_links", "calendar_tokens", "When each private calendar link was made and whether it was turned off. "
                                           "Not the links."),
+    ("connected_apps", "oauth_grants", "Apps someone connected with \"Sign in with TradeComply\" (for example "
+                                       "Claude): the app, who approved it, where it returns to, when it was made and "
+                                       "last used, and whether it was disconnected."),
+    ("connected_app_tokens", "oauth_tokens", "When each sign-in token of a connected app was issued, used and when "
+                                             "it expires. Not the tokens."),
 )
 FRIENDLY = {table: key for key, table, _ in SECTIONS} | {"tenants": "company"}
 
@@ -98,7 +104,8 @@ ABOUT = {
     "what": "Every record your company has in TradeComply on this server, as of the time above.",
     "left_out": "Passwords, password and API key hashes, session counters and stored credentials (integration "
                 "sign-ins and keys, webhook addresses and signing secrets, the SSO client secret, private calendar "
-                "links). They only protect your account on this server and are of no use anywhere else.",
+                "links, connected apps' token hashes). They only protect your account on this server and are of no "
+                "use anywhere else.",
     "keep_it_safe": "This file can include names, emails, phone numbers, IP addresses and signatures of your staff, "
                     "subcontractors and customers. Store it somewhere safe and share it only with people who need it.",
     "format": "JSON. Dates and times are ISO 8601 in UTC. Each list is oldest first.",
@@ -343,7 +350,7 @@ async def close_account(platform, tenant: dict, *, actor: str, cancel_billing: b
             "billing": billing, "integrations": integrations, "signed_out": True, "kept_elsewhere": kept,
             "support_contact": platform.settings.support_contact,
             "message": "Your company account and its records were deleted from TradeComply. Everyone on your team "
-                       "is signed out and every API key and calendar link stopped working."}
+                       "is signed out and every API key, connected app and calendar link stopped working."}
 
 
 class CloseAccountIn(BaseModel):

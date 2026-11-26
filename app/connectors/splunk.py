@@ -270,8 +270,8 @@ def _row_event(log_name: str, row: dict, tenant_id: str, company: str | None) ->
                 "source": row.get("source"), "created": row.get("created")}
     return {"tc_id": f"mcp:{row['id']}", "log": "mcp", "id": row["id"], "tenant_id": tenant_id, "company": company,
             "tool": row.get("tool"), "status": row.get("status"), "duration_ms": row.get("duration_ms"),
-            "api_key_id": row.get("api_key_id"), "args_sha256": row.get("args_sha256"), "ip": row.get("ip"),
-            "created": row.get("created")}
+            "api_key_id": row.get("api_key_id"), "oauth_grant_id": row.get("oauth_grant_id"),
+            "args_sha256": row.get("args_sha256"), "ip": row.get("ip"), "created": row.get("created")}
 
 
 def _fetch_rows(store, log_name: str, tenant_id: str, after_id: int, until: str, limit: int) -> list[dict]:
@@ -750,7 +750,8 @@ def export_now(request: Request, p: Principal = Depends(office_up)):
 
 # ---------------------------------------------------------------------------- owner download of the logs
 ACTIVITY_COLUMNS = ("id", "created", "user", "tool", "source", "ok", "verified", "args")
-MCP_COLUMNS = ("id", "created", "tool", "status", "duration_ms", "api_key_id", "args_sha256", "ip")
+MCP_COLUMNS = ("id", "created", "tool", "status", "duration_ms", "api_key_id", "oauth_grant_id", "args_sha256",
+               "ip")
 _FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 
 

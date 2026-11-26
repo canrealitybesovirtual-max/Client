@@ -195,7 +195,10 @@
     if (!res.ok) {
       const err = new ApiError(res.status, errMessage(data, res.status), data);
       // keepSession: a 401 that means "wrong password" (closing the account) must not sign the person out
-      if (res.status === 401 && !keepSession && !path.startsWith('/api/auth/') && state.me) { state.me = null; go('login'); }
+      if (res.status === 401 && !keepSession && !path.startsWith('/api/auth/') && state.me) {
+        state.me = null;
+        if (parseHash().name === 'connect') render(); else go('login');   // the consent shows the login and keeps its request
+      }
       if (res.status === 402 && state.me) { state.me.entitlement = { ...(state.me.entitlement || {}), ok: false, message: err.message }; renderBanner(); }
       throw err;
     }
@@ -233,7 +236,7 @@
 
   const routes = {};
   const PUBLIC = new Set(['login', 'signup']);
-  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial' };
+  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial', connect: 'Connect an app' };
 
   async function render() {
     const seq = ++state.renderSeq;
@@ -286,7 +289,7 @@
     slot.replaceChildren();
     if (!state.me) return;
     const ent = state.me.entitlement || {};
-    if (state.me.user.must_change_password) {
+    if (state.me.user.must_change_password && parseHash().name !== 'connect') {      // the consent asks for it itself
       slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('alert'), h('p', {}, 'You are using a temporary password. Set your own password now.'),
         h('a', { class: 'btn small secondary', href: '#/settings' }, 'Change password')));
     }
@@ -1138,25 +1141,40 @@
   let lastDeletion = null;   // messages from the DELETE /api/tenant receipt, shown once on the login page
   routes.login = async ({ query } = {}) => {
     const deleted = query && query.get('deleted') === '1';
-    const err = h('div', { role: 'alert' });
+    // Shown in place of #/connect while signed out: remember the app's request for the trip through SSO or sign-up.
+    const connecting = parseHash().name === 'connect';
+    if (connecting) pendingConnect.save(query.get('request'));
+    const ssoError = query && query.get('sso') === 'error' ? query.get('message') || 'Signing in with SSO didn\'t work. Try again.' : null;
+    const err = h('div', { role: 'alert' }, ssoError ? h('div', { class: 'banner error' }, h('p', {}, ssoError)) : null);
     const btn = h('button', { type: 'submit', class: 'btn block' }, 'Log in');
+    const sso = h('button', { type: 'button', class: 'btn secondary block', onclick: async () => {
+      err.replaceChildren();
+      const email = form.elements.email;
+      if (!/^\S+@\S+$/.test(email.value.trim())) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Enter your work email, then choose Sign in with SSO.'))); email.focus(); return; }
+      busy(sso, true, 'Opening your company sign-in…');
+      try {
+        const r = await api('/api/auth/sso/start', { method: 'POST', body: { email: email.value.trim() } });
+        if (!webUrl(r.authorize_url)) throw new Error('The single sign-on address is not valid.');
+        location.assign(r.authorize_url);          // the company's identity provider; it comes back signed in
+      } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(sso, false); }
+    } }, 'Sign in with SSO');
     const form = h('form', { onsubmit: async (e) => {
       e.preventDefault(); err.replaceChildren(); busy(btn, true, 'Logging in…');
       try {
         const r = await api('/api/auth/login', { method: 'POST', body: formData(form) });
         state.config = null; await loadMe();
-        go(r.must_change_password ? 'settings' : 'dashboard');
+        if (!resumeConnect()) go(r.must_change_password ? 'settings' : 'dashboard');
       } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
     } },
     field('Work email', input('email', { type: 'email', autocomplete: 'username', inputmode: 'email' }), { required: true }),
     field('Password', input('password', { type: 'password', autocomplete: 'current-password' }), { required: true }),
-    err, btn);
+    err, btn, h('p', { class: 'auth-or small muted' }, 'or'), sso);
     return h('div', { class: 'auth-wrap' },
-      h('div', { class: 'auth-hero' }, h('h1', {}, 'Log in to TradeComply'), h('p', {}, 'California construction compliance for your company')),
+      h('div', { class: 'auth-hero' }, h('h1', {}, 'Log in to TradeComply'), h('p', {}, connecting ? 'Log in to finish connecting the app.' : 'California construction compliance for your company')),
       deleted ? h('div', { class: 'banner info', role: 'status' }, h('p', {}, 'Your company account was deleted and you are signed out.'), ...(lastDeletion || []).map((m) => h('p', { class: 'small' }, m))) : null,
       navigator.onLine ? null : h('div', { class: 'banner warn' }, h('p', {}, 'You are offline. Log in once with signal; after that the Field screen works offline.')),
       h('div', { class: 'card' }, form, h('p', { class: 'small muted' }, 'New here? ', h('a', { href: '#/signup' }, 'Start a 14-day free trial'))),
-      mcpDemoNote());
+      connecting ? null : mcpDemoNote());
   };
 
   function mcpDemoNote() {
@@ -1174,7 +1192,7 @@
       const data = formData(form);
       if ((data.password || '').length < 10) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Use a password of at least 10 characters.'))); return; }
       busy(btn, true, 'Creating your account…');
-      try { await api('/api/auth/signup', { method: 'POST', body: data }); state.config = null; await loadMe(); go('welcome'); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+      try { await api('/api/auth/signup', { method: 'POST', body: data }); state.config = null; await loadMe(); if (!resumeConnect()) go('welcome'); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
     } },
     field('Company name', input('company_name', { autocomplete: 'organization' }), { required: true }),
     field('Your name', input('name', { autocomplete: 'name' })),
@@ -1189,6 +1207,187 @@
         h('li', {}, 'License health check on your own CSLB license'), h('li', {}, 'Risk report on your sub list'),
         h('li', {}, 'Lien deadline calendar for a project'), h('li', {}, 'Draft Cal/OSHA safety programs'), h('li', {}, 'Connect your AI assistant'))));
   };
+
+  // ======================================================================== connect an app (OAuth consent) + connected apps
+  // An MCP client such as Claude sends the person to /oauth/authorize, which checks the app and sends the browser to
+  // #/connect?request=<id> (app/oauth.py). Signed out, the login shows in its place; the request id is kept in this
+  // browser for 10 minutes (the server's limit) so it survives SSO and sign-up, then the consent comes back. An app
+  // registers its own name (anyone can call one "Claude"), so the card leads with the address it returns to, which it
+  // can't fake. Approve navigates to the app; Deny only offers a link back (OAuth 2.1 section 7.12.2). Text only.
+  const REQUEST_RE = /^[A-Za-z0-9_-]{20,100}$/;
+  const CONNECT_KEY = 'tc.connect';
+  const pendingConnect = {
+    save(id) { if (REQUEST_RE.test(id || '')) local.set(CONNECT_KEY, `${id} ${Date.now()}`); },
+    take() {
+      const [id, at] = String(local.get(CONNECT_KEY) || '').split(' ');
+      local.del(CONNECT_KEY);
+      return REQUEST_RE.test(id || '') && Date.now() - Number(at) < 10 * 60 * 1000 ? id : null;
+    },
+  };
+  // After signing in (password, SSO or a new account): back to the app's request, if one is waiting.
+  function resumeConnect() {
+    const id = pendingConnect.take();
+    if (!id) return false;
+    if (parseHash().name === 'connect') render();        // a request in the address wins over an older one
+    else location.replace(`#/connect?request=${id}`);
+    return true;
+  }
+  const webUrl = (u) => (typeof u === 'string' && /^https?:\/\/[^\s"'<>\\]+$/i.test(u) ? u : null);
+  const bannerText = (kind, text) => h('div', { class: `banner ${kind}` }, h('p', {}, text));
+
+  routes.connect = async ({ query }) => {
+    const id = query.get('request') || '';
+    const wrap = h('div', { class: 'auth-wrap' });
+    const show = (card) => {          // a new step: its heading takes the focus, so screen readers read it
+      wrap.replaceChildren(card);
+      const t = card.querySelector('h1');
+      if (t && wrap.isConnected) t.focus();
+      return wrap;
+    };
+    const gone = (message, status) => show(h('div', { class: 'card' },
+      h('h1', { tabindex: '-1' }, status === 403 ? 'Start again in the app' : 'This request has expired'),
+      h('p', {}, message || 'This sign-in request has expired or was already used. Go back to the app and connect again.'),
+      h('a', { class: 'btn secondary', href: '#/dashboard' }, 'Go to your dashboard')));
+    if (!REQUEST_RE.test(id)) return gone();
+    // A temporary password first: changing it later would disconnect the app again.
+    if (state.me.user.must_change_password && state.connectPwLater !== id) return show(passwordFirst(id));
+    let req;
+    try { req = await api(`/api/oauth/requests/${id}`); } catch (e) {
+      // 403: started in another browser (the request is tied to the one that opened it)
+      if (e.status === 404 || e.status === 403 || e.status === 422) return gone(e.status === 422 ? null : e.message, e.status);
+      throw e;
+    }
+    const ent = state.me.entitlement || {};
+    const err = h('div', { role: 'alert' });
+    const approve = h('button', { type: 'button', class: 'btn', onclick: () => decide('approve', approve) }, 'Approve');
+    const deny = h('button', { type: 'button', class: 'btn secondary', onclick: () => decide('deny', deny) }, 'Deny');
+    async function decide(what, btn) {
+      err.replaceChildren();
+      approve.disabled = deny.disabled = true;
+      busy(btn, true, what === 'approve' ? 'Connecting…' : 'Denying…');
+      let r;
+      try { r = await api(`/api/oauth/requests/${id}/${what}`, { method: 'POST' }); } catch (e) {
+        if (e.status === 404 || e.status === 403) { gone(e.message, e.status); return; }
+        err.append(bannerText(isOffline(e) ? 'warn' : 'error', e.message));
+        busy(btn, false); approve.disabled = deny.disabled = false;
+        return;
+      }
+      const to = webUrl(r.redirect_to);
+      const back = to ? h('a', { class: 'btn', href: to }, `Back to ${req.redirect_host}`) : null;
+      if (what === 'approve') {
+        show(h('div', { class: 'card', role: 'status' }, h('h1', { tabindex: '-1' }, 'Connected'),
+          h('p', {}, `Taking you back to ${req.redirect_host}…`), back));
+        if (to) location.assign(to);
+      } else {
+        show(h('div', { class: 'card' }, h('h1', { tabindex: '-1' }, 'Not connected'),
+          h('p', {}, `“${req.client_name}” can't use TradeComply. Nothing was shared with it.`),
+          h('div', { class: 'row' }, back, h('a', { class: 'btn secondary', href: '#/dashboard' }, 'Go to your dashboard'))));
+      }
+    }
+    const company = req.company_name || 'your company';
+    const other = h('button', { type: 'button', class: 'btn ghost', onclick: async () => {
+      await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+      await signedOut();
+      render();                        // the login, for this same request
+    } }, 'Use another account');
+    return show(h('div', { class: 'card connect' },
+      h('h1', { tabindex: '-1' }, 'Connect an app to TradeComply?'),
+      h('div', { class: 'connect-app' },
+        h('p', { class: 'small' }, 'The app returns to'),
+        h('p', { class: 'connect-host' }, req.redirect_host),
+        h('p', { class: 'small muted' }, 'Check this address. An app can give itself any name, but not this.')),
+      req.local_only ? bannerText('warn', 'This app runs on a computer, not a website (it returns to localhost). Approve it only if you started connecting it on this computer just now.') : null,
+      h('p', {}, 'It calls itself ', h('strong', { class: 'connect-name' }, `“${req.client_name}”`), ' and wants to use TradeComply as ',
+        h('strong', {}, req.user_email), ' at ', h('strong', {}, company), /[.!?]$/.test(company) ? '' : '.'),
+      h('h2', {}, 'If you approve, it can'),
+      h('ul', { class: 'bullets' }, req.scopes.map((s) => h('li', {}, s.label)),
+        h('li', {}, `Act as you, with your role (${humanize(req.role)}). Every check it runs is logged.`)),
+      h('p', { class: 'small muted' }, 'It can\'t change your records or settings and never sees your password. You can disconnect it any time in Settings → Connected apps.'),
+      ent.ok === false ? bannerText('warn', 'Your company\'s subscription isn\'t active, so the app\'s checks won\'t run until it is.') : null,
+      state.me.user.must_change_password ? bannerText('warn', 'You still have a temporary password. Changing it later disconnects this app, and you would approve it again.') : null,
+      h('p', { class: 'small' }, 'Approve only if you started connecting this app yourself just now.'),
+      err,
+      h('div', { class: 'connect-actions' }, approve, deny),
+      h('p', { class: 'small muted connect-other' }, `Not ${req.user_email}? `, other)));
+  };
+
+  function passwordFirst(id) {
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'submit', class: 'btn' }, 'Set password and continue');
+    const form = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); err.replaceChildren();
+      const d = formData(form);
+      if ((d.new_password || '').length < 10) { err.append(bannerText('error', 'Use at least 10 characters.')); return; }
+      busy(btn, true, 'Saving…');
+      try {
+        await api('/api/auth/password', { method: 'POST', body: d });
+        toast('Password set. Other devices were logged out.');
+        await loadMe();
+        render();
+      } catch (ex) { err.append(bannerText('error', ex.message)); busy(btn, false); }
+    } },
+    field('Temporary password', input('current_password', { type: 'password', autocomplete: 'current-password' }), { required: true }),
+    field('New password', input('new_password', { type: 'password', autocomplete: 'new-password', minlength: '10' }), { required: true, hint: 'At least 10 characters.' }),
+    err, btn);
+    return h('div', { class: 'card' }, h('h1', { tabindex: '-1' }, 'Set your own password first'),
+      h('p', {}, 'You logged in with a temporary password. Changing your password disconnects the apps you connected, so set your own now. Then you can approve the app.'),
+      form,
+      h('p', { class: 'small muted connect-other' }, 'Signed in with SSO, or doing this later? ',
+        h('button', { type: 'button', class: 'btn ghost', onclick: () => { state.connectPwLater = id; render(); } }, 'Not now')));
+  }
+
+  // Settings: the apps that act as this person (an owner sees and can disconnect everyone's in the company).
+  function connectedAppsSection() {
+    const owner = can.owner();
+    const slot = h('div', { 'aria-live': 'polite' });
+    const heading = h('h2', { id: 'apps-h', tabindex: '-1' }, 'Connected apps');
+    const draw = async () => {
+      const rows = await api('/api/oauth/connections');
+      const disconnect = async (c, btn) => {
+        busy(btn, true, 'Disconnecting…');
+        try {
+          await api(`/api/oauth/connections/${c.id}`, { method: 'DELETE' });
+          toast(`Disconnected “${c.client_name}”. It can't use TradeComply any more.`);
+          await draw();
+          heading.focus();
+        } catch (e) { toast(e.message, true); busy(btn, false); }
+      };
+      fill(slot, rows.length ? table([
+        { label: 'App', bare: true, render: (c) => h('div', {}, h('strong', { class: 'connect-name' }, c.client_name), h('div', { class: 'small muted' }, `Returns to ${c.redirect_host}`)) },
+        owner ? { label: 'Person', render: (c) => (c.mine ? `${c.user_email} (you)` : c.user_email) } : null,
+        { label: 'Connected', render: (c) => fmtDateTime(c.created) },
+        { label: 'Last used', render: (c) => (c.last_used ? fmtDateTime(c.last_used) : 'Not yet') },
+        { label: 'Actions', bare: true, render: (c) => { const b = h('button', { type: 'button', class: 'btn secondary', 'aria-label': `Disconnect ${c.client_name}${c.mine ? '' : ` for ${c.user_email}`}`, onclick: () => disconnect(c, b) }, 'Disconnect'); return b; } },
+      ].filter(Boolean), rows) : h('p', { class: 'muted' }, 'No apps are connected.'));
+    };
+    draw().catch((e) => fill(slot, bannerText(isOffline(e) ? 'warn' : 'error', e.message)));
+    return h('section', { class: 'card', id: 'connected-apps', 'aria-labelledby': 'apps-h' }, heading,
+      h('p', { class: 'small muted' }, owner ? 'Apps that people in your company approved, such as Claude. Each acts as the person who approved it. Disconnect one to stop it at once.'
+        : 'Apps you approved to use TradeComply as you, such as Claude. Disconnect one to stop it at once.', ' ', h('a', { href: '#/integrations' }, 'How to add TradeComply to Claude'), '.'),
+      slot);
+  }
+
+  // How to add this server to Claude as a custom connector (Claude's help pages "Get started with custom connectors
+  // using remote MCP" and "Add an unlisted connector", read 2026-11-26; the same steps as mcp_client_config's
+  // claude_connector). Claude connects from Anthropic's servers, so it needs the server's public https address.
+  function claudeConnector(url) {
+    let host = '';
+    try { host = new URL(url).hostname; } catch (e) { /* not a URL */ }
+    const reachable = /^https:\/\//i.test(url) && !['localhost', '127.0.0.1', '[::1]'].includes(host);
+    const open = state.config && state.config.mcp_require_key === false;
+    return [
+      reachable ? null : bannerText('warn', `Claude can't reach ${url}: it connects from Anthropic's servers, so it needs this server's public https:// address. Claude Code and API keys still work.`),
+      open ? bannerText('info', 'This server lets AI assistants in without signing in right now, so Claude won\'t ask you to sign in or approve it, and its checks won\'t be linked to your company.') : null,
+      h('ol', { class: 'steps' },
+        h('li', {}, 'In Claude, open ', h('strong', {}, 'Customize → Connectors'), ' and choose ', h('strong', {}, '+ Add → Add custom connector'), '.'),
+        h('li', {}, 'Name it TradeComply, paste this address as the URL and choose ', h('strong', {}, 'Add'), '. Keep the settings Claude detects.', copyBox(url, 'TradeComply connector address')),
+        h('li', {}, 'Choose ', h('strong', {}, 'Connect'), '. Log in to TradeComply if asked, check that the app returns to claude.ai, and choose ', h('strong', {}, 'Approve'), '.')),
+      more('Claude Team or Enterprise', h('p', { class: 'small' }, 'An Owner adds it once under Organization settings → Connectors → Add → Custom → Web, with the same address. Then each person chooses Connect next to TradeComply and approves it here.')),
+      more('Claude Code (terminal)', copyBox(`claude mcp add --transport http tradecomply ${url}`, 'Claude Code command', true),
+        h('p', { class: 'small muted' }, 'Then run /mcp in Claude Code and choose TradeComply to log in.')),
+      h('p', { class: 'small muted' }, 'No API key needed. The connection acts as the person who approved it, with their role, and can only run read-only checks. Disconnect it any time in Settings → Connected apps.'),
+    ];
+  }
 
   // ======================================================================== license + alerts components
   // CSLB classification names (cslb.ca.gov), so "C10" reads as "C-10 Electrical"
@@ -2023,7 +2222,7 @@
       const s = agentSnippets(url, key);
       snippetSlot.replaceChildren(
         h('h3', {}, key ? '2. Paste it into your assistant' : 'Set up your assistant'),
-        h('details', { class: 'snippet', open: true }, h('summary', {}, 'Claude Desktop'),
+        h('details', { class: 'snippet' }, h('summary', {}, 'Claude Desktop (config file)'),
           h('p', { class: 'small muted' }, 'In Claude Desktop: Settings → Developer → Edit config. Paste this into claude_desktop_config.json, save, then restart Claude Desktop. Needs Node.js installed.'), copyBox(s.desktop, 'Claude Desktop config', true)),
         h('details', { class: 'snippet' }, h('summary', {}, 'Claude Code (terminal)'), copyBox(s.code, 'Claude Code command', true)),
         h('details', { class: 'snippet' }, h('summary', {}, 'Other assistants (ChatGPT, Copilot, Procore, Autodesk)'),
@@ -2048,6 +2247,7 @@
     return h('div', {},
       h('p', {}, 'Your AI assistant (Claude, ChatGPT, Copilot or a Procore/Autodesk agent) can run the same California checks. It connects over MCP, the standard way assistants plug into tools. Every call is logged in your activity log.'),
       h('div', { class: 'field' }, h('span', { class: 'label' }, 'Server address (MCP URL)'), copyBox(url, 'MCP URL')),
+      h('details', { class: 'snippet', id: 'claude-connector', open: true }, h('summary', {}, 'Claude on the web, desktop or phone: log in, no key'), claudeConnector(url)),
       can.write() ? h('div', { class: 'key-create' }, h('h3', {}, '1. Create a key for your assistant'),
         h('p', { class: 'small muted' }, (state.config && state.config.mcp_require_key ? 'An API key is required. ' : 'With a key, your assistant\'s checks count toward your account and show in your logs. ') + 'A new key can run every read-only check and acts with office permissions. Use one key per assistant or gateway, then narrow its tools, rate and lifetime with Edit access under API keys below. Revoke it any time.'),
         h('div', { class: 'field' }, h('label', { for: nameIn.id }, 'Name this key (so you know where it is used)'), h('div', { class: 'row' }, nameIn, expIn, btn))) : null,
@@ -2151,7 +2351,7 @@
     };
     const draw = () => slot.replaceChildren(...[rows.length ? table([
       { label: 'When', render: (r) => fmtDateTime(r.created) },
-      { label: 'Key', render: (r) => r.key_name ? `${r.key_name} (${r.key_prefix}…)` : (r.api_key_id ? `Key #${r.api_key_id}` : 'No key') },
+      { label: 'Key or app', render: (r) => r.key_name ? `${r.key_name} (${r.key_prefix}…)` : r.api_key_id ? `Key #${r.api_key_id}` : r.app_name ? `App: ${r.app_name}` : r.oauth_grant_id ? `App #${r.oauth_grant_id}` : 'No key' },
       { label: 'Tool', render: (r) => humanize(r.tool) },
       { label: 'Result', render: (r) => { const [c, t] = MCP_STATUS[r.status] || ['gray', r.status]; return h('span', { class: `pill ${c}` }, t); } },
       { label: 'Time', render: (r) => r.duration_ms === null || r.duration_ms === undefined ? '—' : `${r.duration_ms} ms` },
@@ -2179,7 +2379,7 @@
     reload();
     return h('section', { class: 'card', id: 'mcp-log' },
       h('div', { class: 'card-head' }, h('h2', {}, 'AI assistant call log (MCP)'), h('button', { type: 'button', class: 'btn ghost small', onclick: reload }, 'Refresh')),
-      h('p', { class: 'small muted' }, 'Every tool call made through the MCP server: which key, which tool, the result, how long it took and where it came from. Arguments are never stored, because they can hold employee data; each row keeps a SHA-256 fingerprint of them instead.'),
+      h('p', { class: 'small muted' }, 'Every tool call made through the MCP server: which key or connected app, which tool, the result, how long it took and where it came from. Arguments are never stored, because they can hold employee data; each row keeps a SHA-256 fingerprint of them instead.'),
       h('div', { class: 'form-grid' }, field('API key', keySel), field('Result', statusSel), field('From', from), field('To', to)),
       h('div', { class: 'row' }, csvLink, jsonLink), slot);
   }
@@ -2833,6 +3033,12 @@
       h('ul', { class: 'int-ways clean' }, ways.map(([k, text]) => h('li', {}, h('span', { class: `pill ${INT_KIND_PILL[k]}` }, kindLabels[k]), h('p', {}, text)))),
       h('p', { class: 'small muted' }, 'TradeComply\'s AI-assistant tools only look things up and check them; they can\'t change anything in your other systems. Built-in connections only do what you set them up to do, like posting an alert to your channel. Product details were checked against each vendor\'s official documentation on ', fmtDate(cat.checked_on), '; anything we couldn\'t confirm is marked.'));
   }
+  function claudeCard(url) {
+    return h('section', { class: 'card', id: 'int-claude', 'aria-labelledby': 'int-claude-h' },
+      h('h2', { id: 'int-claude-h' }, 'Add TradeComply to Claude'),
+      h('p', {}, 'Use TradeComply\'s checks in Claude on the web, in Claude Desktop and in the Claude phone apps. Add it once by its address, then log in to TradeComply and approve it.'),
+      claudeConnector(url || location.origin + '/mcp'));
+  }
   function assistantBuilder(cat) {
     const ready = new Set(cat.config_ready_ids || []);
     const choices = cat.entries.filter((e) => ready.has(e.id));
@@ -2851,9 +3057,11 @@
           h('h3', {}, 'Claude Code'), h('p', { class: 'small muted' }, 'Save as .mcp.json in your project folder, or run the commands below. Set the environment variables first; keys stay out of the file.'),
           copyBox(r.claude_code_mcp_json_text, '.mcp.json', true),
           more('Or add them with commands', copyBox(r.claude_code_commands.join('\n'), 'commands', true)),
-          h('h3', {}, 'Claude Desktop'), h('p', { class: 'small muted' }, 'Paste this into claude_desktop_config.json (Settings → Developer → Edit config; needs Node.js), then add the other products under Settings → Connectors → Add custom connector.'),
+          h('h3', {}, 'Claude Desktop'), h('p', { class: 'small muted' }, 'Paste this into claude_desktop_config.json (Settings → Developer → Edit config; needs Node.js), then add the other products under Customize → Connectors → + Add → Add custom connector.'),
           copyBox(JSON.stringify(r.claude_desktop_config, null, 2), 'Claude Desktop config', true),
           r.claude_desktop_connectors.length ? table([{ label: 'Connector', key: 'name' }, { label: 'Address', render: (c) => h('code', {}, c.url) }, { label: 'Sign-in', render: (c) => h('span', { class: 'small' }, c.sign_in) }], r.claude_desktop_connectors) : null,
+          r.claude_connector ? more('Or skip the config file: add TradeComply to Claude as a connector', h('ol', { class: 'steps small' }, (r.claude_connector.steps || []).map((s) => h('li', {}, s))),
+            (r.claude_connector.notes || []).map((n) => h('p', { class: 'small muted' }, n))) : null,
           h('h3', {}, 'Keys to set'), h('ul', { class: 'bullets small' }, r.env_vars.map((v) => h('li', {}, h('code', {}, v.name), ` — ${v.used_for}`))),
           h('p', { class: 'small' }, 'No TradeComply API key yet? ', h('a', { href: '#/settings' }, 'Create one in Settings → AI assistant (MCP)'), '.'),
           r.skipped.length ? more(`Not added (${r.skipped.length})`, h('ul', { class: 'bullets small' }, r.skipped.map((s) => h('li', {}, h('strong', {}, s.name || s.id), `: ${s.reason}`)))) : null,
@@ -2954,7 +3162,7 @@
       h('a', { href: '#', class: 'pill blue', onclick: (ev) => { ev.preventDefault(); $('#int-assistant').scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, 'AI assistant setup'));
     const view = h('div', {},
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Integrations'), h('p', {}, 'Use TradeComply with Procore, Docusign, Slack, Teams, your calendar, your AI assistant and more.'))),
-      top, explainer(cat), filterCard, jump, empty, sections, extraSection, assistantBuilder(cat),
+      top, explainer(cat), claudeCard(cat.tradecomply.mcp_url), filterCard, jump, empty, sections, extraSection, assistantBuilder(cat),
       h('p', { class: 'small muted' }, cat.about));
     apply();
     if (focusEntry && cards.has(focusEntry.id)) {
@@ -3076,6 +3284,7 @@
     };
     sections.push(h('section', { class: 'card', 'aria-labelledby': 'acct-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'acct-h' }, 'Your account'), h('button', { type: 'button', class: 'btn ghost', onclick: logout }, 'Log out')),
       h('dl', { class: 'kv' }, h('dt', {}, 'Email'), h('dd', {}, me.user.email || '—'), h('dt', {}, 'Role'), h('dd', {}, humanize(me.user.role))), pwForm));
+    sections.push(connectedAppsSection());
     if (can.write()) {
       // company
       const cErr = h('div', { role: 'alert' });
@@ -3195,7 +3404,7 @@
     setOnline(navigator.onLine);
     await loadMe();
     if (!location.hash) location.replace(state.me ? '#/dashboard' : '#/login');
-    await render();
+    if (!(state.me && resumeConnect())) await render();     // back from SSO: the app's request, if one was waiting
     syncOutbox({ quiet: true });
   });
 })();

@@ -116,3 +116,41 @@ def mock_http(platform, handler, hosts: dict | None = None) -> list[httpx.Reques
 def json_response(status: int, body, headers: dict | None = None) -> httpx.Response:
     return httpx.Response(status, content=json.dumps(body).encode(),
                           headers={"content-type": "application/json", **(headers or {})})
+
+
+CLAUDE_CALLBACK = "https://claude.ai/api/mcp/auth_callback"
+
+
+def pkce() -> tuple[str, str]:
+    """(code_verifier, S256 code_challenge)."""
+    import base64
+    import hashlib
+    verifier = secrets.token_urlsafe(48)
+    return verifier, base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
+
+
+def oauth_connect(c, redirect_uri: str = CLAUDE_CALLBACK, client: dict | None = None, **authorize) -> dict:
+    """The whole "Sign in with TradeComply" flow (app/oauth.py) for the person signed in on client `c`, the way
+    Claude does it: register a public client, authorize, approve on the consent screen, exchange the code.
+    Returns the client registration, the token response and the verifier."""
+    from urllib.parse import parse_qs, urlsplit
+    if client is None:
+        r = c.post("/oauth/register", json={"client_name": "Claude", "redirect_uris": [redirect_uri],
+                                            "token_endpoint_auth_method": "none"})
+        assert r.status_code == 201, r.text
+        client = r.json()
+    verifier, challenge = pkce()
+    params = {"response_type": "code", "client_id": client["client_id"], "redirect_uri": redirect_uri,
+              "state": "s-" + secrets.token_hex(4), "code_challenge": challenge, "code_challenge_method": "S256",
+              "scope": "tradecomply", **authorize}
+    r = c.get("/oauth/authorize", params=params, follow_redirects=False)
+    assert r.status_code == 302 and r.headers["location"].startswith("/#/connect?request="), r.text
+    request_id = r.headers["location"].split("request=", 1)[1]
+    r = c.post(f"/api/oauth/requests/{request_id}/approve")
+    assert r.status_code == 200, r.text
+    q = {k: v[0] for k, v in parse_qs(urlsplit(r.json()["redirect_to"]).query).items()}
+    assert q["state"] == params["state"]
+    r = c.post("/oauth/token", data={"grant_type": "authorization_code", "code": q["code"], "code_verifier": verifier,
+                                     "client_id": client["client_id"], "redirect_uri": redirect_uri})
+    assert r.status_code == 200, r.text
+    return {"client": client, "tokens": r.json(), "verifier": verifier, "code": q["code"], "iss": q["iss"]}

@@ -11,7 +11,8 @@ What lives here:
   module, as /api/tools groups them), plus whether the key may also use the rest of the REST API. A key with no
   scopes (NULL) gets the default: every read-only tool (annotations.readOnlyHint true; today every tool), and the REST
   API as before. A category grants only the read-only tools in it; a tool that is not read-only must be named.
-- The audit record of every MCP tool call (record): tenant, API key id, tool, SHA-256 of the arguments (never the
+- The audit record of every MCP tool call (record): tenant, API key id or connected app (oauth_grant_id: an app
+  that signed in with OAuth, app/oauth.py; it has the default scope), tool, SHA-256 of the arguments (never the
   arguments: payroll CSVs and employee names pass through them), status ok/error/denied/rate_limited, duration and
   client IP, into mcp_audit_log, plus the activity-log row the app already showed (now with argument NAMES and the
   same SHA-256 instead of argument values). Written after the last byte of the response has been sent, on a worker
@@ -139,13 +140,19 @@ def _origin_of(url: str | None) -> str | None:
     return f"{parts.scheme}://{parts.netloc}".lower()
 
 
+# Claude's own web origins. Claude calls /mcp from Anthropic's servers; if those calls carry an Origin header, it is
+# one of these (which value, if any, is not confirmed: Claude's connector testing guide names strict Origin checks
+# as a cause of failed connections). /mcp takes no cookies, so allowing them gives no page ambient credentials.
+CLAUDE_ORIGINS = ("https://claude.ai", "https://claude.com")
+
+
 def origin_allowed(platform, headers: dict, scope: dict) -> bool:
     origin = (headers.get("origin") or "").strip()
     if not origin:
         return True                  # non-browser clients send no Origin; never refused for that alone
     o = origin.rstrip("/").lower()
     s = platform.settings
-    allowed = set(s.mcp_allowed_origins)
+    allowed = {*s.mcp_allowed_origins, *CLAUDE_ORIGINS}
     if "*" in allowed:
         return True
     own = _origin_of(s.app_url)
@@ -350,6 +357,14 @@ async def record(platform, entries: list[dict], activity: list[dict] = ()) -> No
             platform.mcp_audit_pending -= n
 
 
+def log_refused_origin(platform, origin: str | None) -> None:
+    """A server log line for a refused Origin (at most 30 a minute per value), so an operator can see what a client
+    sent and add it to MCP_ALLOWED_ORIGINS."""
+    value = str(origin or "")[:200]
+    if reject_logging_allowed(platform, f"origin|{value}"):
+        log.warning("Refused an /mcp request with Origin %r (allow it with MCP_ALLOWED_ORIGINS)", value)
+
+
 def reject_logging_allowed(platform, key: str) -> bool:
     """Denied and rate-limited calls are logged, but at most 30 rows a minute per key or IP, so a flood of refused
     calls can't flood the database."""
@@ -363,7 +378,7 @@ def reject_logging_allowed(platform, key: str) -> bool:
 # ---------------------------------------------------------------------------- owner API
 router = APIRouter(prefix="/api/mcp", tags=["mcp governance"])
 EXPORT_COLUMNS = ("id", "created", "tool", "status", "duration_ms", "api_key_id", "key_name", "key_prefix",
-                  "args_sha256", "ip")
+                  "oauth_grant_id", "app_name", "args_sha256", "ip")
 _FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
 
 
@@ -398,11 +413,14 @@ def _key_names(store, tenant_id: str) -> dict[int, dict]:
             for k in store.list_api_keys(tenant_id)}
 
 
-def _view_row(row: dict, keys: dict) -> dict:
+def _view_row(row: dict, keys: dict, apps: dict) -> dict:
     k = keys.get(row.get("api_key_id")) or {}
+    a = apps.get(row.get("oauth_grant_id")) or {}
     return {"id": row["id"], "created": row["created"], "tool": row["tool"], "status": row["status"],
             "duration_ms": row.get("duration_ms"), "api_key_id": row.get("api_key_id"), "key_name": k.get("name"),
-            "key_prefix": k.get("prefix"), "args_sha256": row.get("args_sha256"), "ip": row.get("ip")}
+            "key_prefix": k.get("prefix"), "oauth_grant_id": row.get("oauth_grant_id"),
+            "app_name": f"{a['client_name']} ({a['user_email']})" if a else None,
+            "args_sha256": row.get("args_sha256"), "ip": row.get("ip")}
 
 
 @router.get("/audit")
@@ -421,11 +439,11 @@ def mcp_audit(request: Request, p: Principal = Depends(owner_only),
                                     **f)
     except ValueError as e:
         raise HTTPException(422, str(e))
-    keys = _key_names(store, p.tenant_id)
-    return {"items": [_view_row(r, keys) for r in page["items"]], "next_cursor": page["next_cursor"],
+    keys, apps = _key_names(store, p.tenant_id), store.oauth_grant_names(p.tenant_id)
+    return {"items": [_view_row(r, keys, apps) for r in page["items"]], "next_cursor": page["next_cursor"],
             "keys": [{"id": i, **k} for i, k in sorted(keys.items(), reverse=True)],
-            "statuses": list(MCP_AUDIT_STATUSES), "stored": "tool, status, duration, API key, client IP and the "
-            "SHA-256 of the arguments; never the arguments"}
+            "statuses": list(MCP_AUDIT_STATUSES), "stored": "tool, status, duration, API key or connected app, "
+            "client IP and the SHA-256 of the arguments; never the arguments"}
 
 
 @router.get("/audit/export")
@@ -448,7 +466,7 @@ def mcp_audit_export(request: Request, p: Principal = Depends(owner_only),
     store, tid = platform.store, p.tenant_id
     store.audit(tid, p.label, "mcp_audit.export", {"format": fmt, **{k: v for k, v in f.items() if v is not None}},
                 None, source="api")
-    keys = _key_names(store, tid)
+    keys, apps = _key_names(store, tid), store.oauth_grant_names(tid)
 
     def rows():
         after, n = 0, 0
@@ -457,7 +475,7 @@ def mcp_audit_export(request: Request, p: Principal = Depends(owner_only),
             if not page:
                 return
             for r in page:
-                yield _view_row(r, keys)
+                yield _view_row(r, keys, apps)
             n += len(page)
             after = page[-1]["id"]
             if len(page) < EXPORT_PAGE:

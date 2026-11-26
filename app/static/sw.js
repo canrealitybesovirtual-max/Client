@@ -1,14 +1,20 @@
 /* TradeComply service worker: the app shell works offline; API calls go to the network first and fall back to
    the last copy of the tool schemas, account, config, project list, integrations catalog and the list of kinds of
    licensed professionals, so the field screen, the Integrations page and the finder's form open without signal.
-   v4: guidance release (professional finder, getting started, account data). */
-const SHELL_CACHE = 'tc-shell-v4';
+   v4: guidance release (professional finder, getting started, account data).
+   v5: connect an app (Sign in with TradeComply). /oauth/*, /.well-known/* and /api/oauth/* never go through here:
+   sign-in pages, codes and consent requests are never cached or answered from a stale copy. The script and styles
+   now live under a per-release path (/static/v5/...: the one index.html names, bumped with SHELL_CACHE), so the
+   first page after a deploy, still run by the previous worker, gets this release's code: that worker only has the
+   old /static/app.js. Install fetches past the browser's HTTP cache, so this cache never starts with old files. */
+const SHELL_CACHE = 'tc-shell-v5';
 const API_CACHE = 'tc-api-v1';
-const SHELL = ['/', '/static/app.js', '/static/styles.css', '/manifest.webmanifest', '/icon.svg'];
+const SHELL = ['/', '/static/v5/app.js', '/static/v5/styles.css', '/manifest.webmanifest', '/icon.svg'];
 const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog', '/api/professionals/types'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (event) => {
@@ -80,6 +86,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/') || url.pathname === '/api/calendar.ics'
     || url.pathname === '/api/integrations/calendar_feed/calendar.ics' || url.pathname === '/api/tenant/export') return;      // downloads: never a cached or JSON copy
+  if (url.pathname.startsWith('/oauth/') || url.pathname.startsWith('/.well-known/') || url.pathname.startsWith('/api/oauth/')) return;   // sign-in: network only
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstApi(request));
   } else if (request.mode === 'navigate') {

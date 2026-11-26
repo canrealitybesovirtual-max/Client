@@ -24,7 +24,7 @@ import anyio
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from .auth import Principal, get_principal, is_https, owner_only, platform_of
+from .auth import Principal, get_principal, owner_only, platform_of, public_base
 
 log = logging.getLogger("tradecomply.billing")
 router = APIRouter(prefix="/api/billing", tags=["billing"])
@@ -212,11 +212,7 @@ async def _stripe(platform, path: str, form: dict) -> dict:
 
 
 def base_url(request: Request) -> str:
-    s = platform_of(request).settings
-    if s.app_url:
-        return s.app_url
-    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or "localhost"
-    return f"{'https' if is_https(request) else 'http'}://{host}"
+    return public_base(platform_of(request).settings, request.headers, request.url.scheme)
 
 
 @router.get("/status")

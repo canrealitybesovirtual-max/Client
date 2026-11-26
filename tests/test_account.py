@@ -20,7 +20,7 @@ from app.crypto import connection_context, sso_context, webhook_context
 from app.store import (APP_TABLES, SECRET_BLOB_COLUMNS, SHARED_TABLES, TENANT_DELETE_ORDER, TENANT_EXPORT,
                        TENANT_EXPORT_OMITTED)
 from tests import support
-from tests.support import PW, backend, login, make_app, mock_http, signup  # noqa: F401 - backend is autouse
+from tests.support import PW, backend, login, make_app, mock_http, oauth_connect, signup  # noqa: F401 - autouse
 
 SIGNATURE = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6"
              "kgAAAABJRU5ErkJggg==")
@@ -76,11 +76,15 @@ def populate(c, platform, tid: str, tag: str) -> dict:
                           secret_blob=box.encrypt(f"{tag}-sso-secret", sso_context(tid)),
                           allowed_domains=[f"{low}.example.com"])
     store.add_calendar_token(tid, hashlib.sha256(f"{tag}-calendar-token".encode()).hexdigest())
-    return {"key": key["key"], "key_id": key["id"], "office_email": office_email,
+    connected = oauth_connect(c)                     # a connected app (app/oauth.py): a grant and its tokens
+    app_tokens = connected["tokens"]
+    return {"key": key["key"], "key_id": key["id"], "office_email": office_email, "app_tokens": app_tokens,
+            "app_client_id": connected["client"]["client_id"],
             "office_password": invited["temporary_password"], "field_email": field_email,
             "field_password": field["temporary_password"],
             "plain_secrets": [key["key"], f"{tag}-crm-secret", f"https://hooks.example.com/{low}/secret-path",
-                              f"{tag}-signing-secret", f"{tag}-sso-secret"]}
+                              f"{tag}-signing-secret", f"{tag}-sso-secret", app_tokens["access_token"],
+                              app_tokens["refresh_token"]]}
 
 
 def stored_secrets(store, tid: str) -> list[str]:
@@ -88,7 +92,8 @@ def stored_secrets(store, tid: str) -> list[str]:
     out = []
     with store.connect() as con:
         for table, cols in (("users", ("pw_hash",)), ("api_keys", ("key_hash",)),
-                            ("calendar_tokens", ("token_hash",)), *SECRET_BLOB_COLUMNS.items()):
+                            ("calendar_tokens", ("token_hash",)), ("oauth_tokens", ("token_hash",)),
+                            ("oauth_grants", ("code_challenge",)), *SECRET_BLOB_COLUMNS.items()):
             for col in cols:
                 out += [r[0] for r in con.execute(f"select {col} from {table} where tenant_id = ?", (tid,)).fetchall()
                         if r[0]]
@@ -107,7 +112,7 @@ def walk_keys(value):
 
 @pytest.fixture
 def app(tmp_path):
-    return make_app(tmp_path)
+    return make_app(tmp_path, app_url="https://testserver")      # an https APP_URL: needed for connected apps
 
 
 @pytest.fixture
@@ -185,7 +190,8 @@ def test_every_column_is_exported_or_left_out_on_purpose(app):
     for table, cols in SECRET_BLOB_COLUMNS.items():
         assert set(cols) <= set(TENANT_EXPORT_OMITTED[table])
     for table, col in (("users", "pw_hash"), ("users", "session_gen"), ("api_keys", "key_hash"),
-                       ("calendar_tokens", "token_hash")):
+                       ("calendar_tokens", "token_hash"), ("oauth_tokens", "token_hash"),
+                       ("oauth_grants", "code_challenge")):
         assert col in TENANT_EXPORT_OMITTED[table]
     # every table is either the company's own (deleted with it) or shared and company-free
     assert set(TENANT_DELETE_ORDER) | set(SHARED_TABLES) | {"tenants"} == set(APP_TABLES)
@@ -333,6 +339,12 @@ def test_delete_removes_every_company_row_and_leaves_the_other_company(two):
         assert a.get("/api/me").status_code == 401
         assert office.get("/api/me").status_code == 401
         assert anon.get("/api/projects", headers={"authorization": f"Bearer {ia['key']}"}).status_code == 401
+        assert anon.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+                         headers={"authorization": f"Bearer {ia['app_tokens']['access_token']}",
+                                  "accept": "application/json, text/event-stream"}).status_code == 401
+        r = anon.post("/oauth/token", data={"grant_type": "refresh_token", "client_id": ia["app_client_id"],
+                                            "refresh_token": ia["app_tokens"]["refresh_token"]})
+        assert r.status_code == 400 and r.json()["error"] == "invalid_grant"
         assert anon.get(f"{feed.path}?{feed.query}").status_code == 404
         # the email address is free: the old password no longer works and the address can sign up again
         assert anon.post("/api/auth/login", json={"email": "owner@acme.test", "password": PW}).status_code == 401

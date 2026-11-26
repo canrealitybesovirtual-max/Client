@@ -19,6 +19,18 @@ SUPPORT_EMAIL_RE = re.compile(r"^[^@\s<>\"'`]{1,64}@[A-Za-z0-9](?:[A-Za-z0-9.-]{
 SUPPORT_URL_RE = re.compile(r"^https?://[A-Za-z0-9.\-]+(:\d{1,5})?(/[^\s<>\"'`]*)?$")
 
 
+def _proxy_hops(value: str | None) -> int:
+    """TRUSTED_PROXY_HOPS: how many proxies in front of the app each append the address they saw to
+    X-Forwarded-For (auth.client_ip). Unset or invalid: 0, the first entry (which a client can set)."""
+    v = (value or "").strip()
+    if not v:
+        return 0
+    if not v.isdigit() or not 0 <= int(v) <= 5:
+        log.warning("TRUSTED_PROXY_HOPS must be a whole number from 0 to 5; ignored")
+        return 0
+    return int(v)
+
+
 def _support_email(value: str | None) -> str | None:
     """The operator's support address. There is no built-in one: unset means the app tells customers to ask whoever
     runs their TradeComply server. A malformed value is ignored with a warning instead of being shown."""
@@ -59,6 +71,7 @@ class Settings:
     support_url: str | None = None        # operator's support/contact page (SUPPORT_URL, https:// or http://)
     cookie_secure: bool = False           # force the Secure cookie flag (it is also set automatically over https)
     local_mode: bool = False              # python -m app.local: one company on a laptop
+    trusted_proxy_hops: int = 0           # TRUSTED_PROXY_HOPS: proxies that append to X-Forwarded-For (auth.client_ip)
     trial_days: int = 14
     max_body_bytes: int = 8 * 1024 * 1024
     events_background: bool = True        # deliver integration events on a background thread (EVENTS_WORKER=0)
@@ -84,6 +97,7 @@ class Settings:
             support_url=_support_url(os.getenv("SUPPORT_URL")),
             cookie_secure=_flag("COOKIE_SECURE"),
             local_mode=_flag("TC_LOCAL"),
+            trusted_proxy_hops=_proxy_hops(os.getenv("TRUSTED_PROXY_HOPS")),
             events_background=(os.getenv("EVENTS_WORKER") or "1").strip().lower() not in ("0", "false", "no",
                                                                                          "off"),
         )
@@ -138,6 +152,15 @@ class Platform:
         self.mcp_tenant_limiter = RateLimiter(limit=1200, window_s=60)    # all of a company's keys together
         self.mcp_reject_log_limiter = RateLimiter(limit=30, window_s=60)  # denied/rate-limited rows logged per key/IP
         self.mcp_export_limiter = RateLimiter(limit=20, window_s=10 * 60)  # MCP log downloads per company
+        # OAuth (app/oauth.py). Claude makes its registration, token and refresh calls from Anthropic's servers, a
+        # few addresses shared by every customer, so the per-IP ceilings are high (keyed by auth.ip_key, which a
+        # caller can't point at someone else's address); the global cap, the per-app limit and the size limits do
+        # the real bounding. Discovery is never limited (a 429 there makes MCP clients give up).
+        self.oauth_register_limiter = RateLimiter(limit=600, window_s=60 * 60)         # app registrations per IP
+        self.oauth_register_global_limiter = RateLimiter(limit=2000, window_s=60 * 60)  # all registrations
+        self.oauth_ip_limiter = RateLimiter(limit=1200, window_s=60)      # authorize/token/revoke calls per IP
+        self.oauth_client_limiter = RateLimiter(limit=60, window_s=60)    # successful token calls per app
+        self.oauth_purged_at = float("-inf")                              # last cleanup of expired OAuth rows
         self.mcp_audit_pending = 0                                       # audit rows waiting for the database
         self.mcp_audit_dropped = 0
         self.mcp_tool_index = None

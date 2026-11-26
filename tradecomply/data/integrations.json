@@ -6,7 +6,7 @@
   "name": "TradeComply CA",
   "mcp_path": "/mcp",
   "transport": "Streamable HTTP",
-  "auth": "Authorization: Bearer <TradeComply API key> (create one in Settings > AI assistant (MCP)). The server may also accept calls without a key while its public demo is open.",
+  "auth": "Sign in with TradeComply (OAuth: Claude custom connectors and other MCP clients that support it sign in and the person approves them in TradeComply), or Authorization: Bearer <TradeComply API key> (create one in Settings > AI assistant (MCP)). The server may also accept calls without a key while its public demo is open.",
   "tools_read_only": true
  },
  "integration_types": [
