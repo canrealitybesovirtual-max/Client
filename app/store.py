@@ -16,23 +16,31 @@ import functools
 import json
 import logging
 import os
+import re
 import secrets
 import sqlite3
 import threading
 import time
 import weakref
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 log = logging.getLogger("tradecomply.store")
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 TENANT_STATUSES = ("trialing", "active", "past_due", "canceled")
 ROLES = ("owner", "office", "field")
 FIELD_LOG_KINDS = ("toolbox_talk", "inspection", "incident")
 PROJECT_STATUSES = ("planned", "active", "completed", "closed")
+# Integration foundation (schema version 5). See docs/integrations-dev.md.
+CONNECTION_STATUSES = ("disconnected", "pending", "connected", "error")
+WEBHOOK_KINDS = ("slack", "teams", "generic")
+OUTBOUND_STATUSES = ("pending", "sending", "delivered", "failed", "skipped")
+OUTBOUND_DONE = ("delivered", "failed", "skipped")
+MCP_AUDIT_STATUSES = ("ok", "error", "denied", "rate_limited")
+PROVIDER_RE = re.compile(r"^[a-z][a-z0-9_]{1,39}$")
 
 # Raised by both backends for unique / foreign-key / check violations. On SQLite it is sqlite3's own class; psycopg's
 # IntegrityError is re-raised as PgIntegrityError, a subclass, so `except IntegrityError` works the same everywhere.
@@ -190,6 +198,89 @@ MIGRATIONS: dict[int, str] = {
     );
     """,
     4: "",          # Postgres only (row level security); kept so both backends have the same version numbers
+    # Integration foundation: per-tenant connector connections (secrets encrypted by app/crypto.py before they reach
+    # the store), outbound webhooks, the outbound event queue, the MCP call log, SSO settings and calendar tokens.
+    5: """
+    create table if not exists integration_connections (
+        id integer primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        provider text not null,
+        status text not null default 'disconnected'
+            check (status in ('disconnected','pending','connected','error')),
+        config_json text not null default '{}',
+        secret_blob text,
+        external_account text,
+        created text not null,
+        updated text,
+        last_error text,
+        unique (tenant_id, provider)
+    );
+
+    create table if not exists webhooks (
+        id integer primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        name text not null,
+        url text not null,
+        kind text not null default 'generic' check (kind in ('slack','teams','generic')),
+        events_json text not null default '[]',
+        signing_secret_blob text,
+        enabled integer not null default 1,
+        created text not null,
+        last_status text,
+        last_sent text
+    );
+    create index if not exists webhooks_tenant on webhooks(tenant_id);
+
+    create table if not exists outbound_events (
+        id integer primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        event text not null,
+        payload_json text not null default '{}',
+        target text not null,
+        status text not null default 'pending'
+            check (status in ('pending','sending','delivered','failed','skipped')),
+        attempts integer not null default 0,
+        next_attempt text,
+        created text not null,
+        last_error text,
+        dedupe_key text
+    );
+    create index if not exists outbound_events_due on outbound_events(status, next_attempt);
+    create index if not exists outbound_events_tenant on outbound_events(tenant_id, id);
+    create unique index if not exists outbound_events_dedupe on outbound_events(tenant_id, target, dedupe_key);
+
+    create table if not exists mcp_audit_log (
+        id integer primary key,
+        tenant_id text references tenants(id) on delete cascade,
+        api_key_id integer,
+        tool text not null,
+        args_sha256 text,
+        status text not null,
+        duration_ms integer,
+        ip text,
+        created text not null
+    );
+    create index if not exists mcp_audit_log_tenant_created on mcp_audit_log(tenant_id, created);
+    create index if not exists mcp_audit_log_created on mcp_audit_log(created);
+
+    create table if not exists sso_configs (
+        tenant_id text primary key references tenants(id) on delete cascade,
+        issuer text not null,
+        client_id text not null,
+        secret_blob text,
+        allowed_domains_json text not null default '[]',
+        enforced integer not null default 0,
+        created text not null
+    );
+
+    create table if not exists calendar_tokens (
+        tenant_id text not null references tenants(id) on delete cascade,
+        token_hash text primary key,
+        created text not null,
+        revoked integer not null default 0
+    );
+    create index if not exists calendar_tokens_tenant on calendar_tokens(tenant_id);
+    """,
 }
 
 # The same schema for PostgreSQL. Differences, all chosen so both backends return the same values:
@@ -366,9 +457,113 @@ PG_MIGRATIONS: dict[int, str] = {
     end
     $rls$;
     """,
+    # Integration foundation (see the SQLite migration 5). Timestamps that are compared or sorted as text
+    # (next_attempt, created) use collate "C" (byte order, like SQLite). Row level security and no Data API privileges
+    # for the new tables, as migration 4 does for the others.
+    5: """
+    create table if not exists integration_connections (
+        id bigint generated by default as identity primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        provider text not null,
+        status text not null default 'disconnected'
+            check (status in ('disconnected','pending','connected','error')),
+        config_json text not null default '{}',
+        secret_blob text,
+        external_account text,
+        created text not null,
+        updated text,
+        last_error text,
+        unique (tenant_id, provider)
+    );
+
+    create table if not exists webhooks (
+        id bigint generated by default as identity primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        name text collate "C" not null,
+        url text not null,
+        kind text not null default 'generic' check (kind in ('slack','teams','generic')),
+        events_json text not null default '[]',
+        signing_secret_blob text,
+        enabled smallint not null default 1,
+        created text not null,
+        last_status text,
+        last_sent text
+    );
+    create index if not exists webhooks_tenant on webhooks(tenant_id);
+
+    create table if not exists outbound_events (
+        id bigint generated by default as identity primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        event text not null,
+        payload_json text not null default '{}',
+        target text not null,
+        status text not null default 'pending'
+            check (status in ('pending','sending','delivered','failed','skipped')),
+        attempts integer not null default 0,
+        next_attempt text collate "C",
+        created text collate "C" not null,
+        last_error text,
+        dedupe_key text
+    );
+    create index if not exists outbound_events_due on outbound_events(status, next_attempt);
+    create index if not exists outbound_events_tenant on outbound_events(tenant_id, id);
+    create unique index if not exists outbound_events_dedupe on outbound_events(tenant_id, target, dedupe_key);
+
+    create table if not exists mcp_audit_log (
+        id bigint generated by default as identity primary key,
+        tenant_id text references tenants(id) on delete cascade,
+        api_key_id bigint,
+        tool text not null,
+        args_sha256 text,
+        status text not null,
+        duration_ms integer,
+        ip text,
+        created text collate "C" not null
+    );
+    create index if not exists mcp_audit_log_tenant_created on mcp_audit_log(tenant_id, created);
+    create index if not exists mcp_audit_log_created on mcp_audit_log(created);
+
+    create table if not exists sso_configs (
+        tenant_id text primary key references tenants(id) on delete cascade,
+        issuer text not null,
+        client_id text not null,
+        secret_blob text,
+        allowed_domains_json text not null default '[]',
+        enforced smallint not null default 0,
+        created text not null
+    );
+
+    create table if not exists calendar_tokens (
+        tenant_id text not null references tenants(id) on delete cascade,
+        token_hash text primary key,
+        created text not null,
+        revoked smallint not null default 0
+    );
+    create index if not exists calendar_tokens_tenant on calendar_tokens(tenant_id);
+
+    do $rls5$
+    declare t text; r text; seq text;
+    begin
+      foreach t in array array['integration_connections','webhooks','outbound_events','mcp_audit_log','sso_configs',
+                               'calendar_tokens'] loop
+        execute format('alter table %I enable row level security', t);
+        foreach r in array array['anon','authenticated'] loop
+          if exists (select 1 from pg_roles where rolname = r) then
+            execute format('revoke all on table %I from %I', t, r);
+            if t in ('integration_connections','webhooks','outbound_events','mcp_audit_log') then   -- identity ids
+              seq := pg_get_serial_sequence(quote_ident(t), 'id');
+              execute format('revoke all on sequence %s from %I', seq, r);
+            end if;
+          end if;
+        end loop;
+      end loop;
+    end
+    $rls5$;
+    """,
 }
 APP_TABLES = ("tenants", "users", "api_keys", "projects", "subs", "documents", "field_logs", "audit", "stripe_events",
-              "revoked_sessions", "app_secrets", "schema_version")
+              "revoked_sessions", "app_secrets", "schema_version", "integration_connections", "webhooks",
+              "outbound_events", "mcp_audit_log", "sso_configs", "calendar_tokens")
 assert sorted(MIGRATIONS) == sorted(PG_MIGRATIONS) and max(MIGRATIONS) == SCHEMA_VERSION
 
 # Writable columns per tenant-owned table. Anything else in a payload is ignored.
@@ -398,6 +593,51 @@ ORDERS = tuple(ORDER_SQL)
 MAX_ID = 2 ** 63 - 1
 
 MIN_SECRET_LEN = 32
+
+# Secrets reach the store only as blobs from app/crypto.py (SecretBox.encrypt): "v<version>.<key id>.<base64url>".
+# The store refuses anything else in a secret column, so plaintext can't be saved there by mistake.
+SECRET_BLOB_RE = re.compile(r"^v[0-9]{1,3}\.[0-9a-f]{8}\.[A-Za-z0-9_-]{20,}$")
+SECRET_BLOB_COLUMNS = {"integration_connections": ("secret_blob",), "webhooks": ("url", "signing_secret_blob"),
+                       "sso_configs": ("secret_blob",)}
+MAX_CONFIG_JSON = 20_000
+MAX_PAYLOAD_JSON = 64_000
+TARGET_RE = re.compile(r"^(webhook|connector|handler):[A-Za-z0-9_.:-]{1,80}$")
+DOMAIN_RE = re.compile(r"^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$")
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_ANY = object()          # "no expectation" default for compare-and-set arguments
+_KEEP = object()         # "leave this column as it is" default
+
+
+def _check_provider(provider: str) -> None:
+    if not isinstance(provider, str) or not PROVIDER_RE.match(provider):
+        raise ValueError(f"bad provider id {str(provider)[:50]!r}")
+
+
+def _check_blob(value, column: str):
+    if value is None:
+        return None
+    if not isinstance(value, str) or not SECRET_BLOB_RE.match(value) or len(value) > 200_000:
+        raise ValueError(f"{column} must be an encrypted blob from app.crypto.SecretBox.encrypt, never plaintext")
+    return value
+
+
+def _dumps(value) -> str:
+    return json.dumps(value, separators=(",", ":"), sort_keys=True, default=str)
+
+
+def _loads(text, default):
+    try:
+        out = json.loads(text) if text else default
+    except ValueError:
+        return default
+    return out if isinstance(out, type(default)) else default
+
+
+def _limit(limit, top: int = 1000) -> int:
+    try:
+        return max(1, min(int(limit), top))
+    except (TypeError, ValueError):
+        return 100
 MIGRATION_LOCK_ID = 7_310_442_871_201      # pg_advisory_xact_lock key for schema migrations (any fixed bigint)
 
 
@@ -414,6 +654,32 @@ def _id_ok(value) -> bool:
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def iso_in(seconds: float, now: datetime | None = None) -> str:
+    """The store's timestamp format (UTC, whole seconds, "+00:00"), `seconds` from now (or from `now`)."""
+    base = now or datetime.now(timezone.utc)
+    return (base + timedelta(seconds=seconds)).astimezone(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def to_store_time(value) -> str:
+    """A datetime, a date ("2026-11-01" = midnight UTC) or an ISO timestamp, in the store's text format, so that
+    comparing it with stored timestamps as text compares the times. ValueError for anything else."""
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        text = str(value or "").strip()
+        if len(text) == 10:
+            text += "T00:00:00+00:00"
+        try:
+            dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            raise ValueError(f"not a date or ISO timestamp: {str(value)[:40]!r}") from None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    if not 1900 <= dt.year <= 2200:
+        raise ValueError("timestamp out of range")
+    return dt.astimezone(timezone.utc).replace(microsecond=0).isoformat()
 
 
 def default_data_dir() -> str:
@@ -1218,6 +1484,16 @@ class Store:
         with self.connect() as con:
             return con.execute("select 1 from revoked_sessions where nonce = ?", (nonce,)).fetchone() is not None
 
+    def claim_nonce(self, nonce: str, expires: int) -> bool:
+        """Single-use tokens (e.g. an OAuth `state`): True the first time `nonce` is presented, False every later time
+        until `expires` (unix seconds) has passed. Kept in revoked_sessions; callers prefix the nonce with its use
+        ("oauth:...") so it can never collide with a session nonce."""
+        with self.connect() as con:
+            con.execute("delete from revoked_sessions where expires < ?",
+                        (int(datetime.now(timezone.utc).timestamp()),))
+            return con.execute("insert into revoked_sessions (nonce, expires) values (?, ?) on conflict (nonce) "
+                               "do nothing", (str(nonce)[:200], int(expires))).rowcount == 1
+
     # ------------------------------------------------------------------ audit
     def audit(self, tenant_id: str | None, user: str | None, tool: str, args: dict | None, verified: bool | None,
               ok: bool = True, source: str = "api") -> None:
@@ -1318,3 +1594,508 @@ class Store:
         if cur.rowcount and value == fresh:
             log.info("generated a new %s and stored it in the database (table app_secrets)", name)
         return value
+
+    # ================================================================== integration foundation (schema version 5)
+    # Every method here that takes tenant_id filters by it, and writable columns come from fixed whitelists (unknown
+    # fields raise ValueError, so a typo in a connector fails its tests instead of being dropped). Methods marked
+    # OPERATOR ONLY work across tenants: they serve the event delivery worker, key rotation, login by email domain
+    # and the platform operator. Never call them with a tenant's input as the tenant selector.
+
+    # ------------------------------------------------------------------ integration_connections
+    CONNECTION_FIELDS = ("status", "config", "secret_blob", "external_account", "last_error")
+
+    @staticmethod
+    def _connection_values(fields: dict) -> dict:
+        bad = set(fields) - set(Store.CONNECTION_FIELDS)
+        if bad:
+            raise ValueError(f"unknown connection field(s) {sorted(bad)}; allowed: {Store.CONNECTION_FIELDS}")
+        out = {}
+        if "status" in fields:
+            if fields["status"] not in CONNECTION_STATUSES:
+                raise ValueError(f"status must be one of {CONNECTION_STATUSES}")
+            out["status"] = fields["status"]
+        if "config" in fields:
+            cfg = fields["config"] if fields["config"] is not None else {}
+            if not isinstance(cfg, dict):
+                raise ValueError("config must be a dict of non-secret settings")
+            text = _dumps(cfg)
+            if len(text) > MAX_CONFIG_JSON:
+                raise ValueError("config is too large")
+            out["config_json"] = text
+        if "secret_blob" in fields:
+            out["secret_blob"] = _check_blob(fields["secret_blob"], "secret_blob")
+        for k, n in (("external_account", 300), ("last_error", 1000)):
+            if k in fields:
+                out[k] = None if fields[k] is None else str(fields[k])[:n]
+        return out
+
+    @staticmethod
+    def _connection(row, with_secret: bool = False) -> dict | None:
+        if row is None:
+            return None
+        d = dict(row)
+        d["config"] = _loads(d.pop("config_json", None), {})
+        d["has_secret"] = bool(d.get("secret_blob"))
+        if not with_secret:
+            d.pop("secret_blob", None)
+        return d
+
+    def get_connection(self, tenant_id: str, provider: str, with_secret: bool = False) -> dict | None:
+        """This tenant's connection to `provider`, or None. The encrypted secret_blob is included only with
+        with_secret=True (has_secret says whether one is stored)."""
+        with self.connect() as con:
+            row = con.execute("select * from integration_connections where tenant_id = ? and provider = ?",
+                              (tenant_id, provider)).fetchone()
+        return self._connection(row, with_secret)
+
+    def list_connections(self, tenant_id: str) -> list[dict]:
+        with self.connect() as con:
+            rows = con.execute("select * from integration_connections where tenant_id = ? order by provider, id",
+                               (tenant_id,)).fetchall()
+        return [self._connection(r) for r in rows]
+
+    def save_connection(self, tenant_id: str, provider: str, **fields) -> dict:
+        """Insert or update (unique per tenant + provider) in one statement. `fields`: status, config (dict),
+        secret_blob (encrypted), external_account, last_error. Columns not given keep their value (or default)."""
+        _check_provider(provider)
+        values = self._connection_values(fields)
+        now = now_iso()
+        cols = ["tenant_id", "provider", *values, "created", "updated"]
+        sets = ", ".join([f"{c} = excluded.{c}" for c in values] + ["updated = excluded.updated"])
+        with self.connect() as con:
+            con.execute(f"insert into integration_connections ({', '.join(cols)}) values "
+                        f"({', '.join('?' * len(cols))}) on conflict (tenant_id, provider) do update set {sets}",
+                        [tenant_id, provider, *values.values(), now, now])
+            row = con.execute("select * from integration_connections where tenant_id = ? and provider = ?",
+                              (tenant_id, provider)).fetchone()
+        return self._connection(row)
+
+    def update_connection(self, tenant_id: str, provider: str, *, expect_secret_blob=_ANY, **fields) -> dict | None:
+        """Update an existing connection. With expect_secret_blob, only if the stored blob is still exactly that
+        value (compare-and-set, e.g. two workers refreshing one OAuth token: the loser gets None and re-reads).
+        Returns the updated row, or None (no such connection, or the compare failed)."""
+        values = self._connection_values(fields)
+        values["updated"] = now_iso()
+        sql = (f"update integration_connections set {', '.join(f'{c} = ?' for c in values)} "
+               "where tenant_id = ? and provider = ?")
+        params = [*values.values(), tenant_id, provider]
+        if expect_secret_blob is not _ANY:
+            if expect_secret_blob is None:
+                sql += " and secret_blob is null"
+            else:
+                sql += " and secret_blob = ?"
+                params.append(expect_secret_blob)
+        with self.connect() as con:
+            if con.execute(sql, params).rowcount == 0:
+                return None
+            row = con.execute("select * from integration_connections where tenant_id = ? and provider = ?",
+                              (tenant_id, provider)).fetchone()
+        return self._connection(row)
+
+    def delete_connection(self, tenant_id: str, provider: str) -> bool:
+        with self.connect() as con:
+            return con.execute("delete from integration_connections where tenant_id = ? and provider = ?",
+                               (tenant_id, provider)).rowcount > 0
+
+    def connections_for_provider(self, provider: str, status: str = "connected") -> list[dict]:
+        """OPERATOR ONLY: every tenant's connection to `provider` with this status (scheduled syncs). No secrets."""
+        with self.connect() as con:
+            rows = con.execute("select * from integration_connections where provider = ? and status = ? "
+                               "order by tenant_id", (provider, status)).fetchall()
+        return [self._connection(r) for r in rows]
+
+    # ------------------------------------------------------------------ webhooks
+    WEBHOOK_FIELDS = ("name", "url", "kind", "events", "signing_secret_blob", "enabled", "last_status", "last_sent")
+
+    @staticmethod
+    def _webhook_values(fields: dict) -> dict:
+        bad = set(fields) - set(Store.WEBHOOK_FIELDS)
+        if bad:
+            raise ValueError(f"unknown webhook field(s) {sorted(bad)}; allowed: {Store.WEBHOOK_FIELDS}")
+        out = {}
+        if "name" in fields:
+            name = str(fields["name"] or "").strip()
+            if not 1 <= len(name) <= 100:
+                raise ValueError("webhook name must be 1-100 characters")
+            out["name"] = name
+        if "url" in fields:      # the URL is a credential (Slack and Teams URLs carry their secret): encrypted
+            if fields["url"] is None:
+                raise ValueError("url is required")
+            out["url"] = _check_blob(fields["url"], "url")
+        if "kind" in fields:
+            if fields["kind"] not in WEBHOOK_KINDS:
+                raise ValueError(f"kind must be one of {WEBHOOK_KINDS}")
+            out["kind"] = fields["kind"]
+        if "events" in fields:
+            events = fields["events"]
+            if not isinstance(events, (list, tuple)) or len(events) > 50 or not all(
+                    isinstance(e, str) and 1 <= len(e) <= 60 for e in events):
+                raise ValueError("events must be a list of event names")
+            out["events_json"] = _dumps(sorted(set(events)))
+        if "signing_secret_blob" in fields:
+            out["signing_secret_blob"] = _check_blob(fields["signing_secret_blob"], "signing_secret_blob")
+        if "enabled" in fields:
+            out["enabled"] = 1 if fields["enabled"] else 0
+        if "last_status" in fields:
+            out["last_status"] = None if fields["last_status"] is None else str(fields["last_status"])[:300]
+        if "last_sent" in fields:
+            out["last_sent"] = None if fields["last_sent"] is None else to_store_time(fields["last_sent"])
+        return out
+
+    @staticmethod
+    def _webhook(row, with_secret: bool = False) -> dict | None:
+        if row is None:
+            return None
+        d = dict(row)
+        d["events"] = _loads(d.pop("events_json", None), [])
+        d["enabled"] = bool(d["enabled"])
+        d["has_signing_secret"] = bool(d.get("signing_secret_blob"))
+        if not with_secret:
+            d.pop("signing_secret_blob", None)
+        return d
+
+    def create_webhook(self, tenant_id: str, *, name: str, url: str, kind: str, events: list[str],
+                       signing_secret_blob: str | None = None, enabled: bool = True) -> dict:
+        """`url` and `signing_secret_blob` are SecretBox blobs (the store refuses plaintext)."""
+        values = self._webhook_values({"name": name, "url": url, "kind": kind, "events": events,
+                                       "signing_secret_blob": signing_secret_blob, "enabled": enabled})
+        values["tenant_id"], values["created"] = tenant_id, now_iso()
+        cols = list(values)
+        with self.connect() as con:
+            wid = self._insert_id(con, f"insert into webhooks ({', '.join(cols)}) "
+                                       f"values ({', '.join('?' * len(cols))})", [values[c] for c in cols])
+            row = con.execute("select * from webhooks where tenant_id = ? and id = ?", (tenant_id, wid)).fetchone()
+        return self._webhook(row)
+
+    def list_webhooks(self, tenant_id: str, enabled_only: bool = False) -> list[dict]:
+        sql = "select * from webhooks where tenant_id = ?" + (" and enabled = 1" if enabled_only else "")
+        with self.connect() as con:
+            rows = con.execute(sql + " order by id", (tenant_id,)).fetchall()
+        return [self._webhook(r) for r in rows]
+
+    def get_webhook(self, tenant_id: str, webhook_id, with_secret: bool = False) -> dict | None:
+        if not _id_ok(webhook_id):
+            return None
+        with self.connect() as con:
+            row = con.execute("select * from webhooks where tenant_id = ? and id = ?",
+                              (tenant_id, webhook_id)).fetchone()
+        return self._webhook(row, with_secret)
+
+    def update_webhook(self, tenant_id: str, webhook_id, **fields) -> dict | None:
+        values = self._webhook_values(fields)
+        if not _id_ok(webhook_id):
+            return None
+        if values:
+            with self.connect() as con:
+                con.execute(f"update webhooks set {', '.join(f'{c} = ?' for c in values)} "
+                            "where tenant_id = ? and id = ?", [*values.values(), tenant_id, webhook_id])
+        return self.get_webhook(tenant_id, webhook_id)
+
+    def delete_webhook(self, tenant_id: str, webhook_id) -> bool:
+        if not _id_ok(webhook_id):
+            return False
+        with self.connect() as con:
+            return con.execute("delete from webhooks where tenant_id = ? and id = ?",
+                               (tenant_id, webhook_id)).rowcount > 0
+
+    def webhooks_for_event(self, tenant_id: str, event: str) -> list[dict]:
+        """This tenant's enabled webhooks subscribed to `event` (or to every event, "*")."""
+        return [w for w in self.list_webhooks(tenant_id, enabled_only=True)
+                if event in w["events"] or "*" in w["events"]]
+
+    # ------------------------------------------------------------------ outbound_events (the delivery queue)
+    @staticmethod
+    def _outbound(row) -> dict | None:
+        if row is None:
+            return None
+        d = dict(row)
+        d["payload"] = _loads(d.pop("payload_json", None), {})
+        return d
+
+    def enqueue_outbound(self, tenant_id: str, event: str, payload: dict, targets, *, dedupe_key: str | None = None,
+                         delay_s: float = 0) -> list[int]:
+        """One pending row per target ("webhook:<id>", "connector:<provider>", "handler:<name>") in one transaction.
+        With dedupe_key, a target that already has a row with that key for this tenant is skipped (the unique index
+        decides, so two emitters racing can't both add it). Returns the new row ids."""
+        if not isinstance(event, str) or not 1 <= len(event) <= 60:
+            raise ValueError("bad event name")
+        if not isinstance(payload, dict):
+            raise ValueError("payload must be a dict")
+        text = _dumps(payload)
+        if len(text) > MAX_PAYLOAD_JSON:
+            raise ValueError(f"payload is too large ({len(text)} bytes; max {MAX_PAYLOAD_JSON})")
+        targets = list(dict.fromkeys(targets))
+        for t in targets:
+            if not isinstance(t, str) or not TARGET_RE.match(t):
+                raise ValueError(f"bad target {str(t)[:90]!r}")
+        if dedupe_key is not None:
+            dedupe_key = str(dedupe_key)[:200]
+        now, due = now_iso(), iso_in(delay_s)
+        sql = ("insert into outbound_events (tenant_id, event, payload_json, target, status, attempts, next_attempt, "
+               "created, dedupe_key) values (?,?,?,?,'pending',0,?,?,?) on conflict do nothing")
+        ids = []
+        with self.connect() as con:
+            for t in targets:
+                params = (tenant_id, event, text, t, due, now, dedupe_key)
+                if self.backend == "postgres":
+                    row = con.execute(sql + " returning id", params).fetchone()
+                    if row:
+                        ids.append(row[0])
+                else:
+                    cur = con.execute(sql, params)
+                    if cur.rowcount:
+                        ids.append(cur.lastrowid)
+        return ids
+
+    def claim_outbound(self, limit: int = 20, lease_s: float = 300, now: datetime | None = None) -> list[dict]:
+        """OPERATOR ONLY (the delivery worker): lock up to `limit` due rows (pending and due, or `sending` whose lease
+        ran out because a worker died), mark them `sending` with attempts + 1 and next_attempt = the lease end, and
+        return them. Two workers (or two instances) never get the same row: Postgres skips rows another worker has
+        locked; SQLite takes the write lock first."""
+        at = to_store_time(now or datetime.now(timezone.utc))
+        lease_until = iso_in(lease_s, now)
+        sql = ("select * from outbound_events where status in ('pending', 'sending') and next_attempt <= ? "
+               "order by next_attempt, id limit ?")
+        with self.connect() as con:
+            if self.backend == "sqlite":
+                con.execute("begin immediate")
+                rows = con.execute(sql, (at, _limit(limit, 500))).fetchall()
+            else:
+                rows = con.execute(sql + " for update skip locked", (at, _limit(limit, 500))).fetchall()
+            out = []
+            for r in rows:
+                con.execute("update outbound_events set status = 'sending', attempts = attempts + 1, next_attempt = ? "
+                            "where tenant_id = ? and id = ?", (lease_until, r["tenant_id"], r["id"]))
+                d = self._outbound(r)
+                d.update(status="sending", attempts=d["attempts"] + 1, next_attempt=lease_until)
+                out.append(d)
+        return out
+
+    def finish_outbound(self, tenant_id: str, outbound_id, status: str, *, next_attempt=None,
+                        last_error: str | None = None) -> bool:
+        """Record a delivery result: delivered / failed / skipped, or pending again with next_attempt (a retry)."""
+        if status not in ("pending", *OUTBOUND_DONE):
+            raise ValueError(f"status must be pending or one of {OUTBOUND_DONE}")
+        if status == "pending" and next_attempt is None:
+            raise ValueError("a retry needs next_attempt")
+        if not _id_ok(outbound_id):
+            return False
+        nxt = None if next_attempt is None else to_store_time(next_attempt)
+        with self.connect() as con:
+            return con.execute("update outbound_events set status = ?, next_attempt = ?, last_error = ? "
+                               "where tenant_id = ? and id = ?",
+                               (status, nxt, None if last_error is None else str(last_error)[:1000], tenant_id,
+                                outbound_id)).rowcount > 0
+
+    def get_outbound(self, tenant_id: str, outbound_id) -> dict | None:
+        if not _id_ok(outbound_id):
+            return None
+        with self.connect() as con:
+            return self._outbound(con.execute("select * from outbound_events where tenant_id = ? and id = ?",
+                                              (tenant_id, outbound_id)).fetchone())
+
+    def list_outbound(self, tenant_id: str, status: str | None = None, limit: int = 100,
+                      before_id: int | None = None) -> list[dict]:
+        """Newest first. Page with before_id = the last id of the previous page."""
+        sql, params = "select * from outbound_events where tenant_id = ?", [tenant_id]
+        if status is not None:
+            if status not in OUTBOUND_STATUSES:
+                raise ValueError(f"status must be one of {OUTBOUND_STATUSES}")
+            sql += " and status = ?"
+            params.append(status)
+        if before_id is not None:
+            if not _id_ok(before_id):
+                return []
+            sql += " and id < ?"
+            params.append(int(before_id))
+        params.append(_limit(limit))
+        with self.connect() as con:
+            return [self._outbound(r) for r in con.execute(sql + " order by id desc limit ?", params).fetchall()]
+
+    def purge_outbound(self, older_than) -> int:
+        """OPERATOR ONLY: delete finished rows (delivered, failed, skipped) created before `older_than`."""
+        with self.connect() as con:
+            return con.execute("delete from outbound_events where status in ('delivered', 'failed', 'skipped') "
+                               "and created < ?", (to_store_time(older_than),)).rowcount
+
+    # ------------------------------------------------------------------ mcp_audit_log
+    def log_mcp_call(self, tenant_id: str | None, tool: str, status: str, *, api_key_id: int | None = None,
+                     args_sha256: str | None = None, duration_ms: int | None = None, ip: str | None = None) -> int:
+        """One row per MCP tool call. Arguments are never stored, only their SHA-256 (hex). tenant_id None = an
+        anonymous call."""
+        if status not in MCP_AUDIT_STATUSES:
+            raise ValueError(f"status must be one of {MCP_AUDIT_STATUSES}")
+        if args_sha256 is not None and not SHA256_RE.match(str(args_sha256)):
+            raise ValueError("args_sha256 must be a lowercase hex SHA-256")
+        dur = None if duration_ms is None else max(0, min(int(duration_ms), 2 ** 31 - 1))
+        with self.connect() as con:
+            return self._insert_id(con, "insert into mcp_audit_log (tenant_id, api_key_id, tool, args_sha256, status, "
+                                        "duration_ms, ip, created) values (?,?,?,?,?,?,?,?)",
+                                   (tenant_id, api_key_id, str(tool)[:200], args_sha256, status, dur,
+                                    None if ip is None else str(ip)[:64], now_iso()))
+
+    def _audit_page(self, where: list[str], params: list, start, end, limit, cursor) -> dict:
+        if start is not None:
+            where.append("created >= ?")
+            params.append(to_store_time(start))
+        if end is not None:
+            where.append("created < ?")
+            params.append(to_store_time(end))
+        if cursor:
+            try:
+                c_created, c_id = str(cursor).rsplit("|", 1)
+                c_created, c_id = to_store_time(c_created), int(c_id)
+            except ValueError:
+                raise ValueError("bad cursor") from None
+            where.append("(created < ? or (created = ? and id < ?))")
+            params += [c_created, c_created, c_id]
+        n = _limit(limit)
+        sql = (f"select * from mcp_audit_log where {' and '.join(where) or '1 = 1'} "
+               "order by created desc, id desc limit ?")
+        with self.connect() as con:
+            rows = [dict(r) for r in con.execute(sql, [*params, n + 1]).fetchall()]
+        more = len(rows) > n
+        rows = rows[:n]
+        return {"items": rows, "next_cursor": f"{rows[-1]['created']}|{rows[-1]['id']}" if more else None}
+
+    def list_mcp_audit(self, tenant_id: str, *, start=None, end=None, limit: int = 100,
+                       cursor: str | None = None) -> dict:
+        """This tenant's MCP calls, newest first, created in [start, end). Returns {"items", "next_cursor"}; pass
+        next_cursor back as `cursor` for the next page (None = no more)."""
+        if not tenant_id:
+            raise ValueError("tenant_id is required")
+        return self._audit_page(["tenant_id = ?"], [tenant_id], start, end, limit, cursor)
+
+    def admin_mcp_audit(self, *, start=None, end=None, tenant_id: str | None = None, anonymous: bool = False,
+                        limit: int = 100, cursor: str | None = None) -> dict:
+        """OPERATOR ONLY (platform admin, never a tenant route): MCP calls across every tenant, or one tenant, or only
+        anonymous calls, created in [start, end), newest first, paged like list_mcp_audit."""
+        where, params = [], []
+        if anonymous:
+            where.append("tenant_id is null")
+        elif tenant_id:
+            where.append("tenant_id = ?")
+            params.append(tenant_id)
+        return self._audit_page(where, params, start, end, limit, cursor)
+
+    # ------------------------------------------------------------------ sso_configs
+    @staticmethod
+    def _sso(row, with_secret: bool = False) -> dict | None:
+        if row is None:
+            return None
+        d = dict(row)
+        d["allowed_domains"] = _loads(d.pop("allowed_domains_json", None), [])
+        d["enforced"] = bool(d["enforced"])
+        d["has_secret"] = bool(d.get("secret_blob"))
+        if not with_secret:
+            d.pop("secret_blob", None)
+        return d
+
+    def get_sso_config(self, tenant_id: str, with_secret: bool = False) -> dict | None:
+        with self.connect() as con:
+            return self._sso(con.execute("select * from sso_configs where tenant_id = ?", (tenant_id,)).fetchone(),
+                             with_secret)
+
+    def save_sso_config(self, tenant_id: str, *, issuer: str, client_id: str, secret_blob=_KEEP,
+                        allowed_domains=(), enforced: bool = False) -> dict:
+        """Insert or replace this tenant's SSO settings. secret_blob (encrypted) is left as it is unless given."""
+        issuer, client_id = str(issuer or "").strip(), str(client_id or "").strip()
+        if not issuer or len(issuer) > 500 or not client_id or len(client_id) > 300:
+            raise ValueError("issuer (max 500) and client_id (max 300) are required")
+        domains = sorted({str(d).strip().lower() for d in allowed_domains or ()})
+        if len(domains) > 50 or not all(DOMAIN_RE.match(d) for d in domains):
+            raise ValueError("allowed_domains must be up to 50 domain names like example.com")
+        values = {"issuer": issuer, "client_id": client_id, "allowed_domains_json": _dumps(domains),
+                  "enforced": 1 if enforced else 0}
+        if secret_blob is not _KEEP:
+            values["secret_blob"] = _check_blob(secret_blob, "secret_blob")
+        cols = ["tenant_id", *values, "created"]
+        sets = ", ".join(f"{c} = excluded.{c}" for c in values)
+        with self.connect() as con:
+            con.execute(f"insert into sso_configs ({', '.join(cols)}) values ({', '.join('?' * len(cols))}) "
+                        f"on conflict (tenant_id) do update set {sets}", [tenant_id, *values.values(), now_iso()])
+        return self.get_sso_config(tenant_id)
+
+    def delete_sso_config(self, tenant_id: str) -> bool:
+        with self.connect() as con:
+            return con.execute("delete from sso_configs where tenant_id = ?", (tenant_id,)).rowcount > 0
+
+    def sso_configs_for_domain(self, domain: str) -> list[dict]:
+        """OPERATOR ONLY (the login page): SSO settings of every tenant that lists this email domain. No secrets."""
+        domain = str(domain or "").strip().lower()
+        if not DOMAIN_RE.match(domain):
+            return []
+        with self.connect() as con:      # a small table; matched in Python so both backends behave the same
+            rows = con.execute("select * from sso_configs where allowed_domains_json like ?",
+                               (f'%"{domain}"%',)).fetchall()
+        return [s for s in (self._sso(r) for r in rows) if domain in s["allowed_domains"]]
+
+    # ------------------------------------------------------------------ calendar_tokens
+    @staticmethod
+    def _cal(row) -> dict | None:
+        if row is None:
+            return None
+        d = dict(row)
+        d["revoked"] = bool(d["revoked"])
+        return d
+
+    def add_calendar_token(self, tenant_id: str, token_hash: str) -> dict:
+        """Store the SHA-256 (hex) of a calendar feed token; the token itself is shown once and never stored."""
+        if not SHA256_RE.match(str(token_hash or "")):
+            raise ValueError("token_hash must be a lowercase hex SHA-256")
+        with self.connect() as con:
+            con.execute("insert into calendar_tokens (tenant_id, token_hash, created, revoked) values (?,?,?,0)",
+                        (tenant_id, token_hash, now_iso()))
+            return self._cal(con.execute("select * from calendar_tokens where tenant_id = ? and token_hash = ?",
+                                         (tenant_id, token_hash)).fetchone())
+
+    def list_calendar_tokens(self, tenant_id: str, include_revoked: bool = False) -> list[dict]:
+        sql = "select * from calendar_tokens where tenant_id = ?" + ("" if include_revoked else " and revoked = 0")
+        with self.connect() as con:
+            return [self._cal(r) for r in con.execute(sql + " order by created, token_hash", (tenant_id,)).fetchall()]
+
+    def revoke_calendar_token(self, tenant_id: str, token_hash: str) -> bool:
+        with self.connect() as con:
+            return con.execute("update calendar_tokens set revoked = 1 where tenant_id = ? and token_hash = ? "
+                               "and revoked = 0", (tenant_id, token_hash)).rowcount > 0
+
+    def revoke_calendar_tokens(self, tenant_id: str) -> int:
+        with self.connect() as con:
+            return con.execute("update calendar_tokens set revoked = 1 where tenant_id = ? and revoked = 0",
+                               (tenant_id,)).rowcount
+
+    def calendar_token_tenant(self, token_hash: str) -> str | None:
+        """The tenant a live (not revoked) calendar token belongs to, by the token's hash. The token is the
+        credential, so this lookup is by hash alone, like api_key_by_hash."""
+        if not SHA256_RE.match(str(token_hash or "")):
+            return None
+        with self.connect() as con:
+            row = con.execute("select tenant_id from calendar_tokens where token_hash = ? and revoked = 0",
+                              (token_hash,)).fetchone()
+        return row[0] if row else None
+
+    # ------------------------------------------------------------------ key rotation of stored secrets
+    def rotate_secret_blobs(self, transform) -> int:
+        """OPERATOR ONLY (key rotation, app/crypto.py): for every stored secret blob, transform(table, row, column,
+        blob) returns a replacement blob or None (leave it). Each replacement is a compare-and-set, so a value
+        changed meanwhile is left alone. Returns the number of blobs replaced."""
+        keys = {"integration_connections": ("tenant_id", "id"), "webhooks": ("tenant_id", "id"),
+                "sso_configs": ("tenant_id",)}
+        changed = 0
+        for table, columns in SECRET_BLOB_COLUMNS.items():
+            with self.connect() as con:
+                rows = [dict(r) for r in con.execute(f"select * from {table}").fetchall()]
+            for row in rows:
+                for col in columns:
+                    old = row.get(col)
+                    if not old:
+                        continue
+                    new = transform(table, row, col, old)
+                    if not new or new == old:
+                        continue
+                    _check_blob(new, col)
+                    where = " and ".join(f"{k} = ?" for k in keys[table])
+                    with self.connect() as con:
+                        changed += con.execute(f"update {table} set {col} = ? where {where} and {col} = ?",
+                                               [new, *(row[k] for k in keys[table]), old]).rowcount
+        return changed

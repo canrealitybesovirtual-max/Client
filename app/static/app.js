@@ -211,7 +211,7 @@
 
   const routes = {};
   const PUBLIC = new Set(['login', 'signup']);
-  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial' };
+  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial' };
 
   async function render() {
     const seq = ++state.renderSeq;
@@ -1790,8 +1790,517 @@
     return h('div', {}, h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, `Welcome, ${state.me.tenant.company_name}`), h('p', {}, 'Five steps, about 15 minutes. You can skip any step and come back.'))), stepper, body);
   };
 
+  // ======================================================================== integrations
+  // The catalog (GET /api/integrations/catalog) says what each product is and how it fits; the live connectors
+  // (GET /api/integrations) say what is installed on this server and connected for this company. Connect panels are
+  // drawn generically from each connector's config_schema, so new connectors need no UI code here.
+  const INT_KIND_PILL = { builtin: 'green', ai_assistant: 'blue', import_export: 'violet', reference: 'gray' };
+  const INT_ORDER = { builtin: 0, ai_assistant: 1, import_export: 2, reference: 3 };
+  const GOV_PILL = { yes: 'green', partial: 'amber', no: 'red', unconfirmed: 'gray', not_applicable: 'gray' };
+  const CONN_TEXT = { connected: ['green', 'Connected'], pending: ['amber', 'Waiting for sign-in'], error: ['red', 'Needs attention'], disconnected: ['gray', 'Not connected'] };
+  const PANEL_TITLE = { connector: 'Connect', webhooks: 'Set up alerts', calendar_feed: 'Get your calendar link', schedule_import: 'Upload a schedule' };
+  const HOOK_HELP = {
+    slack: 'In Slack, create an incoming webhook for the channel (your Slack app\'s settings → Incoming Webhooks; your workspace admin may need to approve the app) and paste its https://hooks.slack.com/services/… link here.',
+    teams: 'In Teams, open the channel\'s ••• menu → Workflows → “Send webhook alerts to a channel” (or build a workflow with the “When a Teams webhook request is received” trigger) and paste the link it creates. Add a co-owner to the workflow so it keeps working if its creator leaves.',
+    generic: 'Enter your HTTPS endpoint. TradeComply signs every message the Standard Webhooks way; you will see the signing secret once, right after you add it.',
+  };
+  const HOOK_PLACEHOLDER = { slack: 'https://hooks.slack.com/services/…', teams: 'https://…', generic: 'https://your-system.example/webhooks/tradecomply' };
+  const intState = { catalog: null, providers: null, providersError: null, loadErrors: [], events: null, toolRe: null, schedule: undefined };
+
+  const fill = (el, ...kids) => { el.replaceChildren(); return append(el, kids); };   // replaceChildren() would print null
+  const msgBox = (kind, ...text) => h('div', { class: `banner ${kind}` }, h('p', {}, ...text));
+  const ext = (url, text) => h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, text || url);
+  const more = (summary, ...content) => h('details', { class: 'more' }, h('summary', {}, summary), ...content);
+  function vendorStatusPill(label) {
+    const t = String(label || '');
+    const cls = /deprecat/i.test(t) ? 'red' : /preview|beta|early access|proof|rolling|unconfirmed|mixed|maintenance|stale|community/i.test(t) ? 'amber' : /generally available/i.test(t) ? 'green' : 'gray';
+    return h('span', { class: `pill ${cls}` }, h('span', { class: 'visually-hidden' }, 'Vendor status: '), t);
+  }
+  function withToolLinks(text) {
+    const re = intState.toolRe;
+    if (!re) return text;
+    const out = [];
+    let last = 0;
+    let m;
+    re.lastIndex = 0;
+    while ((m = re.exec(text))) {
+      out.push(text.slice(last, m.index), h('a', { class: 'tool-ref', href: `#/tools/${m[1]}`, title: `TradeComply check: ${m[1]}` }, humanize(m[1])));
+      last = m.index + m[1].length;
+    }
+    out.push(text.slice(last));
+    return out;
+  }
+  function providerFor(e) {
+    const list = intState.providers || [];
+    const ids = (e.builtin && e.builtin.providers) || [];
+    return list.find((p) => p.catalog_id === e.id) || list.find((p) => ids.includes(p.provider)) || null;
+  }
+  async function loadEvents() {
+    if (!intState.events) intState.events = (await api('/api/integrations/events')).events;
+    return intState.events;
+  }
+
+  // ---------- generic connector panel (any provider from GET /api/integrations)
+  function configForm(schema, config, saved) {
+    const form = h('form', { class: 'form-grid', novalidate: true, onsubmit: (ev) => ev.preventDefault() });
+    for (const f of schema) {
+      const id = `cfg-${++fieldSeq}`;
+      const val = f.secret ? '' : (config[f.name] ?? f.default ?? '');
+      const isSaved = f.secret && saved.includes(f.name);
+      const hint = [f.help, isSaved ? 'A value is saved. It is never shown; leave this blank to keep it.' : ''].filter(Boolean).join(' ');
+      if (f.type === 'boolean') {
+        form.append(h('div', { class: 'field wide' }, h('label', { class: 'switch', for: id }, h('input', { type: 'checkbox', name: f.name, id, checked: !!val }), f.label), hint ? h('span', { class: 'hint' }, hint) : null));
+        continue;
+      }
+      let el;
+      const attrs = { name: f.name, id, maxlength: f.max_length || null, placeholder: isSaved ? 'Saved' : (f.placeholder || null), autocomplete: 'off', spellcheck: 'false' };
+      if (f.type === 'select') el = select(f.name, [['', 'Choose…'], ...(f.options || []).map((o) => [o.value, o.label])], val, { id });
+      else if (f.type === 'textarea') el = h('textarea', { ...attrs, value: val });
+      else el = h('input', { ...attrs, value: val, type: f.secret || f.type === 'password' ? 'password' : ({ url: 'url', email: 'email', number: 'number' }[f.type] || 'text') });
+      form.append(field(f.label, el, { hint: hint || undefined, required: f.required && !isSaved, wide: f.type === 'textarea' }));
+    }
+    return form;
+  }
+  function configValues(form, schema) {
+    const out = {};
+    for (const f of schema) {
+      const el = form.elements[f.name];
+      if (!el) continue;
+      if (f.type === 'boolean') { out[f.name] = el.checked; continue; }
+      const v = el.value.trim();
+      if (f.secret) { if (v) out[f.name] = v; continue; }       // blank keeps the saved secret
+      out[f.name] = v === '' ? null : (f.type === 'number' ? Number(v) : v);
+    }
+    return out;
+  }
+  function providerPanel(p, lead) {
+    const wrap = h('div', { class: 'stack' });
+    const out = h('div', { 'aria-live': 'polite' });
+    let detail = null;
+    const refresh = async () => {
+      if (can.write()) detail = await api(`/api/integrations/${encodeURIComponent(p.provider)}`);
+      const fresh = detail || p;
+      p.connection = fresh.connection;
+      draw();
+    };
+    const act = async (btn, label, fn) => {
+      busy(btn, true, label);
+      fill(out);
+      try { await fn(); } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(btn, false); }
+    };
+    const draw = () => {
+      const view = detail || p;
+      const c = view.connection || {};
+      const [cls, text] = CONN_TEXT[c.status] || CONN_TEXT.disconnected;
+      const parts = [lead, h('p', { class: 'row' }, h('span', { class: `pill ${cls}` }, text),
+        c.external_account ? h('span', { class: 'small' }, `Account: ${c.external_account}`) : null,
+        c.updated ? h('span', { class: 'small muted' }, `Updated ${fmtDateTime(c.updated)}`) : null)];
+      if (c.last_error && c.status !== 'connected') parts.push(msgBox('error', c.last_error));
+      if (!p.operator_configured) {
+        parts.push(h('div', { class: 'banner warn' }, h('p', {}, `${p.display_name} isn't set up on this TradeComply server yet, so it can't be connected. The people who run this server need to add ${p.display_name}'s app credentials first.`),
+          p.missing_env && p.missing_env.length ? h('p', { class: 'small' }, 'Missing server settings: ', p.missing_env.map((n, k) => [k ? ', ' : '', h('code', {}, n)])) : null));
+      }
+      if (p.unconfirmed && p.unconfirmed.length) parts.push(more(`Not yet confirmed from ${p.display_name}'s documentation (${p.unconfirmed.length})`, h('ul', { class: 'bullets small' }, p.unconfirmed.map((u) => h('li', {}, u)))));
+      if (!can.write()) {
+        parts.push(h('p', { class: 'small muted' }, `Ask the owner or office staff to connect ${p.display_name}.`));
+        fill(wrap, ...parts);
+        return;
+      }
+      const schema = view.config_schema || [];
+      const form = configForm(schema, view.config || {}, view.secrets_saved || []);
+      const off = !p.operator_configured;
+      const buttons = h('div', { class: 'row' });
+      if (p.auth === 'oauth2') {
+        if (schema.length) {
+          const save = h('button', { type: 'button', class: 'btn secondary', onclick: () => act(save, 'Saving…', async () => {
+            detail = await api(`/api/integrations/${encodeURIComponent(p.provider)}/config`, { method: 'PUT', body: { config: configValues(form, schema) } }); draw(); toast('Settings saved');
+          }) }, 'Save settings');
+          buttons.append(save);
+        }
+        const signIn = h('button', { type: 'button', class: 'btn', disabled: off, onclick: () => act(signIn, 'Opening sign-in…', async () => {
+          if (schema.length) await api(`/api/integrations/${encodeURIComponent(p.provider)}/config`, { method: 'PUT', body: { config: configValues(form, schema) } });
+          const r = await api(`/api/integrations/${encodeURIComponent(p.provider)}/oauth/start`, { method: 'POST' });
+          location.href = r.authorize_url;
+        }) }, c.status === 'connected' ? `Sign in to ${p.display_name} again` : `Sign in with ${p.display_name}`);
+        buttons.append(signIn);
+      } else {
+        const connect = h('button', { type: 'button', class: 'btn', disabled: off, onclick: () => act(connect, 'Connecting…', async () => {
+          const r = await api(`/api/integrations/${encodeURIComponent(p.provider)}/connect`, { method: 'POST', body: { config: configValues(form, schema) } });
+          await refresh();
+          const t = r.test || {};
+          fill(out, msgBox(r.status === 'connected' ? 'info' : 'error', r.status === 'connected' ? `Connected${r.external_account ? ` to ${r.external_account}` : ''}.` : (t.message || r.last_error || 'The connection check failed.')));
+        }) }, schema.length ? 'Save and connect' : 'Connect');
+        buttons.append(connect);
+      }
+      if (c.status && c.status !== 'disconnected') {
+        const test = h('button', { type: 'button', class: 'btn secondary', disabled: off, onclick: () => act(test, 'Checking…', async () => {
+          const r = await api(`/api/integrations/${encodeURIComponent(p.provider)}/test`, { method: 'POST' });
+          await refresh();
+          fill(out, msgBox(r.ok ? 'info' : 'error', r.message || (r.ok ? 'The connection works.' : 'The connection check failed.')));
+        }) }, 'Test connection');
+        const disc = h('button', { type: 'button', class: 'btn danger', onclick: () => {
+          if (!confirm(`Disconnect ${p.display_name}? TradeComply forgets the saved sign-in; your settings stay.`)) return;
+          act(disc, 'Disconnecting…', async () => { await api(`/api/integrations/${encodeURIComponent(p.provider)}/disconnect`, { method: 'POST' }); await refresh(); toast(`${p.display_name} disconnected`); });
+        } }, 'Disconnect');
+        buttons.append(test, disc);
+      }
+      parts.push(schema.length ? form : null, buttons, out);
+      fill(wrap, ...parts);
+    };
+    draw();
+    if (can.write()) refresh().catch((err) => fill(out, msgBox('error', err.message)));
+    return wrap;
+  }
+
+  // ---------- panels for the built-in features that aren't connectors
+  async function drawWebhooks(e, body) {
+    const kind = e.builtin.webhook_kind;
+    const lead = h('p', { class: 'small' }, e.builtin.what_it_does);
+    if (!can.write()) { fill(body, lead, h('p', { class: 'small muted' }, 'Ask the owner or office staff to set up alerts.')); return; }
+    const list = h('div', {});
+    const out = h('div', { 'aria-live': 'polite' });
+    const events = await loadEvents();
+    const showSecret = (r) => fill(out, h('div', { class: 'secret' }, h('p', {}, h('strong', {}, 'Signing secret. Copy it now: it will not be shown again.'), ' ', r.message || ''), copyBox(r.signing_secret, 'signing secret')));
+    const drawList = async () => {
+      const hooks = (await api('/api/integrations/webhooks')).filter((x) => x.kind === kind);
+      fill(list, hooks.length ? table([
+        { label: 'Name', bare: true, render: (w) => h('div', {}, h('strong', {}, w.name), h('div', { class: 'small muted' }, w.url_hint)) },
+        { label: 'Sends', render: (w) => (w.events.includes('*') ? 'All alerts' : w.events.map(humanize).join(', ')) },
+        { label: 'Status', render: (w) => h('div', {}, h('span', { class: `pill ${w.enabled ? 'green' : 'gray'}` }, w.enabled ? 'On' : 'Off'), w.last_status ? h('div', { class: 'small muted' }, `${w.last_status}${w.last_sent ? ' · ' + fmtDateTime(w.last_sent) : ''}`) : null) },
+        { label: 'Actions', bare: true, render: (w) => {
+          const testBtn = h('button', { type: 'button', class: 'btn secondary small', onclick: async () => {
+            busy(testBtn, true, 'Sending…');
+            try { const r = await api(`/api/integrations/webhooks/${w.id}/test`, { method: 'POST' }); fill(out, msgBox(r.ok ? 'info' : 'error', r.ok ? `Test sent: ${r.message || 'delivered'}.` : (r.message || 'The test was not accepted.'), r.disabled ? ' The receiver says this webhook is gone, so it was turned off.' : '')); await drawList(); } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(testBtn, false); }
+          } }, 'Send test');
+          const toggle = h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { try { await api(`/api/integrations/webhooks/${w.id}`, { method: 'PATCH', body: { enabled: !w.enabled } }); await drawList(); } catch (err) { fill(out, msgBox('error', err.message)); } } }, w.enabled ? 'Turn off' : 'Turn on');
+          const rotate = kind === 'generic' ? h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (!confirm('Make a new signing secret? The old one stops working right away.')) return; try { showSecret(await api(`/api/integrations/webhooks/${w.id}/rotate-secret`, { method: 'POST' })); } catch (err) { fill(out, msgBox('error', err.message)); } } }, 'New secret') : null;
+          const del = h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (!confirm(`Delete “${w.name}”?`)) return; try { await api(`/api/integrations/webhooks/${w.id}`, { method: 'DELETE' }); await drawList(); toast('Webhook deleted'); } catch (err) { fill(out, msgBox('error', err.message)); } } }, 'Delete');
+          return h('div', { class: 'row' }, testBtn, toggle, rotate, del);
+        } }], hooks) : h('p', { class: 'small muted' }, 'None set up yet.'));
+    };
+    const nameIn = input('name', { value: { slack: 'Slack alerts', teams: 'Teams alerts', generic: 'Our system' }[kind], maxlength: '100' });
+    const urlIn = input('url', { type: 'url', placeholder: HOOK_PLACEHOLDER[kind], autocomplete: 'off', spellcheck: 'false', maxlength: '2000' });
+    const allBox = h('input', { type: 'checkbox', name: 'ev_all', checked: true });
+    const evBoxes = events.map((ev) => h('label', { title: ev.description }, h('input', { type: 'checkbox', name: 'ev', value: ev.name }), humanize(ev.name)));
+    const add = h('button', { type: 'submit', class: 'btn' }, 'Add');
+    const form = h('form', { novalidate: true, onsubmit: async (ev) => {
+      ev.preventDefault();
+      fill(out);
+      const picked = evBoxes.map((l) => l.querySelector('input')).filter((x) => x.checked).map((x) => x.value);
+      if (!urlIn.value.trim()) { out.append(msgBox('error', 'Paste the webhook link.')); urlIn.focus(); return; }
+      busy(add, true, 'Adding…');
+      try {
+        const r = await api('/api/integrations/webhooks', { method: 'POST', body: { name: nameIn.value.trim() || 'Alerts', url: urlIn.value.trim(), kind, events: allBox.checked || !picked.length ? ['*'] : picked } });
+        urlIn.value = '';
+        if (r.signing_secret) showSecret(r); else fill(out, msgBox('info', 'Added. Send a test to check it.'));
+        await drawList();
+      } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(add, false); }
+    } },
+    h('p', { class: 'small muted' }, HOOK_HELP[kind]),
+    h('div', { class: 'form-grid' }, field('Name', nameIn, { hint: 'So you know which channel or system it is.' }), field('Webhook link', urlIn, { required: true, hint: 'Stored encrypted; afterwards only the start of the address is shown.' })),
+    h('fieldset', {}, h('legend', {}, 'Which alerts'), h('div', { class: 'checks' }, h('label', {}, allBox, 'All alerts'), evBoxes)),
+    add);
+    fill(body, lead, list, h('h4', {}, 'Add one'), form, out);
+    await drawList();
+  }
+  async function drawCalendar(e, body) {
+    const lead = h('p', { class: 'small' }, e.builtin.what_it_does);
+    if (!can.write()) { fill(body, lead, h('p', { class: 'small muted' }, 'Ask the office for the calendar link.')); return; }
+    const slot = h('div', { 'aria-live': 'polite' });
+    const draw = (url) => {
+      const rotate = h('button', { type: 'button', class: 'btn ghost small', onclick: async () => {
+        if (!confirm('Make a new link? The old one stops working, so everyone who subscribed must add the new one.')) return;
+        try { const r = await api('/api/calendar/feed/rotate', { method: 'POST' }); draw(r.url); toast('New calendar link created'); } catch (err) { slot.append(msgBox('error', err.message)); }
+      } }, 'Make a new link');
+      fill(slot, copyBox(url, 'calendar link'), h('div', { class: 'row' }, rotate, h('a', { class: 'btn ghost small', href: '/api/calendar.ics', download: 'tradecomply.ics' }, 'Download once (.ics)')));
+    };
+    fill(body, lead, h('p', { class: 'small muted' }, 'In Google Calendar, Outlook or Apple Calendar, add a calendar from a URL (Outlook calls it subscribing from the web) and paste this link. Keep it private.'), slot);
+    draw((await api('/api/calendar/feed')).url);
+  }
+  async function scheduleEndpoint() {
+    if (intState.schedule !== undefined) return intState.schedule;
+    intState.schedule = null;
+    try {
+      const spec = await api('/api/openapi.json');
+      for (const [path, ops] of Object.entries(spec.paths || {})) {
+        if (ops.post && /schedule/i.test(path) && /(import|upload)/i.test(path)) {
+          const op = ops.post;
+          const props = (((op.requestBody || {}).content || {})['multipart/form-data'] || {}).schema || {};
+          intState.schedule = { path, op, fileField: 'file', needsProject: /\{project_id\}/.test(path) || (op.parameters || []).some((x) => x.name === 'project_id'), propsRef: props.$ref || null };
+          break;
+        }
+      }
+    } catch (err) { intState.schedule = undefined; throw err; }
+    return intState.schedule;
+  }
+  async function drawSchedule(e, body) {
+    const lead = h('p', { class: 'small' }, e.builtin.what_it_does);
+    const ep = await scheduleEndpoint();
+    if (!ep) { fill(body, lead, msgBox('info', 'Schedule import is being added to TradeComply and isn\'t on this server yet. Until then, enter your completion and key dates on each project page so the lien calendar stays right.')); return; }
+    if (!can.write()) { fill(body, lead, h('p', { class: 'small muted' }, 'Ask the office to upload the schedule.')); return; }
+    const out = h('div', { 'aria-live': 'polite' });
+    const fileIn = h('input', { type: 'file', name: 'file', accept: e.builtin.accept || '.xer,.xml' });
+    let projSel = null;
+    if (ep.needsProject) {
+      const projects = await api('/api/projects').catch(() => []);
+      projSel = select('project_id', [['', 'Choose a project…'], ...projects.map((p) => [String(p.id), p.name])], '');
+    }
+    const send = h('button', { type: 'submit', class: 'btn' }, 'Upload schedule');
+    const form = h('form', { novalidate: true, onsubmit: async (ev) => {
+      ev.preventDefault();
+      fill(out);
+      const file = fileIn.files && fileIn.files[0];
+      if (!file) { out.append(msgBox('error', 'Choose the schedule file you exported.')); return; }
+      if (projSel && !projSel.value) { out.append(msgBox('error', 'Choose the project this schedule is for.')); return; }
+      let path = ep.path;
+      const fd = new FormData();
+      fd.append(ep.fileField, file);
+      if (projSel) {
+        if (/\{project_id\}/.test(path)) path = path.replace('{project_id}', encodeURIComponent(projSel.value));
+        else path += `?project_id=${encodeURIComponent(projSel.value)}`;
+      }
+      busy(send, true, 'Uploading…');
+      try {
+        const r = await api(path, { method: 'POST', form: fd });
+        fill(out, msgBox('info', (r && r.message) || 'Schedule uploaded.'), more('What the server read', h('pre', { class: 'mono' }, JSON.stringify(r, null, 2).slice(0, 20000))));
+      } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(send, false); }
+    } }, field('Schedule file', fileIn, { hint: `Microsoft Project: File → Save As → XML Format (*.xml). Primavera P6: export as XER or P6 XML.` }), projSel ? field('Project', projSel) : null, send);
+    fill(body, lead, form, out);
+  }
+  async function drawConnect(e, body) {
+    const panel = (e.builtin && e.builtin.panel) || 'connector';
+    const p = providerFor(e);
+    const lead = h('p', { class: 'small' }, (e.builtin && e.builtin.what_it_does) || '');
+    if (panel === 'webhooks') return drawWebhooks(e, body);
+    if (panel === 'calendar_feed') await drawCalendar(e, body);
+    else if (panel === 'schedule_import') await drawSchedule(e, body);
+    if (panel !== 'connector') { if (p) body.append(h('hr'), providerPanel(p, null)); return; }
+    if (intState.providersError) { fill(body, lead, msgBox('warn', `Can't check this connection right now: ${intState.providersError}`)); return; }
+    if (!p) { fill(body, lead, msgBox('info', `This connection is being added to TradeComply and isn't available on this server yet. When it is, you'll connect ${e.name.split(' (')[0]} right here.`)); return; }
+    fill(body, providerPanel(p, lead));
+  }
+  function connectSlot(e) {
+    const panel = (e.builtin && e.builtin.panel) || 'connector';
+    const status = h('span', { class: 'int-conn-status' });
+    const p = providerFor(e);
+    if (panel === 'connector' || p) {
+      if (!p) status.append(h('span', { class: 'pill gray' }, intState.providersError ? 'Status unavailable' : 'Not on this server yet'));
+      else if (!p.operator_configured) status.append(h('span', { class: 'pill amber' }, 'Not set up on this server yet'));
+      else { const [cls, text] = CONN_TEXT[(p.connection || {}).status] || CONN_TEXT.disconnected; status.append(h('span', { class: `pill ${cls}` }, text)); }
+    } else if (panel === 'calendar_feed') status.append(h('span', { class: 'pill green' }, 'Ready'));
+    const body = h('div', { class: 'int-connect-body' }, h('p', { class: 'loading small' }, 'Loading…'));
+    const dt = h('details', { class: 'int-connect', 'data-entry': e.id }, h('summary', {}, h('span', { class: 'int-connect-title' }, PANEL_TITLE[panel] || 'Connect'), status), body);
+    let loaded = false;
+    const load = () => { if (loaded) return; loaded = true; drawConnect(e, body).catch((err) => fill(body, msgBox('error', err.message))); };
+    dt.addEventListener('toggle', () => { if (dt.open) load(); });
+    dt.openPanel = () => { dt.open = true; load(); };
+    return dt;
+  }
+
+  // ---------- catalog cards
+  function mcpBlock(e) {
+    const servers = e.mcp.servers || [];
+    if (!servers.length && !e.mcp.note) return null;
+    return h('div', { class: 'int-mcp' },
+      h('h4', {}, 'With your AI assistant (MCP) ', h('span', { class: 'pill gray' }, e.mcp.kind_label)),
+      servers.map((s) => h('div', { class: 'int-server' },
+        h('p', { class: 'row' }, h('strong', {}, s.label),
+          s.auth_needed ? h('span', { class: 'pill amber' }, 'Sign-in or key needed') : h('span', { class: 'pill green' }, 'No sign-in needed'),
+          s.confirmed ? null : h('span', { class: 'pill gray' }, 'Address not confirmed')),
+        s.url ? copyBox(s.url, `${s.label} address`) : null,
+        s.url_template ? [h('p', { class: 'small muted' }, s.url ? 'Form for your own account:' : 'Address for your own account (fill in your values):'), copyBox(s.url_template, `${s.label} address form`)] : null,
+        s.command ? [h('p', { class: 'small muted' }, 'Runs on your computer with:'), copyBox(s.command, `${s.label} command`)] : null,
+        s.auth ? h('p', { class: 'small' }, h('span', { class: 'muted' }, 'Sign-in: '), s.auth) : null,
+        s.notes ? h('p', { class: 'small muted' }, s.notes) : null)),
+      e.mcp.note ? h('p', { class: 'small muted' }, e.mcp.note) : null);
+  }
+  function govLine(e) {
+    const g = e.gov;
+    if (!g) return h('p', { class: 'small muted int-gov' }, 'Government cloud: no US government version was found in our research.');
+    return h('p', { class: 'small int-gov' }, h('span', { class: `pill ${GOV_PILL[g.supported] || 'gray'}` }, g.label), ' ', g.note, g.url ? [' ', ext(g.url, g.name || 'Government version')] : null);
+  }
+  function intCard(e, cat, kindLabels) {
+    const id = `int-${e.id}`;
+    const useLi = (u) => h('li', {}, withToolLinks(u.text));
+    const uses = e.uses || [];
+    const notes = (e.api && e.api.notes) || [];
+    const card = h('article', { class: 'card int-card', id, 'aria-labelledby': `${id}-h` },
+      h('div', { class: 'int-head' },
+        h('div', { class: 'int-title' }, h('h3', { id: `${id}-h` }, e.name), h('p', { class: 'small muted' }, e.vendor)),
+        h('div', { class: 'int-badges' }, h('span', { class: `pill ${INT_KIND_PILL[e.integration] || 'gray'}` }, kindLabels[e.integration] || e.integration), vendorStatusPill(e.status.label),
+          e.recommended === false ? h('span', { class: 'pill red' }, 'Not recommended') : null)),
+      h('p', {}, e.summary),
+      e.recommended === false && e.not_recommended_reason ? msgBox('warn', e.not_recommended_reason) : null,
+      h('p', { class: 'int-role' }, h('strong', {}, 'With TradeComply: '), e.tradecomply_role),
+      e.builtin || (intState.providers || []).some((p) => p.catalog_id === e.id) ? connectSlot(e) : null,
+      uses.length ? [h('h4', {}, 'How contractors use it with TradeComply'), h('ul', { class: 'bullets int-uses' }, uses.slice(0, 3).map(useLi))] : null,
+      uses.length > 3 ? more(`${uses.length - 3} more ${uses.length - 3 === 1 ? 'idea' : 'ideas'}`, h('ul', { class: 'bullets int-uses' }, uses.slice(3).map(useLi))) : null,
+      mcpBlock(e),
+      govLine(e),
+      e.caveats.length ? more(`Check before you rely on it (${e.caveats.length})`, h('ul', { class: 'bullets small' }, e.caveats.map((c) => h('li', {}, c)))) : null,
+      (e.details || []).length ? more(`More about ${e.name.split(' (')[0]}`, e.details.map((d) => h('p', { class: 'small' }, d))) : null,
+      e.api && (e.api.auth || notes.length) ? more('For your IT person or developer', e.api.auth ? h('p', { class: 'small' }, h('strong', {}, 'Sign-in: '), e.api.auth) : null, notes.length ? h('ul', { class: 'bullets small int-dev' }, notes.map((n) => h('li', {}, n))) : null) : null,
+      more(`Sources and how we checked (${e.sources.length})`,
+        h('p', { class: 'small' }, h('strong', {}, 'Vendor status: '), e.status.note),
+        (e.research_notes || []).map((r) => h('p', { class: 'small muted' }, r)),
+        h('ul', { class: 'bullets small int-sources' }, e.sources.map((s) => h('li', {}, s.url ? ext(s.url) : h('code', {}, s.path), s.note ? h('span', { class: 'muted' }, ` (${s.note})`) : null))),
+        h('p', { class: 'small muted' }, `Checked ${fmtDate(cat.checked_on)}.`)),
+      h('p', { class: 'int-links small' }, e.links.map((l, k) => [k ? ' · ' : '', ext(l.url, l.label)])));
+    card.dataset.hay = [e.name, e.vendor, e.summary, e.tradecomply_role, (e.keywords || []).join(' '), uses.map((u) => u.text).join(' '),
+      (e.tools || []).map((t) => `${t} ${humanize(t)}`).join(' '), kindLabels[e.integration], (e.builtin || {}).what_it_does || ''].join(' ').toLowerCase();
+    return card;
+  }
+  function explainer(cat) {
+    const ways = [
+      ['builtin', 'TradeComply connects to it for you. Open the panel on its card (Connect, Set up alerts, Upload a schedule), then sign in, paste a link or upload a file. Examples: Procore, Docusign, Slack and Teams alerts, text messages and your calendar.'],
+      ['ai_assistant', 'If your office uses an AI assistant such as Claude, ChatGPT or Copilot, add TradeComply and the other product to it. The assistant can read from one and check with the other in the same conversation, for example “pull our subs from Procore and check their licenses”. You sign in to each product yourself; TradeComply never sees those passwords.'],
+      ['import_export', 'Some products don\'t connect directly. Export a file from them (a CSV list or a schedule) and upload it here, or download TradeComply\'s results and attach them there.'],
+      ['reference', 'Background for your IT or security team, such as security checklists. Nothing to connect.'],
+    ];
+    const kindLabels = Object.fromEntries(cat.integration_types.map((k) => [k.id, k.label]));
+    return h('section', { class: 'card', 'aria-labelledby': 'int-how-h' },
+      h('h2', { id: 'int-how-h' }, 'How TradeComply works with your other tools'),
+      h('p', {}, 'TradeComply doesn\'t replace the software you already use. It checks the California rules behind what\'s in it: licenses, liens, payroll, safety and contracts. There are four ways to put them together:'),
+      h('ul', { class: 'int-ways clean' }, ways.map(([k, text]) => h('li', {}, h('span', { class: `pill ${INT_KIND_PILL[k]}` }, kindLabels[k]), h('p', {}, text)))),
+      h('p', { class: 'small muted' }, 'TradeComply\'s AI-assistant tools only look things up and check them; they can\'t change anything in your other systems. Built-in connections only do what you set them up to do, like posting an alert to your channel. Product details were checked against each vendor\'s official documentation on ', fmtDate(cat.checked_on), '; anything we couldn\'t confirm is marked.'));
+  }
+  function assistantBuilder(cat) {
+    const ready = new Set(cat.config_ready_ids || []);
+    const choices = cat.entries.filter((e) => ready.has(e.id));
+    const out = h('div', { 'aria-live': 'polite' });
+    const boxes = choices.map((e) => h('label', {}, h('input', { type: 'checkbox', name: 'cfg_pick', value: e.id }), e.name.split(' (')[0]));
+    const make = h('button', { type: 'submit', class: 'btn' }, 'Make my setup');
+    const form = h('form', { novalidate: true, onsubmit: async (ev) => {
+      ev.preventDefault();
+      fill(out);
+      const ids = boxes.map((l) => l.querySelector('input')).filter((x) => x.checked).map((x) => x.value);
+      if (!ids.length) { out.append(msgBox('error', 'Pick at least one product.')); return; }
+      busy(make, true, 'Making…');
+      try {
+        const r = await api(`/api/integrations/catalog/mcp-config?ids=${encodeURIComponent(ids.join(','))}`);
+        fill(out, 
+          h('h3', {}, 'Claude Code'), h('p', { class: 'small muted' }, 'Save as .mcp.json in your project folder, or run the commands below. Set the environment variables first; keys stay out of the file.'),
+          copyBox(r.claude_code_mcp_json_text, '.mcp.json', true),
+          more('Or add them with commands', copyBox(r.claude_code_commands.join('\n'), 'commands', true)),
+          h('h3', {}, 'Claude Desktop'), h('p', { class: 'small muted' }, 'Paste this into claude_desktop_config.json (Settings → Developer → Edit config; needs Node.js), then add the other products under Settings → Connectors → Add custom connector.'),
+          copyBox(JSON.stringify(r.claude_desktop_config, null, 2), 'Claude Desktop config', true),
+          r.claude_desktop_connectors.length ? table([{ label: 'Connector', key: 'name' }, { label: 'Address', render: (c) => h('code', {}, c.url) }, { label: 'Sign-in', render: (c) => h('span', { class: 'small' }, c.sign_in) }], r.claude_desktop_connectors) : null,
+          h('h3', {}, 'Keys to set'), h('ul', { class: 'bullets small' }, r.env_vars.map((v) => h('li', {}, h('code', {}, v.name), ` — ${v.used_for}`))),
+          h('p', { class: 'small' }, 'No TradeComply API key yet? ', h('a', { href: '#/settings' }, 'Create one in Settings → AI assistant (MCP)'), '.'),
+          r.skipped.length ? more(`Not added (${r.skipped.length})`, h('ul', { class: 'bullets small' }, r.skipped.map((s) => h('li', {}, h('strong', {}, s.name || s.id), `: ${s.reason}`)))) : null,
+          h('ul', { class: 'bullets small muted' }, r.notes.map((n) => h('li', {}, n))));
+      } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(make, false); }
+    } }, h('fieldset', {}, h('legend', {}, 'Products to add next to TradeComply'), h('div', { class: 'checks' }, boxes)), make);
+    return h('section', { class: 'card', id: 'int-assistant', 'aria-labelledby': 'int-asst-h' },
+      h('h2', { id: 'int-asst-h' }, 'Set up your AI assistant with several tools'),
+      h('p', { class: 'muted' }, 'Pick the products your office uses. You get one setup that adds TradeComply and them to Claude Code or Claude Desktop. Only products whose MCP address is confirmed in the vendor\'s own documentation are listed.'),
+      form, out);
+  }
+
+  routes.integrations = async ({ query }) => {
+    const [cat, live] = await Promise.all([api('/api/integrations/catalog'), api('/api/integrations').catch((err) => ({ error: err }))]);
+    intState.catalog = cat;
+    if (live.error) { intState.providers = []; intState.providersError = live.error.message; } else { intState.providers = live.providers || []; intState.providersError = null; intState.loadErrors = live.load_errors || []; }
+    const toolNames = [...new Set(cat.entries.flatMap((e) => e.tools || []))].sort((a, b) => b.length - a.length);
+    intState.toolRe = toolNames.length ? new RegExp(`\\b(${toolNames.join('|')})\\b`, 'g') : null;
+    const kindLabels = Object.fromEntries(cat.integration_types.map((k) => [k.id, k.label]));
+    const filters = { q: query.get('q') || '', cat: query.get('cat') || '', types: new Set((query.get('type') || '').split(',').filter((t) => kindLabels[t])), gov: query.get('gov') === '1' };
+    const top = [];
+    const result = query.get('result');
+    const focusId = query.get('integration');
+    const focusEntry = focusId ? cat.entries.find((e) => e.id === focusId || (e.builtin && e.builtin.providers.includes(focusId))) || null : null;
+    if (result === 'connected') top.push(msgBox('info', `${focusEntry ? focusEntry.name.split(' (')[0] : 'The integration'} is connected.`));
+    else if (result === 'error') top.push(msgBox('error', `Couldn't connect ${focusEntry ? focusEntry.name.split(' (')[0] : 'the integration'}: `, query.get('message') || 'sign-in was not completed.'));
+    if (can.write() && intState.loadErrors.length) top.push(msgBox('warn', `Some built-in connections failed to load on this server: ${intState.loadErrors.join(', ')}. The server log has the details.`));
+    if (intState.providersError) top.push(msgBox('warn', `Connection status is unavailable right now (${intState.providersError}). You can still browse the catalog.`));
+
+    // filters
+    const search = h('input', { type: 'search', id: 'int-q', value: filters.q, placeholder: 'e.g. e-signature, text alerts, Procore, schedule', autocomplete: 'off' });
+    const catSel = select('cat', [['', 'All categories'], ...cat.categories.map((c) => [c.id, c.label])], filters.cat, { id: 'int-cat' });
+    const govBox = h('input', { type: 'checkbox', id: 'int-gov', checked: filters.gov });
+    const count = h('p', { class: 'small muted', 'aria-live': 'polite', id: 'int-count' });
+    const chips = cat.integration_types.map((k) => h('button', { type: 'button', class: 'chip', 'aria-pressed': filters.types.has(k.id) ? 'true' : 'false', 'data-type': k.id, title: k.description, onclick: (ev) => {
+      const b = ev.currentTarget;
+      if (filters.types.has(k.id)) filters.types.delete(k.id); else filters.types.add(k.id);
+      b.setAttribute('aria-pressed', filters.types.has(k.id) ? 'true' : 'false');
+      apply();
+    } }, kindLabels[k.id]));
+    const filterCard = h('section', { class: 'card int-filters no-print', 'aria-label': 'Find an integration' },
+      h('div', { class: 'int-filter-row' },
+        h('div', { class: 'field' }, h('label', { for: 'int-q' }, 'Search'), search),
+        h('div', { class: 'field' }, h('label', { for: 'int-cat' }, 'Category'), catSel)),
+      h('div', { class: 'row' }, h('span', { class: 'label', id: 'int-type-l' }, 'Show:'), h('div', { class: 'chips', role: 'group', 'aria-labelledby': 'int-type-l' }, chips)),
+      h('label', { class: 'switch small-switch', for: 'int-gov' }, govBox, 'Only products with a US government cloud version (or no cloud involved)'),
+      count);
+
+    // sections
+    const cards = new Map();
+    const sections = cat.categories.map((c) => {
+      const list = cat.entries.filter((e) => e.category === c.id)
+        .sort((a, b) => ((a.recommended === false) - (b.recommended === false)) || (INT_ORDER[a.integration] - INT_ORDER[b.integration]) || a.name.localeCompare(b.name));
+      if (!list.length) return null;
+      const grid = h('div', { class: 'int-grid' }, list.map((e) => { const el = intCard(e, cat, kindLabels); cards.set(e.id, { el, e }); return el; }));
+      return h('section', { class: 'int-section', id: `int-cat-${c.id}`, 'data-cat': c.id, 'aria-labelledby': `int-cat-${c.id}-h` },
+        h('h2', { id: `int-cat-${c.id}-h` }, c.label), h('p', { class: 'muted small' }, c.description), grid);
+    }).filter(Boolean);
+    const matched = new Set(cat.entries.map((e) => providerFor(e)).filter(Boolean).map((p) => p.provider));
+    const extra = (intState.providers || []).filter((p) => !matched.has(p.provider));
+    const extraSection = extra.length ? h('section', { class: 'int-section', 'aria-labelledby': 'int-extra-h' }, h('h2', { id: 'int-extra-h' }, 'More connections on this server'),
+      h('div', { class: 'int-grid' }, extra.map((p) => h('article', { class: 'card int-card', 'aria-label': p.display_name }, h('h3', {}, p.display_name), h('p', {}, p.description),
+        p.docs_url ? h('p', { class: 'small' }, ext(p.docs_url, `${p.display_name} documentation`)) : null,
+        h('div', { class: 'int-connect-body' }, providerPanel(p, null)))))) : null;
+    const empty = h('div', { class: 'card empty', hidden: true }, h('p', {}, 'Nothing matches. Try another word, or clear the filters.'),
+      h('button', { type: 'button', class: 'btn secondary', onclick: () => { search.value = ''; catSel.value = ''; govBox.checked = false; filters.types.clear(); chips.forEach((b) => b.setAttribute('aria-pressed', 'false')); apply(); } }, 'Clear filters'));
+
+    function apply() {
+      filters.q = search.value.trim();
+      filters.cat = catSel.value;
+      filters.gov = govBox.checked;
+      const words = filters.q.toLowerCase().split(/\s+/).filter(Boolean);
+      let shown = 0;
+      for (const { el, e } of cards.values()) {
+        const ok = (!filters.cat || e.category === filters.cat) && (!filters.types.size || filters.types.has(e.integration))
+          && (!filters.gov || (e.gov && ['yes', 'partial', 'not_applicable'].includes(e.gov.supported)))
+          && words.every((w) => el.dataset.hay.includes(w));
+        el.hidden = !ok;
+        if (ok) shown += 1;
+      }
+      sections.forEach((s) => { s.hidden = !s.querySelector('.int-card:not([hidden])'); });
+      empty.hidden = shown > 0;
+      count.textContent = `${plural(shown, 'product')} shown of ${cards.size}.`;
+      const qs = new URLSearchParams();
+      if (filters.q) qs.set('q', filters.q);
+      if (filters.cat) qs.set('cat', filters.cat);
+      if (filters.types.size) qs.set('type', [...filters.types].join(','));
+      if (filters.gov) qs.set('gov', '1');
+      history.replaceState(null, '', `#/integrations${qs.toString() ? '?' + qs : ''}`);
+    }
+    let timer;
+    search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(apply, 150); });
+    catSel.addEventListener('change', apply);
+    govBox.addEventListener('change', apply);
+
+    const jump = h('nav', { class: 'jump no-print', 'aria-label': 'Integration categories' }, sections.map((s) => h('a', { href: '#', class: 'pill gray', onclick: (ev) => { ev.preventDefault(); s.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, s.querySelector('h2').textContent)),
+      h('a', { href: '#', class: 'pill blue', onclick: (ev) => { ev.preventDefault(); $('#int-assistant').scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 'AI assistant setup'));
+    const view = h('div', {},
+      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Integrations'), h('p', {}, 'Use TradeComply with Procore, Docusign, Slack, Teams, your calendar, your AI assistant and more.'))),
+      top, explainer(cat), filterCard, jump, empty, sections, extraSection, assistantBuilder(cat),
+      h('p', { class: 'small muted' }, cat.about));
+    apply();
+    if (focusEntry && cards.has(focusEntry.id)) {
+      const { el } = cards.get(focusEntry.id);
+      el.hidden = false;
+      setTimeout(() => { const dt = el.querySelector('details.int-connect'); if (dt && dt.openPanel) dt.openPanel(); el.scrollIntoView({ block: 'start' }); }, 0);
+    }
+    return view;
+  };
+
   // ======================================================================== settings
   routes.settings = async ({ query }) => {
+    if (query.get('integration')) {         // the OAuth callback lands on #/settings?integration=..&result=..
+      location.replace(`#/integrations?${query.toString()}`);
+      return h('p', { class: 'loading' }, 'Loading…');
+    }
     if (query.get('billing') === 'success') { toast('Thanks! Your subscription is being activated.'); setTimeout(async () => { await loadMe(); renderBanner(); }, 2500); }
     const me = state.me;
     const sections = [];
@@ -1862,6 +2371,8 @@
       await drawKeys();
       state.onKeysChanged = drawKeys;
       sections.push(h('section', { class: 'card', id: 'ai' }, h('h2', {}, 'AI assistant (MCP)'), agentConnect(), h('h3', {}, 'API keys'), keys));
+      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Integrations'), h('p', { class: 'muted' }, 'Connect Procore, Docusign, Slack or Teams alerts, text messages, your calendar and schedule files, and see which other tools work with TradeComply in your AI assistant.'),
+        h('a', { class: 'btn secondary', href: '#/integrations' }, 'Open Integrations')));
       // calendar
       const cal = h('div', {});
       try {

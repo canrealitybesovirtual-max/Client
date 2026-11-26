@@ -1,9 +1,10 @@
 /* TradeComply service worker: the app shell works offline; API calls go to the network first and fall back to
-   the last copy of the tool schemas, account, config and project list so the field screen opens without signal. */
-const SHELL_CACHE = 'tc-shell-v2';
+   the last copy of the tool schemas, account, config, project list and integrations catalog so the field screen
+   and the Integrations page open without signal. */
+const SHELL_CACHE = 'tc-shell-v3';
 const API_CACHE = 'tc-api-v1';
 const SHELL = ['/', '/static/app.js', '/static/styles.css', '/manifest.webmanifest', '/icon.svg'];
-const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects'];
+const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

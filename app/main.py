@@ -1,7 +1,8 @@
 """ASGI entry point: `uvicorn app.main:app` (Render start command).
 
 One app, three parts:
-  /api/*   FastAPI JSON API (accounts, tools, projects, subs, documents, field logs, dashboard, billing)
+  /api/*   FastAPI JSON API (accounts, tools, projects, subs, documents, field logs, dashboard, billing,
+           integrations: /api/integrations, see docs/integrations-dev.md)
   /        the offline-capable web app (app/static)
   /mcp     the FastMCP server from server.py (streamable HTTP), behind an API-key gate and audit log
   /health  health check
@@ -23,7 +24,7 @@ from starlette.staticfiles import StaticFiles
 
 from tradecomply import cslb
 
-from . import api, auth, billing
+from . import api, auth, billing, connectors, integrations_api
 from .config import Platform, Settings
 
 log = logging.getLogger("tradecomply")
@@ -92,8 +93,9 @@ class GZipPublic:
     """Compresses only responses that hold no secrets and are the same for everyone: the app shell, static files
     and the tool list (about 400 KB of JSON schemas, 10x smaller gzipped, which matters on a phone). Responses
     carrying keys, tokens or account data are never compressed, so BREACH-style length attacks have nothing to
-    read."""
-    PATHS = {"/", "/index.html", "/sw.js", "/manifest.webmanifest", "/api/tools", "/api/docs", "/api/openapi.json"}
+    read. The integrations catalog (about 300 KB of JSON, the same for every signed-in user) is compressed too."""
+    PATHS = {"/", "/index.html", "/sw.js", "/manifest.webmanifest", "/api/tools", "/api/docs", "/api/openapi.json",
+             "/api/integrations/catalog"}
 
     def __init__(self, app):
         self.app, self.gzip = app, GZipMiddleware(app, minimum_size=1024)
@@ -106,9 +108,10 @@ class GZipPublic:
 
 
 class RedactTokens(logging.Filter):
-    """Keeps secrets that travel in URLs (private calendar feed links, the local one-time login link) out of the
-    access log: `token=...` becomes `token=[redacted]`."""
-    PATTERN = re.compile(r"((?:^|[?&])(?:token|key|api_key|access_token)=)[^&\s\"]+", re.I)
+    """Keeps secrets that travel in URLs (private calendar feed links, the local one-time login link, the OAuth
+    authorization code and state on /api/integrations/*/oauth/callback) out of the access log: `token=...` becomes
+    `token=[redacted]`."""
+    PATTERN = re.compile(r"((?:^|[?&])(?:token|key|api_key|access_token|code|state)=)[^&\s\"]+", re.I)
 
     def filter(self, record):
         if isinstance(record.args, tuple) and record.args:
@@ -150,6 +153,10 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
         store = platform.store
         log.info("TradeComply platform ready (storage %s, data dir %s, MCP key required: %s, Stripe: %s)",
                  store.describe(), store.data_dir, settings.mcp_require_key, settings.stripe_enabled)
+        found = connectors.discover()
+        log.info("integrations: %d connector(s) registered%s", len(found),
+                 f"; failed to load: {', '.join(sorted(connectors.import_errors))}" if connectors.import_errors else "")
+        platform.events.start()           # starts a thread only; no database call on the event loop
         if not store.persistent:
             log.warning("STORAGE IS NOT PERSISTENT: SQLite at %s is on this instance's own filesystem, which Render "
                         "replaces on every deploy and restart, so accounts, projects and logs will be lost. Set "
@@ -158,6 +165,7 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
         try:
             yield
         finally:
+            await anyio.to_thread.run_sync(platform.events.stop)    # joins the worker: off the event loop
             store.close()
 
     app = FastAPI(title="TradeComply CA", version="1.0", lifespan=combine_lifespans(api_lifespan, mcp_app.lifespan),
@@ -171,6 +179,7 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(billing.router)
     app.include_router(api.router)
+    app.include_router(integrations_api.router)
 
     @app.get("/health", include_in_schema=False)
     async def health():

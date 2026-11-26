@@ -87,7 +87,10 @@ Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<
 | `MCP_REQUIRE_KEY` | off | `1`: `/mcp` needs `Authorization: Bearer <API key>` of an active or trialing account. Off: anonymous public demo, still audited and throttled (60 tool calls/min per IP, 300/min in total). Turn it on for production: off gives every tool away free |
 | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` | unset | Enable checkout and the billing portal. The price is the $1,000/month recurring price from the Stripe dashboard |
 | `STRIPE_WEBHOOK_SECRET` | unset | Verifies `/api/billing/webhook` (send `checkout.session.completed`, `customer.subscription.updated`/`deleted`, `invoice.payment_failed`, `invoice.paid`) |
-| `APP_URL` | `RENDER_EXTERNAL_URL` or request host | Public base URL for Stripe return links, the MCP URL and calendar links |
+| `APP_URL` | `RENDER_EXTERNAL_URL` or request host | Public base URL for Stripe return links, the MCP URL and calendar links, OAuth redirect URIs (`<APP_URL>/api/integrations/<provider>/oauth/callback`) and links in Slack/Teams alerts |
+| `INTEGRATIONS_KEY` | derived from `SECRET_KEY` (HKDF) | Base64 of 32 random bytes: the AES-256-GCM key for integration secrets at rest (OAuth tokens, API keys, webhook URLs). render.yaml generates one. Older keys go in `INTEGRATIONS_KEY_PREVIOUS` (comma-separated) during a rotation; then run `python -m app.crypto rotate`. See [docs/integrations-dev.md](docs/integrations-dev.md) |
+| `EVENTS_WORKER` | on | `0` turns off the background thread that delivers integration events (webhooks, connectors) |
+| Connector app credentials (e.g. `PROCORE_CLIENT_ID`) | unset | Each connector lists its own `required_env`; it shows as "not set up on this server" until they are set |
 | `COOKIE_SECURE` | auto | `1` forces the Secure cookie flag (it is set automatically when the request is https / `X-Forwarded-Proto: https`) |
 | `CSLB_AUTO_DOWNLOAD` | off | `1`: build CSLB data from the bundled snapshot on boot and refresh it daily |
 | `LICENSE_DB` | `data/cslb.sqlite` | CSLB SQLite path |
@@ -213,4 +216,12 @@ Each item: check the source, update the value, set `verified: True` and `checked
 - `app/store.py` (SQLite, tenant-scoped), `app/auth.py` (accounts, sessions, CSRF, API keys, `/mcp` gate and audit),
   `app/billing.py` (Stripe), `app/api.py` (JSON API), `app/dashboard.py` (RAG dashboard, lien calendar, iCalendar),
   `app/local.py` (offline mode), `app/static/` (web app, service worker, manifest)
+- `app/integrations_api.py` (`/api/integrations`), `app/connectors/` (one file per connector, auto-discovered),
+  `app/events.py` (event bus and delivery worker), `app/webhooks.py` (Slack, Teams, signed generic webhooks),
+  `app/safe_http.py` (SSRF-guarded outbound HTTP), `app/crypto.py` (secrets at rest): see
+  [docs/integrations-dev.md](docs/integrations-dev.md)
+- `tradecomply/data/integrations.json` (the integrations catalog: what each product is, how it works with TradeComply,
+  MCP endpoints, government-cloud notes, sources), `tradecomply/integrations_guide.py` (MCP tools
+  `integrations_for_task` and `mcp_client_config`), served at `/api/integrations/catalog` and shown on the web app's
+  Integrations page
 - `tests/test_platform.py`: accounts, CSRF, tenant isolation, API keys, `/mcp`, Stripe, 402, tools, dashboard, sync, CSV

@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass, field
 
 from .auth import RateLimiter, Signer, load_secret_key
+from .crypto import SecretBox
 from .store import Store, database_url_from_env, default_data_dir
 
 
@@ -24,6 +25,7 @@ class Settings:
     local_mode: bool = False              # python -m app.local: one company on a laptop
     trial_days: int = 14
     max_body_bytes: int = 8 * 1024 * 1024
+    events_background: bool = True        # deliver integration events on a background thread (EVENTS_WORKER=0)
 
     @classmethod
     def from_env(cls, **overrides) -> "Settings":
@@ -38,6 +40,8 @@ class Settings:
             app_url=(os.getenv("APP_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/") or None,
             cookie_secure=_flag("COOKIE_SECURE"),
             local_mode=_flag("TC_LOCAL"),
+            events_background=(os.getenv("EVENTS_WORKER") or "1").strip().lower() not in ("0", "false", "no",
+                                                                                         "off"),
         )
         for k, v in overrides.items():
             setattr(s, k, v)
@@ -58,12 +62,16 @@ def signing_key(store: Store) -> bytes:
 
 
 class Platform:
-    """Everything a request handler needs: settings, the database, the signing key, rate limiters, the MCP server."""
+    """Everything a request handler needs: settings, the database, the signing key, rate limiters, the MCP server,
+    the integration secret box, outbound HTTP and the event bus."""
 
     def __init__(self, settings: Settings, mcp):
+        from . import events
         self.settings = settings
         self.store = Store(settings.data_dir, database_url=settings.database_url)
-        self.signer = Signer(signing_key(self.store))
+        key = signing_key(self.store)
+        self.signer = Signer(key)
+        self.secret_box = SecretBox.from_env(key)          # integration secrets at rest (app/crypto.py)
         self.mcp = mcp
         self.login_limiter = RateLimiter(limit=5, window_s=15 * 60)       # failures per IP + email
         self.email_limiter = RateLimiter(limit=20, window_s=15 * 60)      # failures per email, any IP
@@ -76,3 +84,21 @@ class Platform:
         self.local_user_id: int | None = None
         self.tool_cache: tuple[float, list] | None = None
         self.anon_audit_writes = 0
+        self.integration_test_limiter = RateLimiter(limit=30, window_s=10 * 60)   # test sends/checks per tenant
+        # Integrations: operator env (tests replace it with a dict), and the outbound HTTP hooks tests swap for an
+        # httpx.MockTransport and a fake resolver (see tests/support.py). Production: None = the guarded transport
+        # and system DNS.
+        self.env = os.environ
+        self.http_transport = None
+        self.http_resolver = None
+        self.http_allow_localhost = False
+        self.events = events.EventBus(self, background=settings.events_background)
+        events.set_default(self.events)
+
+    def http(self, **overrides):
+        """A SafeHTTP client for outbound calls (connectors, webhooks). Use as a context manager."""
+        from .safe_http import SafeHTTP
+        kw = {"transport": self.http_transport, "resolver": self.http_resolver,
+              "allow_localhost": self.http_allow_localhost}
+        kw.update(overrides)
+        return SafeHTTP(**kw)
