@@ -723,8 +723,25 @@ class Store:
             self._open_pg(connect_attempts)
 
     # ------------------------------------------------------------------ plumbing
+    def _pick_pg_url(self) -> str:
+        """DATABASE_URL may list several space-separated URLs (e.g. two pooler hosts); the first that connects and
+        authenticates wins. Never falls back to SQLite: if none works, _open_pg raises StorageUnavailable as usual."""
+        urls = self.database_url.split()
+        if len(urls) == 1:
+            return urls[0]
+        import psycopg
+        for u in urls:
+            try:
+                with psycopg.connect(u, **pg_connect_kwargs(u)) as probe:
+                    probe.execute("select 1")
+                log.info("DATABASE_URL: using %s", describe_pg_url(u))
+                return u
+            except Exception as e:  # noqa: BLE001 - try the next candidate; messages may quote secrets, so log the class only
+                log.warning("DATABASE_URL candidate %s failed (%s)", describe_pg_url(u), e.__class__.__name__)
+        return urls[-1]
+
     def _open_pg(self, connect_attempts: int | None) -> None:
-        url = self.database_url
+        url = self.database_url = self._pick_pg_url()
         where = describe_pg_url(url)
         self.location = f"postgres {where}"
         if not url.startswith(("postgres://", "postgresql://")):

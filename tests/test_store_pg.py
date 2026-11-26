@@ -471,3 +471,17 @@ def test_health_is_503_when_postgres_stops_answering(pg, tmp_path):
         assert r.status_code == 503 and r.json() == {"ok": False, "server": "TradeComply CA", "storage": "postgres",
                                                      "error": "storage unavailable"}
         assert "127.0.0.1:1" not in r.text and "pw" not in r.text
+
+
+def test_database_url_candidates_pick_first_that_connects(monkeypatch, tmp_path):
+    """DATABASE_URL may list several URLs; an unreachable first candidate is skipped, never SQLite."""
+    import pytest
+    from app import store as st
+    url = os.getenv("TC_TEST_DATABASE_URL")
+    bad = "postgresql://nobody:x@127.0.0.1:1/none?connect_timeout=1&sslmode=disable"
+    if not url:
+        with pytest.raises(st.StorageUnavailable):
+            st.Store(str(tmp_path), database_url=f"{bad} {bad}", connect_attempts=1)
+        return
+    s = st.Store(str(tmp_path), database_url=f"{bad} {url}", connect_attempts=1)
+    assert s.backend == "postgres" and s.database_url == url
