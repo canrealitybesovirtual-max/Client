@@ -92,12 +92,29 @@ def test_other_california_city_is_not_guessed():
     assert any("not checked" in n for n in r.notes)
 
 
-def test_two_hour_weekly_coverage_test():
-    # hr-local-mw-san-diego-2026: coverage_min_hours_in_city_per_week = 2. 1.5 h -> City ordinance does not apply.
+def test_two_hour_coverage_test_is_per_year_not_per_week():
+    # hr-local-mw-san-diego-2026 coverage_test (OLSE FAQ 7): 'at least two hours of work within the geographic
+    # boundaries of the City in one or more calendar weeks of the year'. So 1.5 h this week does NOT drop the City
+    # rate by itself: max(16.90, 17.75) = 17.75 still owed unless no week this year reached 2 hours.
     r = hr.jobsite_minimum_wage("San Diego", AS_OF, hours_in_city_this_week=1.5)
-    assert r.local_status == "not_covered" and r.required_hourly_usd == 16.90
+    assert r.local_status == "applies" and r.required_hourly_usd == 17.75
+    assert any("one or more calendar weeks of the year" in n for n in r.notes)
+    # Another week this year had 2+ hours -> covered.
+    yes = hr.jobsite_minimum_wage("San Diego", AS_OF, hours_in_city_this_week=1.5,
+                                  two_hours_in_city_in_a_week_this_year=True)
+    assert yes.local_status == "applies" and yes.required_hourly_usd == 17.75
+    # Only an explicit "no week this year reached 2 hours" takes the employee outside the City rate -> state 16.90.
+    no = hr.jobsite_minimum_wage("San Diego", AS_OF, hours_in_city_this_week=1.5,
+                                 two_hours_in_city_in_a_week_this_year=False)
+    assert no.local_status == "not_covered" and no.required_hourly_usd == 16.90
     r2 = hr.jobsite_minimum_wage("San Diego", AS_OF, hours_in_city_this_week=2)
     assert r2.local_status == "applies" and r2.required_hourly_usd == 17.75
+    # 2+ hours this week contradicts "no week this year".
+    with pytest.raises(ValueError, match="this week is in this year"):
+        hr.jobsite_minimum_wage("San Diego", AS_OF, hours_in_city_this_week=2,
+                                two_hours_in_city_in_a_week_this_year=False)
+    with pytest.raises(ValueError, match="City of San Diego coverage test"):
+        hr.jobsite_minimum_wage("Chula Vista", AS_OF, two_hours_in_city_in_a_week_this_year=True)
 
 
 def test_federal_enclave_and_exempt_staff_are_outside_the_city_ordinance():
@@ -124,10 +141,12 @@ def test_flagger_wage_on_city_permit():
     # Benefits 10/h -> cash 76.87 - 10 = 66.87.
     r3 = hr.jobsite_minimum_wage("San Diego", AS_OF, traffic_control_permit=True, benefits_paid_usd_per_hour=10)
     assert r3.binding_hourly_usd == 66.87
-    # 2027-07-01 increase: 76.87 + 3.66 = 80.53 for permits issued from that date; 218 days away.
+    # Notice (Rev. 11/3/26): the rate locked at issuance includes the predetermined increase -> this permit (issued
+    # today, inside 2026-10-09..2027-06-30) owes 76.87 + 3.66 = 80.53 from 2027-07-01, 218 days away.
     inc = next(c for c in r.changes_ahead if c.what.startswith("Flagger"))
     assert (inc.date, inc.days_away, inc.hourly_usd) == ("2027-07-01", 218, 80.53)
-    assert "Permits issued from 2027-07-01" in r.next_step
+    assert "this permit" in inc.what
+    assert "From 2027-07-01 (218 days) this permit owes $80.53/hour" in r.next_step
     assert {"hr-sd-traffic-control-worker-wage", "hr-sd-traffic-control-worker-notice"} <= ids(r)
 
 
@@ -232,12 +251,15 @@ def test_mandates_without_unverified_topics_are_verified():
 
 def test_mandates_for_a_4_person_shop():
     r = hr.employer_size_mandates(4, as_of=AS_OF)
-    assert mandate(r, "Harassment").applies == "no"                  # 4 < 5
+    # 4 < 5, but harassment-prevention-training is unchecked and says the CRD also counts contractors -> check.
+    assert mandate(r, "Harassment").applies == "check" and "contractors" in mandate(r, "Harassment").why
     pay = mandate(r, "Pay transparency")
     assert pay.applies == "yes" and not pay.size_triggered            # on-request duties apply at any size
     # Total 4 < 25, so no single location can reach 25.
     assert mandate(r, "School activities").applies == "no"
-    assert mandate(r, "Crime victim leave").applies == "no"
+    # Below the old 230.1 threshold of 25, but the FEHA threshold is unread and old 230(c) had no size -> check.
+    cv = mandate(r, "Crime victim leave")
+    assert cv.applies == "check" and "no size threshold" in cv.what_to_do
     assert not any(m.topic.startswith("Federal COBRA") for m in r.mandates)   # no group health plan
     assert any("only if you sponsor a group health plan" in n for n in r.notes)
     assert r.san_diego_enforcement_fee_usd is None
@@ -345,7 +367,8 @@ def test_offer_rule_and_payment_formulas():
     # Without the IRS indexed amount no dollars are shown, only the formula with the $2,000 base.
     a = next(p for p in r45.payments if p.section == "4980H(a)")
     assert a.monthly_usd is None and "$2,000.00" in a.math and "(45 - 30)" in a.math
-    # The regulation's own example (hr-aca-4980h-a-no-offer-penalty note): 54 FT - 30 = 24 x $2,000 = $48,000.
+    # The regulation's example result (hr-aca-4980h-a-no-offer-penalty note: 24 x $2,000 = $48,000; there 40 FT less a
+    # 16-employee share of the 30). For a single-member employer: 54 FT - 30 = 24 x $2,000 = $48,000.
     ex = hr.aca_employer_status(2025, crew(ft=54), indexed_4980h_a_annual_usd=2000, as_of=AS_OF)
     assert next(p for p in ex.payments if p.section == "4980H(a)").annual_usd == 48000.0
     # 4980H(b) with test amounts: 3,600 / 12 x 4 subsidized = 1,200 a month, under the (a) cap 2,400/12 x 15 = 3,000.
@@ -402,8 +425,12 @@ def test_employee_hours_accepts_csv_and_month_keys():
                                            "May": 160, "Jun": 160, "Jul": 160, "Aug": 160, "Sep": 160, "Oct": 160,
                                            "Nov": 160, "Dec": 160}], as_of=AS_OF)
     assert keyed.months[3].full_time_employees == 1
-    nested = hr.aca_employer_status(2025, [{"name": "Ana", "hours": {"2025-01": 140, "2025-12": 10}}], as_of=AS_OF)
+    nested_hours = {f"2025-{m:02d}": 0 for m in range(1, 13)} | {"2025-01": 140, "2025-12": 10}
+    nested = hr.aca_employer_status(2025, [{"name": "Ana", "hours": nested_hours}], as_of=AS_OF)
     assert nested.months[0].full_time_employees == 1 and nested.months[11].ftes == round(10 / 120, 2)
+    # A month left out is an error, not a silent zero.
+    with pytest.raises(ValueError, match="10 month.s. are missing"):
+        hr.aca_employer_status(2025, [{"name": "Ana", "hours": {"2025-01": 140, "2025-12": 10}}], as_of=AS_OF)
 
 
 def test_aca_bad_inputs():
@@ -647,6 +674,248 @@ def test_leave_bad_inputs():
         hr.leave_request_check("jury", 0)
 
 
+# ================================================================ regressions from the 2026-11-25 adversarial review
+def test_san_diego_community_names_get_a_hint_not_a_guess():
+    # OLSE "Communities by Council District" lists La Jolla (District 1) and San Ysidro (District 8) inside City limits,
+    # but a community name is geography, not a verified jurisdiction: no rate is assumed, the user is told to rerun.
+    r = hr.jobsite_minimum_wage("La Jolla, CA 92037", AS_OF)
+    assert r.jurisdiction_kind == "other_california" and r.required_hourly_usd is None
+    assert "run this again with city 'San Diego'" in r.next_step
+    assert any("Council District 1" in n for n in r.notes)
+    assert any("Council District 8" in n for n in hr.jobsite_minimum_wage("San Ysidro", AS_OF).notes)
+    # 'Rancho Peñasquitos' with or without the tilde.
+    assert hr.sd_community("rancho penasquitos") == ("Rancho Peñasquitos", "5")
+    # A city name with a ZIP still resolves; a bare ZIP is refused (ZIP codes cross city limits).
+    assert hr.jobsite_minimum_wage("San Diego, CA 92101", AS_OF).jurisdiction_kind == "city_of_san_diego"
+    with pytest.raises(ValueError, match="not a ZIP code"):
+        hr.jobsite_minimum_wage("92101", AS_OF)
+
+
+def test_flagger_predetermined_increase_applies_to_permits_already_issued():
+    # Notice: the rate 'including any predetermined increase' is locked at issuance, and 'No further wage adjustments
+    # will apply to permits issued during this timeframe' -> a permit issued 2026-12-01 owes 76.87 + 3.66 = 80.53 for
+    # work from 2027-07-01. Split not published: basic >= 49.20, benefits credit <= 27.67 + 3.66 = 31.33.
+    before = hr.jobsite_minimum_wage("SD", "2027-06-30", traffic_control_permit=True, permit_issue_date="2026-12-01")
+    assert before.binding_hourly_usd == 76.87
+    after = hr.jobsite_minimum_wage("SD", "2027-07-15", traffic_control_permit=True, permit_issue_date="2026-12-01",
+                                    benefits_paid_usd_per_hour=10)
+    tcw = after.special_rates[0]
+    assert tcw.total_hourly_usd == 80.53 and tcw.basic_hourly_usd is None
+    assert after.binding_hourly_usd == 70.53                          # 80.53 - 10.00
+    big = hr.jobsite_minimum_wage("SD", "2027-07-15", traffic_control_permit=True, permit_issue_date="2026-12-01",
+                                  benefits_paid_usd_per_hour=40)
+    assert big.binding_hourly_usd == 49.20                            # max(49.20, 80.53 - 31.33 = 49.20)
+    # A permit issued after 2027-06-30: derived 80.53, and huge benefits never push cash below 49.20 (was -19.47).
+    late = hr.jobsite_minimum_wage("SD", "2027-07-20", traffic_control_permit=True, permit_issue_date="2027-07-15",
+                                   benefits_paid_usd_per_hour=100)
+    assert late.binding_hourly_usd == 49.20 and "derived" in late.next_step
+    # An older permit keeps its own locked rate with no increase: 2025-07-01/2026-10-08 -> 73.31, no flagger change.
+    old = hr.jobsite_minimum_wage("SD", AS_OF, traffic_control_permit=True, permit_issue_date="2026-08-01")
+    assert old.binding_hourly_usd == 73.31 and not any(c.what.startswith("Flagger") for c in old.changes_ahead)
+
+
+def test_flagger_rate_unknown_never_falls_back_to_minimum_wage():
+    # 2024-08-01 is before the first rate period in the rulebook (2024-09-01): the flagger wage applies, its rate is
+    # unknown, so no pay check and no "pay $17.75" advice.
+    r = hr.jobsite_minimum_wage("SD", AS_OF, traffic_control_permit=True, permit_issue_date="2024-08-01",
+                                hourly_rate_paid_usd=20)
+    assert r.binding_hourly_usd is None and r.pay_check is None
+    assert "not in the rulebook" in r.binding_rate and "OLSE" in r.next_step and "$17.75" not in r.next_step
+    with pytest.raises(ValueError, match="cannot happen before the City issues it"):
+        hr.jobsite_minimum_wage("SD", AS_OF, traffic_control_permit=True, permit_issue_date="2026-12-15")
+    with pytest.raises(ValueError, match="not both"):
+        hr.jobsite_minimum_wage("SD", AS_OF, traffic_control_permit=True, inside_federal_enclave=True)
+    # Exempt status does not remove the flagger rate; the next step is about the flagger rate, not the salary test.
+    ex = hr.jobsite_minimum_wage("SD", AS_OF, traffic_control_permit=True, exempt_salaried=True)
+    assert ex.binding_hourly_usd == 76.87 and ex.next_step.startswith("Pay at least $76.87")
+
+
+def test_living_wage_unknown_period_and_other_city_floor():
+    # FY2028 is not in the rulebook: binding rate unknown (was silently the $18.35 City minimum wage).
+    r = hr.jobsite_minimum_wage("SD", "2027-08-02", city_living_wage_contract=True, hourly_rate_paid_usd=19)
+    assert r.binding_hourly_usd is None and r.pay_check is None and "OLSE" in r.next_step
+    # Work outside the city: 21.70, and the local minimum wage there (not in the rulebook) is flagged as a floor.
+    la = hr.jobsite_minimum_wage("Los Angeles", AS_OF, city_living_wage_contract=True)
+    assert la.binding_hourly_usd == 21.70 and "Los Angeles local minimum wage" in la.next_step
+
+
+def test_pay_check_never_rounds_a_shortfall_away():
+    # 17.75 - 17.749 = 0.001/h: not compliant; shown as $0.01/h rounded up; 0.001 x 40 = $0.04 owed.
+    r = hr.jobsite_minimum_wage("SD", AS_OF, hours_in_city_this_week=40, hourly_rate_paid_usd=17.749)
+    assert r.pay_check.compliant is False and r.pay_check.shortfall_per_hour_usd == 0.01
+    assert r.pay_check.shortfall_usd == 0.04 and "$17.749" in r.pay_check.math
+    assert hr.jobsite_minimum_wage("SD", AS_OF, hourly_rate_paid_usd=17.75).pay_check.compliant is True
+
+
+def test_dates_reject_trailing_junk_but_accept_iso_datetimes():
+    assert hr.jobsite_minimum_wage("SD", "2026-11-25T08:30:00").on_date == "2026-11-25"
+    with pytest.raises(ValueError, match="on_date must be a date"):
+        hr.jobsite_minimum_wage("SD", "2026-11-25junk")
+
+
+def test_mandates_size_edges_after_review():
+    # 49.9999999999 is under 50 (exact arithmetic; the old +1e-9 nudge turned it into 50 -> "yes").
+    m = hr.employer_size_mandates(60, aca_average_ft_plus_fte_last_year=49.9999999999, as_of=AS_OF)
+    aca = mandate(m, "ACA")
+    assert aca.applies == "no" and "49.9999999999 rounds down to 49" in aca.why
+    # San Diego item states the per-year coverage test and that the sick-leave caps are optional.
+    sd = mandate(hr.employer_size_mandates(10, employees_in_san_diego_city=3, as_of=AS_OF), "City of San Diego")
+    assert "one or more calendar weeks of the year" in sd.threshold and "you may cap accrual at 80 h" in sd.what_to_do
+
+
+def test_aca_exact_threshold_and_seasonal_edges():
+    # 40 + 1,199.9999999999 / 120 each month: just under 50 -> rounded down 49, and the shown average is not 50.00.
+    r = hr.aca_employer_status(2025, monthly_full_time_counts=[40] * 12,
+                               monthly_non_full_time_hours=[1199.9999999999] * 12, as_of=AS_OF)
+    assert r.average_rounded_down == 49 and r.average == 49.99 and not r.applicable_large_employer
+    # Exactly 50 every month with the seasonal flag: no month is OVER 50, so there is no excess to disregard
+    # (54.4980H-2(d) Example 2 treats 50 every month as an ALE).
+    fifty = hr.aca_employer_status(2025, monthly_full_time_counts=[50] * 12, monthly_non_full_time_hours=[0] * 12,
+                                   excess_over_50_were_seasonal=True, as_of=AS_OF)
+    assert fifty.applicable_large_employer and not fifty.seasonal_exception_applied
+    # Five peak months: the 120-day alternative is pointed out.
+    five = [40] * 5 + [70] * 5 + [40] * 2
+    r5 = hr.aca_employer_status(2025, monthly_full_time_counts=five, monthly_non_full_time_hours=[0] * 12,
+                                excess_over_50_were_seasonal=True, as_of=AS_OF)
+    assert any("120 days or fewer" in n for n in r5.notes)
+    # 95% rule is exact: 5% of 140 = 7 -> offer 133; 5% of 60 = 3 < 5 -> may miss 5.
+    assert hr.aca_employer_status(2025, crew(ft=140), as_of=AS_OF).must_offer_at_least == 133
+    assert hr.aca_employer_status(2025, crew(ft=60), as_of=AS_OF).may_fail_to_offer_at_most == 5
+    # 4980H(b) exposure is spelled out next to the offer count.
+    assert "4980H(b)" in hr.aca_employer_status(2025, crew(ft=60), as_of=AS_OF).next_step
+
+
+def test_aca_input_hygiene():
+    with pytest.raises(ValueError, match="cannot exceed the full-time employees"):
+        hr.aca_employer_status(2025, crew(ft=55), employees_with_premium_tax_credit=56, as_of=AS_OF)
+    # Month names are matched strictly: 'Janvier' and 'Marketing' are not months.
+    with pytest.raises(ValueError, match="'Janvier' is not a month"):
+        hr.aca_employer_status(2025, [{"name": "A", "Janvier": 160}], as_of=AS_OF)
+    with pytest.raises(ValueError, match="same month more than once"):
+        hr.aca_employer_status(2025, "name,jan,jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec\nA," + ",".join(["1"] * 13),
+                               as_of=AS_OF)
+    with pytest.raises(ValueError, match="row 2 has 6 cells"):
+        hr.aca_employer_status(2025, "name," + ",".join(hr.MONTHS) + "\nA,1,2,3,4,5", as_of=AS_OF)
+    with pytest.raises(ValueError, match=r"employee_hours\[0\] \(A\) hours: monthly hours must be between 0 and 744"):
+        hr.aca_employer_status(2025, [{"name": "A", "hours": ["1,200"] * 12}], as_of=AS_OF)
+    # A 'Marketing' column is not taken for March; the name column is preferred over an 'id' column.
+    text = "id,name,marketing," + ",".join(hr.MONTHS) + "\n7,Ana,x," + ",".join(["160"] * 12)
+    assert hr.aca_employer_status(2025, text, as_of=AS_OF).months[2].full_time_employees == 1
+    # Current, unfinished year: flagged as estimates.
+    cur = hr.aca_employer_status(2026, crew(ft=55), as_of=AS_OF)
+    assert cur.notes[0].startswith("2026 is not over")
+    # Fewer than 10 information returns claimed: the tool says what counts before allowing paper.
+    paper = hr.aca_employer_status(2025, crew(ft=55), information_returns_count=5, as_of=AS_OF)
+    assert any("must include every Form W-2" in n for n in paper.notes)
+
+
+def test_cobra_review_fixes():
+    # Aliases: a death, a retirement and a strike (54.4980B-4 Q&A-2: 'a strike or a lockout is a termination or
+    # reduction of hours').
+    assert hr.normalize_cobra_event("employee passed away") == "death"
+    assert hr.normalize_cobra_event("Retired") == "termination"
+    assert hr.normalize_cobra_event("on strike") == "reduction_in_hours"
+    with pytest.raises(ValueError, match="only for retirees"):
+        hr.normalize_cobra_event("employer bankruptcy")
+    with pytest.raises(ValueError, match="eligible for Medicare is not a qualifying event"):
+        hr.normalize_cobra_event("medicare eligible")
+    # Divorce: hr-cobra-election-period-60-days beneficiary notice = later of event/loss + 60 = 2026-11-13 + 60 =
+    # 2027-01-12; told 2026-12-01 -> election notice 2026-12-01 + 14 = 2026-12-15.
+    d = hr.cobra_deadlines("divorce", "2026-11-13", administrator_notified_date="2026-12-01", as_of=AS_OF)
+    ben = deadline(d, "Employee or family member must notify")
+    assert (ben.due_date, ben.status) == ("2027-01-12", "done_on_time")
+    assert deadline(d, "Administrator sends").due_date == "2026-12-15"
+    late = hr.cobra_deadlines("divorce", "2026-11-13", administrator_notified_date="2027-01-20", as_of="2027-01-21")
+    assert "not required to offer COBRA" in late.next_step
+    # Election notice already sent on 2026-12-10 <= 2026-12-13: the administrator had been told on time.
+    sent = hr.cobra_deadlines("termination", "2026-11-13", election_notice_date="2026-12-10", as_of=AS_OF)
+    assert deadline(sent, "Notify the plan administrator").status == "done_on_time"
+    # Election after the earliest window close is flagged.
+    e = hr.cobra_deadlines("termination", "2026-11-13", election_notice_date="2026-11-20", election_date="2027-06-01",
+                           as_of="2027-06-02")
+    assert any("came after 2027-01-19" in n for n in e.notes)          # 2026-11-20 + 60
+    # Disability extension conditions and the 150% condition are stated; loss-of-coverage rule is cited.
+    dis = hr.cobra_deadlines("termination", "2026-11-13", disability_extension=True, monthly_plan_cost_usd=850,
+                             as_of=AS_OF)
+    assert any("first 60 days of COBRA coverage" in n for n in dis.notes)
+    assert "only while the coverage covers the disabled qualified beneficiary" in " ".join(dis.math)
+    assert "hr-cobra-qualifying-event-loss-of-coverage" in ids(dis) and dis.verified is True
+    # An old event says the period is over instead of "COBRA can run until" a past date.
+    assert "The maximum COBRA period ended on 2021-07-31" in hr.cobra_deadlines("termination", "2020-01-31",
+                                                                               as_of=AS_OF).next_step
+
+
+def test_leave_review_fixes():
+    # Words that mean something else inside longer text are not matched.
+    for text in ("nursing home visit", "knee rehab", "vocational rehabilitation", "witness statement",
+                 "court proceedings for my divorce"):
+        with pytest.raises(ValueError, match="leave_type must be one of"):
+            hr.normalize_leave_type(text)
+    with pytest.raises(ValueError, match="does not check CFRA"):
+        hr.normalize_leave_type("CFRA")
+    # 'child care emergency' is an emergency: no 8-hour monthly cap (40 - 10 = 30 left although 8 used this month).
+    r = hr.leave_request_check("child care emergency", 40, employees_at_location=30, hours_requested=4,
+                               hours_used_this_year=10, hours_used_this_month=8, as_of=AS_OF)
+    assert (r.remaining, r.can_approve_now) == (30.0, 4.0)
+    # Caps used up: say so (was "Approve it; 0 protected hours remain").
+    used = hr.leave_request_check("school", 40, employees_at_location=30, hours_used_this_year=40, as_of=AS_OF)
+    assert used.next_step.startswith("No protected hours remain: the 40-hour yearly cap is used up")
+    tr = hr.leave_request_check("emergency_training", 60, days_requested=1, days_used_this_year=14, as_of=AS_OF)
+    assert tr.next_step.startswith("No protected training days remain in 2026")
+    fm = hr.leave_request_check("fmla", 120, months_employed=12, hours_worked_last_12_months=1250,
+                                employees_within_75_miles=50, fmla_covered_workweeks=20,
+                                weeks_used_last_12_months=12, weeks_requested=2, as_of=AS_OF)
+    assert "12 workweeks for this 12-month period are used up" in fm.next_step
+    with pytest.raises(ValueError, match="8,784"):
+        hr.leave_request_check("school", 40, hours_used_this_year=10**6)
+    # Small employer, domestic violence: still "check", and the any-size 230(c) relief protection is mentioned.
+    dv = hr.leave_request_check("domestic violence", 10, as_of=AS_OF)
+    assert dv.protected == "check" and "restraining order" in dv.next_step
+
+
+def test_review_pack_corrections_are_in_the_rulebook():
+    sd = core.rule("hr-local-mw-san-diego-2026")
+    assert sd.param("coverage_is_not_a_per_week_test") is True and sd.status == "corrected"
+    tcw = core.rule("hr-sd-traffic-control-worker-wage")
+    assert tcw.param("predetermined_increase.applies_to_permits_issued") == {"start": "2026-10-09",
+                                                                           "end": "2027-06-30"}
+    assert tcw.param("predetermined_increase.derived_total_hourly_usd") == 80.53       # 76.87 + 3.66
+    assert core.rule("hr-cobra-election-period-60-days").param("beneficiary_notice_days_divorce_or_dependent_loss") == 60
+    qe = core.rule("hr-cobra-qualifying-event-loss-of-coverage")
+    assert qe.verified and "lose coverage under the plan" in qe.quote
+    assert core.rule("hr-crime-victim-leave-25-employees").status == "unverifiable"     # FEHA text still unread
+
+
+def test_mcp_review_paths():
+    mcp = FastMCP("t")
+    hr.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            low = await c.call_tool("jobsite_minimum_wage", {"city": "san diego", "on_date": AS_OF,
+                                                             "hours_in_city_this_week": "1.5"})
+            out = await c.call_tool("jobsite_minimum_wage", {"city": "SD", "on_date": AS_OF,
+                                                             "hours_in_city_this_week": 1,
+                                                             "two_hours_in_city_in_a_week_this_year": False})
+            flag = await c.call_tool("jobsite_minimum_wage", {"city": "SD", "on_date": "2027-07-15",
+                                                              "traffic_control_permit": True,
+                                                              "permit_issue_date": "12/01/2026"})
+            zip_ = await c.call_tool("jobsite_minimum_wage", {"city": "92101", "on_date": AS_OF}, raise_on_error=False)
+            neg = await c.call_tool("jobsite_minimum_wage", {"city": "SD", "hours_in_city_this_week": -1},
+                                    raise_on_error=False)
+            keyed = await c.call_tool("aca_employer_status", {"measurement_year": 2025, "as_of": AS_OF,
+                                                              "employee_hours": [{"name": "A", "Jan": 160}]},
+                                      raise_on_error=False)
+            return low.structured_content, out.structured_content, flag.structured_content, zip_, neg, keyed
+    low, out, flag, zip_, neg, keyed = asyncio.run(run())
+    assert low["local_status"] == "applies" and low["required_hourly_usd"] == 17.75
+    assert out["local_status"] == "not_covered" and out["required_hourly_usd"] == 16.90
+    assert flag["binding_hourly_usd"] == 80.53
+    assert zip_.is_error and "not a ZIP code" in zip_.content[0].text
+    assert neg.is_error and "greater than or equal to 0" in neg.content[0].text
+    assert keyed.is_error and "11 month(s) are missing" in keyed.content[0].text
+
+
 # ================================================================ rulebook linkage
 def test_every_rule_id_used_exists_in_the_rulebook():
     used = {v for k, v in vars(hr).items() if k.isupper() and isinstance(v, str) and "-" in v}
@@ -686,7 +955,7 @@ def test_register_and_call_through_mcp_client():
     for t in tools.values():
         assert t.annotations.read_only_hint is True and t.annotations.open_world_hint is False
     # Descriptions carry the rulebook numbers (built from params, not typed in).
-    assert "2+ hours in a week" in tools["jobsite_minimum_wage"].description
+    assert "2+ hours in the city in any calendar week of the year" in tools["jobsite_minimum_wage"].description
     assert "1,250 hours" in tools["leave_request_check"].description
     assert wage["required_hourly_usd"] == 17.75 and wage["pay_check"]["shortfall_usd"] == 20.0   # 0.50 x 40
     assert size["san_diego_enforcement_fee_usd"] == 17.64 and size["verified"] is False          # 1.47 x 12

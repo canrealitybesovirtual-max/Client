@@ -1,7 +1,8 @@
 """California HR mandates for construction employers, on top of the verified pack research/web_hr-mandates.
 
-  jobsite_minimum_wage     city + date -> state vs City of San Diego minimum wage, the San Diego traffic control
-                           (flagger) wage on City permits, the San Diego living wage on City service contracts, the
+  jobsite_minimum_wage     city + date -> state vs City of San Diego minimum wage (coverage: 2+ hours in the city in
+                           any calendar week of the year), the San Diego traffic control (flagger) wage on City
+                           permits with its predetermined increase, the San Diego living wage on City contracts, the
                            exempt salary threshold, the 2x hand-tool rate, upcoming rate changes and a pay check
   employer_size_mandates   headcounts -> which HR mandates apply (leaves and accommodations, lactation, pay
                            transparency, hiring rules, COBRA, FMLA, ACA, postings, San Diego ordinance and fee)
@@ -23,10 +24,13 @@ import csv
 import io
 import math
 import re
+import unicodedata
 from datetime import date as Date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from typing import Annotated, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from . import core, logic
 
@@ -87,6 +91,7 @@ COBRA20, COBRA_ADMIN30, COBRA_ELECT_NOTICE, COBRA_GENERAL = (
 COBRA_ELECT60, COBRA_MAX, COBRA_PREM, COBRA_PAY = (
     "hr-cobra-election-period-60-days", "hr-cobra-maximum-coverage-18-29-36-months", "hr-cobra-premium-102-percent",
     "hr-cobra-payment-grace-30-45-days")
+COBRA_QE = "hr-cobra-qualifying-event-loss-of-coverage"
 # FMLA
 FMLA_COV, FMLA_ELIG, FMLA_SITE, FMLA_12, FMLA_26, FMLA_NOTICE, FMLA_POSTER = (
     "hr-fmla-covered-employer-50", "hr-fmla-eligible-employee-12-months-1250-hours-75-miles",
@@ -114,6 +119,11 @@ def _usd(x: float) -> str:
     return f"${x:,.2f}"
 
 
+def _usd_x(x: float) -> str:
+    """Like _usd, but keeps fractions of a cent the user typed ($17.749 stays $17.749)."""
+    return _usd(x) if abs(x * 100 - round(x * 100)) < 1e-7 else f"${x:,.4f}".rstrip("0")
+
+
 def _num(x: float) -> str:
     """12.0 -> '12', 12.5 -> '12.5' for math lines."""
     return f"{round(x, 4):g}"
@@ -129,6 +139,9 @@ def _date(value, field: str) -> Date:
         return value
     s = re.sub(r"\s+", " ", str(value or "").strip())
     for fmt in _DATE_FORMATS:
+        # an ISO date may carry a time ("2026-11-25T08:00:00" or "2026-11-25 08:00"), nothing else after it
+        if fmt == "%Y-%m-%d" and len(s) > 10 and s[10] not in "T ":
+            continue
         try:
             return datetime.strptime(s[:10] if fmt == "%Y-%m-%d" else s, fmt).date()
         except ValueError:
@@ -218,8 +231,24 @@ def _isos(text: str) -> list[Date]:
 
 
 def _norm_words(s: str) -> str:
-    s = re.sub(r"[^a-z0-9 ]+", " ", str(s or "").lower().replace("_", " ").replace("-", " "))
+    s = unicodedata.normalize("NFKD", str(s or ""))
+    s = "".join(c for c in s if not unicodedata.combining(c)).lower().replace("_", " ").replace("-", " ")
+    s = re.sub(r"[^a-z0-9 ]+", " ", s.replace("'", ""))
     return re.sub(r"\s+", " ", s).strip()
+
+
+def _exact(x) -> Fraction:
+    """Exact value of a number as typed (0.1 stays 1/10), so thresholds such as the ACA 50 are compared without
+    floating-point drift in either direction."""
+    try:
+        return Fraction(Decimal(str(x)))
+    except (InvalidOperation, ValueError, TypeError):
+        raise ValueError(f"{x!r} is not a number") from None
+
+
+def _cents_up(x: float) -> float:
+    """A shortfall rounded UP to the next cent, so a tenth of a cent short is never shown as $0.00."""
+    return math.ceil(round(x * 100, 6)) / 100 if x > 0 else 0.0
 
 
 class Deadline(BaseModel):
@@ -264,7 +293,11 @@ def normalize_city(city: str) -> tuple[str, str]:
     t = _norm_words(raw)
     if not t:
         raise ValueError("city is required, e.g. 'San Diego' (the city where the hours are worked)")
-    for _ in range(2):
+    if re.fullmatch(r"\d{5}(?: \d{4})?", t):
+        raise ValueError(f"city must be a city name, not a ZIP code ({raw!r}); a ZIP code can cross city limits, so "
+                         f"check the jobsite address on the City of San Diego boundaries map and enter the city")
+    for _ in range(3):
+        t = re.sub(r"\s+\d{5}(?: \d{4})?$", "", t).strip()            # trailing ZIP code
         t = re.sub(r"\s+(?:ca|calif|california|usa|us)$", "", t).strip()
     t = re.sub(r"^the\s+", "", t)
     county = False
@@ -285,6 +318,22 @@ def normalize_city(city: str) -> tuple[str, str]:
     if t in SD_COUNTY_CITIES:
         return f"{t.title()} (San Diego County)", JURIS_SD_COUNTY
     return raw, JURIS_OTHER
+
+
+def sd_community(city: str) -> Optional[tuple[str, str]]:
+    """('La Jolla', '1') when the text names a community the City of San Diego OLSE lists inside City limits (rule
+    hr-local-mw-san-diego-2026, communities_within_city_by_council_district). Geography only: a name such as
+    'Mountain View' or 'El Cerrito' is also a city elsewhere in California, so this is a hint, never a jurisdiction."""
+    t = _norm_words(city)
+    for _ in range(3):
+        t = re.sub(r"\s+\d{5}(?: \d{4})?$", "", t).strip()
+        t = re.sub(r"\s+(?:ca|calif|california|usa|us|san diego)$", "", t).strip()
+    t = re.sub(r"^mount\b", "mt", t)
+    for district, names in P(SD26, "communities_within_city_by_council_district").items():
+        for n in names:
+            if _norm_words(n) == t:
+                return n, district
+    return None
 
 
 def _state_timeline() -> list[tuple[Date, float, str]]:
@@ -414,21 +463,41 @@ def _exempt_salary(year: int) -> Optional[ExemptSalary]:
     return None
 
 
-def _tcw_rate(permit_day: Date):
-    """(basic, benefits, total, ot_sat, sun_hol, period text) for a permit issued on permit_day, or None."""
+def _tcw_rate(permit_day: Date, work_day: Date) -> Optional[dict]:
+    """The flagger rate owed on work_day under a permit issued on permit_day, or None when the rulebook has no rate.
+
+    Rule hr-sd-traffic-control-worker-wage: the rate, 'including any predetermined increase', is fixed when the City
+    issues the permit, and 'No further wage adjustments will apply to permits issued during this timeframe'. So a
+    permit issued in the current period owes the published rate until the increase date and the rate plus the
+    increase after it. The split of the increase between wages and benefits is not published, so after it the cash
+    floor is the earlier basic rate and the most that benefits can cover is the earlier benefits plus the increase.
+    keys: basic, benefits, total, ot, sun (None when not published), basic_floor, benefit_cap, period, derived."""
     w = core.rule(TCW)
-    cur = w.param("rates_effective")
+    cur, inc = w.param("rates_effective"), w.param("predetermined_increase")
+    inc_from = _iso(inc["applies_from_work_date"])
+    win = inc["applies_to_permits_issued"]
+    basic, ben, total = w.param("basic_hourly_usd"), w.param("employer_payments_usd"), w.param("total_hourly_usd")
+    raised = dict(basic=None, benefits=None, total=_money(total + inc["usd_per_hour"]), ot=None, sun=None,
+                  basic_floor=inc["min_basic_hourly_usd_after_increase"],
+                  benefit_cap=inc["max_employer_payments_usd_after_increase"], derived=True)
+    if raised["total"] != inc["derived_total_hourly_usd"]:
+        raise RuntimeError(f"rule {TCW}: {total} + {inc['usd_per_hour']} != {inc['derived_total_hourly_usd']}")
     if _iso(cur["start"]) <= permit_day <= _iso(cur["end"]):
-        return (w.param("basic_hourly_usd"), w.param("employer_payments_usd"), w.param("total_hourly_usd"),
-                w.param("overtime_saturday_usd"), w.param("sunday_holiday_usd"), f"{cur['start']} to {cur['end']}")
+        if _iso(win["start"]) <= permit_day <= _iso(win["end"]) and work_day >= inc_from:
+            return {**raised, "period": f"permit issued {cur['start']} to {cur['end']}, work on or after "
+                                        f"{inc['applies_from_work_date']}: {_usd(total)} + the "
+                                        f"{_usd(inc['usd_per_hour'])} predetermined increase"}
+        return dict(basic=basic, benefits=ben, total=total, ot=w.param("overtime_saturday_usd"),
+                    sun=w.param("sunday_holiday_usd"), basic_floor=basic, benefit_cap=ben, derived=False,
+                    period=f"{cur['start']} to {cur['end']}")
     for h in w.param("history"):
         a, b = h["period"].split("/")
         if _iso(a) <= permit_day <= _iso(b):
-            return h["basic"], h["employer_payments"], h["total"], None, None, f"{a} to {b}"
-    inc = w.param("predetermined_increase")
-    if permit_day >= _iso(inc["effective"]):
-        total = _money(w.param("total_hourly_usd") + inc["usd_per_hour"])
-        return None, None, total, None, None, f"from {inc['effective']} (end date not published in the rulebook)"
+            return dict(basic=h["basic"], benefits=h["employer_payments"], total=h["total"], ot=None, sun=None,
+                        basic_floor=h["basic"], benefit_cap=h["employer_payments"], derived=False, period=f"{a} to {b}")
+    if permit_day > _iso(cur["end"]):
+        return {**raised, "period": f"permit issued after {cur['end']}: derived {_usd(total)} + "
+                                    f"{_usd(inc['usd_per_hour'])}; the City has not published this rate"}
     return None
 
 
@@ -437,7 +506,8 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
                          traffic_control_permit: bool = False, permit_issue_date=None,
                          single_family_or_duplex: bool = False, project_cost_usd: Optional[float] = None,
                          city_living_wage_contract: bool = False, hourly_rate_paid_usd: Optional[float] = None,
-                         benefits_paid_usd_per_hour: float = 0.0) -> JobsiteWageResult:
+                         benefits_paid_usd_per_hour: float = 0.0,
+                         two_hours_in_city_in_a_week_this_year: Optional[bool] = None) -> JobsiteWageResult:
     d = _today(on_date, "on_date")
     name, kind = normalize_city(city)
     hours = _opt_amount(hours_in_city_this_week, "hours_in_city_this_week")
@@ -446,9 +516,16 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
     paid = _opt_amount(hourly_rate_paid_usd, "hourly_rate_paid_usd")
     benefits = _amount(benefits_paid_usd_per_hour or 0, "benefits_paid_usd_per_hour")
     cost = _opt_amount(project_cost_usd, "project_cost_usd")
+    two_h = two_hours_in_city_in_a_week_this_year
     if traffic_control_permit and kind != JURIS_SD:
         raise ValueError("traffic_control_permit is for City of San Diego traffic control permits; set city to "
                          "'San Diego' (the permitted work is inside the city)")
+    if traffic_control_permit and inside_federal_enclave:
+        raise ValueError("a City of San Diego traffic control permit covers City streets and rights-of-way, not work "
+                         "inside a federal enclave; set traffic_control_permit or inside_federal_enclave, not both")
+    if kind != JURIS_SD and two_h is not None:
+        raise ValueError("two_hours_in_city_in_a_week_this_year is the City of San Diego coverage test; set city to "
+                         "'San Diego' or leave it out")
     state_usd, state_eff, state_rid = state_minimum_wage_on(d)
     cite = {state_rid, MW_LOCAL}
     rates = [RateLine(name="California minimum wage", hourly_usd=state_usd, effective=state_eff.isoformat(),
@@ -459,10 +536,14 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
                       rule_ids=[state_rid])]
     math_, notes, postings = [], [], []
     local_usd, local_status = None, "not_in_rulebook"
+    community = sd_community(city) if kind == JURIS_OTHER else None
     if kind == JURIS_SD:
         sd = _rate_on(_sd_timeline(), d)
         min_h = P(SD26, "coverage_min_hours_in_city_per_week")
         cite |= {SD26, SD_POST}
+        if hours is not None and hours >= min_h and two_h is False:
+            raise ValueError(f"two_hours_in_city_in_a_week_this_year is false but hours_in_city_this_week is "
+                             f"{_num(hours)} (this week is in this year and has {_num(min_h)}+ hours in the city)")
         if sd is None:
             local_status = "no_local_ordinance"
             notes.append(f"The City of San Diego minimum wage began {_sd_timeline()[0][0].isoformat()}; none applied "
@@ -475,19 +556,32 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
                 excluded = "work inside a federal enclave (e.g., a military base)"
             elif exempt_salaried:
                 excluded = "employees not entitled to the California minimum wage (exempt salaried staff)"
-            elif hours is not None and hours < min_h:
-                excluded = f"fewer than {_num(min_h)} hours worked in the city this week ({_num(hours)} h)"
+            elif two_h is False:
+                excluded = (f"no calendar week this year with {_num(min_h)}+ hours of work in the city"
+                            + (f" ({_num(hours)} h this week)" if hours is not None else ""))
             local_status = "not_covered" if excluded else "applies"
             rates.append(RateLine(
                 name="City of San Diego minimum wage", hourly_usd=local_usd, effective=sd_eff.isoformat(),
                 applies=excluded is None, rule_ids=list(dict.fromkeys([sd_rid, SD26])),
                 why=(f"Not covered: {excluded}" if excluded else
-                     f"Hours worked inside San Diego city limits by an employee who works at least {_num(min_h)} h in "
-                     f"a week in the city; any employer size (small business exemption: "
-                     f"{'yes' if P(SD26, 'small_business_exemption') else 'none'}); no tip credit")))
-            if hours is None and not excluded:
-                notes.append(f"The City rate covers employees who work at least {_num(min_h)} hours in a week inside "
-                             f"city limits; give hours_in_city_this_week to test it.")
+                     f"Every hour worked inside San Diego city limits by an employee who works at least {_num(min_h)} "
+                     f"h in the city in one or more calendar weeks of the year; any employer size (small business "
+                     f"exemption: {'yes' if P(SD26, 'small_business_exemption') else 'none'}); no tip credit")))
+            if not excluded and hours is not None and hours < min_h and not two_h:
+                notes.append(f"Only {_num(hours)} h in the city this week, but the City rate still covers these hours "
+                             f"if this employee works {_num(min_h)}+ hours inside the city in any calendar week of the "
+                             f"year (OLSE FAQ 7: 'in one or more calendar weeks of the year'; it is not a week-by-week "
+                             f"test). Pay the City rate unless no week this year reaches {_num(min_h)} hours; then "
+                             f"pass "
+                             f"two_hours_in_city_in_a_week_this_year=false [{SD26}].")
+            elif not excluded and hours is None and two_h is None:
+                notes.append(f"The City rate covers every hour worked inside city limits by an employee who works at "
+                             f"least {_num(min_h)} hours in the city in any calendar week of the year [{SD26}].")
+            elif excluded and two_h is False:
+                notes.append(f"If this employee later works {_num(min_h)}+ hours inside the city in a week this year, "
+                             f"the City rate applies to their in-city hours; the ordinance text could not be read to "
+                             f"say whether it reaches back to earlier weeks, so paying the City rate avoids that risk "
+                             f"[{SD26}].")
             postings.append(f"City of San Diego yearly minimum wage and earned sick leave notices at every San Diego "
                             f"jobsite, plus a written notice at hire (languages: "
                             f"{', '.join(P(SD_POST, 'languages_available'))}) [{SD_POST}]")
@@ -496,6 +590,14 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
         cite.add(SD26)
         notes.append(f"{name}: {P(SD26, 'unincorporated_or_other_cities_in_san_diego_county')} (the City of San Diego "
                      f"ordinance covers only hours worked inside San Diego city limits) [{SD26}].")
+    elif community:
+        cite.add(SD26)
+        sd_now = _rate_on(_sd_timeline(), d)
+        notes.append(f"'{community[0]}' is on the City of San Diego OLSE list of communities inside City limits "
+                     f"(Council District {community[1]}). If the jobsite is that community, run this again with city "
+                     f"'San Diego'" + (f" (City rate {_usd(sd_now[1])})" if sd_now else "")
+                     + f"; confirm the exact address on the OLSE geographic boundaries map, and note that another "
+                       f"California city may share the name [{SD26}].")
     else:
         notes.append(f"{name}: this rulebook has verified local minimum wages only for the City of San Diego. Many "
                      f"California cities and counties set a higher rate; check the official city or county page "
@@ -518,7 +620,9 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
                      f"rate is unknown (it is at least {_usd(state_usd)})")
     else:
         required = state_usd
-        math_.append(f"required = state rate {_usd(state_usd)} (no local ordinance for this location)")
+        math_.append(f"required = state rate {_usd(state_usd)} ("
+                     + ("City ordinance does not cover this employee" if local_status == "not_covered" else
+                        "no local ordinance for this location") + ")")
 
     # ---- special rates
     special: list[SpecialRate] = []
@@ -531,8 +635,13 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
     else:
         binding = f"local minimum wage for {name} (not in the rulebook)"
     binding_usd = required
+    special_kind = None            # "tcw" / "lw" when a special rate controls (or would, if its rate were known)
+    tcw_rate = None
     if traffic_control_permit:
         pday = _opt_date(permit_issue_date, "permit_issue_date") or d
+        if pday > d:
+            raise ValueError(f"permit_issue_date {pday.isoformat()} is after on_date {d.isoformat()}: work under a "
+                             f"traffic control permit cannot happen before the City issues it")
         exc = {e["type"]: e for e in P(TCW_EXC, "exceptions")}
         max_cost = exc["project cost"]["max_project_cost_usd"]
         cite |= {TCW, TCW_EXC, TCW_NOTICE}
@@ -541,40 +650,57 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
             why_not = "single-family home or duplex construction, renovation or repair is excepted"
         elif cost is not None and cost <= max_cost:
             why_not = f"project cost {_usd(cost)} is {_usd(max_cost)} or less"
-        rate = _tcw_rate(pday)
-        if rate is None:
-            special.append(SpecialRate(name="San Diego traffic control worker wage", applies=why_not is None,
-                                       why=f"No rate in the rulebook for a permit issued {pday.isoformat()}",
-                                       rule_ids=[TCW, TCW_EXC]))
+        tcw_rate = _tcw_rate(pday, d)
+        if tcw_rate is None:
+            special.append(SpecialRate(
+                name="San Diego traffic control worker wage", applies=why_not is None, rule_ids=[TCW, TCW_EXC],
+                why=(f"Not covered: {why_not}" if why_not else
+                     f"No rate in the rulebook for a permit issued {pday.isoformat()} (the rulebook has rates for "
+                     f"permits issued from {P(TCW, 'history')[0]['period'].split('/')[0]}; the ordinance took effect "
+                     f"{core.rule(TCW_EXC).effective}); get the rate for that issue date from OLSE")))
+            if why_not is None:
+                special_kind = "tcw"
+                binding = "San Diego traffic control worker wage (rate for this permit not in the rulebook)"
+                binding_usd = None
         else:
-            basic, ben, total, ot, sun, period = rate
+            t = tcw_rate
             req_cash = None
             if why_not is None:
-                req_cash = _money(total - min(benefits, ben)) if ben is not None else _money(total - benefits)
-                if basic is not None:
-                    req_cash = max(req_cash, basic)
+                credit = min(benefits, t["benefit_cap"])
+                req_cash = max(_money(t["total"] - credit), t["basic_floor"])
+                special_kind = "tcw"
                 binding, binding_usd = "San Diego traffic control worker wage", req_cash
-                credit = min(benefits, ben) if ben is not None else benefits
-                math_.append(f"flagger rate (permit issued {pday.isoformat()}, period {period}): total "
-                             f"{_usd(total)}" + (f" = basic {_usd(basic)} + benefits {_usd(ben)}" if basic else "")
-                             + f"; cash owed = {_usd(total)} - benefits paid {_usd(credit)} = {_usd(req_cash)}"
-                             + (f" (never below basic {_usd(basic)})" if basic else "") + f" [{TCW}]")
+                math_.append(f"flagger rate (permit issued {pday.isoformat()}, {t['period']}): total {_usd(t['total'])}"
+                             + (f" = basic {_usd(t['basic'])} + benefits {_usd(t['benefits'])}" if t["basic"] else "")
+                             + f"; cash owed = {_usd(t['total'])} - benefits paid into plans {_usd(credit)}"
+                             + (f" (credit capped at {_usd(t['benefit_cap'])})" if benefits > t["benefit_cap"] else "")
+                             + f" = {_usd(_money(t['total'] - credit))}, never below basic {_usd(t['basic_floor'])}"
+                             + f" -> {_usd(req_cash)} [{TCW}]")
             special.append(SpecialRate(
-                name="San Diego traffic control worker wage", applies=why_not is None, basic_hourly_usd=basic,
-                benefits_hourly_usd=ben, total_hourly_usd=total, overtime_saturday_usd=ot, sunday_holiday_usd=sun,
-                required_cash_hourly_usd=req_cash, period=period, rule_ids=[TCW, TCW_EXC],
+                name="San Diego traffic control worker wage", applies=why_not is None, basic_hourly_usd=t["basic"],
+                benefits_hourly_usd=t["benefits"], total_hourly_usd=t["total"], overtime_saturday_usd=t["ot"],
+                sunday_holiday_usd=t["sun"], required_cash_hourly_usd=req_cash, period=t["period"],
+                rule_ids=[TCW, TCW_EXC],
                 why=(f"Not covered: {why_not}" if why_not else
                      f"Traffic control work required by a City of San Diego traffic control permit; "
-                     f"{P(TCW, 'basis')}; {P(TCW, 'rate_locked_at')}")))
+                     f"{P(TCW, 'basis')}; {P(TCW, 'rate_locked_at')}"
+                     + ("; the wage/benefit split after the predetermined increase is not published (basic at least "
+                        f"{_usd(t['basic_floor'])}, benefits at most {_usd(t['benefit_cap'])})"
+                        if t["derived"] else ""))))
             if why_not is None:
                 postings.append(f"Post the flagger wage rates (with effective dates and scheduled increases) at each "
                                 f"job site, or give each affected worker a written notice [{TCW_NOTICE}]")
-                inc = P(TCW, "predetermined_increase")
-                if pday < _iso(inc["effective"]):
-                    notes.append(f"A predetermined increase of {_usd(inc['usd_per_hour'])}/hour ({inc['allocation']}) "
-                                 f"takes effect {inc['effective']}. The City notice fixes the rate 'including any "
-                                 f"predetermined increase' at permit issuance, so a permit still active on "
-                                 f"{inc['effective']} may owe it from that date; confirm with OLSE [{TCW}].")
+                if t["ot"]:
+                    notes.append(f"Overtime and Saturday hours owe {_usd(t['ot'])} and Sunday and holiday hours "
+                                 f"{_usd(t['sun'])} under this permit; the pay check covers straight time only "
+                                 f"[{TCW}].")
+                if t["derived"]:
+                    notes.append(f"{_usd(t['total'])} is derived (published rate + predetermined increase), not a "
+                                 f"City-published figure; confirm the wage/benefit split with OLSE [{TCW}].")
+                if permit_issue_date in (None, ""):
+                    notes.append(f"permit_issue_date not given, so {d.isoformat()} was used. For a permit not yet "
+                                 f"issued, check the OLSE rate table on the issue date: "
+                                 f"{P(TCW, 'rate_updates')} [{TCW}].")
                 notes.append(f"Other exceptions (not tested here): gas or utility crews doing "
                              f"{_num(exc['gas or utility company']['max_traffic_control_hours_per_workday_or_shift'])} "
                              f"hour or less of traffic control a shift, public works projects requiring a higher "
@@ -582,6 +708,9 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
                 notes.append(f"Proposed City fee: {_usd(P(TCW_FEE, 'proposed_fee_usd_per_permit'))} per approved "
                              f"permit, paid by the permittee, {P(TCW_FEE, 'status')} [{TCW_FEE}].")
                 cite.add(TCW_FEE)
+                if exempt_salaried:
+                    notes.append("Exempt status does not remove the flagger rate: the City notice covers 'any employee "
+                                 "performing traffic control work required by a City-issued traffic control permit'.")
     if city_living_wage_contract:
         cite |= {LW, LW_LEAVE}
         per = P(LW, "period")
@@ -593,26 +722,36 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
             floor = max(state_usd, local_usd if local_status == "applies" else 0)
             req = max(req, floor)
             math_.append(f"living wage ({label}): {_usd(where['full_cash_wage_usd'])} - health benefits credited "
-                         f"{_usd(credit)} (max {_usd(where['health_benefit_usd'])}) = {_usd(req)}; floor "
-                         f"{_usd(floor)} [{LW}]")
-            if binding_usd is None or req > binding_usd:
-                binding, binding_usd = "San Diego living wage (City contract)", req
+                         f"{_usd(credit)} (max {_usd(where['health_benefit_usd'])}) = "
+                         f"{_usd(_money(where['full_cash_wage_usd'] - credit))}; floor {_usd(floor)} -> {_usd(req)} "
+                         f"[{LW}]")
+            if (binding_usd is None and special_kind is None) or (binding_usd is not None and req > binding_usd):
+                binding, binding_usd, special_kind = "San Diego living wage (City contract)", req, "lw"
             special.append(SpecialRate(
                 name="San Diego living wage (City service contracts)", applies=True,
                 basic_hourly_usd=where["cash_wage_usd"], benefits_hourly_usd=where["health_benefit_usd"],
                 total_hourly_usd=where["full_cash_wage_usd"], required_cash_hourly_usd=req,
                 period=f"{per['start']} to {per['end']}", rule_ids=[LW, LW_LEAVE],
                 why=f"Covered City service, financial assistance or facility agreement ({label}); {P(LW, 'floor')}"))
+            if kind == JURIS_OTHER:
+                notes.append(f"The living wage cash rate may not fall below the minimum wage that applies where the "
+                             f"work is done [{LW}]; the {name} local minimum wage is not in this rulebook, so check it "
+                             f"and pay the higher rate.")
             notes.append(f"Living wage contracts also require {_num(P(LW_LEAVE, 'paid_leave_hours_per_year'))} hours "
                          f"of paid leave a year plus {_num(P(LW_LEAVE, 'additional_unpaid_leave_hours'))} unpaid "
                          f"hours, the yearly notice with the first paycheck after July 1, and subcontractor "
-                         f"certification within {P(LW_LEAVE, 'subcontractor_certification_days')} days [{LW_LEAVE}].")
+                         f"certification within {P(LW_LEAVE, 'subcontractor_certification_days')} days. Grounds to "
+                         f"apply to OLSE for an exemption (per contract): "
+                         f"{'; '.join(P(LW_LEAVE, 'exemption_application_grounds'))} [{LW_LEAVE}].")
             notes.append("Construction is not among the living wage covered services listed by the City; prevailing "
                          f"wage governs public works [{LW}].")
         else:
             special.append(SpecialRate(name="San Diego living wage (City service contracts)", applies=True,
                                        why=f"The rulebook has the living wage for {per['start']} to {per['end']} "
                                            f"only; {P(LW, 'annual_adjustment')}", rule_ids=[LW]))
+            if special_kind is None:
+                special_kind = "lw"
+                binding, binding_usd = "San Diego living wage (rate for this date not in the rulebook)", None
 
     # ---- changes ahead
     changes = []
@@ -625,15 +764,19 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
         for eff, usd, rid in _sd_timeline():
             if eff > d:
                 changes.append(ChangeAhead(date=eff.isoformat(), days_away=(eff - d).days, hourly_usd=usd,
-                                           rule_ids=[rid], what=f"City of San Diego minimum wage becomes {_usd(usd)}/hour"))
+                                           rule_ids=[rid],
+                                           what=f"City of San Diego minimum wage becomes {_usd(usd)}/hour"))
                 cite.add(rid)
-    if traffic_control_permit and any(s.applies and s.total_hourly_usd for s in special):
+    if special_kind == "tcw" and tcw_rate is not None and not tcw_rate["derived"]:
         inc = P(TCW, "predetermined_increase")
-        if _iso(inc["effective"]) > d:
-            changes.append(ChangeAhead(date=inc["effective"], days_away=(_iso(inc["effective"]) - d).days,
-                                       hourly_usd=_money(P(TCW, "total_hourly_usd") + inc["usd_per_hour"]),
-                                       rule_ids=[TCW], what=f"Flagger rate rises {_usd(inc['usd_per_hour'])}/hour for "
-                                                            f"permits issued from this date ({inc['allocation']})"))
+        win = inc["applies_to_permits_issued"]
+        inc_from = _iso(inc["applies_from_work_date"])
+        if inc_from > d and _iso(win["start"]) <= pday <= _iso(win["end"]):
+            changes.append(ChangeAhead(date=inc["applies_from_work_date"], days_away=(inc_from - d).days,
+                                       hourly_usd=inc["derived_total_hourly_usd"], rule_ids=[TCW],
+                                       what=f"Flagger rate on this permit rises {_usd(inc['usd_per_hour'])}/hour to "
+                                            f"{_usd(inc['derived_total_hourly_usd'])} in total (predetermined increase, "
+                                            f"{inc['allocation']}; no further adjustments for this permit)"))
     changes.sort(key=lambda c: c.date)
 
     # ---- exempt salary, hand tools
@@ -647,16 +790,23 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
     cite |= {TOOLS2X, HAND_TOOLS}
     math_.append(f"hand-tool threshold = {_num(k)} x state minimum {_usd(state_usd)} = {_usd(tools)}/hour "
                  f"[{TOOLS2X}]")
+    if local_status == "applies":
+        notes.append(f"The hand-tool threshold is computed on the state rate, as the wage order states; whether a "
+                     f"higher local rate raises it was not verified [{TOOLS2X}].")
 
     # ---- pay check
     check = None
     if paid is not None and binding_usd is not None:
-        short = _money(max(0.0, binding_usd - paid))
+        short_raw = max(0.0, binding_usd - paid)
+        short = _cents_up(short_raw)
+        owed = _money(short_raw * hours) if hours is not None else None
         check = PayCheck(hourly_rate_paid_usd=paid, benefits_paid_usd_per_hour=benefits,
-                         required_hourly_usd=binding_usd, compliant=short == 0, shortfall_per_hour_usd=short,
-                         hours=hours, shortfall_usd=_money(short * hours) if hours is not None else None,
-                         math=f"{binding}: required {_usd(binding_usd)} - paid {_usd(paid)} = shortfall "
-                              f"{_usd(short)}/hour" + (f" x {_num(hours)} h = {_usd(short * hours)}" if hours else ""))
+                         required_hourly_usd=binding_usd, compliant=short_raw <= 1e-9,
+                         shortfall_per_hour_usd=short, hours=hours, shortfall_usd=owed,
+                         math=f"{binding}: required {_usd(binding_usd)} - paid {_usd_x(paid)} = shortfall "
+                              f"{_usd(short)}/hour" + (f" (exactly {_usd_x(short_raw)}, rounded up to the cent)"
+                                                       if short_raw and short != round(short_raw, 2) else "")
+                              + (f" x {_num(hours)} h = {_usd(owed)}" if hours else ""))
     elif paid is not None:
         notes.append("hourly_rate_paid_usd was not checked: the controlling rate is unknown for this work.")
 
@@ -671,32 +821,43 @@ def jobsite_minimum_wage(city: str, on_date=None, hours_in_city_this_week: Optio
                      f"primarily (= {P(EX26, 'primarily_means')}) exempt duties") + ".")
 
     # ---- next step
-    if binding.startswith("San Diego traffic control"):
-        nxt = [c for c in changes if c.what.startswith("Flagger")]
-    elif binding.startswith("San Diego living wage"):
-        nxt = []
+    if special_kind == "lw" and binding_usd is not None:
         notes.append(f"Living wage: {P(LW, 'annual_adjustment')} [{LW}].")
-    else:
-        nxt = [c for c in changes if c.hourly_usd is not None and "minimum wage" in c.what]
-    if exempt_salaried:
+    nxt = [c for c in changes if c.hourly_usd is not None and "minimum wage" in c.what]
+    if special_kind == "tcw" and binding_usd is None:
+        step = (f"The flagger rate for a permit issued {pday.isoformat()} is not in the rulebook; get it from the "
+                f"City of San Diego OLSE before paying (do not fall back to the minimum wage).")
+    elif special_kind == "lw" and binding_usd is None:
+        step = (f"The San Diego living wage for {d.isoformat()} is not in the rulebook; get the current rate from "
+                f"OLSE before paying.")
+    elif special_kind is None and exempt_salaried:
         step = (f"Pay this exempt employee at least {_usd(ex.annual_usd)} a year ({_usd(ex.monthly_usd)}/month) in "
                 f"{ex.year} and confirm the duties test." if ex else "Confirm the exempt salary threshold for this "
                 "year from DIR before relying on exempt status.")
     elif binding_usd is None:
-        step = ("Check the jobsite's official city or county minimum wage page and pay the higher of that rate and "
-                f"the state {_usd(state_usd)}." if kind == JURIS_OTHER else
+        step = ((f"If the jobsite is the San Diego community {community[0]}, run this again with city 'San Diego'; "
+                 f"otherwise check" if community else "Check")
+                + f" the jobsite's official city or county minimum wage page and pay the higher of that rate and the "
+                  f"state {_usd(state_usd)}." if kind == JURIS_OTHER else
                 "Check the federal contract's wage terms for work inside the enclave.")
     else:
-        step = f"Pay at least {_usd(binding_usd)}/hour for these hours ({binding})."
+        step = f"Pay at least {_usd(binding_usd)}/hour in cash for these hours ({binding})."
         if check and not check.compliant:
             step = (f"Raise pay by {_usd(check.shortfall_per_hour_usd)}/hour to at least {_usd(binding_usd)} "
                     f"({binding})" + (f" and pay the {_usd(check.shortfall_usd)} owed for this week" if
                                       check.shortfall_usd else "") + ".")
-    if nxt and not exempt_salaried and binding.startswith("San Diego traffic control"):
-        c = nxt[0]
-        step += (f" Permits issued from {c.date} ({c.days_away} days) carry {_usd(c.hourly_usd)}/hour in total; a "
-                 f"permit still active then may owe the increase from that date (confirm with OLSE).")
-    elif nxt and not exempt_salaried:
+        if kind == JURIS_OTHER and special_kind == "lw":
+            step += f" Also check the {name} local minimum wage (not in the rulebook) and pay the higher rate."
+    if special_kind == "tcw" and binding_usd is not None:
+        tc = [c for c in changes if c.what.startswith("Flagger")]
+        if tc:
+            step += (f" From {tc[0].date} ({tc[0].days_away} days) this permit owes {_usd(tc[0].hourly_usd)}/hour in "
+                     f"total (the {_usd(P(TCW, 'predetermined_increase')['usd_per_hour'])} predetermined increase; "
+                     f"keep at least {_usd(P(TCW, 'predetermined_increase')['min_basic_hourly_usd_after_increase'])} "
+                     f"as basic cash wage and confirm the split with OLSE).")
+        elif tcw_rate and tcw_rate["derived"]:
+            step += " This total is derived; confirm the rate and its wage/benefit split with OLSE."
+    elif nxt and not exempt_salaried and special_kind is None:
         top = [c for c in nxt if c.date == nxt[0].date]
         step += (f" Update payroll before {top[0].date} ({top[0].days_away} days): "
                  + "; ".join(c.what for c in top) + ".")
@@ -842,13 +1003,17 @@ def employer_size_mandates(employee_count: int, employees_in_california: Optiona
     # ---- harassment training (unverified rule)
     if include_unverified:
         hk = P(HARASS, "min_employees")
-        out.append(_m("Harassment prevention training", yn(n >= hk), f"{hk}+ employees (rule unverified)",
-                      _cmp(n, hk, "employees"),
+        out.append(_m("Harassment prevention training", "yes" if n >= hk else "check",
+                      f"{hk}+ employees (rule unverified)",
+                      _cmp(n, hk, "employees") + ("" if n >= hk else
+                                                  "; the unverified rule says the Civil Rights Department also counts "
+                                                  "contractors toward the threshold, so confirm before skipping it"),
                       f"Train supervisors {_num(P(HARASS, 'supervisor_hours'))} hours and other employees "
                       f"{_num(P(HARASS, 'nonsupervisor_hours'))} hour every {_num(P(HARASS, 'frequency_years'))} "
                       f"years (Civil Rights Department free course). This rule is not verified against the CRD's own "
                       f"text; confirm timing for new hires and new supervisors with the CRD." if n >= hk else
-                      "Not required below the threshold (rule unverified; confirm with the CRD).",
+                      f"Count employees plus contractors; if that reaches {hk}, train as above. The rule is "
+                      f"unverified; confirm with the CRD.",
                       [HARASS], your_count=str(n), sized=True))
     else:
         omitted.append("Harassment prevention training")
@@ -866,12 +1031,15 @@ def employer_size_mandates(employee_count: int, employees_in_california: Optiona
                       "Department, not the Labor Commissioner.",
                       [JURY, VICTIM_COURT, VICTIM_ACCOM, VICTIM_CERT]))
         vk = P(VICTIM_LEAVE, "min_employees")
-        out.append(_m("Crime victim leave (medical care, counseling, safety planning)", yn(n >= vk),
+        relief = P(VICTIM_LEAVE, "related_any_size_230c")
+        out.append(_m("Crime victim leave (medical care, counseling, safety planning)", "yes" if n >= vk else "check",
                       f"{vk}+ employees under the old Labor Code 230.1 (FEHA threshold not read)",
                       _cmp(n, vk, "employees") + "; now under FEHA, threshold unverified",
                       "Allow victims time off for medical attention, victim services, counseling or safety planning; "
                       "confirm current FEHA rules with the Civil Rights Department." if n >= vk else
-                      "Below the old Labor Code threshold; the FEHA threshold was not read, so confirm with the CRD.",
+                      f"Below the old Labor Code threshold of {vk}, but the FEHA threshold was not read, and the old "
+                      f"Labor Code 230(c) protection for {relief['protection']} stated no size threshold. Do not "
+                      f"deny a victim's request on size alone; confirm with the CRD.",
                       [VICTIM_LEAVE], your_count=str(n), sized=True))
     else:
         omitted += ["Jury duty, court witness and crime victim protections",
@@ -970,8 +1138,9 @@ def employer_size_mandates(employee_count: int, employees_in_california: Optiona
     # ---- ACA
     ak = P(ALE, "min_full_time_employees_including_ftes")
     if aca_avg is not None:
-        whole = math.floor(aca_avg + 1e-9)
-        a_app, a_why = yn(whole >= ak), f"average {_num(aca_avg)} rounds down to {whole} {'>=' if whole >= ak else '<'} {ak}"
+        whole = math.floor(_exact(aca_avg))
+        a_app, a_why = yn(whole >= ak), (f"average {Decimal(str(aca_avg)).normalize():f} rounds down to {whole} "
+                                         f"{'>=' if whole >= ak else '<'} {ak}")
     elif n < ak:
         a_app, a_why = "no", (f"{n} employees < {ak}: each person counts as at most one full-time employee or FTE, so "
                               f"you are not an ALE if your headcount also stayed under {ak} every month last year")
@@ -983,7 +1152,11 @@ def employer_size_mandates(employee_count: int, employees_in_california: Optiona
                   f"{_num(P(OFFER95, 'max_not_offered_fraction') * 100)}% (or "
                   f"{P(OFFER95, 'max_not_offered_min_count')}, if more) of full-time employees and their children, "
                   "and file Forms 1094-C/1095-C (run aca_employer_status for the math and dates)." if a_app != "no"
-                  else "Not an ALE for this year; recheck each year with last year's hours.", [ALE, FTE],
+                  else ("Not an ALE for this year (last year's average was under the threshold); recheck every year."
+                        if aca_avg is not None else
+                        f"Not an ALE for this year if your headcount was also under {ak} in every month of last "
+                        f"year (otherwise run aca_employer_status with last year's hours); recheck every year."),
+                  [ALE, FTE],
                   your_count=str(n), sized=True))
     if a_app != "no":
         out[-1].rule_ids.append(OFFER95)
@@ -1006,18 +1179,23 @@ def employer_size_mandates(employee_count: int, employees_in_california: Optiona
         prop = P(SD_FEE, "proposed_fee_usd_per_employee_per_year")
         try:
             sd_rate = _rate_on(_sd_timeline(), d)
-            sd_txt = f"pay at least {_usd(sd_rate[1])}/hour for hours worked in the city" if sd_rate else ""
+            sd_txt = f"pay at least {_usd(sd_rate[1])}/hour for every hour worked in the city" if sd_rate else ""
             sd_rid = [sd_rate[2]] if sd_rate else []
         except ValueError:
             sd_txt, sd_rid = "", []
         acc = P(SD_ESL, "accrual_hours_per_hours_worked")
         out.append(_m("City of San Diego minimum wage, earned sick leave and fee", "yes",
-                      f"any size; employees working {_num(P(SD26, 'coverage_min_hours_in_city_per_week'))}+ hours a "
-                      f"week in the city", f"{sd_n} employees work in the City of San Diego",
+                      f"any size; employees who work {_num(P(SD26, 'coverage_min_hours_in_city_per_week'))}+ hours "
+                      f"inside the city in one or more calendar weeks of the year",
+                      f"{sd_n} employees work in the City of San Diego",
                       (sd_txt + "; " if sd_txt else "")
-                      + f"sick leave accrues {acc['earned']} hour per {acc['per_hours_worked_in_city']} hours worked in "
-                        f"the city (cap {_num(P(SD_ESL, 'accrual_cap_hours'))} h accrued, "
-                        f"{_num(P(SD_ESL, 'annual_use_cap_hours'))} h used per year); post the City notices at every "
+                      + f"sick leave accrues at least {acc['earned']} hour per {acc['per_hours_worked_in_city']} hours "
+                        f"worked in the city from the first day (you may cap accrual at "
+                        f"{_num(P(SD_ESL, 'accrual_cap_hours'))} h and yearly use at "
+                        f"{_num(P(SD_ESL, 'annual_use_cap_hours'))} h, or front-load "
+                        f"{_num(P(SD_ESL, 'front_load_alternative_hours_per_benefit_year'))} h at the start of each "
+                        f"benefit year; follow state paid sick leave law where it is more generous); post the City "
+                        f"notices at every "
                         f"jobsite and give the hire notice; keep wage and sick leave records "
                         f"{P(SD_REC, 'retention_years')} years; pay the enforcement fee with your Business Tax "
                         f"Certificate renewal: {_usd(fee_rate)} x {sd_n} = {_usd(fee)} a year (proposed "
@@ -1047,6 +1225,19 @@ def employer_size_mandates(employee_count: int, employees_in_california: Optiona
 
 
 # ================================================================ 3. ACA applicable large employer
+_MONTH_NAMES = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+                "november", "december")
+_NAME_KEYS = ("name", "employee", "employee name", "worker", "worker name", "id", "employee id")
+
+
+def _month_word(w: str) -> Optional[int]:
+    """'jan', 'Jan.', 'janu', 'january', 'sept' -> 0..11; 'marketing', 'junior', 'decimal' -> None."""
+    for i, full in enumerate(_MONTH_NAMES):
+        if len(w) >= 3 and full.startswith(w):
+            return i
+    return None
+
+
 def _month_index(key) -> Optional[int]:
     k = _norm_words(key)
     if re.fullmatch(r"\d{1,2}", k) and 1 <= int(k) <= 12:
@@ -1055,10 +1246,34 @@ def _month_index(key) -> Optional[int]:
     if m:
         v = int(m[1] or m[2])
         return v - 1 if 1 <= v <= 12 else None
-    for i, mon in enumerate(MONTHS):
-        if k.startswith(mon) or re.fullmatch(rf"\d{{4}} {mon}\w*", k) or re.fullmatch(rf"{mon}\w* \d{{4}}", k):
-            return i
+    m = re.fullmatch(r"(?:\d{4} )?([a-z]+)|([a-z]+) \d{4}", k)
+    if m:
+        return _month_word(m[1] or m[2])
     return None
+
+
+def _hours_value(val):
+    if val is None or (isinstance(val, str) and not val.strip()):
+        return 0.0
+    if isinstance(val, str):
+        return val.strip().replace(",", "")
+    return val
+
+
+def _months_dict(items, who: str) -> list:
+    hours: list = [None] * 12
+    for k, val in items:
+        i = _month_index(k)
+        if i is None:
+            raise ValueError(f"{who}: {k!r} is not a month name or number 1-12")
+        if hours[i] is not None:
+            raise ValueError(f"{who}: {_MONTH_NAMES[i].title()} is given twice")
+        hours[i] = _hours_value(val)
+    missing = [MONTHS[i] for i, h in enumerate(hours) if h is None]
+    if missing:
+        raise ValueError(f"{who}: hours for {len(missing)} month(s) are missing ({', '.join(missing)}); give all 12 "
+                         f"months and use 0 for a month with no hours")
+    return hours
 
 
 class EmployeeMonths(BaseModel):
@@ -1069,31 +1284,20 @@ class EmployeeMonths(BaseModel):
     @classmethod
     def _months_as_keys(cls, v):
         if isinstance(v, dict) and "hours" not in v:
-            name = next((v[k] for k in v if _norm_words(k) in ("name", "employee", "employee name", "worker", "id")),
-                        None)
-            hours = [0.0] * 12
-            seen = False
-            for k, val in v.items():
-                i = _month_index(k)
-                if i is not None:
-                    hours[i] = 0.0 if val in (None, "") else val
-                    seen = True
-            if seen:
-                return {"name": name, "hours": hours}
+            name = next((v[k] for k in v if _norm_words(k) in _NAME_KEYS), None)
+            month_items = [(k, val) for k, val in v.items() if _norm_words(k) not in _NAME_KEYS]
+            if month_items:
+                return {"name": name, "hours": _months_dict(month_items, f"employee {name!r}")}
         if isinstance(v, dict) and isinstance(v.get("hours"), dict):
-            hours = [0.0] * 12
-            for k, val in v["hours"].items():
-                i = _month_index(k)
-                if i is None:
-                    raise ValueError(f"month {k!r} is not a month name or number 1-12")
-                hours[i] = 0.0 if val in (None, "") else val
-            return {**v, "hours": hours}
+            return {**v, "hours": _months_dict(v["hours"].items(), f"employee {v.get('name')!r}")}
+        if isinstance(v, dict) and isinstance(v.get("hours"), (list, tuple)):
+            return {**v, "hours": [_hours_value(h) for h in v["hours"]]}
         return v
 
     @field_validator("name", mode="before")
     @classmethod
     def _name(cls, v):
-        return str(v).strip() if isinstance(v, (str, int)) else v
+        return str(v).strip() if isinstance(v, (str, int)) and not isinstance(v, bool) else v
 
     @field_validator("hours")
     @classmethod
@@ -1106,6 +1310,23 @@ class EmployeeMonths(BaseModel):
         return v
 
 
+def _employee(e, i: int) -> EmployeeMonths:
+    """Validate one employee and turn pydantic's report into one plain sentence."""
+    if isinstance(e, EmployeeMonths):
+        return e
+    try:
+        return EmployeeMonths.model_validate(e)
+    except ValidationError as err:
+        first = err.errors()[0]
+        where = ".".join(str(x) for x in first.get("loc", ()) if x != "__root__")
+        msg = first.get("msg", str(err)).removeprefix("Value error, ")
+        who = e.get("name") if isinstance(e, dict) else None
+        if msg.startswith("employee "):          # the message already names the employee
+            raise ValueError(f"employee_hours[{i}]: {msg}") from None
+        raise ValueError(f"employee_hours[{i}]" + (f" ({who})" if who else "") + (f" {where}" if where else "")
+                         + f": {msg}") from None
+
+
 def parse_employee_hours(text: str) -> list[EmployeeMonths]:
     """CSV / tab text: a header row with a name column and 12 month columns (Jan..Dec, 1..12 or 2025-01..)."""
     lines = [ln for ln in str(text).strip().splitlines() if ln.strip()]
@@ -1116,21 +1337,30 @@ def parse_employee_hours(text: str) -> list[EmployeeMonths]:
     header = [h.strip() for h in rows[0]]
     month_cols = {i: _month_index(h) for i, h in enumerate(header)}
     month_cols = {i: m for i, m in month_cols.items() if m is not None}
-    name_col = next((i for i, h in enumerate(header) if i not in month_cols), None)
+    dup = sorted({MONTHS[m] for m in month_cols.values() if list(month_cols.values()).count(m) > 1})
+    if dup:
+        raise ValueError(f"employee_hours header has the same month more than once: {', '.join(dup)}")
+    name_col = next((i for i, h in enumerate(header) if _norm_words(h) in _NAME_KEYS and _norm_words(h) != "id"),
+                    next((i for i, h in enumerate(header) if i not in month_cols), None))
     if name_col is None or len(set(month_cols.values())) != 12:
         raise ValueError(f"employee_hours header must have a name column and 12 month columns, got {header}")
     out = []
     for r, row in enumerate(rows[1:], start=2):
         if not any(c.strip() for c in row):
             continue
+        if len(row) < len(header):
+            raise ValueError(f"employee_hours row {r} has {len(row)} cells but the header has {len(header)}; use 0 "
+                             f"for a month with no hours")
         hours = [0.0] * 12
         for i, m in month_cols.items():
-            cell = row[i].strip().replace(",", "") if i < len(row) else ""
+            cell = row[i].strip().replace(",", "")
             try:
                 hours[m] = float(cell) if cell else 0.0
             except ValueError:
                 raise ValueError(f"employee_hours row {r}: {cell!r} is not a number of hours") from None
-        out.append(EmployeeMonths(name=row[name_col], hours=hours))
+        if not row[name_col].strip():
+            raise ValueError(f"employee_hours row {r}: the name is empty")
+        out.append(_employee({"name": row[name_col], "hours": hours}, r - 2))
     return out
 
 
@@ -1193,6 +1423,11 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
         raise ValueError(f"measurement_year must be between {first - 1} and {d.year} (the year whose hours you give), "
                          f"got {year}")
     status_year = year if new_employer else year + 1
+    if year == d.year and not new_employer:
+        partial_year_note = (f"{year} is not over (as of {d.isoformat()}); the months after "
+                             f"{d.strftime('%B')} are estimates, so recheck in January {year + 1} with actual hours.")
+    else:
+        partial_year_note = None
     ft_k = P(FT30, "monthly_hours_equivalent")
     cap, div = P(FTE, "max_hours_counted_per_non_full_time_employee_per_month"), P(FTE, "divisor")
     ale_k = P(ALE, "min_full_time_employees_including_ftes")
@@ -1202,22 +1437,26 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
     if employee_hours is not None and (monthly_full_time_counts is not None or monthly_non_full_time_hours is not None):
         raise ValueError("give employee_hours OR monthly_full_time_counts + monthly_non_full_time_hours, not both")
     if employee_hours is not None:
+        if not isinstance(employee_hours, (str, list, tuple)):
+            raise ValueError("employee_hours must be a list of employees or CSV/tab text")
         per_emp = parse_employee_hours(employee_hours) if isinstance(employee_hours, str) else \
-            [e if isinstance(e, EmployeeMonths) else EmployeeMonths.model_validate(e) for e in employee_hours]
+            [_employee(e, i) for i, e in enumerate(employee_hours)]
         if not per_emp:
             raise ValueError("employee_hours is empty")
         names = [e.name for e in per_emp]
         dup = sorted({x for x in names if names.count(x) > 1})
         if dup:
             raise ValueError(f"employee_hours lists these employees more than once: {dup}")
-        ft = [sum(1 for e in per_emp if e.hours[m] >= ft_k) for m in range(12)]
-        part = [sum(min(e.hours[m], cap) for e in per_emp if e.hours[m] < ft_k) for m in range(12)]
+        ft = [sum(1 for e in per_emp if _exact(e.hours[m]) >= ft_k) for m in range(12)]
+        part = [sum((min(_exact(e.hours[m]), Fraction(cap)) for e in per_emp if _exact(e.hours[m]) < ft_k),
+                    Fraction(0)) for m in range(12)]
     elif monthly_full_time_counts is not None and monthly_non_full_time_hours is not None:
         if len(monthly_full_time_counts) != 12 or len(monthly_non_full_time_hours) != 12:
             raise ValueError("monthly_full_time_counts and monthly_non_full_time_hours need 12 values each "
                              "(January-December)")
         ft = [_count(v, f"monthly_full_time_counts[{i + 1}]") for i, v in enumerate(monthly_full_time_counts)]
-        part = [_amount(v, f"monthly_non_full_time_hours[{i + 1}]") for i, v in enumerate(monthly_non_full_time_hours)]
+        part = [_exact(_amount(v, f"monthly_non_full_time_hours[{i + 1}]"))
+                for i, v in enumerate(monthly_non_full_time_hours)]
         notes.append(f"With aggregate hours, each non-full-time employee's hours must already be capped at {cap} per "
                      f"month before adding them up [{FTE}].")
     else:
@@ -1225,16 +1464,20 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
                          "monthly_non_full_time_hours (12 values each)")
     months = []
     for m in range(12):
-        fte = part[m] / div
+        fte = part[m] / div                      # exact fractions: no float drift at the 50 line
         tot = ft[m] + fte
         months.append(AcaMonth(month=f"{year}-{m + 1:02d}", full_time_employees=ft[m],
-                               non_full_time_hours_counted=round(part[m], 2), ftes=round(fte, 2), total=round(tot, 2),
-                               over_50=tot > ale_k,
-                               math=f"{ft[m]} FT + {_num(part[m])} h / {div} = {ft[m]} + {fte:.2f} = {tot:.2f}"))
-    total_sum = sum(ft[m] + part[m] / div for m in range(12))
-    avg = total_sum / 12
-    whole = math.floor(avg + 1e-9)
-    math_.append(f"average = {total_sum:.2f} / 12 = {avg:.2f}, rounded down = {whole}; ALE if {whole} >= {ale_k} "
+                               non_full_time_hours_counted=round(float(part[m]), 2), ftes=round(float(fte), 2),
+                               total=round(float(tot), 2), over_50=tot > ale_k,
+                               math=f"{ft[m]} FT + {_num(float(part[m]))} h / {div} = {ft[m]} + {float(fte):.2f} = "
+                                    f"{float(tot):.2f}"))
+    total_exact = sum((ft[m] + part[m] / div for m in range(12)), Fraction(0))
+    # shown truncated (not rounded) to the cent, so a 49.999 average never prints as 50.00 next to "rounded down = 49"
+    total_sum, avg = math.floor(total_exact * 100) / 100, math.floor(total_exact / 12 * 100) / 100
+    whole = math.floor(total_exact / 12)
+    exact_avg = total_exact / 12
+    cut = "" if Fraction(math.floor(exact_avg * 100), 100) == exact_avg else " (truncated)"
+    math_.append(f"average = {total_sum:.2f} / 12 = {avg:.2f}{cut}, rounded down = {whole}; ALE if {whole} >= {ale_k} "
                  f"[{ALE}]")
     ale = whole >= ale_k
     cite = [ALE, FTE, FT30, HOURS_DEF]
@@ -1248,14 +1491,21 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
     if ale and excess_over_50_were_seasonal:
         cite.append(SEASONAL)
         k_mo = P(SEASONAL, "alternative_months")
-        if len(over) <= k_mo:
+        if not over:
+            math_.append(f"seasonal exception not applied: no month was over {ale_k}, so there were no workers in "
+                         f"excess of {ale_k} for the exception to disregard (the regulation's Example 2 treats "
+                         f"{ale_k} in every month as an ALE) [{SEASONAL}]")
+        elif len(over) <= k_mo:
             ale, seasonal_applied = False, True
             math_.append(f"seasonal exception: over {ale_k} in {len(over)} month(s) <= {k_mo} months "
                          f"({P(SEASONAL, 'max_days_over_50')} days), excess were seasonal workers -> not an ALE "
                          f"[{SEASONAL}]")
         else:
-            math_.append(f"seasonal exception not available: over {ale_k} in {len(over)} months > {k_mo} "
-                         f"[{SEASONAL}]")
+            math_.append(f"seasonal exception not available on monthly data: over {ale_k} in {len(over)} months > "
+                         f"{k_mo} [{SEASONAL}]")
+            notes.append(f"The seasonal exception can also be measured in days: if the total was over {ale_k} on "
+                         f"{P(SEASONAL, 'max_days_over_50')} days or fewer (need not be consecutive) and the excess "
+                         f"were seasonal workers, it still applies; count the days from payroll [{SEASONAL}].")
     # ---- consequences
     payments, deadlines = [], []
     offer_ft = may_miss = must_offer = None
@@ -1274,7 +1524,7 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
             notes.append(f"full_time_employees_for_offer uses December {year} ({offer_ft}); pass "
                          f"current_full_time_employees for this year's count.")
         frac, min_n = P(OFFER95, "max_not_offered_fraction"), P(OFFER95, "max_not_offered_min_count")
-        may_miss = min(offer_ft, math.floor(max(min_n, frac * offer_ft) + 1e-9))
+        may_miss = min(offer_ft, math.floor(max(Fraction(min_n), _exact(frac) * offer_ft)))
         must_offer = offer_ft - may_miss
         math_.append(f"offer rule: may miss max({min_n}, {_num(frac * 100)}% x {offer_ft} = {_num(frac * offer_ft)}) "
                      f"-> {may_miss}; offer at least {must_offer} of {offer_ft} full-time employees and their children "
@@ -1283,6 +1533,9 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
         a_amt = _opt_amount(indexed_4980h_a_annual_usd, "indexed_4980h_a_annual_usd", strict=True)
         b_amt = _opt_amount(indexed_4980h_b_annual_usd, "indexed_4980h_b_annual_usd", strict=True)
         ptc = _opt_count(employees_with_premium_tax_credit, "employees_with_premium_tax_credit")
+        if ptc is not None and ptc > offer_ft:
+            raise ValueError(f"employees_with_premium_tax_credit ({ptc}) cannot exceed the full-time employees used for "
+                             f"the offer count ({offer_ft}); pass current_full_time_employees if that count is wrong")
         base_a = P(PEN_A, "annual_base_usd_per_employee_before_indexing")
         a_month = None
         if a_amt is not None:
@@ -1328,6 +1581,11 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
             efile = n_returns >= P(EFILE10, "min_returns_triggering_efile")
             math_.append(f"e-file: {n_returns} information returns {'>=' if efile else '<'} "
                          f"{P(EFILE10, 'min_returns_triggering_efile')} [{EFILE10}]")
+            if not efile:
+                notes.append(f"information_returns_count {n_returns} must include every Form W-2, 1099 and 1095-C you "
+                             f"file in {fy} (they are counted together); one W-2 per employee plus one 1095-C per "
+                             f"full-time employee usually reaches {P(EFILE10, 'min_returns_triggering_efile')}, so "
+                             f"recount before planning to paper-file [{EFILE10}].")
         elif n_1095 >= P(EFILE10, "min_returns_triggering_efile"):
             efile = True
             math_.append(f"e-file: at least {n_1095} Forms 1095-C (one per full-time employee) >= "
@@ -1351,8 +1609,13 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
             relief = P(APRIL1, "offer_deadline")
             deadlines.append(_deadline(f"First ALE year: offer coverage by {relief.split(' of ')[0]}, {status_year} "
                                        f"to avoid January-March payments", Date(status_year, *_month_day(relief)), d,
-                                       f"{P(APRIL1, 'offer_deadline')}; coverage must be minimum value for 4980H(b) "
-                                       f"relief; one time only", [APRIL1]))
+                                       f"{P(APRIL1, 'offer_deadline')}; for {P(APRIL1, 'applies_to')}; coverage must "
+                                       f"be minimum value for 4980H(b) relief; one time only", [APRIL1]))
+        notes.append(f"The due dates follow the regulation ({P(FILE_1094, 'paper_due')} on paper, "
+                     f"{P(FILE_1094, 'electronic_due')} electronically, furnish by {P(FURNISH_1095, 'base_due')} + "
+                     f"{ext} days) with the weekend rule; the current IRS form instructions were not read, so "
+                     f"check them for any change in how or when Form 1095-C must be furnished [{FILE_1094}, "
+                     f"{FURNISH_1095}].")
         notes.append(f"Late or wrong information returns cost {_usd(P(LATE_RET, 'per_return_usd_base'))} per return "
                      f"before IRS inflation adjustment ({_usd(P(LATE_RET, 'corrected_within_30_days')['per_return_usd_base'])}"
                      f" if fixed within 30 days) [{LATE_RET}].")
@@ -1362,7 +1625,8 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
                      f"recalled worker is a new hire only after {P(REHIRE13, 'break_weeks_required')} straight weeks "
                      f"with no hours [{LOOKBACK}, {REHIRE13}].")
         step = (f"You are an applicable large employer for {status_year}. Offer coverage to at least {must_offer} of "
-                f"{offer_ft} full-time employees (and their children) every month, check affordability with an IRS "
+                f"{offer_ft} full-time employees (and their children) every month (any full-time employee left out "
+                f"who gets a premium tax credit can still cost a 4980H(b) payment), check affordability with an IRS "
                 f"safe harbor, and calendar Form 1095-C by {furnish.isoformat()} and "
                 + (f"e-filing by {elec.isoformat()}." if efile else
                    f"filing by {paper.isoformat()} (paper) or {elec.isoformat()} (electronic)."))
@@ -1375,9 +1639,12 @@ def aca_employer_status(measurement_year: int, employee_hours: Union[list, str, 
             step += f" You are close ({whole} of {ale_k}); track monthly hours now."
     notes.append(f"Count every hour paid, including vacation, holiday, sick, jury duty and layoff pay; leave out "
                  f"bona fide volunteer hours [{HOURS_DEF}]. Related companies under common control are counted "
-                 f"together [{ALE}].")
+                 f"together [{ALE}]" + (f", and the 30-employee reduction in 4980H(a) is shared among them "
+                                        f"({P(PEN_A, 'reduction_allocation')}) [{PEN_A}]." if ale else "."))
+    if partial_year_note:
+        notes.insert(0, partial_year_note)
     res = AcaResult(measurement_year=year, status_year=status_year, applicable_large_employer=ale, months=months,
-                    sum_of_monthly_totals=round(total_sum, 2), average=round(avg, 2), average_rounded_down=whole,
+                    sum_of_monthly_totals=total_sum, average=avg, average_rounded_down=whole,
                     threshold=ale_k, seasonal_exception_applied=seasonal_applied, months_over_50=over,
                     full_time_employees_for_offer=offer_ft, may_fail_to_offer_at_most=may_miss,
                     must_offer_at_least=must_offer, payments=payments, deadlines=deadlines,
@@ -1391,11 +1658,16 @@ CobraEvent = Literal["termination", "reduction_in_hours", "death", "medicare_ent
 _COBRA_ALIASES = {
     "termination": ("termination", "terminated", "fired", "discharged", "discharge", "laid off", "layoff", "lay off",
                     "quit", "resigned", "resignation", "end of project", "termination of employment", "separated",
-                    "reduction in force", "rif"),
+                    "reduction in force", "rif", "retired", "retirement", "retire", "let go", "job ended",
+                    "voluntary quit", "involuntary termination"),
+    # 26 CFR 54.4980B-4 Q&A-2: 'a strike or a lockout is a termination or reduction of hours'
     "reduction_in_hours": ("reduction in hours", "reduction of hours", "hours reduced", "hours cut", "reduced hours",
-                           "cut hours", "cut to part time", "moved to part time"),
-    "death": ("death", "died", "deceased", "death of employee"),
-    "medicare_entitlement": ("medicare", "medicare entitlement", "entitled to medicare"),
+                           "cut hours", "cut to part time", "moved to part time", "strike", "on strike", "lockout",
+                           "locked out"),
+    "death": ("death", "died", "deceased", "death of employee", "employee died", "employee passed away",
+              "passed away", "death of covered employee", "covered employee died"),
+    "medicare_entitlement": ("medicare", "medicare entitlement", "entitled to medicare", "enrolled in medicare",
+                             "medicare part a", "medicare part b"),
     "divorce_or_legal_separation": ("divorce", "legal separation", "divorced", "divorce or legal separation"),
     "dependent_child_loss": ("dependent child loss", "child aging out", "aged out", "child aged out", "turns 26",
                              "dependent child", "child loses dependent status", "loss of dependent status"),
@@ -1410,6 +1682,13 @@ def normalize_cobra_event(value: str) -> str:
     for key, aliases in _COBRA_ALIASES.items():
         if t == key.replace("_", " ") or t in aliases:
             return key
+    if "bankrupt" in t:
+        raise ValueError("an employer bankruptcy is a COBRA qualifying event only for retirees and their families "
+                         "(26 CFR 54.4980B-4 Q&A-1(b)(6)); this tool does not compute those dates, so ask the plan "
+                         "administrator")
+    if "eligible" in t and "medicare" in t:
+        raise ValueError("being eligible for Medicare is not a qualifying event; entitlement means enrollment in "
+                         "Part A or Part B (use qualifying_event 'medicare_entitlement' once enrolled)")
     raise ValueError(f"qualifying_event must be one of {list(_COBRA_ALIASES)} (or e.g. 'laid off', 'hours cut', "
                      f"'divorce'), got {value!r}")
 
@@ -1474,49 +1753,71 @@ def cobra_deadlines(qualifying_event: str, event_date, employer_is_plan_administ
                           notes=[f"Employer-reported events: {'; '.join(P(COBRA_ADMIN30, 'employer_reported_events'))} "
                                  f"[{COBRA_ADMIN30}]."])
         return res.cite(COBRA_ADMIN30, COBRA20)
-    cite = [COBRA20, COBRA_ELECT_NOTICE, COBRA_ELECT60, COBRA_MAX, COBRA_PREM, COBRA_PAY, COBRA_GENERAL]
+    cite = [COBRA20, COBRA_ELECT_NOTICE, COBRA_ELECT60, COBRA_MAX, COBRA_PREM, COBRA_PAY, COBRA_GENERAL, COBRA_QE]
     deadlines = []
     clock = "loss of coverage" if plan_measures_from_loss_of_coverage else "qualifying event"
-    if employer_is_plan_administrator:
+    if plan_measures_from_loss_of_coverage and coverage_loss_date in (None, ""):
+        notes.append("plan_measures_from_loss_of_coverage is true but no coverage_loss_date was given, so the event "
+                     "date was used for the loss of coverage.")
+    k14 = P(COBRA_ELECT_NOTICE, "administrator_deadline_days_after_notice")
+    if not employer_reports:
+        # divorce, legal separation, a child losing dependent status: the beneficiary must tell the plan first
+        kb = P(COBRA_ELECT60, "beneficiary_notice_days_divorce_or_dependent_loss")
+        ben_from = max(e_day, loss)
+        ben_due = ben_from + timedelta(days=kb)
+        deadlines.append(_deadline("Employee or family member must notify the plan administrator (or the plan need "
+                                   "not offer COBRA)", ben_due, d,
+                                   f"later of event {e_day.isoformat()} and coverage loss {loss.isoformat()} = "
+                                   f"{ben_from.isoformat()}; + {kb} days", [COBRA_ELECT60], done_on=admin_on,
+                                   info=admin_on is None))
+        if admin_on is not None and admin_on > ben_due:
+            notes.append(f"The plan was told on {admin_on.isoformat()}, after the {kb}-day deadline "
+                         f"({ben_due.isoformat()}); the plan is not required to offer COBRA for this event [{COBRA_ELECT60}].")
+        notice_due = admin_on + timedelta(days=k14) if admin_on else None
+        deadlines.append(_deadline("Send the COBRA election notice (you are the plan administrator)"
+                                   if employer_is_plan_administrator else "Administrator sends the COBRA election notice",
+                                   notice_due, d,
+                                   f"beneficiary's notice received {admin_on.isoformat()} + {k14} days" if admin_on else
+                                   f"{k14} days after the administrator receives the beneficiary's notice (pass "
+                                   f"administrator_notified_date once it arrives)", [COBRA_ELECT_NOTICE],
+                                   done_on=notice_on))
+    elif employer_is_plan_administrator:
         k44 = P(COBRA_ELECT_NOTICE, "employer_is_administrator_deadline_days")
         notice_due = start + timedelta(days=k44)
-        if not employer_reports:
-            notice_due = None
-            notes.append("The employee or family member must tell the plan about a divorce, legal separation or a "
-                         "child losing dependent status (29 CFR 2590.606-3; that deadline is not in this rulebook). "
-                         f"Once told, send the election notice within "
-                         f"{P(COBRA_ELECT_NOTICE, 'administrator_deadline_days_after_notice')} days.")
         deadlines.append(_deadline("Send the COBRA election notice (you are the plan administrator)", notice_due, d,
-                                   f"{clock} {start.isoformat()} + {k44} days" if notice_due else
-                                   "starts when the beneficiary notifies the plan", [COBRA_ELECT_NOTICE],
+                                   f"{clock} {start.isoformat()} + {k44} days", [COBRA_ELECT_NOTICE],
                                    done_on=notice_on))
     else:
-        k14 = P(COBRA_ELECT_NOTICE, "administrator_deadline_days_after_notice")
-        if employer_reports:
-            cite.append(COBRA_ADMIN30)
-            k30 = P(COBRA_ADMIN30, "deadline_days")
-            admin_due = start + timedelta(days=k30)
+        cite.append(COBRA_ADMIN30)
+        k30 = P(COBRA_ADMIN30, "deadline_days")
+        admin_due = start + timedelta(days=k30)
+        if admin_on is None and notice_on is not None and notice_on <= admin_due:
+            # the administrator sent the election notice, so it had been told by then (and on time)
+            deadlines.append(_deadline("Notify the plan administrator of the qualifying event", admin_due, d,
+                                       f"{clock} {start.isoformat()} + {k30} days; the election notice went out "
+                                       f"{notice_on.isoformat()}, so the administrator had been told by then",
+                                       [COBRA_ADMIN30], done_on=notice_on))
+        elif admin_on is None and notice_on is not None:
+            deadlines.append(_deadline("Notify the plan administrator of the qualifying event", admin_due, d,
+                                       f"{clock} {start.isoformat()} + {k30} days; the election notice went out "
+                                       f"{notice_on.isoformat()}; pass administrator_notified_date to check this "
+                                       f"step", [COBRA_ADMIN30], info=True))
+        else:
             deadlines.append(_deadline("Notify the plan administrator of the qualifying event", admin_due, d,
                                        f"{clock} {start.isoformat()} + {k30} days", [COBRA_ADMIN30], done_on=admin_on))
-            received = admin_on or admin_due
-            notice_due = received + timedelta(days=k14)
-            deadlines.append(_deadline("Administrator sends the COBRA election notice", notice_due, d,
-                                       f"administrator notified {received.isoformat()}"
-                                       + ("" if admin_on else " (latest allowed)") + f" + {k14} days",
-                                       [COBRA_ELECT_NOTICE], done_on=notice_on))
-        else:
-            notice_due = None
-            notes.append("The employee or family member must tell the plan administrator about a divorce, legal "
-                         "separation or a child losing dependent status (29 CFR 2590.606-3; that deadline is not in "
-                         f"this rulebook). The administrator then has {k14} days to send the election notice.")
-            deadlines.append(_deadline("Administrator sends the COBRA election notice", None, d,
-                                       f"{k14} days after the administrator receives the beneficiary's notice",
-                                       [COBRA_ELECT_NOTICE], done_on=notice_on))
+        received = admin_on or admin_due
+        notice_due = received + timedelta(days=k14)
+        deadlines.append(_deadline("Administrator sends the COBRA election notice", notice_due, d,
+                                   f"administrator notified {received.isoformat()}"
+                                   + ("" if admin_on else " (latest allowed)") + f" + {k14} days",
+                                   [COBRA_ELECT_NOTICE], done_on=notice_on))
     k60 = P(COBRA_ELECT60, "min_election_days")
     notice_basis = notice_on or notice_due
+    window_end = None
     if notice_basis is not None:
         later = max(loss, notice_basis)
-        deadlines.append(_deadline("Election window may not close before", later + timedelta(days=k60), d,
+        window_end = later + timedelta(days=k60)
+        deadlines.append(_deadline("Election window may not close before", window_end, d,
                                    f"later of coverage loss {loss.isoformat()} and election notice "
                                    f"{notice_basis.isoformat()}" + ("" if notice_on else " (latest allowed)")
                                    + f" = {later.isoformat()}; + {k60} days", [COBRA_ELECT60], info=True))
@@ -1524,11 +1825,21 @@ def cobra_deadlines(qualifying_event: str, event_date, employer_is_plan_administ
         k45 = P(COBRA_PAY, "first_payment_min_days_after_election")
         deadlines.append(_deadline("First premium payment cannot be required before", elect_on + timedelta(days=k45),
                                    d, f"elected {elect_on.isoformat()} + {k45} days", [COBRA_PAY], info=True))
+        if window_end is not None and notice_on is not None and elect_on > window_end:
+            notes.append(f"The election on {elect_on.isoformat()} came after {window_end.isoformat()}, the earliest the "
+                         f"{k60}-day window may close; it is timely only if the plan's own window was longer "
+                         f"[{COBRA_ELECT60}].")
     months = (P(COBRA_MAX, "with_disability_extension_months") if disability_extension else
               P(COBRA_MAX, "termination_or_hours_reduction_months") if ev in ("termination", "reduction_in_hours")
               else P(COBRA_MAX, "other_events_or_second_qualifying_event_months"))
     end = _add_months(start, months)
     math_.append(f"maximum coverage: {clock} {start.isoformat()} + {months} months = {end.isoformat()} [{COBRA_MAX}]")
+    if plan_measures_from_loss_of_coverage:
+        notes.append("Measuring from the loss of coverage is allowed only if the plan document says so for both the "
+                     f"employer notice and the maximum coverage period [{COBRA_MAX}].")
+    if disability_extension:
+        notes.append("The disability extension applies only if: " + "; ".join(P(COBRA_MAX, "disability_extension_requires"))
+                     + f" [{COBRA_MAX}].")
     prem = prem_dis = None
     if cost is not None:
         pct, pct_d = P(COBRA_PREM, "max_percent_of_applicable_premium"), P(COBRA_PREM, "disability_extension_max_percent")
@@ -1538,7 +1849,13 @@ def cobra_deadlines(qualifying_event: str, event_date, employer_is_plan_administ
             prem_dis = _money(cost * pct_d / 100)
             first_dis = P(COBRA_MAX, "termination_or_hours_reduction_months") + 1
             math_.append(f"months {first_dis}-{months} (disability extension): {_usd(cost)} x {pct_d}% = "
-                         f"{_usd(prem_dis)} a month [{COBRA_PREM}]")
+                         f"{_usd(prem_dis)} a month, only while {P(COBRA_PREM, 'disability_150_percent_only_if')}; "
+                         f"otherwise {_usd(prem)} [{COBRA_PREM}]")
+    qe = core.rule(COBRA_QE)
+    notes.append(f"This is a COBRA qualifying event only if it makes the person lose plan coverage (lose coverage = "
+                 f"{qe.param('lose_coverage_means')}); a voluntary quit counts the same as a discharge [{COBRA_QE}].")
+    if ev == "medicare_entitlement":
+        notes.append(f"Medicare entitlement means {qe.param('medicare_entitlement_means')} [{COBRA_QE}].")
     notes.append(f"Each later premium is on time if paid within {P(COBRA_PAY, 'grace_period_days')} days after the "
                  f"start of its coverage period [{COBRA_PAY}].")
     notes.append(f"A second qualifying event (death, divorce) during an {P(COBRA_MAX, 'termination_or_hours_reduction_months')}"
@@ -1548,15 +1865,27 @@ def cobra_deadlines(qualifying_event: str, event_date, employer_is_plan_administ
                  f"[{COBRA_GENERAL}]. Dates are calendar days; no weekend or holiday extension is applied (none is stated "
                  f"in the rules read).")
     open_items = [x for x in deadlines if x.status in ("upcoming", "due_today", "overdue")]
-    if open_items:
+    late_beneficiary = (not employer_reports and admin_on is not None and deadlines
+                        and deadlines[0].status == "done_late")
+    if late_beneficiary:
+        step = (f"The employee or family member told the plan on {admin_on.isoformat()}, after the "
+                f"{deadlines[0].due_date} deadline, so the plan is not required to offer COBRA for this event; "
+                f"confirm with the plan administrator and keep a record of the dates.")
+    elif open_items:
         x = open_items[0]
         when = f"OVERDUE by {-x.days_left} days" if x.status == "overdue" else f"{x.days_left} days left"
         step = f"{x.item} by {x.due_date} ({when})."
     elif any(x.status == "done_late" for x in deadlines):
         step = "A COBRA notice went out late; document why and make sure the election window runs a full period."
+    elif not employer_reports and admin_on is None:
+        step = (f"Wait for the employee or family member's notice (due by {deadlines[0].due_date}); once it arrives, "
+                f"the election notice is due within {k14} days.")
     else:
         step = "Notices are on track; keep proof of mailing and track the election window and premium dates."
-    step += f" COBRA can run until {end.isoformat()}" + (f" at up to {_usd(prem)} a month." if prem else ".")
+    if end < d:
+        step += f" The maximum COBRA period ended on {end.isoformat()}."
+    else:
+        step += f" COBRA can run until {end.isoformat()}" + (f" at up to {_usd(prem)} a month." if prem else ".")
     res = CobraResult(**base, federal_cobra_applies=True, deadlines=deadlines, maximum_coverage_months=months,
                       coverage_may_end=end.isoformat(), max_monthly_premium_usd=prem,
                       max_monthly_premium_disability_months_usd=prem_dis, math=math_, next_step=step, notes=notes)
@@ -1569,7 +1898,8 @@ LEAVE_TYPES = ("jury_duty", "court_witness", "crime_victim_court", "crime_victim
                "adult_literacy", "organ_donor", "lactation", "fmla")
 _LEAVE_ALIASES = {
     "jury_duty": ("jury", "jury service", "juror", "jury summons"),
-    "court_witness": ("witness", "subpoena", "subpoenaed", "testify", "court witness", "witness subpoena"),
+    "court_witness": ("witness", "subpoena", "subpoenaed", "testify", "court witness", "witness subpoena",
+                      "subpoenaed witness", "testify in court"),
     "crime_victim_court": ("victim court", "crime victim court proceedings", "victim court proceedings",
                            "court proceedings", "sentencing", "victim court date"),
     "crime_victim_leave": ("victim leave", "domestic violence leave", "dv leave", "domestic violence",
@@ -1584,7 +1914,9 @@ _LEAVE_ALIASES = {
     "emergency_training": ("firefighter training", "emergency training", "reserve officer training",
                            "emergency rescue training", "fire training", "volunteer firefighter training",
                            "reserve peace officer training", "law enforcement training"),
-    "rehab": ("rehabilitation", "alcohol rehab", "drug rehab", "substance abuse", "alcohol", "drug treatment"),
+    "rehab": ("rehabilitation", "alcohol rehab", "drug rehab", "substance abuse", "alcohol", "drug treatment",
+              "alcohol treatment", "addiction treatment", "alcohol rehabilitation", "drug rehabilitation",
+              "substance abuse treatment"),
     "adult_literacy": ("literacy", "reading class", "adult literacy program", "learn to read"),
     "organ_donor": ("organ donation", "organ donor", "bone marrow", "bone marrow donor", "marrow", "kidney donor",
                     "liver donor"),
@@ -1596,21 +1928,30 @@ _FEHA_MOVED = {"jury_duty": JURY, "court_witness": VICTIM_COURT, "crime_victim_c
                "crime_victim_leave": VICTIM_LEAVE, "victim_safety_accommodation": VICTIM_ACCOM}
 
 
+# Words that name these leaves only when they are the whole request: inside a longer phrase they usually mean
+# something else ('nursing home visit', 'knee rehab', 'vocational rehabilitation', 'alcohol on site', 'witness
+# statement', 'court proceedings for my divorce', 'teacher training').
+_EXACT_ONLY = frozenset({"nursing", "rehab", "rehabilitation", "alcohol", "witness", "court proceedings", "teacher"})
+_NOT_COVERED_HINT = ("this tool does not check CFRA, pregnancy disability, paid sick leave, bereavement, vacation, "
+                     "voting or military leave")
+
+
 def normalize_leave_type(value: str) -> str:
     """Exact name or alias first; then the longest alias found inside the text ('jury duty summons' -> jury_duty).
-    Bare words that could mean something else ('training', 'donor') are not aliases on their own."""
+    Bare words that could mean something else ('training', 'donor', 'nursing', 'rehab') are not matched inside
+    longer text."""
     t = _norm_words(value)
     for key in LEAVE_TYPES:
         if t == key.replace("_", " ") or t in _LEAVE_ALIASES.get(key, ()):
             return key
     padded = f" {t} "
     hits = [(len(a), key) for key in LEAVE_TYPES for a in (key.replace("_", " "), *_LEAVE_ALIASES.get(key, ()))
-            if f" {a} " in padded]
+            if a not in _EXACT_ONLY and f" {a} " in padded]
     if hits:
         key = max(hits)[1]
         return "emergency_training" if key == "emergency_duty" and " training " in padded else key
     raise ValueError(f"leave_type must be one of {list(LEAVE_TYPES)} (or e.g. 'jury', 'school event', 'pumping', "
-                     f"'volunteer firefighter'), got {value!r}")
+                     f"'volunteer firefighter'); {_NOT_COVERED_HINT}. Got {value!r}")
 
 
 class LeaveResult(core.Result):
@@ -1646,6 +1987,8 @@ def leave_request_check(leave_type: str, employee_count: int, employees_at_locat
     lt = normalize_leave_type(leave_type)
     if lt == "fmla" and re.search(r"\b(?:military caregiver|servicemember)\b", _norm_words(leave_type)):
         military_caregiver = True
+    if lt == "school_activities" and re.search(r"\bemergenc", _norm_words(leave_type)):
+        school_emergency = True
     d = _today(as_of)
     req_day = _opt_date(request_date, "request_date") or d
     n = _count(employee_count, "employee_count", 1)
@@ -1655,6 +1998,10 @@ def leave_request_check(leave_type: str, employee_count: int, employees_at_locat
     hr_req = _opt_amount(hours_requested, "hours_requested", strict=True)
     hr_year = _amount(hours_used_this_year or 0, "hours_used_this_year")
     hr_month = _amount(hours_used_this_month or 0, "hours_used_this_month")
+    if hr_year > 8784:
+        raise ValueError("hours_used_this_year cannot exceed 8,784 (hours in a leap year)")
+    if hr_month > 744:
+        raise ValueError("hours_used_this_month cannot exceed 744 (hours in a 31-day month)")
     if hr_month > hr_year:
         raise ValueError("hours_used_this_month cannot exceed hours_used_this_year")
     day_req = _opt_amount(days_requested, "days_requested", strict=True)
@@ -1693,6 +2040,13 @@ def leave_request_check(leave_type: str, employee_count: int, employees_at_locat
         elif lt == "crime_victim_leave":
             out["limits"]["purposes"] = P(VICTIM_LEAVE, "purposes")
             out["limits"]["covered_victims"] = P(VICTIM_LEAVE, "covered_victims")
+            relief = P(VICTIM_LEAVE, "related_any_size_230c")
+            out["limits"]["any_size_relief"] = relief["protection"]
+            if k is not None and n < k:
+                out["notes"].append(f"The old Labor Code 230(c) (violations through "
+                                    f"{relief['labor_code_version_applies_to_violations_through']}) protected "
+                                    f"{relief['protection']} at any employer size; if the worker needs time off for "
+                                    f"that, do not deny it on size [{VICTIM_LEAVE}].")
         else:
             out["limits"]["examples"] = P(VICTIM_ACCOM, "accommodation_examples_per_dlse")
         if lt != "jury_duty":
@@ -1706,7 +2060,9 @@ def leave_request_check(leave_type: str, employee_count: int, employees_at_locat
         step = ("Approve the time off, do not penalize it, and confirm current requirements with the Civil Rights "
                 "Department." if out["protected"] == "yes" else
                 f"You are below the old Labor Code threshold of {k}; the current FEHA threshold was not read, so check "
-                f"with the Civil Rights Department before denying it.")
+                f"with the Civil Rights Department before denying it"
+                + (" (time off to seek relief such as a restraining order had no size threshold under the old "
+                   "Labor Code)." if lt == "crime_victim_leave" else "."))
     elif lt == "school_teacher_request":
         cite.append(SCHOOL_TEACHER)
         out.update(threshold="no size threshold stated", protected="yes", employer_covered=True,
@@ -1755,11 +2111,19 @@ def leave_request_check(leave_type: str, employee_count: int, employees_at_locat
         elif not covered:
             step = (f"Not required under Labor Code 230.8 ({loc if loc is not None else n} < {k} at the location); "
                     f"you may still allow it.")
+        elif left <= 0:
+            cap_hit = ("yearly" if left_year <= 0 or not monthly_applies else "monthly")
+            step = (f"No protected hours remain: the {_num(yr_cap if cap_hit == 'yearly' else mo_cap)}-hour {cap_hit} "
+                    f"cap is used up" + (f", so none of the {_num(hr_req)} hour{'' if hr_req == 1 else 's'} requested is "
+                                         f"protected" if hr_req else "")
+                    + " (you may still allow it).")
         elif hr_req is not None and out["can_approve_now"] < hr_req:
             step = (f"Approve {_num(out['can_approve_now'])} of the {_num(hr_req)} hours as protected leave; the rest "
                     f"is over the cap (you may still allow it).")
+        elif hr_req is None:
+            step = f"{_num(left)} protected hours are available; approve requests up to that after reasonable notice."
         else:
-            step = f"Approve it; {_num(left - (hr_req or 0))} protected hours remain after this request."
+            step = f"Approve it; {_num(left - hr_req)} protected hours remain after this request."
     elif lt in ("emergency_duty", "emergency_training"):
         if lt == "emergency_duty":
             cite.append(EMERG_DUTY)
@@ -1783,8 +2147,13 @@ def leave_request_check(leave_type: str, employee_count: int, employees_at_locat
                 out["can_approve_now"] = round(min(day_req, left), 2) if covered else 0.0
                 out["math"].append(f"protected now = min(requested {_num(day_req)}, left {_num(left)}) = "
                                    f"{_num(min(day_req, left))} days")
-            step = (f"Approve up to {_num(min(day_req, left) if day_req else left)} days of training leave."
-                    if covered else f"Not required below {k} employees ({n}); you may still allow it.")
+            if not covered:
+                step = f"Not required below {k} employees ({n}); you may still allow it."
+            elif left <= 0:
+                step = (f"No protected training days remain in {d.year}: the {_num(cap)}-day yearly limit is used up "
+                        f"(you may still allow it).")
+            else:
+                step = f"Approve up to {_num(min(day_req, left) if day_req else left)} days of training leave."
         cite += [RETAL_DEADLINE, RETAL_PEN]
         out["notes"].append(retal_note)
     elif lt in ("rehab", "adult_literacy"):
@@ -1917,6 +2286,11 @@ def leave_request_check(leave_type: str, employee_count: int, employees_at_locat
             step = f"Not FMLA-protected ({', '.join(failed)} not met). Check CFRA before denying the leave."
         elif prot == "check":
             step = f"Give the eligibility notice by the deadline below, and get these facts: {', '.join(missing)}."
+        elif left <= 0:
+            step = (f"Eligible, but the {_num(cap)} workweeks for this 12-month period are used up, so "
+                    + (f"none of the {_num(wreq)} workweeks requested is FMLA-protected" if wreq else
+                       "no FMLA leave remains") + "; still give the eligibility and rights notice by the deadline "
+                    "below, and check CFRA.")
         else:
             step = (f"Eligible: give the eligibility and rights notice by the deadline below; "
                     f"{_num(left)} workweeks remain" + (f", so {_num(min(wreq, left))} of {_num(wreq)} requested are "
@@ -1936,14 +2310,16 @@ def _tool_docs() -> dict[str, str]:
     return {
         "wage": (
             "California and City of San Diego minimum wage for a jobsite on a date: the state rate, the San Diego city "
-            f"rate (any employer size, for employees working {sd_h}+ hours in a week in the city; not inside federal "
-            "enclaves; not for exempt salaried staff), the required rate (higher of the two), the San Diego traffic "
-            "control (flagger) wage on City permits (basic + benefits, overtime/Saturday and Sunday/holiday rates, "
-            f"locked at permit issuance; single-family/duplex and {_usd(tcw_cost)}-or-less project exceptions), the "
+            f"rate (any employer size, for every hour in the city worked by an employee who works {sd_h}+ hours in the "
+            "city in any calendar week of the year; not inside federal enclaves; not for exempt salaried staff), the "
+            "required rate (higher of the two), the San Diego traffic control (flagger) wage on City permits (basic + "
+            "benefits, overtime/Saturday and Sunday/holiday rates, locked at permit issuance including the "
+            f"predetermined increase; single-family/duplex and {_usd(tcw_cost)}-or-less project exceptions), the "
             "San Diego living wage on City service contracts, upcoming rate changes with days away, the exempt salary "
             f"threshold for the year, the {_num(P(TOOLS2X, 'hand_tool_threshold_multiplier'))}x hand-tool threshold, "
             "an optional pay check with the shortfall, postings, math, next step, notes and citations. Other cities: "
-            "returns the state floor and says the local rate is not in the verified rulebook (no guess)."),
+            "returns the state floor and says the local rate is not in the verified rulebook (no guess); a San Diego "
+            "community name such as 'La Jolla' gets a hint to rerun with 'San Diego' after checking the address."),
         "mandates": (
             "Which California and federal HR mandates apply at your size, as a checklist: expense reimbursement and "
             "deductions, hiring and background-check limits, pay transparency (pay scale in job postings at "
@@ -1976,7 +2352,10 @@ def _tool_docs() -> dict[str, str]:
             f"({P(COBRA_ADMIN30, 'deadline_days')} days), election notice "
             f"({P(COBRA_ELECT_NOTICE, 'administrator_deadline_days_after_notice')} days after the administrator is "
             f"told, or {P(COBRA_ELECT_NOTICE, 'employer_is_administrator_deadline_days')} days if you are the "
-            f"administrator), the earliest the {P(COBRA_ELECT60, 'min_election_days')}-day election window may close, "
+            f"administrator), the employee or family member's "
+            f"{P(COBRA_ELECT60, 'beneficiary_notice_days_divorce_or_dependent_loss')}-day notice for a divorce, legal "
+            f"separation or a child losing dependent status, the earliest the "
+            f"{P(COBRA_ELECT60, 'min_election_days')}-day election window may close, "
             f"the {P(COBRA_PAY, 'first_payment_min_days_after_election')}-day first-payment rule and "
             f"{P(COBRA_PAY, 'grace_period_days')}-day grace periods, the maximum coverage end "
             f"({P(COBRA_MAX, 'termination_or_hours_reduction_months')}, "
@@ -2023,7 +2402,8 @@ def register(mcp) -> None:
             "limits (a San Diego mailing address is not enough)"))],
         on_date: Annotated[Optional[str], Field(description=f"Date the hours are worked. {D}")] = None,
         hours_in_city_this_week: Annotated[Optional[float], Field(ge=0, le=168, description=(
-            f"Hours this employee works inside the city this week (the San Diego rate covers {sd_min_h}+ h/week)"))] = None,
+            f"Hours this employee works inside the city this week (used for the pay check; the San Diego rate covers "
+            f"an employee once they work {sd_min_h}+ h in the city in any week of the year)"))] = None,
         exempt_salaried: Annotated[bool, Field(description=(
             "True for exempt salaried staff (then the exempt salary threshold applies, not the hourly rate)"))] = False,
         inside_federal_enclave: Annotated[bool, Field(description=(
@@ -2043,12 +2423,16 @@ def register(mcp) -> None:
         hourly_rate_paid_usd: Annotated[Optional[float], Field(ge=0, description=(
             "Cash hourly rate you pay, to check it"))] = None,
         benefits_paid_usd_per_hour: Annotated[float, Field(ge=0, description=(
-            "Employer-paid fringe or health benefits per hour (credited toward the flagger or living wage rate)"))] = 0.0,
+            "Employer-paid fringe or health benefits per hour into plans (credited toward the flagger or living wage "
+            "rate)"))] = 0.0,
+        two_hours_in_city_in_a_week_this_year: Annotated[Optional[bool], Field(description=(
+            f"San Diego only: has this employee worked {sd_min_h}+ hours inside the city in any calendar week this "
+            f"year? false is the only answer that takes them outside the City rate"))] = None,
     ) -> JobsiteWageResult:
         return jobsite_minimum_wage(city, on_date, hours_in_city_this_week, exempt_salaried, inside_federal_enclave,
                                     traffic_control_permit, permit_issue_date, single_family_or_duplex,
                                     project_cost_usd, city_living_wage_contract, hourly_rate_paid_usd,
-                                    benefits_paid_usd_per_hour)
+                                    benefits_paid_usd_per_hour, two_hours_in_city_in_a_week_this_year)
 
     @mcp.tool(name="employer_size_mandates", annotations=ro, description=docs["mandates"])
     def _employer_size_mandates(

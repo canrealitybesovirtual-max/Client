@@ -1527,7 +1527,14 @@
    "verbatim_quote": "prior to the commencement of the demolition or renovation, thoroughly inspect the affected facility or part of the facility where the demolition or renovation operation will occur for the presence of asbestos, including Category I and Category II nonfriable ACM.",
    "effective": "",
    "read_from_primary_text": true,
-   "notes": "In California the NESHAP is enforced by local air districts (e.g., SCAQMD Rule 1403, BAAQMD Reg. 11 Rule 2), which may be stricter. Asbestos survey by a Cal/OSHA Certified Asbestos Consultant is commonly required by districts (not verified here)."
+   "notes": "In California the NESHAP is enforced by local air districts (e.g., SCAQMD Rule 1403, BAAQMD Reg. 11 Rule 2), which may be stricter. Asbestos survey by a Cal/OSHA Certified Asbestos Consultant is commonly required by districts (not verified here).",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR versioner API, title 40 as of 2026-11-20 (fetched 2026-11-25): https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?section=61.145",
+    "checked_on": "2026-11-25",
+    "correction": "",
+    "note": "Re-verified 2026-11-25 during the local-jobsite review: the verbatim quote string-matches 61.145(a); the facility types follow the 61.141 'Facility' definition."
+   }
   },
   {
    "id": "neshap-facility-excludes-4-or-fewer-units",
@@ -1545,7 +1552,14 @@
    "verbatim_quote": "Facility means any institutional, commercial, public, industrial, or residential structure, installation, or building (including any structure, installation, or building containing condominiums or individual dwelling units operated as a residential cooperative, but excluding residential buildings having four or fewer dwelling units);",
    "effective": "",
    "read_from_primary_text": true,
-   "notes": "Bay Area AQMD notification applies to every demolition regardless of asbestos (search excerpt) - California districts often regulate single-family demolitions that the federal rule excludes."
+   "notes": "Bay Area AQMD notification applies to every demolition regardless of asbestos (search excerpt) - California districts often regulate single-family demolitions that the federal rule excludes.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "eCFR versioner API, title 40 as of 2026-11-20 (fetched 2026-11-25): https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?section=61.141",
+    "checked_on": "2026-11-25",
+    "correction": "",
+    "note": "Re-verified 2026-11-25 during the local-jobsite review: the verbatim quote string-matches the 61.141 'Facility' definition, and all three parameters (4-unit residential exclusion, dwelling loft not residential, condominiums/cooperatives included) are stated there."
+   }
   },
   {
    "id": "neshap-racm-thresholds",
@@ -2675,11 +2689,11 @@
  "refuted": [],
  "verification_meta": {
   "verified_on": "2026-11-25",
-  "method": "Every rule with category deadline, money_amount, threshold, penalty, required_contract_clause or required_notice was checked (61 rules). Rules citing the 2026 CSLB Law Book were string-matched against /home/user/Client/sources/lawbook.txt by PDF page; B&P sections and 16 CCR 871 reproduced verbatim there were treated as primary text, while the Law Book Section IV narrative chapters (811/USA, Native American remains, wells) were treated as CSLB secondary summaries and re-checked against statute text. eCFR sections 40 CFR 61.141, 61.145, 745.81-745.86, 745.103 and 122.26 were re-fetched from the eCFR versioner API (title 40 as of 2026-11-20), and quotes and numbers were matched. The CSLB ADU Fast Facts PDF was re-fetched from cslb.ca.gov (HTTP 200). leginfo.legislature.ca.gov returns HTTP 403, and dgs.ca.gov, energy.ca.gov, hcd.ca.gov, waterboards.ca.gov, conservation.ca.gov, dot.ca.gov, aqmd.gov, baaqmd.gov and codes.iccsafe.org are DNS-blocked here. For those, statute and agency text was read through WebSearch restricted to the official domain; rules were confirmed or corrected only where the excerpt showed the operative text or an official agency statement. Partial support is marked unverifiable. Statuses: confirmed = matches primary/official text (any unchecked secondary details are listed in correction after \"None.\"); corrected = parameters, quote, plain_english, citation or effective date changed against official text; unverifiable = operative primary text not seen; refuted = contradicted and removed (none). FLAG = suspected issue noted but not applied.",
-  "in_scope_rules_checked": 61,
-  "out_of_scope_rules_unchanged": 43,
+  "method": "Every rule with category deadline, money_amount, threshold, penalty, required_contract_clause or required_notice was checked (61 rules). Rules citing the 2026 CSLB Law Book were string-matched against /home/user/Client/sources/lawbook.txt by PDF page; B&P sections and 16 CCR 871 reproduced verbatim there were treated as primary text, while the Law Book Section IV narrative chapters (811/USA, Native American remains, wells) were treated as CSLB secondary summaries and re-checked against statute text. eCFR sections 40 CFR 61.141, 61.145, 745.81-745.86, 745.103 and 122.26 were re-fetched from the eCFR versioner API (title 40 as of 2026-11-20), and quotes and numbers were matched. The CSLB ADU Fast Facts PDF was re-fetched from cslb.ca.gov (HTTP 200). leginfo.legislature.ca.gov returns HTTP 403, and dgs.ca.gov, energy.ca.gov, hcd.ca.gov, waterboards.ca.gov, conservation.ca.gov, dot.ca.gov, aqmd.gov, baaqmd.gov and codes.iccsafe.org are DNS-blocked here. For those, statute and agency text was read through WebSearch restricted to the official domain; rules were confirmed or corrected only where the excerpt showed the operative text or an official agency statement. Partial support is marked unverifiable. Statuses: confirmed = matches primary/official text (any unchecked secondary details are listed in correction after \"None.\"); corrected = parameters, quote, plain_english, citation or effective date changed against official text; unverifiable = operative primary text not seen; refuted = contradicted and removed (none). FLAG = suspected issue noted but not applied. Addendum 2026-11-25 (local-jobsite review): the definition rules neshap-facility-excludes-4-or-fewer-units and neshap-asbestos-inspection-before-demo were string-matched against eCFR 40 CFR 61.141 and 61.145(a) (versioner API, title 40 as of 2026-11-20) and marked confirmed.",
+  "in_scope_rules_checked": 63,
+  "out_of_scope_rules_unchanged": 41,
   "counts": {
-   "confirmed": 39,
+   "confirmed": 41,
    "corrected": 18,
    "unverifiable": 4
   },

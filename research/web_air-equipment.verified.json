@@ -718,19 +718,20 @@
       2018,
       2036
      ]
-    }
+    },
+    "low_use_vehicles_report_while_owned": true
    },
    "applies_to": "Owners and operators (including renters) of self-propelled off-road diesel vehicles of 25 hp or more operated in California",
    "citation": "13 CCR 2449(g)(2)",
    "source_location": "https://ww2.arb.ca.gov/sites/default/files/barcu/regact/2022/off-roaddiesel/froa-1.pdf (Final Regulation Order, PDF page 52, §2449(g)(2)); also https://ww2.arb.ca.gov/sites/default/files/barcu/regact/2022/off-roaddiesel/ord15dayatta-1.pdf (15-Day Modified Text, PDF page 48)",
-   "verbatim_quote": "The reporting date for all fleets is March 1. Fleet owners must report information regarding each vehicle subject to this regulation as it was on December 31 of the year prior to the reporting year [...] Large fleets must report annually each year from 2012 to 2036. Medium fleets must report annually each year 2016 to 2036. Small fleets must report annually each year from 2018 to 2036.",
+   "verbatim_quote": "The reporting date for all fleets is March 1. Fleet owners must report information regarding each vehicle subject to this regulation as it was on December 31 of the year prior to the reporting year [...] Large fleets must report annually each year from 2012 to 2036. Medium fleets must report annually each year 2016 to 2036. Small fleets must report annually each year from 2018 to 2036. [...] Any fleet that operates permanent or year-by-year low-use vehicles must continue to report annually for each permanent or year-by-year low-use vehicle for as long as the fleet owns or operates the vehicle.",
    "effective": "2023-10-01",
    "read_from_primary_text": true,
    "notes": "Quoted from CARB's Final Regulation Order for the 2022 Off-Road amendments (Attachment A-1, froa-1.pdf, PDF created Aug. 17, 2023; amendments shown against the prior regulation, struck-out deletions removed). The 15-Day Modified Text (April 10, 2023) carries the same passage. The amendments took effect October 1, 2023 and EPA authorized them January 10, 2025 (CARB enforcement notice, July 21, 2025). The OAL-published CCR edition was not compared. Fleets with low-use vehicles keep reporting annually as long as they own them.",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB Final Regulation Order, 2022 Off-Road amendments (Attachment A-1, froa-1.pdf, PDF created Aug. 17, 2023) https://ww2.arb.ca.gov/sites/default/files/barcu/regact/2022/off-roaddiesel/froa-1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 8bddc06c0027) PDF p.52 §2449(g)(2); CARB 15-Day Modified Text (Attachment A-1, April 10, 2023) https://ww2.arb.ca.gov/sites/default/files/barcu/regact/2022/off-roaddiesel/ord15dayatta-1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 a566080a9089) PDF p.48. Struck-out text removed in both by independent strike-line detection (pdfplumber; lines through 35-75% of glyph height). verbatim_quote string-matched against the strike-removed text after whitespace, quote-mark and dash normalization, and every parameter compared with the text. A word-level diff of the two texts shows no substantive change affecting this rule unless stated in the correction",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB Final Regulation Order, 2022 Off-Road amendments (Attachment A-1, froa-1.pdf, PDF created Aug. 17, 2023) https://ww2.arb.ca.gov/sites/default/files/barcu/regact/2022/off-roaddiesel/froa-1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 8bddc06c0027) PDF p.52 §2449(g)(2); CARB 15-Day Modified Text (Attachment A-1, April 10, 2023) https://ww2.arb.ca.gov/sites/default/files/barcu/regact/2022/off-roaddiesel/ord15dayatta-1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 a566080a9089) PDF p.48. Struck-out text removed in both by independent strike-line detection (pdfplumber; lines through 35-75% of glyph height). verbatim_quote string-matched against the strike-removed text after whitespace, quote-mark and dash normalization, and every parameter compared with the text. A word-level diff of the two texts shows no substantive change affecting this rule unless stated in the correction; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. froa-1.pdf PDF p.52 §2449(g)(2)",
+    "correction": "Review 2026-11-25: added low_use_vehicles_report_while_owned: low-use vehicles keep annual reporting after 2036 for as long as the fleet owns or operates them (2449(g)(2))."
    }
   },
   {
@@ -1512,19 +1513,20 @@
      "tier phase-out",
      "low-use designations",
      "contracting and prime contracting"
-    ]
+    ],
+    "report_email_in_notice": "diesel.complaints@arb.ca.gov"
    },
    "applies_to": "Off-road diesel fleets, prime contractors and public works awarding bodies",
    "citation": "CARB Enforcement Notice, July 21, 2025 (2022 ORD amendments)",
    "source_location": "https://ww2.arb.ca.gov/sites/default/files/2025-07/ORD%202022%20Enforcement%20Advisory_1.pdf (PDF page 1, p.1-2)",
-   "verbatim_quote": "On January 10, 2025, the U.S. Environmental Protection Agency granted authorization to CARB to enforce all provisions of the 2022 Off-Road Regulation amendments. [...] To facilitate compliance with the tier phase-out, low-Use designations, and contracting and prime contracting requirements, CARB will consider exercising its discretion and emphasizing education and outreach until at least October 21, 2025. [...] Starting January 11, 2025, CARB began enforcement of the expanded adding vehicles requirement on fleets.",
+   "verbatim_quote": "On January 10, 2025, the U.S. Environmental Protection Agency granted authorization to CARB to enforce all provisions of the 2022 Off-Road Regulation amendments. [...] To facilitate compliance with the tier phase-out, low-Use designations, and contracting and prime contracting requirements, CARB will consider exercising its discretion and emphasizing education and outreach until at least October 21, 2025. [...] Starting January 11, 2025, CARB began enforcement of the expanded adding vehicles requirement on fleets. [...] Prime contractors must report observed non-compliance to CARB within five business days at: https://calepacomplaints.secure.force.com/complaints/Complaint, or by email: diesel.complaints@arb.ca.gov.",
    "effective": "2025-01-10",
    "read_from_primary_text": true,
    "notes": "Official CARB enforcement notice. No later CARB notice extending the discretion period was found; CARB HTML pages could not be read (rate-limit page).",
    "verification": {
     "status": "corrected",
-    "checked_against": "CARB 2022 Off-Road Enforcement Notice (July 21, 2025) https://ww2.arb.ca.gov/sites/default/files/2025-07/ORD%202022%20Enforcement%20Advisory_1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 499437e88813) PDF p.1-2: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": "Title changed: it said enforcement discretion 'ended Oct. 2025', but the notice says CARB 'will consider exercising its discretion ... until at least October 21, 2025'. Nothing read states when discretion ended, and CARB's HTML pages returned HTTP 419. All four date parameters are confirmed against the notice."
+    "checked_against": "CARB 2022 Off-Road Enforcement Notice (July 21, 2025) https://ww2.arb.ca.gov/sites/default/files/2025-07/ORD%202022%20Enforcement%20Advisory_1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 499437e88813) PDF p.1-2: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. ORD 2022 Enforcement Advisory (July 21, 2025) PDF p.3",
+    "correction": "Title changed: it said enforcement discretion 'ended Oct. 2025', but the notice says CARB 'will consider exercising its discretion ... until at least October 21, 2025'. Nothing read states when discretion ended, and CARB's HTML pages returned HTTP 419. All four date parameters are confirmed against the notice. Review 2026-11-25: added report_email_in_notice: the July 2025 notice gives diesel.complaints@arb.ca.gov, while 2449(j)(3) and the (j)(5) sign text give dieselcomplaints@arb.ca.gov; the web form address is the same in both."
    }
   },
   {
@@ -1600,7 +1602,7 @@
   {
    "id": "air-tb-applicability-14000",
    "title": "Truck and Bus rule covers diesel vehicles over 14,000 lb GVWR",
-   "plain_english": "CARB's Truck and Bus regulation applies to diesel (and dual-fuel or alternative diesel) trucks and buses with a manufacturer's gross vehicle weight rating over 14,000 pounds that run in California, whether owned, leased or rented, and to people selling them.",
+   "plain_english": "CARB's Truck and Bus regulation applies to diesel (and dual-fuel or alternative diesel) trucks and buses with a manufacturer's gross vehicle weight rating over 14,000 pounds that run in California, whether owned, leased or rented, and to people selling them. Not covered (2025(c)): emergency and military tactical vehicles, off-road vehicles, dedicated snow-removal vehicles, historic vehicles, motor homes for non-commercial private use, personal-use pickups of 19,500 lb or less, solid waste collection and public transit vehicles under their own rules, municipal vehicles that meet the public agency fleet rule (13 CCR 2022.1) BACT requirements, and two-engine cranes, drill rigs and workover rigs that are under the off-road rule.",
    "category": "threshold",
    "parameters": {
     "min_gvwr_lbs_exclusive": 14000,
@@ -1615,20 +1617,25 @@
      "off-road vehicles under 13 CCR 2449",
      "historic vehicles",
      "motor homes for non-commercial private use",
-     "pickups 19,500 lbs GVWR or less used only for personal use"
+     "pickups 19,500 lbs GVWR or less used only for personal use",
+     "dedicated snow-removal vehicles",
+     "vehicles owned or operated by a municipality (13 CCR 2020(b)) that comply with the BACT requirements of 13 CCR 2022.1(a)(1)",
+     "vehicles subject to the solid waste collection vehicle rule (13 CCR 2021)",
+     "vehicles subject to the public transit agency fleet rule (13 CCR 2023)",
+     "two-engine on-road vehicles subject to 13 CCR 2449 (cranes, water well drilling rigs, workover rigs), except two-engine sweepers"
     ]
    },
    "applies_to": "Owners and operators of diesel trucks and buses over 14,000 lb GVWR operated in California (dump trucks, water trucks, concrete mixers, boom trucks and similar)",
    "citation": "13 CCR 2025(b)-(c)",
-   "source_location": "https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (PDF page 1, §2025(b))",
-   "verbatim_quote": "Affected vehicles are those that operate on diesel-fuel, dual-fuel, or alternative diesel-fuel that are registered to be driven on public highways, were originally designed to be driven on public highways whether or not they are registered, yard trucks with on-road engines or yard trucks with off-road engines used for agricultural operations, both engines of two-engine sweepers, schoolbuses, and have a manufacturer’s gross vehicle weight rating (GVWR) greater than 14,000 pounds (lbs).",
+   "source_location": "https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (PDF pages 1-2, §2025(b)-(c))",
+   "verbatim_quote": "Affected vehicles are those that operate on diesel-fuel, dual-fuel, or alternative diesel-fuel that are registered to be driven on public highways, were originally designed to be driven on public highways whether or not they are registered, yard trucks with on-road engines or yard trucks with off-road engines used for agricultural operations, both engines of two-engine sweepers, schoolbuses, and have a manufacturer’s gross vehicle weight rating (GVWR) greater than 14,000 pounds (lbs). [...] (1) Vehicles subject to the solid waste collection vehicle rule commencing with title 13, CCR, section 2021; [...] (2) Vehicles owned or operated by a municipality, as defined in title 13, section 2020(b), that comply with the Best Available Control Technology (BACT) requirements of title 13, CCR, section 2022.1(a)(1); [...] (3) Vehicles subject to the fleet rule for public transit agencies commencing with title 13, CCR, section 2023; [...] (8) Dedicated snow-removal vehicles as defined in section 2025(d)(15); [...] (10) Motor homes for non-commercial private use; [...] (13) Except for two-engine sweepers, other two-engine on-road vehicles that are subject to title 13, CCR, section 2449, including but not limited to, water well drilling rigs, workover rigs, and cranes, in which one engine provides the motive power for the vehicle and a second engine is an auxiliary engine 50 horsepower or greater that is integrated into the design of the vehicle and provides power for the vehicle to perform a specialized function.",
    "effective": "2012-01-01",
    "read_from_primary_text": true,
    "notes": "Text from CARB's Final Regulation Order PDF for 13 CCR 2025 hosted at ww2.arb.ca.gov (post-2011 amendments, before the voided 2014 amendments). The 2014 amendment attachment and current OAL text could not be read (CARB 419 page).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB Final Regulation Order, 13 CCR 2025 (Truck and Bus) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (re-fetched 2026-11-25, HTTP 200, sha256 a0347aa762a6) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB Final Regulation Order, 13 CCR 2025 (Truck and Bus) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (re-fetched 2026-11-25, HTTP 200, sha256 a0347aa762a6) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf PDF pp.1-2 §2025(c)",
+    "correction": "Review 2026-11-25: the excluded list left out five 2025(c) exemptions that the text states (solid waste (c)(1), municipal vehicles meeting 13 CCR 2022.1(a)(1) BACT (c)(2), public transit (c)(3), dedicated snow-removal (c)(8), two-engine on-road cranes, water well drilling rigs and workover rigs subject to 13 CCR 2449 (c)(13)); added them, quoted 2025(c)(1)-(3), (8), (10), (13) and extended plain_english."
    }
   },
   {
@@ -1645,14 +1652,14 @@
      "NOx exempt area with PM filter"
     ],
     "schedule_lighter_26000_or_less": {
-     "2015": "1995 & older",
-     "2016": "1996",
-     "2017": "1997",
-     "2018": "1998",
-     "2019": "1999",
-     "2020": "2003 & older",
-     "2021": "2004-2006",
-     "2023": "All engines"
+     "2015-01-01": "1995 & older",
+     "2016-01-01": "1996",
+     "2017-01-01": "1997",
+     "2018-01-01": "1998",
+     "2019-01-01": "1999",
+     "2020-01-01": "2003 & older",
+     "2021-01-01": "2004-2006",
+     "2023-01-01": "All engines"
     },
     "schedule_heavier_over_26000_2010_engine_by": {
      "1993 & older": "2015-01-01",
@@ -1661,19 +1668,23 @@
      "2000-2004": "2021-01-01",
      "2005-2006": "2022-01-01",
      "2007 or newer": "2023-01-01"
-    }
+    },
+    "compliance_paths": [
+     "2010 model year or newer engine (replace the engine or the vehicle)",
+     "VDECS retrofit that achieves 2010 model year equivalent emissions"
+    ]
    },
    "applies_to": "Owners and operators of diesel trucks and buses over 14,000 lb GVWR operated in California (dump trucks, water trucks, concrete mixers, boom trucks and similar)",
    "citation": "13 CCR 2025(f)-(g)",
    "source_location": "https://ww2.arb.ca.gov/sites/default/files/2022-09/ComplianceOverview.pdf (PDF page 1, p.1); also https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (pp.15-16, §2025(f)-(g) Tables 1-2)",
-   "verbatim_quote": "By January 1, 2023, affected diesel-powered trucks, and buses must have a 2010 or newer model year engine with few exceptions.",
+   "verbatim_quote": "By January 1, 2023, affected diesel-powered trucks, and buses must have a 2010 or newer model year engine with few exceptions. [...] (1) Except as provided in (3) below, all vehicles with a GVWR 26,000 lbs or less must be equipped with a 2010 model year emission equivalent engine pursuant to the following schedule in Table 1: [...] A fleet may meet the 2010 model year emissions equivalent engine requirement by replacing the engine or vehicle with one with a 2010 model year engine or later, retrofitting the engine with a VDECS that achieves 2010 model year equivalent emissions, or by replacing a vehicle with one that has a future compliance deadline.",
    "effective": "2023-01-01",
    "read_from_primary_text": true,
    "notes": "CARB Truck and Bus Compliance Overview (last updated March 16, 2023). The phase-in tables (Table 1 for 26,000 lb GVWR or less, Table 2 for over 26,000 lb) are in the regulation order 2025(f)(1) and (g)(1).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB Truck and Bus Compliance Overview (Mar. 16, 2023) https://ww2.arb.ca.gov/sites/default/files/2022-09/ComplianceOverview.pdf (re-fetched 2026-11-25, HTTP 200, sha256 d02046f32f81) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; also CARB Final Regulation Order, 13 CCR 2025 (Truck and Bus) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (re-fetched 2026-11-25, sha256 a0347aa762a6); CARB Final Regulation Order 13 CCR 2025 PDF pp.15-16 §2025(f)(1) Table 1 and §2025(g)(1) Table 2 (all schedule values match)",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB Truck and Bus Compliance Overview (Mar. 16, 2023) https://ww2.arb.ca.gov/sites/default/files/2022-09/ComplianceOverview.pdf (re-fetched 2026-11-25, HTTP 200, sha256 d02046f32f81) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; also CARB Final Regulation Order, 13 CCR 2025 (Truck and Bus) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (re-fetched 2026-11-25, sha256 a0347aa762a6); CARB Final Regulation Order 13 CCR 2025 PDF pp.15-16 §2025(f)(1) Table 1 and §2025(g)(1) Table 2 (all schedule values match); Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf PDF pp.15-16 §2025(f)(1) Table 1, §2025(g)",
+    "correction": "Review 2026-11-25: schedule_lighter_26000_or_less keys were bare years ('2015'); Table 1's column is 'Compliance Date as of January 1', so they are now ISO dates ('2015-01-01'). Added compliance_paths from 2025(g): a VDECS achieving 2010 model year equivalent emissions also meets the requirement."
    }
   },
   {
@@ -1814,19 +1825,20 @@
      5,
      8
     ],
-    "label_color": "white on black"
+    "label_color": "white on black",
+    "may_leave_area_only_for": "repairs or other services, with a dated work order from the facility"
    },
    "applies_to": "Owners and operators of diesel trucks and buses over 14,000 lb GVWR operated in California (dump trucks, water trucks, concrete mixers, boom trucks and similar)",
-   "citation": "13 CCR 2025(p)",
-   "source_location": "https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/fsnoxexempt.pdf (PDF page 1, p.1)",
-   "verbatim_quote": "The following counties (shown in the darkly shaded areas) make up the NOx Exempt Areas: Alpine, Colusa, Del Norte, Glenn, Humboldt, Lake, Lassen, Mendocino, Modoc, Monterey, Northern Sonoma, Plumas, San Benito, San Luis Obispo, Santa Barbara, Santa Cruz, Shasta, Sierra, Siskiyou, Tehama, Trinity, and Yuba. [...] vehicles that are designated as NOx Exempt, must have permanently affixed or painted labels on the left and right door with the letters “NE” in three inch white block letters on a five inch by eight inch black background, unless the owner chooses to comply by using a vehicle location tracking system.",
+   "citation": "13 CCR 2025(d)(46), (p)(1); CARB NOx Exempt Area Extensions fact sheet (2019)",
+   "source_location": "https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/fsnoxexempt.pdf (PDF page 1, p.1); also https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf (PDF page 31, §2025(p)(1)(D))",
+   "verbatim_quote": "The following counties (shown in the darkly shaded areas) make up the NOx Exempt Areas: Alpine, Colusa, Del Norte, Glenn, Humboldt, Lake, Lassen, Mendocino, Modoc, Monterey, Northern Sonoma, Plumas, San Benito, San Luis Obispo, Santa Barbara, Santa Cruz, Shasta, Sierra, Siskiyou, Tehama, Trinity, and Yuba. [...] vehicles that are designated as NOx Exempt, must have permanently affixed or painted labels on the left and right door with the letters “NE” in three inch white block letters on a five inch by eight inch black background, unless the owner chooses to comply by using a vehicle location tracking system. [...] (D) Vehicles that use the NOx exempt areas exemptions may travel outside of the designated NOx exempt areas only for repairs or other services to the vehicle. The vehicle owner must obtain a work order from the facility that describes the service and it must show the date of the service and the location of the facility.",
    "effective": "2012-01-01",
    "read_from_primary_text": true,
    "notes": "CARB NOx Exempt Area Extensions fact sheet (last updated June 27, 2019).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB Truck and Bus NOx Exempt Area Extensions fact sheet (June 27, 2019) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/fsnoxexempt.pdf (re-fetched 2026-11-25, HTTP 200, sha256 7f10d3781d28) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; CARB Final Regulation Order 13 CCR 2025 §2025(d)(46) (county list) and §2025(p)(1)(A), (C) (PM BACT; NE label 3 in on 5 x 8 in, both doors)",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB Truck and Bus NOx Exempt Area Extensions fact sheet (June 27, 2019) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/fsnoxexempt.pdf (re-fetched 2026-11-25, HTTP 200, sha256 7f10d3781d28) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; CARB Final Regulation Order 13 CCR 2025 §2025(d)(46) (county list) and §2025(p)(1)(A), (C) (PM BACT; NE label 3 in on 5 x 8 in, both doors); Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.arb.ca.gov/sites/default/files/classic/msprog/onrdiesel/documents/tbfinalreg.pdf PDF p.31 §2025(p)(1)(D)",
+    "correction": "Review 2026-11-25: added the travel restriction of 2025(p)(1)(D) (outside the NOx exempt areas only for repairs or service, with a dated work order) and the regulation text as a source; citation now names 2025(d)(46) and (p)(1) (the rule previously cited only 2025(p))."
    }
   },
   {
@@ -1984,19 +1996,25 @@
     "tests_per_year_obd_after_initial_period": 4,
     "tests_per_year_motorhome_agricultural": 1,
     "quarterly_start": "3 years after the effective date of 13 CCR 2196.2 (see air-ctc-periodic-testing-start)",
-    "quarterly_start_year_per_carb_fact_sheet": 2028
+    "quarterly_start_year_per_carb_fact_sheet": 2028,
+    "obd_equipped_from_model_year": {
+     "diesel": 2013,
+     "diesel_hybrid": 2013,
+     "alternative_fuel": 2018,
+     "alternative_fuel_hybrid": 2018
+    }
    },
    "applies_to": "Owners and operators of non-gasoline (diesel and other) heavy-duty vehicles over 14,000 lb GVWR operated in California",
-   "citation": "13 CCR 2196.1(d)",
+   "citation": "13 CCR 2196.1(d); 2195.1 'OBD-equipped vehicle'",
    "source_location": "https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf (PDF page 21, §2196.1(d)); also https://ww2.arb.ca.gov/sites/default/files/2022-11/factsheet_periodic_hdim_testing_requirements.pdf (PDF page 1)",
-   "verbatim_quote": "(1) Motor homes registered in California and agricultural vehicles shall be subject to an annual compliance deadline. (2) For the first three years of periodic vehicle emission testing requirements specified in section 2196.2, all vehicles other than those specified in (1) shall be subject to semi-annual compliance deadlines. (3) Three years following the effective date of periodic vehicle emission testing requirements specified in section 2196.2, an OBD-equipped vehicle other than those specified in (1) shall be subject to quarterly compliance deadlines.",
+   "verbatim_quote": "(1) Motor homes registered in California and agricultural vehicles shall be subject to an annual compliance deadline. (2) For the first three years of periodic vehicle emission testing requirements specified in section 2196.2, all vehicles other than those specified in (1) shall be subject to semi-annual compliance deadlines. (3) Three years following the effective date of periodic vehicle emission testing requirements specified in section 2196.2, an OBD-equipped vehicle other than those specified in (1) shall be subject to quarterly compliance deadlines. [...] “OBD-equipped vehicle” means a heavy-duty vehicle for the following model years and fuel types equipped with an OBD system: (1) Model year 2013 and newer diesel engines; (2) Model year 2013 and newer diesel hybrid engines; (3) Model year 2018 and newer alternative fuel engines; and (4) Model year 2018 and newer alternative fuel hybrid engines.",
    "effective": "2024-10-01",
    "read_from_primary_text": true,
    "notes": "Quoted from CARB's Final Regulation Order, Heavy-Duty Vehicle Inspection and Maintenance Program (Attachment A-1, posted February 2023). Later amendments, if any, were not read (CARB HTML pages returned a rate-limit page). CARB's Periodic Testing Requirements fact sheet (March 13, 2024; read) says periodic testing is effective October 1, 2024 and that 'Three years after the start of Clean Truck Check periodic emissions testing (2028), on board diagnostics (OBD) equipped vehicles will be required to undergo testing four times per year.' A search excerpt of a later CARB web page gives October 2027 instead (not read). Treat the exact quarterly start as unconfirmed beyond the regulation's 'three years following' rule.",
    "verification": {
     "status": "corrected",
-    "checked_against": "CARB HD I/M (Clean Truck Check) Final Regulation Order, 13 CCR 2195-2199.1 (Attachment A-1) https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf (re-fetched 2026-11-25, HTTP 200, sha256 55c6594e505a) PDF p.21: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; also CARB Clean Truck Check Periodic Testing Requirements fact sheet (Mar. 13, 2024) https://ww2.arb.ca.gov/sites/default/files/2022-11/factsheet_periodic_hdim_testing_requirements.pdf (re-fetched 2026-11-25, sha256 8f9da1b406d3); CARB Clean Truck Check Periodic Testing Requirements fact sheet (Mar. 13, 2024) p.1",
-    "correction": "The notes said the fact sheet was not read and estimated a quarterly start of about October 1, 2027. CARB's March 13, 2024 fact sheet (official PDF, now read) confirms the 2024-10-01 effective date and gives '(2028)' for quarterly OBD testing. Added quarterly_start_year_per_carb_fact_sheet = 2028, added the fact sheet to source_location and rewrote the notes. The 2, 3, 4 and 1 tests-per-year values are confirmed in §2196.1(d)."
+    "checked_against": "CARB HD I/M (Clean Truck Check) Final Regulation Order, 13 CCR 2195-2199.1 (Attachment A-1) https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf (re-fetched 2026-11-25, HTTP 200, sha256 55c6594e505a) PDF p.21: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; also CARB Clean Truck Check Periodic Testing Requirements fact sheet (Mar. 13, 2024) https://ww2.arb.ca.gov/sites/default/files/2022-11/factsheet_periodic_hdim_testing_requirements.pdf (re-fetched 2026-11-25, sha256 8f9da1b406d3); CARB Clean Truck Check Periodic Testing Requirements fact sheet (Mar. 13, 2024) p.1; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf PDF pp.12-13 §2195.1",
+    "correction": "The notes said the fact sheet was not read and estimated a quarterly start of about October 1, 2027. CARB's March 13, 2024 fact sheet (official PDF, now read) confirms the 2024-10-01 effective date and gives '(2028)' for quarterly OBD testing. Added quarterly_start_year_per_carb_fact_sheet = 2028, added the fact sheet to source_location and rewrote the notes. The 2, 3, 4 and 1 tests-per-year values are confirmed in §2196.1(d). Review 2026-11-25: added obd_equipped_from_model_year from the 2195.1 definition of 'OBD-equipped vehicle' (diesel MY2013+, alternative fuel MY2018+), so the quarterly-testing class can be read from the engine model year."
    }
   },
   {
@@ -2044,19 +2062,33 @@
      12
     ],
     "short_month_rule": "last day of month if the day does not exist",
-    "non_ca_registered": "based on last digit of VIN"
+    "non_ca_registered": "based on last digit of VIN",
+    "non_ca_compliance_year_end_month_by_vin_last_digit": {
+     "0": 10,
+     "1": 11,
+     "2": 12,
+     "3": 1,
+     "4": 2,
+     "5": 3,
+     "6": 4,
+     "7": 5,
+     "8": 6,
+     "9": 7
+    },
+    "non_ca_compliance_year_ends": "last day of that month",
+    "vin_basis_also_for": "vehicles exempt from DMV registration"
    },
    "applies_to": "Owners and operators of non-gasoline (diesel and other) heavy-duty vehicles over 14,000 lb GVWR operated in California",
    "citation": "13 CCR 2195.1 'Compliance deadline', 'Compliance year'",
-   "source_location": "https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf (PDF page 7, §2195.1 definitions)",
-   "verbatim_quote": "Semiannual deadlines occur on a vehicle’s compliance year expiration day in months six and twelve of each compliance year with the deadline in month twelve being the final day of a vehicle’s compliance year. [...] Quarterly deadlines occur on a vehicle’s compliance year expiration day in months three, six, nine, and twelve of each compliance year [...] For California-registered vehicles, the start and end date of every compliance year shall align with the day and month of a vehicle’s DMV [...] registration expiration date.",
+   "source_location": "https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf (PDF pages 6-8, §2195.1 definitions)",
+   "verbatim_quote": "Semiannual deadlines occur on a vehicle’s compliance year expiration day in months six and twelve of each compliance year with the deadline in month twelve being the final day of a vehicle’s compliance year. [...] Quarterly deadlines occur on a vehicle’s compliance year expiration day in months three, six, nine, and twelve of each compliance year [...] For California-registered vehicles, the start and end date of every compliance year shall align with the day and month of a vehicle’s DMV [...] registration expiration date. [...] The compliance year for a non-California registered vehicle and vehicles exempt from DMV registration shall be determined based on the vehicle’s VIN. The compliance year shall begin and end on the last day of the month specified below based on the last number of a vehicle’s VIN, as shown in the table below. 0 October 1 November 2 December 3 January 4 February 5 March 6 April 7 May 8 June 9 July",
    "effective": "",
    "read_from_primary_text": true,
    "notes": "Quoted from CARB's Final Regulation Order, Heavy-Duty Vehicle Inspection and Maintenance Program (Attachment A-1, posted February 2023). Later amendments, if any, were not read (CARB HTML pages returned a rate-limit page).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB HD I/M (Clean Truck Check) Final Regulation Order, 13 CCR 2195-2199.1 (Attachment A-1) https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf (re-fetched 2026-11-25, HTTP 200, sha256 55c6594e505a) PDF p.7-8: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB HD I/M (Clean Truck Check) Final Regulation Order, 13 CCR 2195-2199.1 (Attachment A-1) https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf (re-fetched 2026-11-25, HTTP 200, sha256 55c6594e505a) PDF p.7-8: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.arb.ca.gov/sites/default/files/2023-02/a_1_final_regulation_order_hdvip_psip.pdf PDF pp.6-8 §2195.1",
+    "correction": "Review 2026-11-25: added the VIN table of 2195.1 'Compliance year' (1) (last VIN digit -> month whose last day starts and ends the compliance year) for vehicles registered outside California or exempt from DMV registration."
    }
   },
   {
@@ -2311,19 +2343,23 @@
     "min_gvwr_lbs_exclusive": 10000,
     "max_consecutive_idle_minutes": 5,
     "aps_limit_minutes_near_restricted_area": 5,
-    "restricted_area_distance_ft": 100
+    "restricted_area_distance_ft": 100,
+    "not_commercial_motor_vehicles": [
+     "zero emission vehicles",
+     "pickup trucks as defined in Vehicle Code section 471"
+    ]
    },
    "applies_to": "Owners, operators and dispatching motor carriers of diesel commercial vehicles over 10,000 lb GVWR in California",
-   "citation": "13 CCR 2485(b)(1), (c)(1)(B)",
-   "source_location": "https://ww2.arb.ca.gov/sites/default/files/classic/msprog/truck-idling/13ccr2485_09022016.pdf (PDF page 1, §2485(b)(1), (c)(1)(B))",
-   "verbatim_quote": "diesel-fueled commercial motor vehicles that operate in the State of California with gross vehicle weight ratings of greater than 10,000 pounds that are or must be licensed for operation on highways. [...] 1. No vehicle subject to this section shall idle for more than 5 consecutive minutes at any location. 2. No diesel-fueled APS subject to this section shall be operated for greater than 5 minutes at any location when within 100 feet of a restricted area.",
+   "citation": "13 CCR 2485(b)(1), (c)(1)(B), (h)(6)",
+   "source_location": "https://ww2.arb.ca.gov/sites/default/files/classic/msprog/truck-idling/13ccr2485_09022016.pdf (PDF page 1, §2485(b)(1), (c)(1)(B); PDF page 8, §2485(h)(6))",
+   "verbatim_quote": "diesel-fueled commercial motor vehicles that operate in the State of California with gross vehicle weight ratings of greater than 10,000 pounds that are or must be licensed for operation on highways. [...] 1. No vehicle subject to this section shall idle for more than 5 consecutive minutes at any location. 2. No diesel-fueled APS subject to this section shall be operated for greater than 5 minutes at any location when within 100 feet of a restricted area. [...] “Commercial Motor Vehicle” means any vehicle or combination of vehicles defined in California Vehicle Code section 15210(b) and any other motor truck or bus with a gross vehicle weight rating of 10,001 pounds or more, except the following: (A) a zero emission vehicle; or (B) a pickup truck as defined in California Vehicle Code section 471.",
    "effective": "2015-01-01",
    "read_from_primary_text": true,
    "notes": "Quoted from CARB's posted text of 13 CCR 2485 (dated 09/02/2016). A June 2022 OAL-approved version exists but returned CARB's rate-limit page, so later changes were not read.",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB posted text of 13 CCR 2485 (09/02/2016) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/truck-idling/13ccr2485_09022016.pdf (re-fetched 2026-11-25, HTTP 200, sha256 a702acdd8315) PDF p.1-2: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB posted text of 13 CCR 2485 (09/02/2016) https://ww2.arb.ca.gov/sites/default/files/classic/msprog/truck-idling/13ccr2485_09022016.pdf (re-fetched 2026-11-25, HTTP 200, sha256 a702acdd8315) PDF p.1-2: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.arb.ca.gov/sites/default/files/classic/msprog/truck-idling/13ccr2485_09022016.pdf PDF p.8 §2485(h)(6)",
+    "correction": "Review 2026-11-25: added the 2485(h)(6) definition of 'commercial motor vehicle', which leaves out zero-emission vehicles and pickup trucks as defined in Vehicle Code 471, so the 5-minute limit does not reach them."
    }
   },
   {
@@ -2396,7 +2432,7 @@
   {
    "id": "air-truck-idling-fine-1000-day",
    "title": "Illegal truck idling fine: up to $1,000 per day for owner and driver",
-   "plain_english": "Air districts, CARB and any law enforcement agency can fine both the owner and the driver of a truck of 10,000 lb or more up to $1,000 per day for illegal idling.",
+   "plain_english": "CARB's idling fact sheet says air districts, CARB and any law enforcement agency can fine both the owner and the driver of a truck of 10,000 lb or more up to $1,000 per day for illegal idling. The regulation itself (13 CCR 2485(g)) states no dollar amount; it applies the Health and Safety Code penalty sections.",
    "category": "penalty",
    "parameters": {
     "max_fine_usd_per_day": 1000,
@@ -2408,19 +2444,36 @@
      "CARB",
      "air districts",
      "law enforcement"
-    ]
+    ],
+    "regulation_penalty_statutes": [
+     "HSC 39674",
+     "39675",
+     "42400",
+     "42400.1",
+     "42400.2",
+     "42400.3",
+     "42402",
+     "42402.1",
+     "42402.2",
+     "42402.3",
+     "42402.4",
+     "42403.5",
+     "42410",
+     "43704"
+    ],
+    "amount_source": "CARB fact sheet (the regulation text states no dollar amount)"
    },
    "applies_to": "Owners, operators and dispatching motor carriers of diesel commercial vehicles over 10,000 lb GVWR in California",
-   "citation": "13 CCR 2480, 2485(g)",
-   "source_location": "https://ww2.arb.ca.gov/sites/default/files/2021-10/truck_idling_fact_sheet_coes_101821_en.pdf (PDF page 1, p.1)",
-   "verbatim_quote": "Any law enforcement department, including air districts and CARB, can fine a 10,000 pound or greater truck owner and driver up to $1000 per day for illegal idling (13 CCR 2480 & 2485).",
+   "citation": "CARB truck idling fact sheet (Oct. 2021); 13 CCR 2485(g)",
+   "source_location": "https://ww2.arb.ca.gov/sites/default/files/2021-10/truck_idling_fact_sheet_coes_101821_en.pdf (PDF page 1, p.1); also https://ww2.arb.ca.gov/sites/default/files/classic/msprog/truck-idling/13ccr2485_09022016.pdf (PDF page 7, §2485(g))",
+   "verbatim_quote": "Any law enforcement department, including air districts and CARB, can fine a 10,000 pound or greater truck owner and driver up to $1000 per day for illegal idling (13 CCR 2480 & 2485). [...] On or after January 1, 2015, any person who violates any requirement of this section is subject to the penalties set forth in California Health and Safety Code sections 39674, 39675, 42400, 42400.1, 42400.2, 42400.3, 42402, 42402.1, 42402.2, 42402.3, 42402.4, 42403.5, and 42410 and 43704.",
    "effective": "2015-01-01",
    "read_from_primary_text": true,
    "notes": "CARB fact sheet (October 2021). 2485(g) cites HSC 39674 et seq. for violations on or after January 1, 2015.",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB truck idling fact sheet (Oct. 2021) https://ww2.arb.ca.gov/sites/default/files/2021-10/truck_idling_fact_sheet_coes_101821_en.pdf (re-fetched 2026-11-25, HTTP 200, sha256 065db133d98e) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; 13 CCR 2485(g) (09/02/2016 text) lists the HSC penalty sections for violations on or after January 1, 2015; the $1,000-per-day figure is CARB's fact-sheet statement, statute text not read",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB truck idling fact sheet (Oct. 2021) https://ww2.arb.ca.gov/sites/default/files/2021-10/truck_idling_fact_sheet_coes_101821_en.pdf (re-fetched 2026-11-25, HTTP 200, sha256 065db133d98e) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; 13 CCR 2485(g) (09/02/2016 text) lists the HSC penalty sections for violations on or after January 1, 2015; the $1,000-per-day figure is CARB's fact-sheet statement, statute text not read; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.arb.ca.gov/sites/default/files/classic/msprog/truck-idling/13ccr2485_09022016.pdf PDF p.7 §2485(g)",
+    "correction": "Review 2026-11-25: citation was '13 CCR 2480, 2485(g)', which implied the regulation sets $1,000 a day; 2485(g) states no amount and points to HSC 39674 et seq. The $1,000/day figure is CARB's fact sheet statement. Citation, plain_english and parameters now say so; 2480 (school bus idling) dropped."
    }
   },
   {
@@ -2496,19 +2549,23 @@
     "max_consecutive_months_at_location": 12,
     "clock_starts": "when first brought onto the location",
     "moving_to_reset_prohibited": true,
-    "foundation_attached_disqualifies": true
+    "foundation_attached_disqualifies": true,
+    "seasonal_source_not_portable": {
+     "min_years_at_location": 2,
+     "min_months_operating_per_year": 3
+    }
    },
    "applies_to": "Owners and operators of portable engines and equipment (generators, compressors, pumps, light towers, welders, concrete pumps, crushers, screens) used at California job sites",
    "citation": "13 CCR 2452(dd)",
    "source_location": "https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (PDF page 2, Q4-Q5)",
-   "verbatim_quote": "It does not reside at the same location for more than 12 consecutive months. [...] The 12-month time period starts when the equipment is first brought onto the location.",
+   "verbatim_quote": "It does not reside at the same location for more than 12 consecutive months. [...] The 12-month time period starts when the equipment is first brought onto the location. [...] It does not operate as a seasonal source where it remains in a single location for at least two years and operates at least three months each year.",
    "effective": "",
    "read_from_primary_text": true,
    "notes": "From CARB's official PERP Frequently Asked Questions (September 29, 2026), staff interpretation of 13 CCR 2450 et seq. and 17 CCR 93116 et seq.; the regulation text controls if they differ.",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB Portable Equipment FAQ (Sept. 29, 2026) https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (re-fetched 2026-11-25, HTTP 200, sha256 867a150bbc51) PDF p.2: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB Portable Equipment FAQ (Sept. 29, 2026) https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (re-fetched 2026-11-25, HTTP 200, sha256 867a150bbc51) PDF p.2: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. PERP FAQ (Sept. 29, 2026) PDF p.2 Q4",
+    "correction": "Review 2026-11-25: added the fourth condition of the 'portable' definition quoted in the FAQ (Q4): not a seasonal source that stays at one location at least two years and operates at least three months each year."
    }
   },
   {
@@ -2630,20 +2687,25 @@
      "engines under 50 bhp",
      "engines that propel vehicles or mobile equipment",
      "non-diesel engines",
-     "two-engine vehicle/crane auxiliary engines"
+     "two-engine vehicle/crane auxiliary engines",
+     "engines owned by an agricultural source",
+     "engines used exclusively to alleviate the threat to public health and safety during an emergency event",
+     "engines approved to operate in hazardous locations that meet Tier 3 standards",
+     "military-owned engines used in tactical support equipment",
+     "engines used exclusively on harbor craft"
     ]
    },
    "applies_to": "Owners and operators of portable engines and equipment (generators, compressors, pumps, light towers, welders, concrete pumps, crushers, screens) used at California job sites",
    "citation": "17 CCR 93116 et seq.",
    "source_location": "https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (PDF page 5, Q13-Q14)",
-   "verbatim_quote": "Most portable diesel engines rated 50 bhp or greater are subject to the Portable Engine ATCM. It does not matter if the engine is registered in PERP, permitted with a local air district, or unpermitted.",
+   "verbatim_quote": "Most portable diesel engines rated 50 bhp or greater are subject to the Portable Engine ATCM. It does not matter if the engine is registered in PERP, permitted with a local air district, or unpermitted. [...] Only the following types of portable engines are not subject to the Portable Engine ATCM at all: [...] Engines owned by an agricultural source; [...] Engines used exclusively to alleviate the threat of public health and safety during an emergency event; [...] Engines approved to operate in hazardous locations and meet Tier 3 emission standards; and [...] Engines owned by the military and used in tactical support equipment. [...] Engines used exclusively on harbor craft;",
    "effective": "",
    "read_from_primary_text": true,
    "notes": "From CARB's official PERP Frequently Asked Questions (September 29, 2026), staff interpretation of 13 CCR 2450 et seq. and 17 CCR 93116 et seq.; the regulation text controls if they differ.",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB Portable Equipment FAQ (Sept. 29, 2026) https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (re-fetched 2026-11-25, HTTP 200, sha256 867a150bbc51) PDF p.5: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB Portable Equipment FAQ (Sept. 29, 2026) https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (re-fetched 2026-11-25, HTTP 200, sha256 867a150bbc51) PDF p.5: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. PERP FAQ (Sept. 29, 2026) PDF p.5 Q14",
+    "correction": "Review 2026-11-25: not_subject listed 4 of the FAQ Q14 categories; added agricultural-source, emergency-only, Tier 3 hazardous-location, military tactical and harbor craft engines with their quotes."
    }
   },
   {
@@ -2656,19 +2718,20 @@
     "large_min_bhp_exclusive": 750,
     "new_registrants_after": "2019-06-30",
     "new_registrants_class": "small",
-    "small_fleet_compliance": "tier phase-out schedule"
+    "small_fleet_compliance": "tier phase-out schedule",
+    "fleet_average_opt_in_deadline": "2019-06-30"
    },
    "applies_to": "Owners and operators of portable engines and equipment (generators, compressors, pumps, light towers, welders, concrete pumps, crushers, screens) used at California job sites",
    "citation": "17 CCR 93116.2(a)(17), 93116.3(c)",
    "source_location": "https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (PDF page 6, Q16)",
-   "verbatim_quote": "Large fleets have a total maximum horsepower over 750 bhp and follow either the tier phase out schedule or the fleet average compliance option. [...] Small fleets have a total maximum horsepower of 750 bhp or less. [...] Small fleets must follow the tier phase out schedule.",
+   "verbatim_quote": "Large fleets have a total maximum horsepower over 750 bhp and follow either the tier phase out schedule or the fleet average compliance option. [...] Small fleets have a total maximum horsepower of 750 bhp or less. [...] Small fleets must follow the tier phase out schedule. [...] Must have opted into fleet average compliance by June 30, 2019.",
    "effective": "",
    "read_from_primary_text": true,
    "notes": "From CARB's official PERP Frequently Asked Questions (September 29, 2026), staff interpretation of 13 CCR 2450 et seq. and 17 CCR 93116 et seq.; the regulation text controls if they differ. Engine-specific phase-out dates are printed on each engine's registration certificate (93116.3(c)(1)).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "CARB Portable Equipment FAQ (Sept. 29, 2026) https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (re-fetched 2026-11-25, HTTP 200, sha256 867a150bbc51) PDF p.6: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; PERP FAQ Q17 and Q50 (PDF p.17: 'Find the engine's phase-out date on its engine registration certificate'; 93116.3(c))",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "CARB Portable Equipment FAQ (Sept. 29, 2026) https://ww2.arb.ca.gov/sites/default/files/2026-10/PERP%20FAQ_092926_0.pdf (re-fetched 2026-11-25, HTTP 200, sha256 867a150bbc51) PDF p.6: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; PERP FAQ Q17 and Q50 (PDF p.17: 'Find the engine's phase-out date on its engine registration certificate'; 93116.3(c)); Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. PERP FAQ (Sept. 29, 2026) PDF p.6 Q16",
+    "correction": "Review 2026-11-25: added fleet_average_opt_in_deadline: a large fleet may use the fleet average option only if it opted in by June 30, 2019 (FAQ Q2, Q16)."
    }
   },
   {
@@ -2878,19 +2941,25 @@
     "disturbed_acres_min": 50,
     "daily_earthmoving_m3_min": 3850,
     "daily_earthmoving_cy_min": 5000,
-    "days_in_365_min": 3
+    "days_in_365_min": 3,
+    "subdivision_e_not_applicable_to": [
+     "officially-designated public parks and recreational areas",
+     "large operations required to submit a dust control plan to a city or county government with a District-approved dust control ordinance",
+     "large operations subject to Rule 1158 with an approved Rule 1158 dust control plan covering all fugitive dust sources"
+    ],
+    "e1_A_to_C_not_required_with_approved_aqmd_dust_plan": true
    },
    "applies_to": "Construction, demolition, grading and other active operations in the South Coast AQMD (Orange County and the non-desert parts of Los Angeles, Riverside and San Bernardino counties; Coachella Valley under Rule 403.1)",
-   "citation": "SCAQMD Rule 403(c)(21)",
-   "source_location": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf (PDF page 3, (c)(21))",
-   "verbatim_quote": "(21) LARGE OPERATIONS means any active operations on property which contains 50 or more acres of disturbed surface area; or any earth-moving operation with a daily earth-moving or throughput volume of 3,850 cubic [...] meters (5,000 cubic yards) or more three times during the most recent 365-day period.",
+   "citation": "SCAQMD Rule 403(c)(21), (g)(7)-(8)",
+   "source_location": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf (PDF page 3, (c)(21)); same PDF pages 11-12, (g)(7)-(8)",
+   "verbatim_quote": "(21) LARGE OPERATIONS means any active operations on property which contains 50 or more acres of disturbed surface area; or any earth-moving operation with a daily earth-moving or throughput volume of 3,850 cubic [...] meters (5,000 cubic yards) or more three times during the most recent 365-day period. [...] (7) The provisions of subdivision (e) shall not apply to: [...] (B) any large operation which is required to submit a dust control plan to any city or county government which has adopted a District-approved dust control ordinance. [...] (8) The provisions of subparagraph (e)(1)(A) through (e)(1)(C) shall not apply to any large operation with an AQMD-approved fugitive dust control plan provided that there is no change to the sources and controls as identified in the AQMD-approved fugitive dust control plan.",
    "effective": "2005-06-03",
    "read_from_primary_text": true,
    "notes": "SCAQMD Rule 403 as amended June 3, 2005 (current rule-book PDF).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "SCAQMD Rule 403 (amended June 3, 2005) https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf (re-fetched 2026-11-25, HTTP 200, sha256 80ff4ee7fa98) PDF p.3-4: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "SCAQMD Rule 403 (amended June 3, 2005) https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf (re-fetched 2026-11-25, HTTP 200, sha256 80ff4ee7fa98) PDF p.3-4: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf PDF pp.11-12 (g)(7)-(8)",
+    "correction": "Review 2026-11-25: added the large-operation exemptions of 403(g)(7) (all of subdivision (e) does not apply where a city or county with a District-approved dust control ordinance requires the plan, to public parks, or to Rule 1158 plans) and (g)(8) (no Form 403 N, description or daily records under (e)(1)(A)-(C) with an unchanged AQMD-approved fugitive dust control plan)."
    }
   },
   {
@@ -3170,7 +3239,7 @@
   {
    "id": "air-scaqmd4031-coachella-dust-plan",
    "title": "Coachella Valley: dust control plan approved before earthmoving over 5,000 sq ft",
-   "plain_english": "In the Coachella Valley, any project disturbing more than 5,000 square feet may not start earthmoving until SCAQMD approves a fugitive dust control plan. SCAQMD acts within 30 days; plans last one year and must be resubmitted at least 30 days before expiry. Keep the plan on site, post contact signs, and for 50+ acres name a dust control supervisor.",
+   "plain_english": "In the Coachella Valley, any project disturbing more than 5,000 square feet may not start earthmoving until SCAQMD approves a fugitive dust control plan. SCAQMD acts within 30 days; plans last one year and must be resubmitted at least 30 days before expiry. Keep the plan on site, post contact signs, and for 50+ acres name a dust control supervisor. Where the city or county has a District-approved dust control ordinance, the plan goes to that city or county instead (403.1(i)(4)). Everyone subject to Rule 403.1 keeps written daily records of dust control actions for at least three years.",
    "category": "threshold",
    "parameters": {
     "disturbed_sqft_exclusive": 5000,
@@ -3179,19 +3248,22 @@
     "plan_valid_years": 1,
     "resubmit_days_before_expiration_min": 30,
     "supervisor_required_acres_min": 50,
-    "fees": "Rule 306 filing and evaluation fees"
+    "fees": "Rule 306 filing and evaluation fees",
+    "plan_to_city_or_county_instead": "active operations required to submit a dust control plan to a city or county government that has adopted a District-approved dust control ordinance",
+    "supervisor_class": "AQMD Coachella Valley Fugitive Dust Control Class",
+    "daily_records_retention_years": 3
    },
    "applies_to": "Construction and earthmoving in the Coachella Valley portion of the South Coast AQMD",
-   "citation": "SCAQMD Rule 403.1(e)-(f)",
-   "source_location": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403-1.pdf (PDF page 5, (e)(1), (f)(3), (f)(5))",
-   "verbatim_quote": "Any person who conducts or authorizes the conducting of an active operation with a disturbed surface area of more than 5,000 square feet shall not initiate any earth-moving activities unless a fugitive dust control plan is prepared and approved by the Executive Officer in accordance with the requirements of subdivision (f) and the Rule 403.1 Implementation Handbook. [...] Any fugitive dust control plan approved by the Executive Officer shall be valid for a period of one year from the date of approval. Any approved fugitive dust control plan must be resubmitted annually, at least 30 days prior to the expiration date, or the fugitive dust control plan shall expire as of the expiration date.",
+   "citation": "SCAQMD Rule 403.1(e)-(f), (h)(1), (i)(4)",
+   "source_location": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403-1.pdf (PDF pages 5-10, (e)(1)-(4), (f)(3), (f)(5), (h)(1), (i)(4))",
+   "verbatim_quote": "Any person who conducts or authorizes the conducting of an active operation with a disturbed surface area of more than 5,000 square feet shall not initiate any earth-moving activities unless a fugitive dust control plan is prepared and approved by the Executive Officer in accordance with the requirements of subdivision (f) and the Rule 403.1 Implementation Handbook. [...] Any fugitive dust control plan approved by the Executive Officer shall be valid for a period of one year from the date of approval. Any approved fugitive dust control plan must be resubmitted annually, at least 30 days prior to the expiration date, or the fugitive dust control plan shall expire as of the expiration date. [...] has completed the AQMD Coachella Valley Fugitive Dust Control Class and has been issued a valid Certificate of Completion for the class. [...] A person subject to the provisions of this rule shall compile written daily records to document the specific actions taken to comply with this Rule. Such records shall be retained for not less than three years and shall be made available to the Executive Officer upon request. [...] (4) The provisions of paragraph (e)(1) shall not apply to any active operation which is required to submit a dust control plan to any city or county government that has adopted a District-approved dust control ordinance.",
    "effective": "2004-04-02",
    "read_from_primary_text": true,
    "notes": "SCAQMD Rule 403.1 as amended April 2, 2004. Exempt where a city/county has a District-approved dust control ordinance (403.1(i)(4)).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "SCAQMD Rule 403.1 (amended Apr. 2, 2004) https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403-1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 3ecf10c3f4d8) PDF p.5-7: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Rule 403.1(e)(2)-(4), (f)(3), (i)(4), (j)(1) (Rule 306 fees)",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "SCAQMD Rule 403.1 (amended Apr. 2, 2004) https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403-1.pdf (re-fetched 2026-11-25, HTTP 200, sha256 3ecf10c3f4d8) PDF p.5-7: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Rule 403.1(e)(2)-(4), (f)(3), (i)(4), (j)(1) (Rule 306 fees); Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403-1.pdf PDF pp.5-10",
+    "correction": "Review 2026-11-25: parameters did not carry 403.1(i)(4) (plan filed with a city or county that has a District-approved dust control ordinance instead of SCAQMD), the (h)(1) three-year daily records duty, or the Coachella Valley class named in (e)(4)(D); added all three with their quotes."
    }
   },
   {
@@ -3260,7 +3332,8 @@
      1.0,
      5.0
     ],
-    "range_upper_exclusive": true
+    "range_upper_exclusive": true,
+    "area_measured": "construction site area (the text says 'construction sites ... in area')"
    },
    "applies_to": "Construction, demolition, excavation and earthmoving in the San Joaquin Valley APCD (San Joaquin, Stanislaus, Merced, Madera, Fresno, Kings, Tulare and the Valley portion of Kern counties)",
    "citation": "SJVAPCD Rule 8021 §6.4",
@@ -3270,9 +3343,9 @@
    "read_from_primary_text": true,
    "notes": "SJVAPCD Regulation VIII rule as amended August 19, 2004 (current PDF linked from the District's Regulation VIII page).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "SJVAPCD Rule 8021 (amended Aug. 19, 2004) https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf (re-fetched 2026-11-25, HTTP 200, sha256 32d7cb153830) PDF p.6: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "SJVAPCD Rule 8021 (amended Aug. 19, 2004) https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf (re-fetched 2026-11-25, HTTP 200, sha256 32d7cb153830) PDF p.6: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf PDF p.6 §6.4",
+    "correction": "Review 2026-11-25: added area_measured: 6.4.1-6.4.2 key the 48-hour notice to the construction site's area, not the disturbed surface area that the Dust Control Plan thresholds of 6.3.1 use."
    }
   },
   {
@@ -3430,19 +3503,21 @@
     "addition_max_sqft": 10000,
     "single_family_additions_exempt": true,
     "fire_disking_max_acres_exclusive": 0.5,
-    "trackout_cleanup_still_required": true
+    "trackout_cleanup_still_required": true,
+    "regulation_viii_exempt_elevation_ft_min": 3000,
+    "regulation_viii_exempt_emergency_activities": true
    },
    "applies_to": "Construction, demolition, excavation and earthmoving in the San Joaquin Valley APCD (San Joaquin, Stanislaus, Merced, Madera, Fresno, Kings, Tulare and the Valley portion of Kern counties)",
-   "citation": "SJVAPCD Rule 8021 §4.0",
-   "source_location": "https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf (PDF page 1, §4.2-4.3)",
-   "verbatim_quote": "Maintenance or remodeling of existing buildings and additions to existing buildings where total building area is not increased by more than fifty percent, or 10,000 square feet, whichever is less; but not including ancillary construction such as expanding parking lots. [...] All additions to existing single family residential buildings.",
+   "citation": "SJVAPCD Rule 8021 §4.0; Rule 8011 §4.1, §4.3",
+   "source_location": "https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf (PDF page 1, §4.2-4.3); also https://ww2.valleyair.org/media/xtbcnaht/rule-8011.pdf (PDF pages 9-10, Rule 8011 §4.1, §4.3)",
+   "verbatim_quote": "Maintenance or remodeling of existing buildings and additions to existing buildings where total building area is not increased by more than fifty percent, or 10,000 square feet, whichever is less; but not including ancillary construction such as expanding parking lots. [...] All additions to existing single family residential buildings. [...] In addition to the exemptions established in Rule 8011, the activities listed in Sections 4.1 through 4.5 are exempt from this rule. [...] 4.3 Activities conducted at an elevation of 3,000 feet or higher above sea level. [...] 4.1 Emergency activities performed to ensure public health and safety are exempt from Regulation VIII.",
    "effective": "2004-10-01",
    "read_from_primary_text": true,
    "notes": "SJVAPCD Regulation VIII rule as amended August 19, 2004 (current PDF linked from the District's Regulation VIII page).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "SJVAPCD Rule 8021 (amended Aug. 19, 2004) https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf (re-fetched 2026-11-25, HTTP 200, sha256 32d7cb153830) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "SJVAPCD Rule 8021 (amended Aug. 19, 2004) https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf (re-fetched 2026-11-25, HTTP 200, sha256 32d7cb153830) PDF p.1: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.valleyair.org/media/xtbcnaht/rule-8011.pdf PDF pp.9-10 §4.0",
+    "correction": "Review 2026-11-25: added the Rule 8011 exemptions that Rule 8021 §4.0 incorporates: activities at 3,000 ft or higher elevation (8011 §4.3) and emergency activities (8011 §4.1) are exempt from Regulation VIII."
    }
   },
   {
@@ -3533,19 +3608,20 @@
     "vehicle_trips_per_day_min": 150,
     "three_axle_trips_per_day_min": 20,
     "dust_control_plan_sites": true,
-    "residual_trackout_removal_minutes": 30
+    "residual_trackout_removal_minutes": 30,
+    "paved_interior_road_sites": true
    },
    "applies_to": "Construction, demolition, excavation and earthmoving in the San Joaquin Valley APCD (San Joaquin, Stanislaus, Merced, Madera, Fresno, Kings, Tulare and the Valley portion of Kern counties)",
-   "citation": "SJVAPCD Rule 8041 §5.2-5.3, 5.8",
+   "citation": "SJVAPCD Rule 8041 §5.2-5.3, 5.6, 5.8",
    "source_location": "https://ww2.valleyair.org/media/esadqm1u/rule-8041.pdf (PDF page 2, §5.2-5.3, 5.8.2)",
-   "verbatim_quote": "An owner/operator of any site with 150 or more vehicle trips per day, or 20 or more vehicle trips per day by vehicles with three or more axles shall take the actions for carryout and trackout as specified in Section 5.8. [...] In the event that measures specified in Section 5.8.1 are insufficient to prevent carryout and trackout, removal of any carryout and trackout must be accomplished within one-half hour of the generation of such carryout and trackout.",
+   "verbatim_quote": "An owner/operator of any site with 150 or more vehicle trips per day, or 20 or more vehicle trips per day by vehicles with three or more axles shall take the actions for carryout and trackout as specified in Section 5.8. [...] In the event that measures specified in Section 5.8.1 are insufficient to prevent carryout and trackout, removal of any carryout and trackout must be accomplished within one-half hour of the generation of such carryout and trackout. [...] For sites with paved interior roads, an owner/operator shall prevent and mitigate carryout and trackout as specified in Section 5.8.",
    "effective": "2004-10-01",
    "read_from_primary_text": true,
    "notes": "SJVAPCD Regulation VIII rule as amended August 19, 2004 (current PDF linked from the District's Regulation VIII page).",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "SJVAPCD Rule 8041 (amended Aug. 19, 2004) https://ww2.valleyair.org/media/esadqm1u/rule-8041.pdf (re-fetched 2026-11-25, HTTP 200, sha256 1ebdf2188f05) PDF p.2-3: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "SJVAPCD Rule 8041 (amended Aug. 19, 2004) https://ww2.valleyair.org/media/esadqm1u/rule-8041.pdf (re-fetched 2026-11-25, HTTP 200, sha256 1ebdf2188f05) PDF p.2-3: verbatim_quote string-matched after whitespace, quote-mark and dash normalization; every parameter, threshold, date, citation and applies_to scope compared with the text; Adversarial review 2026-11-25: source re-fetched fresh (HTTP 200, same sha256 prefix as the verifier's copy), text extracted independently (pdftotext -layout; CARB strike/underline orders through a separate strike-line filter), and each added passage string-matched after whitespace, quote-mark and dash normalization. https://ww2.valleyair.org/media/esadqm1u/rule-8041.pdf PDF p.2 §5.6",
+    "correction": "Review 2026-11-25: added the third trigger of Rule 8041 §5.6 (sites with paved interior roads must also use the §5.8 track-out controls)."
    }
   },
   {
@@ -3804,12 +3880,12 @@
  "refuted": [],
  "verification_meta": {
   "verified_on": "2026-11-25",
-  "method": "Independent re-verification of all 138 rules, every category, on 2026-11-25. Each source_location URL was fetched fresh with curl into a new directory and its text extracted with pdftotext (layout and reading order) and pdfplumber. The builder's text files and quote checker were not used. For CARB's strike/underline documents (the 15-Day Modified Text and the Final Regulation Order), struck-out characters were removed by a new strike-line detector: horizontal rules crossing 35-75% of glyph height. Only the strike-removed text was accepted for quotes. Every verbatim_quote, and each ' [...] '-separated passage, was string-matched after normalizing whitespace, quote marks and dashes. Every parameter value, threshold, date, citation and applies_to scope was read against the text. CARB's Final Regulation Order for the 2022 Off-Road amendments (froa-1.pdf, Attachment A-1, created Aug. 17, 2023) downloaded normally (HTTP 200). A word-level diff against the 15-day text showed about 270 differences, almost all punctuation, digits vs. words, or capitalization. One substantive deletion affected this pack: the 'penalty of perjury' sentence in 2449(g). Off-Road rules now cite the Final Regulation Order first. The Final Regulation Order, the Clean Truck Check Periodic Testing Requirements fact sheet (Mar. 13, 2024) and the DMV-registration FAQ (2020) were located by web search restricted to arb.ca.gov and downloaded from ww2.arb.ca.gov. The last two resolved the two rules that had been read_from_primary_text=false. The Off-Road booklet cited in the notes was also fetched and read. BAAQMD's About page was read for the nine-county scope. CARB HTML pages (Clean Truck Check overview and fee-update pages) and the 2019 SB 1 fact sheet PDF returned CARB's HTTP 419 rate-limit page, which was not bypassed. atrn.assembly.ca.gov is outside the allowed hosts, and leginfo.legislature.ca.gov was not used, so Health and Safety Code / Vehicle Code text (penalty dollar amounts; VC 4000.15) remains unread and is labelled as such. Statuses: confirmed = quote and all parameters match the official text; corrected = a parameter, quote, citation, source_location, effective date or the meaning of title/plain_english was changed against the text (the correction field says what changed); unverifiable = primary text could not be read (none remain); refuted = contradicted or absent and removed (none). Note-only fixes are listed in non_parameter_edits and keep status confirmed.",
+  "method": "Independent re-verification of all 138 rules, every category, on 2026-11-25. Each source_location URL was fetched fresh with curl into a new directory and its text extracted with pdftotext (layout and reading order) and pdfplumber. The builder's text files and quote checker were not used. For CARB's strike/underline documents (the 15-Day Modified Text and the Final Regulation Order), struck-out characters were removed by a new strike-line detector: horizontal rules crossing 35-75% of glyph height. Only the strike-removed text was accepted for quotes. Every verbatim_quote, and each ' [...] '-separated passage, was string-matched after normalizing whitespace, quote marks and dashes. Every parameter value, threshold, date, citation and applies_to scope was read against the text. CARB's Final Regulation Order for the 2022 Off-Road amendments (froa-1.pdf, Attachment A-1, created Aug. 17, 2023) downloaded normally (HTTP 200). A word-level diff against the 15-day text showed about 270 differences, almost all punctuation, digits vs. words, or capitalization. One substantive deletion affected this pack: the 'penalty of perjury' sentence in 2449(g). Off-Road rules now cite the Final Regulation Order first. The Final Regulation Order, the Clean Truck Check Periodic Testing Requirements fact sheet (Mar. 13, 2024) and the DMV-registration FAQ (2020) were located by web search restricted to arb.ca.gov and downloaded from ww2.arb.ca.gov. The last two resolved the two rules that had been read_from_primary_text=false. The Off-Road booklet cited in the notes was also fetched and read. BAAQMD's About page was read for the nine-county scope. CARB HTML pages (Clean Truck Check overview and fee-update pages) and the 2019 SB 1 fact sheet PDF returned CARB's HTTP 419 rate-limit page, which was not bypassed. atrn.assembly.ca.gov is outside the allowed hosts, and leginfo.legislature.ca.gov was not used, so Health and Safety Code / Vehicle Code text (penalty dollar amounts; VC 4000.15) remains unread and is labelled as such. Statuses: confirmed = quote and all parameters match the official text; corrected = a parameter, quote, citation, source_location, effective date or the meaning of title/plain_english was changed against the text (the correction field says what changed); unverifiable = primary text could not be read (none remain); refuted = contradicted or absent and removed (none). Note-only fixes are listed in non_parameter_edits and keep status confirmed. Adversarial review 2026-11-25 re-fetched all 24 source PDFs (HTTP 200, identical sha256 prefixes), re-extracted them independently and corrected 17 rules: air-ctc-deadline-alignment, air-ctc-testing-frequency, air-ord-annual-reporting-march-1, air-ord-enforcement-status-2025, air-perp-fleet-size-750, air-perp-portable-12-months, air-perp-portable-atcm-50bhp, air-scaqmd403-large-operation, air-scaqmd4031-coachella-dust-plan, air-sjv8021-exemptions, air-sjv8021-small-site-48-hour-notice, air-sjv8041-trackout-device-triggers, air-tb-2010-engine-required, air-tb-applicability-14000, air-tb-nox-exempt-areas, air-truck-idling-5-minutes, air-truck-idling-fine-1000-day. Each correction names the passage added.",
   "in_scope_rules_checked": 138,
   "out_of_scope_rules_unchanged": 0,
   "counts": {
-   "corrected": 16,
-   "confirmed": 122
+   "confirmed": 107,
+   "corrected": 31
   },
   "non_parameter_edits": [
    "air-ord-captive-attainment-counties: notes: 'Government fleets are never captive' narrowed to US/State of California fleets per 2449(c)(6)",

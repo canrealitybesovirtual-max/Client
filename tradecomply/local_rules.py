@@ -19,9 +19,10 @@ every answer that uses them has verified=False and says so.
 
 Every legal number, time, date and threshold is read from the rulebook with core.rule(id).param(key) at call time,
 and every rule a result relies on is cited through core.Result.cite(), so `verified` is True only when all of them
-are verified. The pack is research/web_local-jobsite.verified.json (rule ids "local-..."), plus three statewide or
-federal rules from other packs (CALGreen 65% diversion, the 811 two-working-day notice, the NESHAP 10-working-day
-demolition notice).
+are verified. The pack is research/web_local-jobsite.verified.json (rule ids "local-..."), plus statewide or
+federal rules from other packs (OTHER_PACK_RULES: CALGreen 65% diversion, the 811 two-working-day notice, the NESHAP
+10-working-day demolition notice, the NESHAP "facility" definition that excludes residential buildings with four or
+fewer units, the pre-demolition asbestos inspection, and the air-district demolition notice).
 
 Not legal values (so not in the rulebook): the city, work-type and project-type spellings below, which only map a
 user's words onto the rules, and the calendar convention that a working or business day is Monday-Friday less the
@@ -30,9 +31,9 @@ City holidays the rulebook lists (San Diego does not define the terms; the resul
 import math
 import re
 import unicodedata
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from difflib import get_close_matches
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -149,6 +150,11 @@ FRE_HOURS_U, FRE_HAULERS_U, FRE_FEE_U = ("local-fre-construction-hours-unverifie
 # statewide / federal rules from other packs
 CALGREEN, USA811, NESHAP = ("calgreen-construction-waste-65-percent", "excavation-usa-notice-2-working-days",
                             "neshap-notification-10-working-days")
+NESHAP_FAC, NESHAP_INSPECT, AIR_DISTRICT = ("neshap-facility-excludes-4-or-fewer-units",
+                                            "neshap-asbestos-inspection-before-demo",
+                                            "air-district-demolition-notice-10-working-days")
+
+OTHER_PACK_RULES = (CALGREEN, USA811, NESHAP, NESHAP_FAC, NESHAP_INSPECT, AIR_DISTRICT)
 
 # Pack rules no tool relies on, and why (kept here so the test can prove every other pack rule is used).
 NOT_USED = {
@@ -227,9 +233,26 @@ def _clock(minutes: int) -> str:
     return f"{h12}{':%02d' % mm if mm else ''} {suffix}"
 
 
+# Unit words a number may carry (spelling only, not law). A unit that is not the field's own unit is an error, so
+# '10 days' is never read as 10 weeks and '40 tonnes' never as 40 (short) tons.
+U_CY = ("cy", "cu yd", "cu yds", "cubic yard", "cubic yards", "cubic yds", "yd3", "yds", "yards")
+U_SQFT = ("sq ft", "sqft", "sf", "square feet", "square foot", "sq feet", "ft2")
+U_TONS = ("tons", "ton", "t", "short tons", "short ton", "tn")
+U_WEEKS = ("weeks", "week", "wk", "wks")
+U_DAYS = ("days", "day")
+U_YEARS = ("years", "year", "yr", "yrs", "years old", "year old", "yrs old")
+U_USD = ("usd", "dollars", "dollar")
+U_BLOCKS = ("blocks", "block")
+_MAGNITUDE = {"k", "m", "mm", "mil", "mill", "million", "millions", "thousand", "thousands", "b", "bn", "billion",
+              "billions", "grand"}
+_YEARS_OK = (1970, 2100)                 # input sanity ranges (not legal values)
+MAX_CY, MAX_TONS, MAX_USD = 50_000_000, 10_000_000, 50_000_000_000
+
+
 def _num(name: str, value, lo: Optional[float] = None, hi: Optional[float] = None,
-         integer: bool = False) -> Optional[float]:
-    """A number, or a string like '2,500 cy', '3 blocks', '$450,000'; None or '' stays None."""
+         integer: bool = False, units: tuple = ()) -> Optional[float]:
+    """A number, or a string like '2,500 cy', '3 blocks', '$450,000'; None or '' stays None. A trailing word must be
+    one of `units`; '5k' or '$5 million' is refused (write the full number) rather than read as 5."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     if isinstance(value, bool):
@@ -237,32 +260,46 @@ def _num(name: str, value, lo: Optional[float] = None, hi: Optional[float] = Non
     if isinstance(value, (int, float)):
         v = float(value)
     else:
-        m = re.match(r"^\s*\$?\s*(-?\d*\.?\d+)\s*([a-z .'/%]*)$", str(value).replace(",", "").lower())
+        m = re.match(r"^\s*\$?\s*(-?\d*\.?\d+)\s*(.*?)\s*$", str(value).replace(",", "").lower())
         if not m:
             raise ValueError(f"{name} must be a number, got {value!r}")
         v = float(m.group(1))
+        unit = _words(m.group(2))
+        if unit in _MAGNITUDE:
+            raise ValueError(f"{name}: write the full number (for example 5000000, not '5 million' or '5m'); got "
+                             f"{value!r}")
+        if unit and unit not in units:
+            want = f"a number of {units[0]}" if units else "a plain number"
+            raise ValueError(f"{name} must be {want}; got {value!r}")
     if not math.isfinite(v):
         raise ValueError(f"{name} must be a finite number, got {value!r}")
     if lo is not None and v < lo:
-        raise ValueError(f"{name} cannot be below {lo:g}, got {value!r}")
+        raise ValueError(f"{name} cannot be below {_n(lo)}, got {value!r}")
     if hi is not None and v > hi:
-        raise ValueError(f"{name} cannot be above {hi:g}, got {value!r}")
+        raise ValueError(f"{name} cannot be above {_n(hi)}, got {value!r}")
     if integer and v != int(v):
         raise ValueError(f"{name} must be a whole number, got {value!r}")
     return v
+
+
+def _year_ok(d: date, field: str, raw) -> date:
+    if not _YEARS_OK[0] <= d.year <= _YEARS_OK[1]:
+        raise ValueError(f"{field}: the year must be between {_YEARS_OK[0]} and {_YEARS_OK[1]}; got {raw!r}")
+    return d
 
 
 def _date(value, field: str) -> Optional[date]:
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     if isinstance(value, datetime):
-        return value.date()
+        return _year_ok(value.date(), field, value)
     if isinstance(value, date):
-        return value
+        return _year_ok(value, field, value)
     try:
-        return date.fromisoformat(str(value).strip()[:10])
+        d = date.fromisoformat(str(value).strip()[:10])
     except ValueError:
         raise ValueError(f"{field} must be an ISO date like 2026-12-07, got {value!r}") from None
+    return _year_ok(d, field, value)
 
 
 _DT = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:[ T]+(\d{1,2})(?::(\d{2}))?(?::\d{2}(?:\.\d+)?)?\s*"
@@ -277,9 +314,9 @@ def _when(value, field: str = "when") -> tuple[date, Optional[int]]:
         return now.date(), now.hour * 60 + now.minute
     if isinstance(value, datetime):
         dt = value.astimezone(logic.CA_TZ) if value.tzinfo else value
-        return dt.date(), dt.hour * 60 + dt.minute
+        return _year_ok(dt.date(), field, value), dt.hour * 60 + dt.minute
     if isinstance(value, date):
-        return value, None
+        return _year_ok(value, field, value), None
     s = str(value).strip()
     m = _DT.match(s)
     if not m:
@@ -289,6 +326,7 @@ def _when(value, field: str = "when") -> tuple[date, Optional[int]]:
         d = date.fromisoformat(m.group(1))
     except ValueError:
         raise ValueError(f"{field} has an impossible date: {value!r}") from None
+    _year_ok(d, field, value)
     if m.group(2) is None:
         return d, None
     h, mm, ap, tz = int(m.group(2)), int(m.group(3) or 0), (m.group(4) or "").lower(), m.group(5)
@@ -318,6 +356,41 @@ def _bool(name: str, value) -> Optional[bool]:
     raise ValueError(f"{name} must be true or false, got {value!r}")
 
 
+_CLASS = re.compile(r"^([ABCD])-?(\d{1,2})?$")
+
+
+def _license_classes(value) -> Optional[list[str]]:
+    """CSLB classes as written by people: 'C21', 'c-21', 'Class A', 'C-21 Wrecking', 'B, C-10' -> ['C-21'], ['A'],
+    ['B', 'C-10']. Anything that is not a class raises a ValueError (never silently 'not qualified')."""
+    if value is None:
+        return None
+    items = [value] if isinstance(value, str) else list(value)
+    out: list[str] = []
+    for item in items:
+        for part in re.split(r"[,;/&+]|\band\b", str(item), flags=re.I):
+            s = re.sub(r"\b(?:CLASS|LICENSE|LIC|CSLB)\b\.?", " ", part.upper())
+            s = re.sub(r"\s*-\s*", "-", re.sub(r"\s+", " ", s)).strip(" .-")
+            s = re.sub(r"\b([ABCD]) (\d{1,2})\b", r"\1-\2", s)            # 'C 21' -> 'C-21'
+            if not s:
+                continue
+            toks = s.split()
+            if all(_CLASS.match(t) for t in toks):
+                found = [_CLASS.match(t) for t in toks]
+            else:                               # a class followed by its name, e.g. 'C-21 WRECKING'
+                m = _CLASS.match(toks[0])
+                if not m or not all(re.fullmatch(r"[A-Z&'()]+", t) for t in toks[1:]) or len(toks[1]) < 3:
+                    raise ValueError(f"contractor_license_classes: {part.strip()!r} is not a CSLB license class "
+                                     "like A, B, C-21 or C-10")
+                found = [m]
+            for m in found:
+                letter, num = m.group(1), m.group(2)
+                if letter in "CD" and not num:
+                    raise ValueError(f"contractor_license_classes: {part.strip()!r} needs the class number, e.g. "
+                                     "C-21")
+                out.append(f"{letter}-{int(num)}" if num else letter)
+    return list(dict.fromkeys(out))
+
+
 # ---------------------------------------------------------------- city names (spelling only, not law)
 _ALIASES = {
     SD: {"san diego", "sd", "s d", "sandiego", "cosd", "city of sd", "sdca"},
@@ -329,6 +402,12 @@ _ALIASES = {
     LB: {"long beach", "lb", "longbeach"},
     FRE: {"fresno"},
 }
+
+
+# The regional air district that receives asbestos/demolition notices for each city (geography, not law).
+_AIR_DISTRICT_NAME = {SD: "San Diego County Air Pollution Control District", LA: "South Coast AQMD",
+                      LB: "South Coast AQMD", SF: "Bay Area AQMD", SJ: "Bay Area AQMD", OAK: "Bay Area AQMD",
+                      SAC: "Sacramento Metropolitan AQMD", FRE: "San Joaquin Valley APCD"}
 
 
 def _city_name(key: str) -> str:
@@ -366,8 +445,10 @@ def normalize_city(city) -> str:
     if close:
         hint = f" Did you mean {_city_name(next(k for k, v in _ALIASES.items() if close[0] in v))}?"
     raise ValueError(f"No city jobsite rules for {raw!r} in the rulebook.{hint} Covered: {covered} (verified) and "
-                     f"{others} (unverified). For other cities, check the city's municipal code and building "
-                     f"department.")
+                     f"{others} (unverified). If the jobsite is in a neighborhood of a covered city (La Jolla is in the "
+                     "City of San Diego, Hollywood in the City of Los Angeles), give the city; check the address's "
+                     "city limits first, because some places with those names (West Hollywood, for one) are separate "
+                     "cities. For other cities, check the city's municipal code and building department.")
 
 
 # ---------------------------------------------------------------- results
@@ -544,6 +625,19 @@ class _Cal:
         return "; ".join(bits)
 
 
+def _closure_holiday(cal: _Cal, d: date) -> Optional[date]:
+    """The City holiday that starts the office closure `d` falls in (the holiday itself, or a weekend joined to it),
+    else None. Reads the list only; does not record skipped days."""
+    cur, found = d, None
+    for _ in range(10):
+        if cur in cal.hol:
+            found = cur
+        elif cur.weekday() < 5:
+            break
+        cur -= timedelta(days=1)
+    return found
+
+
 def _weekdays_before(d: date, n: int) -> date:
     cur, left = d, int(n)
     while left > 0:
@@ -553,13 +647,20 @@ def _weekdays_before(d: date, n: int) -> date:
     return cur
 
 
+def _shift_hours(d: date, minute: int, hours: float) -> tuple[date, int]:
+    """California wall-clock (d, minute) moved by `hours` of real elapsed time, so a 72-hour notice across a
+    daylight-saving change is still a full 72 hours."""
+    local = datetime(d.year, d.month, d.day, minute // 60, minute % 60, tzinfo=logic.CA_TZ)
+    out = (local.astimezone(timezone.utc) + timedelta(hours=hours)).astimezone(logic.CA_TZ)
+    return out.date(), out.hour * 60 + out.minute
+
+
 def _before_hours(start: date, start_min: Optional[int], hours: int) -> tuple[date, Optional[int]]:
     """`hours` before the start: exact when the start time is known; otherwise the date hours // 24 days earlier
     (act by the same clock time as the start; the due_time is left open)."""
     if start_min is None:
         return start - timedelta(days=hours // 24), None
-    dt = datetime(start.year, start.month, start.day) + timedelta(minutes=start_min) - timedelta(hours=hours)
-    return dt.date(), dt.hour * 60 + dt.minute
+    return _shift_hours(start, start_min, -hours)
 
 
 # ================================================================ 1. construction hours
@@ -721,13 +822,13 @@ def _la_construction(d, hol, work, hcr):
         ids = ids + [LA_HCR]
         if day == "saturday":
             if work != "interior":
-                return [(0, DAY, "not_allowed", "HCR hillside district on a Saturday: only interior work is allowed",
-                         ids)]
+                return [(0, DAY, "not_allowed", "HCR hillside district on a Saturday (single-family residential "
+                         "project): only interior work is allowed", ids)]
             label = "Saturday (HCR: interior work only)"
         else:
             hw = P(LA_HCR, "weekday_hours")
             s, e = max(s, _m(hw["start"])), min(e, _m(hw["end"]))
-            label += " in an HCR hillside district"
+            label += " in an HCR hillside district (single-family residential project)"
     return [(0, s, "not_allowed", f"before {_clock(s)} ({label})", ids),
             (s, e, "allowed", f"{_clock(s)}-{_clock(e)} {label}", ids),
             (e, DAY, "not_allowed", f"after {_clock(e)} ({label})", ids)]
@@ -925,21 +1026,37 @@ def _sd_noise_permit_plan(acc: _Acc, cal: _Cal, start: date, start_min: Optional
                 "permit must be granted before the work and before you hand out the 72-hour neighbor notice, so "
                 "apply now. Some work entirely on private property needs no Traffic Control Permit first.",
                 SD_BAN, SD_NP_TCP_FIRST)
-    # A City holiday closure inside the application window (the 5 working days DSD sets for right-of-way noise
-    # permits, before the work) has its own filing date: 3 business days before the closure.
-    n5 = int(P(SD_NP_5WD, "min_working_days_before_work"))
-    win_lo = cal.before(start, n5)
-    hols = sorted(h for h in cal.hol if max(today, win_lo) <= h <= start)
-    if hols:
-        bd = int(P(SD_NP_HOLIDAY, "min_business_days_before_holiday_closure"))
-        h = hols[0]
+    # DSD's holiday-closure notice: "submit a Construction Noise Permit application at least three business days before
+    # a holiday closure". It does not say which work dates it covers. Work that falls inside the closure itself (the
+    # holiday and any weekend joined to it) clearly needs the permit before DSD closes, so that date is a requirement.
+    # A closure that only falls inside the run-up to the work (the 5-working-day window DSD sets for right-of-way
+    # noise permits) gets a recommended date instead (estimate=True), never an "already late" verdict.
+    bd = int(P(SD_NP_HOLIDAY, "min_business_days_before_holiday_closure"))
+    closure = _closure_holiday(cal, start)
+    if closure is not None:
+        h, in_closure = closure, True
+    else:
+        n5 = int(P(SD_NP_5WD, "min_working_days_before_work"))
+        win_lo = cal.before(start, n5)
+        hols = sorted(x for x in cal.hol if max(today, win_lo) <= x <= start)
+        h, in_closure = (hols[0] if hols else None), False
+    if h is not None:
         h_due = cal.before(h, bd)
-        if not dues or h_due < min(dues):
+        if in_closure or not dues or h_due < min(dues):
             dues.append(h_due)
-            acc.req(f"File before the {cal.hol[h]} closure",
-                    f"DSD asks for noise permit applications at least {bd} business days before a City holiday "
-                    f"closure ({h.isoformat()} {cal.hol[h]}).", SD_NP_HOLIDAY, due=h_due)
-            acc.math.append(f"Holiday closure {h.isoformat()} - {bd} business days = {h_due.isoformat()}")
+            if in_closure:
+                detail = (f"The work date falls in DSD's {cal.hol[h]} office closure (from {h.isoformat()}). DSD "
+                          f"requires Construction Noise Permit applications at least {bd} business days before a "
+                          "holiday closure.")
+            else:
+                detail = (f"DSD is closed {h.isoformat()} ({cal.hol[h]}). Its holiday-closure notice asks for "
+                          f"Construction Noise Permit applications at least {bd} business days before a closure but "
+                          "does not say which work dates that covers; filing by this date keeps the closure from "
+                          "holding up review.")
+            acc.req(f"File before the {cal.hol[h]} closure", detail, SD_NP_HOLIDAY, due=h_due,
+                    estimate=not in_closure)
+            acc.math.append(f"Holiday closure {h.isoformat()} - {bd} business days = {h_due.isoformat()}"
+                            + ("" if in_closure else " (recommended)"))
     lead = int(P(SD_NP_NOTICE, "lead_time_hours"))
     radius = P(SD_NP_NOTICE, "radius_ft")
     n_date, n_min = _before_hours(start, start_min, lead)
@@ -1034,6 +1151,14 @@ def construction_hours(city, when=None, work_type="construction", hcr_district: 
             acc.note(f"SDMC 59.5.0404(a) excepts {_join(exc)} from the holiday ban, but the City does not say whether "
                      f"its '{hol_name}' is that day, and DSD requires a noise permit all day on City holidays; it is "
                      f"treated as a holiday here. Confirm with {P(SD_WINDOWS, 'contact')}.")
+    if key == SD and day == "saturday" and hol is False:
+        fri = d - timedelta(days=1)
+        fri_name = _sd_holidays().get(fri)
+        if fri_name and fri_name != "City Holiday":
+            acc.note(f"Friday {fri.isoformat()} is the City's {fri_name} holiday. If {fri_name} itself falls on this "
+                     "Saturday and the City only observes it on Friday, the construction-noise ban may still treat "
+                     "this Saturday as a legal holiday: the City list does not say, and SDMC 21.0104 could not be read. "
+                     f"Confirm with {P(SD_WINDOWS, 'contact')} before noisy work.")
     if key == SD and day == "saturday" and work in ("construction", "interior"):
         acc.note(f"Saturday: the code and the DSD page body allow 7 a.m.-7 p.m. without a noise permit, but the DSD "
                  f"page headline says permits are needed 'all day on Saturdays'. Confirm with "
@@ -1051,20 +1176,27 @@ def construction_hours(city, when=None, work_type="construction", hcr_district: 
     if key == LA and hcr:
         acc.use(LA_HCR_LIGHTS)
         acc.note(core.rule(LA_HCR_LIGHTS).plain_english)
+        acc.note(f"LADBS applies the HCR hours to {P(LA_HCR, 'scope')}; any other project in the district follows "
+                 "the citywide hours (call again with hcr_district=false).")
+    if key not in (SD, LA) and given_hol is not None:
+        acc.note(f"is_holiday does not change the {name} hours shown: the rulebook has no {name} holiday rule"
+                 + (" (Long Beach reportedly treats a federal holiday as a weekday)." if key == LB else
+                    " beyond the windows described." if key == OAK else "."))
     if key == LB:
         acc.note("Long Beach treats a federal holiday as a weekday (reported, unverified); the Harbor District has "
                  "different rules.")
+    emergency_due = None
     if emergency:
         hrs = int(P(SD_EMERG, "notify_within_hours"))
-        start_dt = datetime(d.year, d.month, d.day) + timedelta(minutes=t or 0)
-        due = start_dt + timedelta(hours=hrs)
+        e_date, e_min = _shift_hours(d, t or 0, hrs)
+        emergency_due = f"{e_date.isoformat()} {_hm(e_min)}"
         acc.req("Notify the Noise Abatement Administrator (emergency work)",
                 f"Emergency construction equipment is exempt from the {P(SD_75DB, 'limit_db')} dB daytime limit only "
                 f"if DSD's Noise Abatement Administrator is notified within {hrs} hours after the work starts. On "
-                "its words the exception does not waive the night, Sunday or holiday permit requirement.",
-                SD_EMERG, due=due.date(), due_time=due.hour * 60 + due.minute)
-        acc.math.append(f"Emergency notice: {start_dt.date().isoformat()} {_hm(t or 0)} + {hrs} h = "
-                        f"{due.date().isoformat()} {_hm(due.hour * 60 + due.minute)}")
+                "its words the exception does not waive the night, Sunday or holiday permit requirement."
+                + ("" if t is not None else " No start time was given, so midnight is assumed; count the hours from "
+                   "the actual start."), SD_EMERG, due=e_date, due_time=e_min)
+        acc.math.append(f"Emergency notice: {d.isoformat()} {_hm(t or 0)} + {hrs} h = {emergency_due}")
 
     # penalty and next step
     noise_window = key == SD and work in ("construction", "interior", "street_work") and (
@@ -1078,8 +1210,9 @@ def construction_hours(city, when=None, work_type="construction", hcr_district: 
         if key == SD and (noise_window or work == "delivery"):
             acc.use(SD_PENALTY)
             bits.append(f"{_usd(P(SD_PENALTY, 'civil_penalty_usd'))} civil penalty for excessive construction noise in "
-                        f"restricted hours, up to {_usd(P(SD_PENALTY, 'max_per_incident_usd'))} per incident (usually "
-                        "after a history of noise issues at the location; City policy flyer)")
+                        f"restricted hours, up to {_usd(P(SD_PENALTY, 'max_per_incident_usd'))} per incident for "
+                        "severe cases (per an undated City code-enforcement policy flyer; usually after a history of "
+                        "noise issues at the location)")
         elif key == LA:
             acc.use(LA_PENALTY)
             bits.append(f"misdemeanor for the responsible party: fine up to {_usd(P(LA_PENALTY, 'fine_usd_max'))} "
@@ -1114,8 +1247,9 @@ def construction_hours(city, when=None, work_type="construction", hcr_district: 
         behind = [x for x in dls if x.status == "passed" and x.estimate]
         if behind and not late:
             res.next_step = (f"Move the work into the no-permit window{nxt_txt}, or get a Construction Noise Permit "
-                             f"({_usd(P(SD_NP_FEE, 'fee_usd'))}). You are behind DSD's processing estimate "
-                             f"('{behind[0].what}', {behind[0].due}), so file now"
+                             f"({_usd(P(SD_NP_FEE, 'fee_usd'))}). You are past DSD's recommended filing date "
+                             f"('{behind[0].what}', {behind[0].due}; a processing-time or office-closure estimate, "
+                             "not a legal deadline), so file now"
                              + (f"; the next legal deadline is '{nxt_dl.what}' by {nxt_dl.due}" if nxt_dl else "")
                              + ".")
         elif late:
@@ -1141,6 +1275,12 @@ def construction_hours(city, when=None, work_type="construction", hcr_district: 
     else:
         res.next_step = (f"Move the work into the window shown{nxt_txt}, or get the permission described above. "
                          f"These {name} hours are UNVERIFIED (official text not read): confirm with the city first.")
+    if emergency_due:
+        res.next_step = (f"Emergency work: notify the Noise Abatement Administrator by {emergency_due} (48 hours after "
+                         "the work starts) to keep the daytime noise-limit exemption."
+                         + (f" The code has no emergency exception for night, Sunday or holiday work, so contact "
+                            f"{P(SD_WINDOWS, 'contact')} right away about the Construction Noise Permit."
+                            if res.status == "needs_permit" else "") + " " + res.next_step)
     return acc.finish(res)
 
 
@@ -1208,8 +1348,9 @@ def _sd_bin_fees(acc: _Acc, kind: str, weeks: Optional[float] = None, days: Opti
                 f"{_usd(fee)} x {periods} period(s) ({P(SD_DUMP, 'dumpster_fee_period')}"
                 + (f"; ceil({_n(weeks)} weeks / {per_w})" if weeks else "") + ")", SD_DUMP)
         if periods > 1:
-            acc.note("A dumpster kept past the first period is assumed to be billed again for each period; IB 718 "
-                     "does not say how renewals are processed. Ask DSD.")
+            acc.note(f"The dumpster fee is stated as {P(SD_DUMP, 'dumpster_fee_period')}; the shorter {per_w}-week "
+                     "period is used, and a dumpster kept longer is assumed to be billed again for each period. "
+                     "Neither bulletin says how renewals are processed: ask DSD.")
     else:
         fee = P(SD_DUMP, "storage_container_fee_usd_per_week")
         max_days = int(P(SD_STORAGE_7D, "storage_container_permit_max_days"))
@@ -1303,8 +1444,11 @@ def _sd_jobsite(acc, cal, f, start, triggers):
     if f["builds_row"]:
         triggers.append("construction in the public right-of-way")
         acc.req("Public Right-of-Way Permit (DSD)",
-                core.rule(SD_ROW_REQ).plain_english + " A separate Traffic Control Permit is still required.",
-                SD_ROW_REQ)
+                core.rule(SD_ROW_REQ).plain_english + " A separate Traffic Control Permit is still required, and IB "
+                "177 asks for the approved Right-of-Way Permit "
+                f"({P(SD_TCP_REQ, 'approved_row_permit_with_application').split(' (')[0]}) with the Traffic Control "
+                "Permit application: get the ROW permit approved first. The Traffic Control dates above assume it "
+                "already is.", SD_ROW_REQ, SD_TCP_REQ)
         acc.req("ROW permit term and extensions",
                 core.rule(SD_ROW_TERM).plain_english + " " + core.rule(SD_ROW_EXT60).plain_english,
                 SD_ROW_TERM, SD_ROW_EXT60)
@@ -1346,6 +1490,18 @@ def _sd_jobsite(acc, cal, f, start, triggers):
                 "to a fire hydrant.", SD_DUMP_CLEAR)
         if kind == "storage_container":
             acc.req("Container permit length", core.rule(SD_STORAGE_7D).plain_english, SD_STORAGE_7D)
+            max_days = int(P(SD_STORAGE_7D, "storage_container_permit_max_days"))
+            if start and f["weeks"] and f["weeks"] * 7 > max_days:
+                nx = int(P(SD_STORAGE_7D, "extension_request_min_working_days_before_expiration"))
+                exp = start + timedelta(days=max_days)
+                due = cal.before(exp, nx)
+                acc.req("Extend the storage container permit",
+                        f"The permit lasts up to {max_days} days; for {_n(f['weeks'])} weeks, file the extension at "
+                        f"least {nx} working days before it expires (City Engineer approval, extra fees). Use the "
+                        f"expiration printed on the permit; this date assumes it expires {max_days} days after "
+                        "placement.", SD_STORAGE_7D, due=due)
+                acc.math.append(f"Storage container extension: ({start.isoformat()} + {max_days} days = "
+                                f"{exp.isoformat()}) - {nx} working days = {due.isoformat()}")
         r = P(SD_REFUSE, "refuse_vehicle_restricted")
         acc.req("Bin swaps in residential areas",
                 f"Refuse collection vehicles may not operate {_clock(_m(r['start']))}-{_clock(_m(r['end']))} in "
@@ -1369,6 +1525,10 @@ def _sd_jobsite(acc, cal, f, start, triggers):
         acc.req("C&D debris deposit and diversion",
                 core.rule(SD_CD_APPLIES).plain_english + " Use construction_debris_plan for the deposit amount.",
                 SD_CD_APPLIES)
+        _demolition_notice(acc, SD, start, f["units"])
+    if f["grading"] and not f["earthwork"]:
+        acc.note("The rulebook has no San Diego grading-permit rule; grading_cubic_yards is used only for the Los "
+                 "Angeles hillside notice. Give earthwork_cubic_yards for soil you will export.")
     if f["trench"]:
         _usa(acc, start)
 
@@ -1382,10 +1542,42 @@ def _usa(acc, start):
                         "holiday in between makes it earlier")
 
 
-def _neshap(acc, start):
+def _demolition_notice(acc, key, start, units):
+    """Asbestos survey and demolition notice. Federal NESHAP covers the demolition of a 'facility', which excludes
+    residential buildings with four or fewer dwelling units (40 CFR 61.141); air districts can still require notice
+    for those, under their own rules."""
+    max_u = int(P(NESHAP_FAC, "excluded_residential_max_units"))
+    district = f"{_AIR_DISTRICT_NAME[key]} (the air district for {_city_name(key)})"
+    if units is not None and 1 <= units <= max_u:
+        n = int(P(AIR_DISTRICT, "lead_time_working_days"))
+        due = _weekdays_before(start, n) if start else None
+        acc.req("Demolition notice to the air district",
+                f"A residential building with {_n(units)} dwelling unit(s) is outside federal NESHAP, which excludes "
+                f"residential buildings with {max_u} or fewer units, but air districts regulate these demolitions "
+                "too. " + core.rule(AIR_DISTRICT).plain_english + f" Ask the {district} what its rule requires "
+                "(form, fee, asbestos survey) and file at least this far ahead.", AIR_DISTRICT, NESHAP_FAC, due=due)
+        if start:
+            acc.math.append(f"Air district notice: {start.isoformat()} - {n} working days (Monday-Friday, holidays "
+                            f"counted, as NESHAP counts them) = {due.isoformat()}; if the district does not count "
+                            "holidays, file a day earlier for each holiday in the window")
+        return
+    acc.req("Asbestos inspection before demolition", core.rule(NESHAP_INSPECT).plain_english + " Finish it before "
+            "you file the notice, which reports the asbestos found.", NESHAP_INSPECT, NESHAP_FAC)
     n = int(P(NESHAP, "lead_time_working_days"))
     due = _weekdays_before(start, n) if start else None
-    acc.req("Asbestos/demolition notice to the air district", core.rule(NESHAP).plain_english, NESHAP, due=due)
+    if units is None:
+        scope = (f" This covers a NESHAP 'facility': a non-residential building or a residential building with more "
+                 f"than {max_u} dwelling units. A house or other residential building with {max_u} or fewer units is "
+                 "outside the federal rule, but air districts regulate those demolitions too (South Coast AQMD Rule "
+                 "1403; Bay Area AQMD requires notice for every demolition); give building_dwelling_units to check.")
+        ids = (NESHAP, NESHAP_FAC, AIR_DISTRICT)
+    else:
+        scope = (" This building is a NESHAP 'facility' (" + ("non-residential" if units == 0 else
+                 f"{_n(units)} dwelling units, more than {max_u}") + "), so the notice is required even with little "
+                 "or no asbestos.")
+        ids = (NESHAP, NESHAP_FAC)
+    acc.req("Asbestos/demolition notice to the air district", core.rule(NESHAP).plain_english + scope
+            + f" File it with the {district}.", *ids, due=due)
     if start:
         acc.math.append(f"NESHAP: {start.isoformat()} - {n} working days ({P(NESHAP, 'working_day_definition')}) = "
                         f"{due.isoformat()}")
@@ -1396,7 +1588,7 @@ def _la_jobsite(acc, f, start, triggers):
     acc.req("Work hours",
             f"Monday-Friday {_clock(_m(hrs['monday_friday']['start']))}-{_clock(_m(hrs['monday_friday']['end']))}, "
             f"Saturday and national holidays {_clock(_m(hrs['saturday']['start']))}-{_clock(_m(hrs['saturday']['end']))}"
-            ", no Sunday work." + (" HCR hillside district: weekdays "
+            ", no Sunday work." + (" HCR hillside district (single-family residential projects): weekdays "
                                    f"{_clock(_m(P(LA_HCR, 'weekday_hours.start')))}-"
                                    f"{_clock(_m(P(LA_HCR, 'weekday_hours.end')))}, Saturdays interior work only; no "
                                    "floodlights after 6 p.m." if f["hcr"] else ""),
@@ -1423,7 +1615,7 @@ def _la_jobsite(acc, f, start, triggers):
         triggers.append("night, Sunday or holiday work")
         acc.req("After-hours work (UNVERIFIED route)", "Construction outside the permitted hours is not allowed. "
                 + core.rule(LA_AFTER_HOURS_U).plain_english, LA_HOURS, LA_AFTER_HOURS_U, LA_PENALTY)
-    cy = f["earthwork"]
+    cy, grade = f["earthwork"], f["grading"]
     trig = P(LA_HAUL_HEARING, "trigger_cubic_yards_over")
     if cy and f["hillside"] and cy > trig:
         triggers.append(f"{_n(cy)} cy import/export in a Hillside Grading Area")
@@ -1436,7 +1628,8 @@ def _la_jobsite(acc, f, start, triggers):
             acc.req("Haul route approval (BBSC public hearing)",
                     core.rule(LA_HAUL_HEARING).plain_english + f" File with the Building and Safety Commission Office "
                     f"{P(LA_HAUL_HEARING, 'file_with').split('Office')[-1].strip()}; processing takes at least {wk} "
-                    "weeks.", LA_HAUL_HEARING, LA_HAUL_8WK, due=due)
+                    "weeks, so the date shown is the latest filing date that can still meet the start (the CEQA "
+                    "Notice of Determination must come first).", LA_HAUL_HEARING, LA_HAUL_8WK, due=due, estimate=True)
             if start:
                 acc.math.append(f"Haul route: {start.isoformat()} - {wk} weeks = {due.isoformat()} (minimum processing; "
                                 "the CEQA determination and hearing can take longer)")
@@ -1449,13 +1642,22 @@ def _la_jobsite(acc, f, start, triggers):
             acc.fee("Haul route (import-export) filing fee", fee, how, LA_HAUL_FEE)
             acc.note("Haul route fee: the 22% surcharge is applied to the whole base fee (the plain reading; the 2018 "
                      "form does not spell it out) and no 2026 fee source was read. Confirm with the Commission Office.")
-        n_days = int(P(LA_HILLSIDE_NOTICE, "mail_days_before_permit_issuance"))
-        acc.req("Neighbor notices before the grading permit", core.rule(LA_HILLSIDE_NOTICE).plain_english
-                + f" The permit cannot be issued sooner than {n_days} days after the mailing.", LA_HILLSIDE_NOTICE)
     elif cy and cy > trig:
         triggers.append(f"{_n(cy)} cy of earthwork (not in a Hillside Grading Area)")
         acc.note(f"The BBSC haul-route hearing applies to more than {_n(trig)} cy in a Hillside Grading Area; you said "
                  "the site is not in one. Check ZIMAS for the designation.")
+    # The 10-day neighbor notice counts "earthwork", which the LADBS sheet does not limit to import/export, so on-site
+    # cut and fill (grading_cubic_yards) can trigger it even when no haul-route hearing is needed.
+    n_trig = P(LA_HILLSIDE_NOTICE, "trigger_cubic_yards_over")
+    if f["hillside"] and max(cy or 0, grade or 0) > n_trig:
+        if not (cy and cy > trig):
+            triggers.append(f"{_n(max(cy or 0, grade or 0))} cy of earthwork in a Hillside Grading Area")
+        n_days = int(P(LA_HILLSIDE_NOTICE, "mail_days_before_permit_issuance"))
+        acc.req("Neighbor notices before the grading permit", core.rule(LA_HILLSIDE_NOTICE).plain_english
+                + f" The permit cannot be issued sooner than {n_days} days after the mailing."
+                + ("" if cy and cy > n_trig else
+                   f" Listed because your grading is {_n(grade)} cy: the LADBS sheet says 'earthwork' without "
+                   "limiting it to import/export. Confirm with the grading plan checker."), LA_HILLSIDE_NOTICE)
     if f["demolition"]:
         triggers.append("demolition")
         age = f["age"]
@@ -1465,12 +1667,12 @@ def _la_jobsite(acc, f, start, triggers):
             acc.req(f"{over}-year demolition notice" + ("" if age is not None else f" (if the building is over {over} "
                                                         "years old)"),
                     core.rule(LA_DEMO_45).plain_english + f" Plan on the permit no sooner than {days} days after the "
-                    "notice and posting.", LA_DEMO_45)
+                    f"notice and posting. Exception: {P(LA_DEMO_45, 'exception')}.", LA_DEMO_45)
             pl = P(LA_DEMO_PLACARD, "placard_min_size_in")
             acc.req("Demolition placard", core.rule(LA_DEMO_PLACARD).plain_english
                     + f" ({pl[0]} x {pl[1]} in minimum).", LA_DEMO_PLACARD)
         lic = P(LA_DEMO_LICENSE, "eligible_licenses")
-        have = [c.upper().replace(" ", "").replace("CLASS", "") for c in (f["licenses"] or [])]
+        have = f["licenses"] or []
         ok = any(c in lic for c in have) if have else None
         acc.req("Who may pull the demolition permit", core.rule(LA_DEMO_LICENSE).plain_english
                 + ("" if ok is None else " Your classes " + _join(have) + (" qualify." if ok else
@@ -1481,7 +1683,7 @@ def _la_jobsite(acc, f, start, triggers):
         sd_, st_ = _before_hours(start, f["start_min"], h) if start else (None, None)
         acc.req("Demolition inspection request", core.rule(LA_DEMO_INSP).plain_english, LA_DEMO_INSP,
                 due=sd_, due_time=st_)
-        _neshap(acc, start)
+        _demolition_notice(acc, LA, start, f["units"])
     if f["trench"]:
         triggers.append("trenching in a street")
         _usa(acc, start)
@@ -1534,11 +1736,11 @@ def _other_jobsite(acc, key, f, start, triggers):
                 *route)
     if f["demolition"]:
         triggers.append("demolition")
-        _neshap(acc, start)
+        _demolition_notice(acc, key, start, f["units"])
     if f["trench"]:
         triggers.append("trenching in a street")
         _usa(acc, start)
-    if f["earthwork"] and key != LA:
+    if f["earthwork"] or f["grading"]:
         acc.note(f"The rulebook has no {name} haul-route or grading rule; ask the building department.")
 
 
@@ -1551,7 +1753,8 @@ def local_jobsite_requirements(city, start_date=None, work_in_public_right_of_wa
                                eo1_wildfire_rebuild: bool = False, hcr_district: bool = False,
                                demolition: bool = False, building_age_years=None,
                                contractor_license_classes: Optional[list[str]] = None, blocks=None,
-                               weeks_in_street=None, as_of=None) -> JobsiteRequirementsResult:
+                               weeks_in_street=None, as_of=None, building_dwelling_units=None,
+                               grading_cubic_yards=None) -> JobsiteRequirementsResult:
     """City permits, notices and dated deadlines for one jobsite."""
     key = normalize_city(city)
     has_start = not (start_date is None or (isinstance(start_date, str) and not start_date.strip()))
@@ -1566,15 +1769,18 @@ def local_jobsite_requirements(city, start_date=None, work_in_public_right_of_wa
     f = dict(b)
     f["start_min"] = start_min
     f["bin"] = _bin_type(bin_type) if b["bin"] else None
-    f["earthwork"] = _num("earthwork_cubic_yards", earthwork_cubic_yards, lo=0)
-    f["age"] = _num("building_age_years", building_age_years, lo=0, hi=1000)
-    f["blocks"] = _num("blocks", blocks, lo=0, hi=500, integer=True)
-    f["weeks"] = _num("weeks_in_street", weeks_in_street, lo=0, hi=520)
-    if isinstance(contractor_license_classes, str):
-        contractor_license_classes = [c for c in re.split(r"[,;/ ]+", contractor_license_classes) if c]
-    f["licenses"] = contractor_license_classes
+    f["earthwork"] = _num("earthwork_cubic_yards", earthwork_cubic_yards, lo=0, hi=MAX_CY, units=U_CY)
+    f["grading"] = _num("grading_cubic_yards", grading_cubic_yards, lo=0, hi=MAX_CY, units=U_CY)
+    f["age"] = _num("building_age_years", building_age_years, lo=0, hi=1000, units=U_YEARS)
+    f["units"] = _num("building_dwelling_units", building_dwelling_units, lo=0, hi=100_000, integer=True,
+                      units=("units", "unit", "dwelling units", "dwelling unit", "du", "dus", "apartments", "homes"))
+    f["blocks"] = _num("blocks", blocks, lo=0, hi=500, integer=True, units=U_BLOCKS)
+    f["weeks"] = _num("weeks_in_street", weeks_in_street, lo=0, hi=520, units=U_WEEKS)
+    f["licenses"] = _license_classes(contractor_license_classes)
     if key != LA and (f["hillside"] or f["eo1"] or f["hcr"]):
         raise ValueError("hillside_grading_area, eo1_wildfire_rebuild and hcr_district are Los Angeles designations")
+    if f["units"] is not None and not f["demolition"]:
+        raise ValueError("building_dwelling_units describes the building being demolished; set demolition=true")
     if f["blocks"] and key != SD:
         raise ValueError("blocks (Traffic Control Permit fee) is priced only for San Diego")
     if f["blocks"] and not (f["row"] or f["builds_row"]):
@@ -1612,7 +1818,8 @@ def local_jobsite_requirements(city, start_date=None, work_in_public_right_of_wa
         res.next_step = (f"Already late: '{passed[0].what}' was due {passed[0].due}. Do it now and move the start "
                          "date if the city needs the full lead time.")
     elif behind:
-        res.next_step = (f"Behind the city's processing estimate ('{behind[0].what}', {behind[0].due}): file now; "
+        res.next_step = (f"Past the city's recommended filing date ('{behind[0].what}', {behind[0].due}; a "
+                         "processing-time estimate, not a legal deadline): file now; "
                          + (f"the next legal deadline is '{upcoming[0].what}' by {upcoming[0].due}"
                             if upcoming else "expect the start date to slip") + ".")
     elif upcoming:
@@ -1687,9 +1894,18 @@ def _project_type(value) -> tuple[str, Optional[str]]:
         itoks = {_SYN.get(t, t) for t in _words(item).split()}
         if sig and sig <= itoks:
             return "exempt", item
-    raise ValueError(f"project_type {value!r} is not clear. Use one of {', '.join(_PT)}, or an exempt item from the "
-                     f"San Diego list (e.g. {', '.join(exempt[:6])}). Additions are not classified by the City's "
-                     "table: ask ESD whether yours is new construction or an alteration.")
+    if (new or alter or demo) and not (res or nonres or hotel):
+        hint = (" Say whether it is residential or non-residential, e.g. 'residential kitchen remodel' or "
+                "'restaurant remodel'.")
+    elif hotel and new:
+        hint = " The City's table classifies hotel alterations only; ask ESD how hotel new construction is charged."
+    elif toks & {"addition", "additions", "add"}:
+        hint = " Additions are not classified by the City's table: ask ESD whether yours is new construction or an " \
+               "alteration."
+    else:
+        hint = ""
+    raise ValueError(f"project_type {value!r} is not clear.{hint} Use one of {', '.join(_PT)}, or an exempt item "
+                     f"from the San Diego list (e.g. {', '.join(exempt[:6])}).")
 
 
 def _sd_deposit(acc: _Acc, ptype: str, sqft: Optional[float]) -> tuple[Optional[bool], Optional[float], str,
@@ -1745,25 +1961,39 @@ def construction_debris_plan(city, project_type, square_feet=None, total_debris_
     """C&D debris deposit, diversion target, refund and hauling rules for one project."""
     key = normalize_city(city)
     ptype, exempt_item = _project_type(project_type)
-    sqft = _num("square_feet", square_feet, lo=0, hi=10_000_000)
-    total = _num("total_debris_tons", total_debris_tons, lo=0)
-    div = _num("diverted_tons", diverted_tons, lo=0)
+    sqft = _num("square_feet", square_feet, lo=0, hi=10_000_000, units=U_SQFT)
+    total = _num("total_debris_tons", total_debris_tons, lo=0, hi=MAX_TONS, units=U_TONS)
+    div = _num("diverted_tons", diverted_tons, lo=0, hi=MAX_TONS, units=U_TONS)
+    if total is not None and total <= 0:
+        raise ValueError("total_debris_tons must be more than 0 (every project generates some debris); leave it "
+                         "empty if you do not know it yet")
     if div is not None and total is None:
         raise ValueError("diverted_tons needs total_debris_tons (all C&D debris generated, in tons)")
     if div is not None and total is not None and div > total + 1e-9:
         raise ValueError(f"diverted_tons ({_n(div)}) cannot exceed total_debris_tons ({_n(total)})")
     final = _date(final_inspection_date, "final_inspection_date")
     issued = _date(permit_issued_date, "permit_issued_date")
-    value = _num("project_value_usd", project_value_usd, lo=0)
+    value = _num("project_value_usd", project_value_usd, lo=0, hi=MAX_USD, units=U_USD)
     h = _words(hauling or "hauler")
-    self_haul = bool(re.search(r"\b(self|own|ourselves|myself|we haul|our truck)", h))
+    self_words = bool(re.search(r"\b(self|own|ourselves|myself|we haul|our truck)", h))
+    if self_words and re.search(r"\b(not|no|never|dont|don t|won t|wont)\b", h):
+        raise ValueError(f"hauling must be 'hauler' (a hauling company) or 'self-haul' (your own trucks); "
+                         f"{hauling!r} is unclear")
+    self_haul = self_words
     in_city = _bool("debris_generated_in_city", debris_generated_in_city)
     in_city = True if in_city is None else in_city
     today = _date(as_of, "as_of") or logic.today_ca()
     acc = _Acc(today)
     name = _city_name(key)
+    minor = None
+    if exempt_item and key != SD:
+        # The exemption list is San Diego's. Elsewhere the item is just minor work whose coverage is unknown.
+        minor, exempt_item, ptype = exempt_item, None, "minor_work"
+        acc.note(f"{project_type!r} matches San Diego's C&D exemption list ({minor}), but that list applies only in "
+                 f"San Diego. The rulebook has no {name} exemption list: ask the city whether this permit is covered.")
     res = DebrisPlanResult(city=name, city_rules_verified=key in VERIFIED_CITIES,
-                           project_type=ptype if not exempt_item else f"exempt: {exempt_item}", square_feet=sqft)
+                           project_type=(f"exempt: {exempt_item}" if exempt_item else
+                                         f"minor work ({minor})" if minor else ptype), square_feet=sqft)
     new_constr = ptype in ("residential_new_construction", "nonresidential_new_construction")
     target = None
     if key == SD:
@@ -1817,7 +2047,10 @@ def construction_debris_plan(city, project_type, square_feet=None, total_debris_
     else:
         _other_debris(acc, key, res, ptype, value)
         target = res.diversion_required_percent
-    if new_constr or (key not in (SD,) and not exempt_item):
+    if minor:
+        acc.note("CALGreen's construction waste diversion covers new construction and covered additions/alterations; "
+                 "check whether this work is covered before planning on it.")
+    if new_constr or (key != SD and not exempt_item and not minor):
         pc = P(CALGREEN, "min_diversion_percent")
         acc.req(f"CALGreen {pc}% diversion (statewide)", core.rule(CALGREEN).plain_english, CALGREEN)
         target = target if target is not None else pc
@@ -1831,7 +2064,7 @@ def construction_debris_plan(city, project_type, square_feet=None, total_debris_
         res.tons_to_divert_for_target = need
         acc.math.append(f"Target: {_n(total)} t x {_n(target)}% = {_n(need)} t diverted")
         if div is not None:
-            pct = round(div / total * 100, 1) if total else 100.0
+            pct = math.floor(div / total * 1000 + 1e-9) / 10     # rounded down: 64.95% never shows as 65%
             res.diversion_achieved_percent = pct
             res.additional_tons_needed = _money(max(0.0, need - div))
             acc.math.append(f"Achieved: {_n(div)} / {_n(total)} t = {pct:g}%"
@@ -1846,13 +2079,25 @@ def construction_debris_plan(city, project_type, square_feet=None, total_debris_
     if key == SD and total is not None:
         land = total - (div or 0) if div is not None else None
         if land:
-            rate = P(SD_MIRAMAR_RATES, "cd_debris_usd_per_ton")["city_waste" if in_city else "non_city_waste"]
+            mr = core.rule(SD_MIRAMAR_RATES)
+            per_ton = mr.param("cd_debris_usd_per_ton")
+            rate = per_ton["city_waste" if in_city else "non_city_waste"]
             res.landfill_cost_usd = _money(land * rate)
             acc.use(SD_MIRAMAR_RATES)
-            acc.math.append(f"Miramar C&D disposal: {_n(land)} t x {_usd(rate)}/t "
-                            f"({'City' if in_city else 'non-City'} waste, from "
-                            f"{P(SD_MIRAMAR_RATES, 'effective')}) = {_usd(res.landfill_cost_usd)}; landfilled tons earn "
-                            "no diversion credit")
+            acc.math.append(f"Miramar C&D disposal (estimate, standard weighed-load rate): {_n(land)} t x "
+                            f"{_usd(rate)}/t ({'City' if in_city else 'non-City'} waste, from "
+                            f"{mr.param('effective')}) = {_usd(res.landfill_cost_usd)}; landfilled tons earn no "
+                            "diversion credit")
+            flat = mr.param("cd_debris_flat_rate_usd")
+            col = "city" if in_city else "non_city"
+            tiers = ", ".join(f"{_usd(flat[t][col])} {t.replace('_', ' ')}" for t in sorted(flat))
+            acc.note("landfill_cost_usd is an estimate: every non-diverted ton at Miramar's standard weighed-load C&D "
+                     f"rate. Unweighed loads (vehicles without a tare weight on file, such as most cars, pickups and "
+                     f"small trailers) pay a flat rate per load instead ({tiers}); franchised haulers pay "
+                     f"{_usd(per_ton['franchise_hauler_class_i_city_waste'])}-"
+                     f"{_usd(per_ton['franchise_hauler_class_ii_city_waste'])}/t for City waste and bill you their own "
+                     "price. Debris taken to a certified recycling facility is charged that facility's rate, which is "
+                     "not in the rulebook.")
     if self_haul:
         acc.req("Covered loads on the road (UNVERIFIED)", core.rule(VC23115_U).plain_english, VC23115_U)
     acc.finish(res)
@@ -1915,7 +2160,7 @@ def _other_debris(acc, key, res, ptype, value):
         acc.req("65% diversion and waste log (UNVERIFIED)", core.rule(SAC_CD_U).plain_english, SAC_CD_U)
         acc.req("Franchised hauler or self-haul (UNVERIFIED)", core.rule(SAC_HAULER_U).plain_english, SAC_HAULER_U)
         acc.req("Green Halo plan and admin fee (UNVERIFIED)", core.rule(SAC_FEE_U).plain_english, SAC_FEE_U)
-        if value is not None:
+        if value is not None and ptype in _PT:
             pc, mn = P(SAC_FEE_U, "admin_fee_percent_of_valuation"), P(SAC_FEE_U, "admin_fee_min_usd")
             res.city_fee_usd = _money(max(mn, value * pc / 100))
             acc.math.append(f"Sacramento admin fee = max({_usd(mn)}, {pc:g}% x {_usd(value)}) = "
@@ -1931,7 +2176,7 @@ def _other_debris(acc, key, res, ptype, value):
         acc.req("C&D deposit (UNVERIFIED)", core.rule(LB_DEPOSIT_U).plain_english, LB_DEPOSIT_U)
         acc.req("Permitted hauler or self-haul (UNVERIFIED)", core.rule(LB_HAULER_U).plain_english, LB_HAULER_U)
         acc.req("Refund documents (UNVERIFIED)", core.rule(LB_DOCS_U).plain_english, LB_DOCS_U)
-        if value is not None:
+        if value is not None and ptype in _PT:
             pc, cap, mn = (P(LB_DEPOSIT_U, "deposit_percent_of_project_value"), P(LB_DEPOSIT_U, "deposit_cap_usd"),
                            P(LB_DEPOSIT_U, "deposit_min_usd"))
             res.city_fee_usd = _money(max(mn, min(value * pc / 100, cap)))
@@ -1963,20 +2208,28 @@ def san_diego_right_of_way_fees(blocks=0, weeks=None, extension_requests=None, m
                                 pay_stations_removed=0, dumpster_weeks=None, storage_container_days=None,
                                 noise_permit_applications=0) -> RowFeesResult:
     """IB 177 / IB 718 fee estimate for San Diego street work and bins, line by line."""
-    nb = int(_num("blocks", blocks, lo=0, hi=500, integer=True) or 0)
-    wk = _num("weeks", weeks, lo=0, hi=520)
-    er = _num("extension_requests", extension_requests, lo=0, hi=100, integer=True)
-    mods = int(_num("modifications", modifications, lo=0, hi=100, integer=True) or 0)
-    sheets = int(_num("modification_new_sheets", modification_new_sheets, lo=0, hi=100, integer=True) or 0)
-    spaces = int(_num("metered_spaces", metered_spaces, lo=0, hi=1000, integer=True) or 0)
-    mdays = int(_num("meter_days", meter_days, lo=0, hi=3650, integer=True) or 0)
-    posts = int(_num("meter_posts_removed", meter_posts_removed, lo=0, hi=1000, integer=True) or 0)
-    stations = int(_num("pay_stations_removed", pay_stations_removed, lo=0, hi=1000, integer=True) or 0)
-    dweeks = _num("dumpster_weeks", dumpster_weeks, lo=0, hi=520)
-    cdays = _num("storage_container_days", storage_container_days, lo=0, hi=3650)
-    npa = int(_num("noise_permit_applications", noise_permit_applications, lo=0, hi=100, integer=True) or 0)
+    nb = int(_num("blocks", blocks, lo=0, hi=500, integer=True, units=U_BLOCKS) or 0)
+    wk = _num("weeks", weeks, lo=0, hi=520, units=U_WEEKS)
+    er = _num("extension_requests", extension_requests, lo=0, hi=100, integer=True,
+              units=("requests", "request", "extensions", "extension"))
+    mods = int(_num("modifications", modifications, lo=0, hi=100, integer=True,
+                    units=("modifications", "modification", "mods")) or 0)
+    sheets = int(_num("modification_new_sheets", modification_new_sheets, lo=0, hi=100, integer=True,
+                      units=("sheets", "sheet", "new sheets")) or 0)
+    spaces = int(_num("metered_spaces", metered_spaces, lo=0, hi=1000, integer=True,
+                      units=("spaces", "space", "metered spaces", "meters", "meter")) or 0)
+    mdays = int(_num("meter_days", meter_days, lo=0, hi=3650, integer=True, units=U_DAYS) or 0)
+    posts = int(_num("meter_posts_removed", meter_posts_removed, lo=0, hi=1000, integer=True,
+                     units=("posts", "post")) or 0)
+    stations = int(_num("pay_stations_removed", pay_stations_removed, lo=0, hi=1000, integer=True,
+                        units=("stations", "station", "pay stations")) or 0)
+    dweeks = _num("dumpster_weeks", dumpster_weeks, lo=0, hi=520, units=U_WEEKS)
+    cdays = _num("storage_container_days", storage_container_days, lo=0, hi=3650, units=U_DAYS)
+    npa = int(_num("noise_permit_applications", noise_permit_applications, lo=0, hi=100, integer=True,
+                   units=("applications", "application", "permits", "permit")) or 0)
     if nb and not wk:
-        raise ValueError("weeks is required with blocks: how many weeks the traffic control will be in place")
+        raise ValueError("weeks is required with blocks (more than 0): how many weeks the traffic control will be in "
+                         "place")
     if (sheets or mods or er) and not nb:
         raise ValueError("extension_requests, modifications and modification_new_sheets need blocks (a Traffic "
                          "Control Permit)")
@@ -2038,7 +2291,7 @@ def san_diego_right_of_way_fees(blocks=0, weeks=None, extension_requests=None, m
 # ================================================================ MCP
 RULE_IDS = tuple(dict.fromkeys(v for k, v in list(globals().items())
                                if k.isupper() and isinstance(v, str) and (v.startswith("local-") or
-                                                                         v in (CALGREEN, USA811, NESHAP))
+                                                                         v in OTHER_PACK_RULES)
                                and v not in NOT_USED))
 
 
@@ -2069,10 +2322,11 @@ def _tool_docs() -> dict:
             "dumpster or storage container in the street, night/Sunday/holiday work (noise permit), trenching (811, "
             "moratorium streets), traffic signals, survey monuments, Los Angeles hillside import/export over "
             f"{_n(P(LA_HAUL_HEARING, 'trigger_cubic_yards_over'))} cy (BBSC haul route hearing, fee computed), and "
-            f"demolition (Los Angeles {P(LA_DEMO_45, 'building_age_years_over')}-year notice, placard, C-21/A, NESHAP "
-            "10 working days). Give start_date to get the due dates; blocks + weeks_in_street price the San Diego "
-            "TCP. Returns requirements, sorted deadlines with days left, fees with the math, a next step and "
-            "citations."),
+            f"demolition (Los Angeles {P(LA_DEMO_45, 'building_age_years_over')}-year notice, placard, C-21/A; in every "
+            f"city the asbestos survey and the {P(NESHAP, 'lead_time_working_days')}-working-day demolition notice to "
+            "the air district, with the federal NESHAP small-residential exclusion when building_dwelling_units is "
+            "given). Give start_date to get the due dates; blocks + weeks_in_street price the San Diego TCP. Returns "
+            "requirements, sorted deadlines with days left, fees with the math, a next step and citations."),
         "debris": (
             "Construction & demolition (C&D) debris plan for a California project. San Diego: refundable deposit "
             f"({_usd(dep['residential_new_construction_nonresidential_alterations_demolition']['usd_per_sq_ft'])}/sq ft "
@@ -2117,7 +2371,8 @@ def register(mcp) -> None:
             "in the street, sidewalk or alley under traffic control) or bin_service (dumpster swap / refuse pickup, "
             "San Diego)"))] = "construction",
         hcr_district: Annotated[bool, Field(description=(
-            "Los Angeles only: the site is in a Hillside Construction Regulation (HCR) district"))] = False,
+            "Los Angeles only: a single-family residential project in a Hillside Construction Regulation (HCR) "
+            "district (LADBS applies the stricter HCR hours to those projects)"))] = False,
         residential_area: Annotated[bool, Field(description=(
             "San Diego bin_service: the site is in a residential area"))] = True,
         is_holiday: Annotated[Optional[bool], Field(description=(
@@ -2154,22 +2409,32 @@ def register(mcp) -> None:
             "A vertical control survey monument will be disturbed or destroyed (San Diego)"))] = False,
         private_improvement_stays_in_row: Annotated[bool, Field(description=(
             "A privately owned or maintained improvement will remain in the right-of-way (San Diego EMRA)"))] = False,
-        earthwork_cubic_yards: Annotated[Optional[float], Field(**nn, description=(
+        earthwork_cubic_yards: Annotated[Optional[float], Field(**nn, le=MAX_CY, description=(
             "Earth imported to or exported from the site, cubic yards"))] = None,
+        grading_cubic_yards: Annotated[Optional[float], Field(**nn, le=MAX_CY, description=(
+            "Los Angeles: total grading on the site (cut + fill), cubic yards; can trigger the Hillside Grading Area "
+            "neighbor notice even without import/export"))] = None,
         hillside_grading_area: Annotated[bool, Field(description=(
             "Los Angeles: the site is in a designated Hillside Grading Area (ZIMAS)"))] = False,
         eo1_wildfire_rebuild: Annotated[bool, Field(description=(
             "Los Angeles: an Emergency Executive Order No. 1 wildfire-rebuild project"))] = False,
         hcr_district: Annotated[bool, Field(description=(
-            "Los Angeles: the site is in a Hillside Construction Regulation (HCR) district"))] = False,
+            "Los Angeles: a single-family residential project in a Hillside Construction Regulation (HCR) "
+            "district"))] = False,
         demolition: Annotated[bool, Field(description="The job includes demolishing a building")] = False,
-        building_age_years: Annotated[Optional[float], Field(**nn, description=(
-            "Age of the building to be demolished, years (Los Angeles 45-year notice)"))] = None,
-        contractor_license_classes: Annotated[Optional[list[str]], Field(description=(
-            "Your CSLB classes, e.g. ['B', 'C-21'] (Los Angeles demolition permit eligibility)"))] = None,
+        building_age_years: Annotated[Optional[float], Field(**nn, le=1000, description=(
+            f"Age of the building to be demolished, years (Los Angeles "
+            f"{P(LA_DEMO_45, 'building_age_years_over')}-year notice)"))] = None,
+        building_dwelling_units: Annotated[Optional[int], Field(ge=0, le=100_000, description=(
+            "Dwelling units in the building to be demolished; 0 for a non-residential building. Federal asbestos "
+            f"NESHAP excludes residential buildings with {P(NESHAP_FAC, 'excluded_residential_max_units')} or fewer "
+            "units (the air district's own rule still applies)"))] = None,
+        contractor_license_classes: Annotated[Optional[Union[list[str], str]], Field(description=(
+            "Your CSLB classes, e.g. ['B', 'C-21'] or 'B, C-21' (Los Angeles demolition permit eligibility)"))]
+        = None,
         blocks: Annotated[Optional[int], Field(ge=0, le=500, description=(
             "San Diego: city blocks under traffic control (prices the TCP)"))] = None,
-        weeks_in_street: Annotated[Optional[float], Field(**nn, description=(
+        weeks_in_street: Annotated[Optional[float], Field(**nn, le=520, description=(
             "Weeks the traffic control or bin stays in the street"))] = None,
         as_of: Annotated[Optional[str], Field(description=date_desc)] = None,
     ) -> JobsiteRequirementsResult:
@@ -2177,7 +2442,8 @@ def register(mcp) -> None:
             city, start_date, work_in_public_right_of_way, builds_in_right_of_way, uses_street_for_bin, bin_type,
             night_sunday_or_holiday_work, trenching_in_street, affects_traffic_signals, disturbs_survey_monument,
             private_improvement_stays_in_row, earthwork_cubic_yards, hillside_grading_area, eo1_wildfire_rebuild,
-            hcr_district, demolition, building_age_years, contractor_license_classes, blocks, weeks_in_street, as_of)
+            hcr_district, demolition, building_age_years, contractor_license_classes, blocks, weeks_in_street, as_of,
+            building_dwelling_units, grading_cubic_yards)
 
     @mcp.tool(name="construction_debris_plan", annotations=ro, description=docs["debris"])
     def _construction_debris_plan(
@@ -2186,11 +2452,11 @@ def register(mcp) -> None:
             "residential_new_construction, nonresidential_new_construction, residential_alteration, "
             "nonresidential_alteration, hotel_alteration, demolition, or a San Diego exempt item (roofing, fence, "
             "deck, window, electric-only ...); plain words like 'commercial TI' or 'new home' work"))],
-        square_feet: Annotated[Optional[float], Field(**nn, description="Project area, sq ft (San Diego deposit)")]
-        = None,
-        total_debris_tons: Annotated[Optional[float], Field(**nn, description="All C&D debris generated, tons")]
-        = None,
-        diverted_tons: Annotated[Optional[float], Field(**nn, description=(
+        square_feet: Annotated[Optional[float], Field(**nn, le=10_000_000, description=(
+            "Project area, sq ft (San Diego deposit)"))] = None,
+        total_debris_tons: Annotated[Optional[float], Field(gt=0, le=MAX_TONS, allow_inf_nan=False, description=(
+            "All C&D debris generated, US (short) tons"))] = None,
+        diverted_tons: Annotated[Optional[float], Field(**nn, le=MAX_TONS, description=(
             "Tons recycled, reused or donated with receipts"))] = None,
         final_inspection_date: Annotated[Optional[str], Field(description="ISO date final inspection was passed")]
         = None,
@@ -2198,7 +2464,7 @@ def register(mcp) -> None:
         hauling: Annotated[str, Field(description="'hauler' (default) or 'self-haul'")] = "hauler",
         debris_generated_in_city: Annotated[bool, Field(description=(
             "San Diego: debris generated inside the City (Miramar City-waste rate)"))] = True,
-        project_value_usd: Annotated[Optional[float], Field(**nn, description=(
+        project_value_usd: Annotated[Optional[float], Field(**nn, le=MAX_USD, description=(
             "Project value/valuation, USD (Long Beach deposit, Sacramento fee, San Jose trigger)"))] = None,
         as_of: Annotated[Optional[str], Field(description=date_desc)] = None,
     ) -> DebrisPlanResult:
@@ -2209,7 +2475,8 @@ def register(mcp) -> None:
     @mcp.tool(name="san_diego_right_of_way_fees", annotations=ro, description=docs["fees"])
     def _san_diego_right_of_way_fees(
         blocks: Annotated[int, Field(ge=0, le=500, description="City blocks under traffic control")] = 0,
-        weeks: Annotated[Optional[float], Field(**nn, description="Weeks of traffic control in total")] = None,
+        weeks: Annotated[Optional[float], Field(**nn, le=520, description="Weeks of traffic control in total")]
+        = None,
         extension_requests: Annotated[Optional[int], Field(ge=0, le=100, description=(
             "Extension requests you will file (default: the fewest that cover the weeks)"))] = None,
         modifications: Annotated[int, Field(ge=0, le=100, description="Modifications to the approved TCP")] = 0,
@@ -2220,9 +2487,9 @@ def register(mcp) -> None:
         meter_days: Annotated[int, Field(ge=0, le=3650, description="Days those spaces are out of use")] = 0,
         meter_posts_removed: Annotated[int, Field(ge=0, le=1000, description="Meter head posts removed")] = 0,
         pay_stations_removed: Annotated[int, Field(ge=0, le=1000, description="Pay stations removed")] = 0,
-        dumpster_weeks: Annotated[Optional[float], Field(**nn, description="Weeks a dumpster sits in the street")]
-        = None,
-        storage_container_days: Annotated[Optional[float], Field(**nn, description=(
+        dumpster_weeks: Annotated[Optional[float], Field(**nn, le=520, description=(
+            "Weeks a dumpster sits in the street"))] = None,
+        storage_container_days: Annotated[Optional[float], Field(**nn, le=3650, description=(
             "Days a storage container (pod) sits in the street"))] = None,
         noise_permit_applications: Annotated[int, Field(ge=0, le=100, description=(
             "Construction Noise Permit applications (each extension is a new one)"))] = 0,

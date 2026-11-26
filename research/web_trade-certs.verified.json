@@ -1179,19 +1179,20 @@
         "related_values_ug_per_m3": {
           "cal_osha_pel_8hr": 10,
           "cal_osha_action_level_8hr": 2
-        }
+        },
+        "calosha_training_program_trigger": "exposed at or above the action level on any day (8 CCR 1532.1(l)(1)(C)1.)"
       },
       "applies_to": "Construction employers doing lead-related construction work in residential or public buildings",
-      "citation": "8 CCR 1532.1(l)(3)",
+      "citation": "8 CCR 1532.1(l)(3); (l)(1)(C)",
       "source_location": "https://www.dir.ca.gov/title8/1532_1.html (subsection (l)(3) 'Certification of training for residential and public buildings')",
       "verbatim_quote": "The employer shall ensure that all employees and supervisors who are engaged in lead-related construction work as defined in Title 17, California Code of Regulations, section 35040, and have been shown to be exposed to lead at or above 50 µg/m3 as an 8-hour TWA, meet the training requirements of this section, are trained by an accredited training provider and are certified by the California Department of Public Health (CDPH).",
       "effective": "",
       "read_from_primary_text": true,
-      "notes": "CDPH's own pages and 17 CCR 35001 et seq. could not be fetched (cdph.ca.gov and govt.westlaw.com blocked), so the CDPH certificate categories (Inspector/Assessor, Project Monitor, Sampling Technician, Supervisor, Worker), fees, renewal terms and exam rules are not included; see sources_blocked. DOSH fact sheet (Lead in Construction) restates this rule. The (l)(3) certification duty predates the 2025 PEL/action-level amendments; its start date was not determined.",
+      "notes": "CDPH's own pages and 17 CCR 35001 et seq. could not be fetched (cdph.ca.gov and govt.westlaw.com blocked), so the CDPH certificate categories (Inspector/Assessor, Project Monitor, Sampling Technician, Supervisor, Worker), fees, renewal terms and exam rules are not included; see sources_blocked. DOSH fact sheet (Lead in Construction) restates this rule. The (l)(3) certification duty predates the 2025 PEL/action-level amendments; its start date was not determined. (l)(1)(C): the training program in (l)(2) is required '1. For employees who are exposed to lead at or above the action level on any day'.",
       "verification": {
-        "status": "confirmed",
-        "checked_against": "8 CCR 1532.1 https://www.dir.ca.gov/title8/1532_1.html (re-fetched 2026-11-25; history item 23: amendment filed 4-8-2024, operative 1-1-2025) subsections (l)(3), (b) 'Action level' (2 µg/m3) and (c)(1) PEL (10 µg/m3); Cal/OSHA Occupational Lead Exposure Prevention - Laws and Regulations https://www.dir.ca.gov/dosh/Lead/Exposure-Prevention-Laws-and-Regs.html (April 2025, re-fetched 2026-11-25) (restates PEL 10 and action level 2). The DOSH Lead in Construction fact sheet named in notes was not re-fetched.",
-        "correction": ""
+        "status": "corrected",
+        "checked_against": "8 CCR 1532.1 https://www.dir.ca.gov/title8/1532_1.html (re-fetched 2026-11-25) subsections (b) Action level, (c)(1), (l)(1)(C), (l)(3)",
+        "correction": "2026-11-25 second pass: added calosha_training_program_trigger from (l)(1)(C)1. ('at or above the action level on any day'; the module had said 'above')."
       }
     },
     {
@@ -1392,6 +1393,73 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "40 CFR 745.90(a)(1), (a)(4) via eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?section=745.90 (issue date 2026-11-20; Title 40 up to date as of 2026-11-23; re-fetched 2026-11-25; the www.ecfr.gov/current/ pages in source_location are refused by the network proxy, the API returns the same regulatory text); CITA lists 81 FR 7995, Feb. 17, 2016; 40 CFR 745.81(a)(3) via eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?section=745.81 (issue date 2026-11-20; Title 40 up to date as of 2026-11-23; re-fetched 2026-11-25; the www.ecfr.gov/current/ pages in source_location are refused by the network proxy, the API returns the same regulatory text) (April 22, 2010). Authorized-state status for California not re-verified (epa.gov refused by the proxy).",
+        "correction": ""
+      }
+    },
+    {
+      "id": "cert-rrp-minor-repair-includes-trade-work",
+      "title": "Electrical, plumbing and HVAC work in pre-1978 housing is an RRP renovation above 6 / 20 sq ft",
+      "plain_english": "EPA's minor repair and maintenance exclusion names minor HVAC, electrical and plumbing work: it is exempt only while it disturbs 6 sq ft or less of painted surface per room inside or 20 sq ft or less outside, with no prohibited practices, window replacement or demolition of painted surfaces. When painted components are removed, the whole removed area counts. Trade work that disturbs more (for example cutting into painted walls or ceilings to rewire) is a renovation covered by the RRP rule.",
+      "category": "threshold",
+      "parameters": {
+        "trades_named": [
+          "minor heating, ventilation or air conditioning work",
+          "electrical work",
+          "plumbing"
+        ],
+        "interior_max_sqft_per_room": 6,
+        "exterior_max_sqft": 20,
+        "removed_component_counts_entire_area": true,
+        "renovation_examples": [
+          "removal of building components (e.g., walls, ceilings, plumbing, windows)",
+          "cutting holes in painted surfaces"
+        ]
+      },
+      "applies_to": "Electrical, plumbing and HVAC contractors working for compensation in pre-1978 target housing and child-occupied facilities",
+      "citation": "40 CFR 745.83 (Minor repair and maintenance activities; Renovation)",
+      "source_location": "https://www.ecfr.gov/current/title-40/section-745.83",
+      "verbatim_quote": "are activities, including minor heating, ventilation or air conditioning work, electrical work, and plumbing, that disrupt 6 square feet or less of painted surface per room for interior activities or 20 square feet or less of painted surface for exterior activities",
+      "effective": "2010-04-22",
+      "read_from_primary_text": true,
+      "notes": "Same definition: 'When removing painted components, or portions of painted components, the entire surface area removed is the amount of painted surface disturbed.' 'Renovation' includes 'the removal of building components (e.g., walls, ceilings, plumbing, windows)' and weatherization such as 'cutting holes in painted surfaces'. Added in the 2026-11-25 second-pass review: the builder never flagged RRP for electrical work in pre-1978 housing.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "40 CFR 745.83 via eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?part=745&section=745.83 (fetched 2026-11-25) definitions 'Minor repair and maintenance activities' and 'Renovation'; quote string-matched",
+        "correction": ""
+      }
+    },
+    {
+      "id": "cert-rrp-target-housing-exclusions-defined",
+      "title": "Housing for the elderly or disabled and 0-bedroom dwellings are not target housing unless a child under 6 lives there",
+      "plain_english": "Target housing is housing built before 1978, except housing for the elderly or persons with disabilities and 0-bedroom dwellings, unless a child under 6 lives or is expected to live there. Housing for the elderly means retirement communities or similar housing reserved for households with at least one person 62 or older at initial occupancy. A 0-bedroom dwelling is one where the living area is not separated from the sleeping area: efficiencies, studio apartments, dormitories, barracks and rented rooms.",
+      "category": "definition",
+      "parameters": {
+        "built_before_year": 1978,
+        "excluded_unless_child_under_6_resides": [
+          "housing for the elderly",
+          "housing for persons with disabilities",
+          "0-bedroom dwellings"
+        ],
+        "child_age_lt": 6,
+        "elderly_housing_min_age_at_initial_occupancy": 62,
+        "zero_bedroom_examples": [
+          "efficiencies",
+          "studio apartments",
+          "dormitory housing",
+          "military barracks",
+          "rentals of individual rooms in residential dwellings"
+        ]
+      },
+      "applies_to": "Firms renovating senior housing, housing for persons with disabilities, studios, dormitories and rented rooms built before 1978",
+      "citation": "40 CFR 745.103 (Target housing; Housing for the elderly; 0-bedroom dwelling); 745.83",
+      "source_location": "https://www.ecfr.gov/current/title-40/section-745.103",
+      "verbatim_quote": "means any housing constructed prior to 1978, except housing for the elderly or persons with disabilities or any 0-bedroom dwelling (unless any child who is less than 6 years of age resides or is expected to reside in such housing).",
+      "effective": "",
+      "read_from_primary_text": true,
+      "notes": "745.103: 'Housing for the elderly means retirement communities or similar types of housing reserved for households composed of one or more persons 62 years of age or more at the time of initial occupancy.' '0-bedroom dwelling means any residential dwelling in which the living area is not separated from the sleeping area. The term includes efficiencies, studio apartments, dormitory housing, military barracks, and rentals of individual rooms in residential dwellings.' Such a building can still contain a child-occupied facility (745.83). Added in the 2026-11-25 second-pass review: the builder treated senior housing as target housing (RRP 'required').",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "40 CFR 745.103 via eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?part=745&section=745.103 (fetched 2026-11-25) definitions 'Target housing', 'Housing for the elderly', '0-bedroom dwelling'; quote string-matched",
         "correction": ""
       }
     },
@@ -1896,19 +1964,23 @@
         ],
         "certificate_states_equipment_type": true,
         "valid_for_type_or_type_and_capacity_or_higher_capacity_of_type": true,
-        "certifier_accreditation_review_years": 3
+        "certifier_accreditation_review_years": 3,
+        "option1_certificate_max_validity_years": 5,
+        "recertify_every_years": 5,
+        "recertify_hands_on_waiver_hours": 1000,
+        "employer_provides_at_no_cost_to_employee": true
       },
       "applies_to": "Construction crane operators and their employers",
-      "citation": "8 CCR 5006.2(d)(1)(A), (d)(2), (g)",
+      "citation": "8 CCR 5006.2(c)(1), (d)(1)-(3), (g)",
       "source_location": "https://www.dir.ca.gov/title8/5006_2.html (subsections (d) and (g))",
       "verbatim_quote": "(1) Pass a physical examination conducted by a physician or other licensed health care professional (e.g. physician's assistant or nurse practitioner) which at a minimum shall include the examination criteria specified in the American Society of Mechanical Engineers (ASME) B30.5-2000 standard, Chapter 5-3.1.2(a)(1-5, 7, 8) or the U.S. Department of Transportation (US DOT) physical examination requirements contained in 49 CFR Sections 391.41 through 391.49.",
       "effective": "2022-07-26",
       "read_from_primary_text": true,
-      "notes": "(d)(1)(A): an operator is qualified for the certified type, or type and capacity, or higher-capacity equipment of that type. Recertification every 5 years also requires the physical, substance abuse and written exams.",
+      "notes": "(d)(1)(A): an operator is qualified for the certified type, or type and capacity, or higher-capacity equipment of that type. Recertification every 5 years also requires the physical, substance abuse and written exams. (c)(1): 'the employer shall provide the certification or licensure at no cost to employees.' (d)(1): 'Certificates shall be valid for a maximum of five (5) years.'",
       "verification": {
-        "status": "confirmed",
-        "checked_against": "8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (re-fetched 2026-11-25; new section filed and operative 7-26-2022) subsections (d)(1)(A), (d)(2)(A), (d)(3), (g)(1)-(4)",
-        "correction": ""
+        "status": "corrected",
+        "checked_against": "8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (re-fetched 2026-11-25; new section filed and operative 7-26-2022) subsections (c)(1), (d)(1)(A)-(B), (d)(2)(A), (d)(3), (g)(1)-(4)",
+        "correction": "2026-11-25 second pass: added option1_certificate_max_validity_years 5 ((d)(1)), recertify_every_years 5 and recertify_hands_on_waiver_hours 1000 ((d)(3)), and employer_provides_at_no_cost_to_employee ((c)(1)); citation widened."
       }
     },
     {
@@ -1945,19 +2017,31 @@
         "trainer_is_employee_or_agent": true,
         "trainer_other_duties_allowed": false,
         "monitoring": "continuous, on site",
-        "communication": "direct line of sight plus verbal or hand signals (direct communication for tower cranes)"
+        "communication": "direct line of sight plus verbal or hand signals (direct communication for tower cranes)",
+        "trainee_prohibited_unless_certified": [
+          "any part of the equipment, load line or load could get within 20 ft of a power line up to 350 kV, or within 50 ft of a power line over 350 kV",
+          "hoisting personnel",
+          "multiple-equipment lifts",
+          "over a shaft, cofferdam, or in a tank farm",
+          "multiple-lift rigging operations (unless the trainer determines the trainee's skills are sufficient)"
+        ],
+        "power_line_clearance_ft": {
+          "up_to_350_kv": 20,
+          "over_350_kv": 50
+        },
+        "multiple_lift_rigging_allowed_if_trainer_determines_skills_sufficient": true
       },
       "applies_to": "Construction employers training crane operators",
-      "citation": "8 CCR 5006.2(b)(2), (b)(4)",
+      "citation": "8 CCR 5006.2(b)(2)-(b)(4)",
       "source_location": "https://www.dir.ca.gov/title8/5006_2.html (subsection (b) Operator training)",
       "verbatim_quote": "When performing direct supervision, the supervising operator shall have no other duties other than to observe the operation of the crane by the trainee.",
       "effective": "2022-07-26",
       "read_from_primary_text": true,
-      "notes": "Trainee task restrictions (power line distances, personnel hoisting, multi-crane lifts) are already in rulebook rule crane-operator-certification-5-years. Employer must also retrain when performance shows a need (b)(5).",
+      "notes": "Trainee task restrictions (power line distances, personnel hoisting, multi-crane lifts) are already in rulebook rule crane-operator-certification-5-years. Employer must also retrain when performance shows a need (b)(5). (b)(3)(A)-(E) task restrictions were added to this rule in the 2026-11-25 second-pass review (the rulebook rule crane-operator-certification-5-years that carried part of them is unchecked).",
       "verification": {
-        "status": "confirmed",
-        "checked_against": "8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (re-fetched 2026-11-25; new section filed and operative 7-26-2022) subsections (b)(2), (b)(4)(A)1.-3., (b)(4)(B), (b)(5)",
-        "correction": ""
+        "status": "corrected",
+        "checked_against": "8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (re-fetched 2026-11-25; new section filed and operative 7-26-2022) subsections (b)(2), (b)(3)(A)-(E), (b)(4)(A)1.-3., (b)(4)(B), (b)(5)",
+        "correction": "2026-11-25 second pass: added trainee_prohibited_unless_certified, power_line_clearance_ft and the multiple-lift rigging allowance from 5006.2(b)(3)(A)-(E); citation widened to (b)(2)-(b)(4)."
       }
     },
     {
@@ -1983,6 +2067,40 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "8 CCR 5006.1 https://www.dir.ca.gov/title8/5006_1.html (re-fetched 2026-11-25; amended operative 7-26-2022) subsections (a), (b), (d), Exception (1) (boom under 25 ft or capacity under 15,000 lb); 8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (re-fetched 2026-11-25; new section filed and operative 7-26-2022) subsection (h)",
+        "correction": ""
+      }
+    },
+    {
+      "id": "cert-crane-5006-2-exceptions",
+      "title": "Crane operator certification does not apply to derricks, sideboom cranes, 2,000 lb equipment, small delivery knuckle-booms or digger derricks",
+      "plain_english": "8 CCR 5006.2 (operator training, certification and evaluation in construction) does not apply to operators of derricks and sideboom cranes, or of equipment rated to hoist 2,000 pounds or less; the training and qualification rules of 8 CCR 5006 still apply to them. Certification is also not required for articulating/knuckle-boom cranes with a boom under 25 feet or a rated capacity under 15,000 pounds when they deliver material to a construction site, for electric line trucks (digger derricks) regulated by the High Voltage Electrical Safety Orders (but not truck cranes built to ASME B30.5), or for marine terminal operations under Article 14.",
+      "category": "threshold",
+      "parameters": {
+        "exempt_equipment": [
+          "derricks",
+          "sideboom cranes"
+        ],
+        "exempt_if_rated_capacity_lb_lte": 2000,
+        "section_5006_training_still_applies": true,
+        "delivery_knuckle_boom_exempt_if": {
+          "boom_ft_lt": 25,
+          "or_capacity_lb_lt": 15000
+        },
+        "delivery_knuckle_boom_condition": "used to deliver material to a construction site",
+        "digger_derricks_exempt": true,
+        "digger_derrick_exception_excludes": "mobile truck cranes designed and built to ASME B30.5",
+        "marine_terminal_operations_exempt": true
+      },
+      "applies_to": "Construction employers whose employees operate cranes and derricks (Group 13)",
+      "citation": "8 CCR 5006.2, Exceptions (1)-(4)",
+      "source_location": "https://www.dir.ca.gov/title8/5006_2.html (Exceptions to Section 5006.2)",
+      "verbatim_quote": "(1) Operators of derricks and sideboom cranes, or equipment with a maximum manufacturer-rated hoisting/lifting capacity of 2,000 pounds or less are not required to comply with this section.",
+      "effective": "2022-07-26",
+      "read_from_primary_text": true,
+      "notes": "Exception (2): 'Operator qualification or certification under this section is not required for operation of articulating/knuckle-boom cranes having a boom length of less than 25 feet or a maximum rated load capacity of less than 15,000 pounds when used to deliver material to a construction site.' Exception (1) note: 'The training and qualification requirements of Section 5006 will continue to apply in those cases.' Exception (3): electric line trucks (digger derrick trucks) as defined in ESO 2700 and regulated by HVESO 2940.7, not ASME B30.5 truck cranes. Exception (4): marine terminal operations under Article 14. Added in the 2026-11-25 second-pass legal review: the builder's certifications_required said every derrick and knuckle-boom operator needed certification.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (fetched 2026-11-25; new section filed and operative 7-26-2022) Exceptions to Section 5006.2 (1)-(4); quote string-matched",
         "correction": ""
       }
     },
@@ -2224,21 +2342,28 @@
           "rack_and_pinion_elevator": 225,
           "vrc": 225,
           "witnessing_periodic_tests": 225,
-          "automatic_guided_vehicle": 1800
+          "automatic_guided_vehicle": 1800,
+          "material_lift_automatic_transfer": 225,
+          "hand_powered_man_platform": 225,
+          "screw_type_elevator": 225,
+          "elevator_installed_by_variance": 225,
+          "automatic_transfer_dumbwaiter_elevator": 225,
+          "special_purpose_personnel_elevator": 225
         },
-        "max_charged_inspections_per_permit_year": 1
+        "max_charged_inspections_per_permit_year": 1,
+        "permit_processing_and_mailing_fee_max_usd": 15
       },
       "applies_to": "Building owners, developers and general contractors delivering buildings with elevators, escalators, lifts or dumbwaiters",
-      "citation": "8 CCR 344.30(a), (f)",
+      "citation": "8 CCR 344.30(a), (f), (g)",
       "source_location": "https://www.dir.ca.gov/title8/344_30.html (subsection (a))",
       "verbatim_quote": "(a) Reinspection (periodic inspection) and witnessing of periodic tests of an existing installation shall be:",
       "effective": "2011-04-18",
       "read_from_primary_text": true,
-      "notes": "(f): no more than one charged inspection per permit year except for non-compliance follow-ups, periodic testing or alterations.",
+      "notes": "(f): no more than one charged inspection per permit year except for non-compliance follow-ups, periodic testing or alterations. (a)(4), (6), (16), (19), (20), (23) and (g) added 2026-11-25: '(g) A fee will be charged for processing and mailing a permit. The fee shall reflect the actual cost of processing and mailing up to a maximum of $15.00.'",
       "verification": {
-        "status": "confirmed",
-        "checked_against": "8 CCR 344.30 https://www.dir.ca.gov/title8/344_30.html (re-fetched 2026-11-25; history 22-23: 12-8-2010 emergency made permanent by Certificate of Compliance filed 4-18-2011; 2017 emergency amendment reinstated to prior text) subsections (a)(1)-(27), (f)",
-        "correction": ""
+        "status": "corrected",
+        "checked_against": "8 CCR 344.30 https://www.dir.ca.gov/title8/344_30.html (re-fetched 2026-11-25) subsections (a)(1)-(27), (f), (g)",
+        "correction": "2026-11-25 second pass: usd_per_unit lacked 344.30(a)(4) material lifts with automatic transfer devices, (6) hand-powered man platforms, (16) screw type elevator, (19) elevator installed by variance, (20) automatic transfer devices and (23) special purpose personnel elevator (all $225); added them and the (g) permit processing and mailing fee (actual cost, at most $15)."
       }
     },
     {
@@ -2826,19 +2951,35 @@
           "construction and installation provisions",
           "automatic controls per 763(d) for automatically fired boilers",
           "controls maintained"
-        ]
+        ],
+        "definitions_8_ccr_753": {
+          "low_pressure_steam_max_psi_lte": 15,
+          "low_pressure_steam_applies_to": "steam pressure and steam safety valve setting",
+          "low_pressure_hot_water_max_psi_lte": 160,
+          "low_pressure_hot_water_max_temp_f_lte": 250,
+          "high_temperature_water_min_temp_f_gt": 212,
+          "high_temperature_water_if_psi_gt": 160,
+          "high_temperature_water_if_temp_f_gt": 250,
+          "power_boiler_steam_psi_gt": 15,
+          "miniature_limits_lte": {
+            "shell_inside_diameter_in": 16,
+            "gross_volume_cuft": 5,
+            "water_heating_surface_sqft": 20,
+            "mawp_psi": 100
+          }
+        }
       },
       "applies_to": "Mechanical and boiler contractors installing small boilers",
-      "citation": "8 CCR 771",
-      "source_location": "https://www.dir.ca.gov/title8/771.html",
+      "citation": "8 CCR 771; 753 (definitions)",
+      "source_location": "https://www.dir.ca.gov/title8/771.html; https://www.dir.ca.gov/title8/753.html",
       "verbatim_quote": "(a) The following boilers are not subject to annual inspection and do not require a permit to operate providing they comply with all of the provisions of subsection (b):",
       "effective": "",
       "read_from_primary_text": true,
-      "notes": "Limits from 771(a)(4)(A)-(E). DOSH may still require inspection (771(c)). Section last amended 1966.",
+      "notes": "Limits from 771(a)(4)(A)-(E). DOSH may still require inspection (771(c)). Section last amended 1966. 8 CCR 753: 'Low--pressure Boiler: A boiler which does not: Operate at steam pressure or with steam safety valve settings exceeding 15 psi (low--pressure steam boiler), or Operate at water pressure exceeding 160 psi or water temperatures exceeding 250° F (hot water heating boiler).' 'Power Boiler: Steam boiler operated at pressure exceeding 15 psi.' 'High Temperature Water Boiler: A fired or unfired pressure vessel used to heat water to temperatures above 212° F. At pressure exceeding 160 psi or to temperatures exceeding 250° F regardless of pressure.' Miniature: 16 in shell ID, 5 cu ft gross volume, 20 sq ft water heating surface, 100 psi MAWP.",
       "verification": {
-        "status": "confirmed",
-        "checked_against": "8 CCR 771 https://www.dir.ca.gov/title8/771.html (re-fetched 2026-11-25; amended 1966) subsections (a)(1)-(4)(A)-(E), (b), (c)",
-        "correction": ""
+        "status": "corrected",
+        "checked_against": "8 CCR 771 https://www.dir.ca.gov/title8/771.html (re-fetched 2026-11-25) subsections (a)-(c); 8 CCR 753 https://www.dir.ca.gov/title8/753.html (fetched 2026-11-25) definitions of Low-pressure, Power, High Temperature Water and Miniature Boiler",
+        "correction": "2026-11-25 second pass: added definitions_8_ccr_753 so the exemption can be applied from pressure and temperature (the builder guessed 'likely low-pressure' from steam pressure alone and ignored the safety valve setting)."
       }
     },
     {
@@ -3003,15 +3144,15 @@
   "verification_meta": {
     "verified_on": "2026-11-25",
     "method": "Independent re-verification of all 105 rules. Every source_location URL was fetched fresh on 2026-11-25: 57 DIR/CSLB pages and PDFs (Title 8 sections on www.dir.ca.gov, DLSE ECU pages and trainee guide, DOSH elevator and pressure vessel pages and forms, the Oct. 15, 2026 DOSH fee notice, Cal/OSHA lead pages, the 2022 CSLB Law Book and the Sept. 2-3, 2026 CSLB board packet), plus the ECU home, 8 CCR 291.3, ECU legislative-actions and DOSH emergency-fee rulemaking pages. The 12 eCFR sections (40 CFR 745.81-745.92, 745.227, 19.4) came from the eCFR versioner API, issue date 2026-11-20, because the www.ecfr.gov/current/ pages are refused by the proxy. HTML was converted with BeautifulSoup and PDFs with pdftotext. Every verbatim_quote was string-matched after whitespace, quote-mark, micro-sign, parenthesis-spacing and superscript (m3, ft2) normalization; all 105 match their own source_location. Each parameter value, threshold, date, citation and applies_to scope was then read against the text. Statuses: confirmed = the official source states the rule and every parameter; corrected = a parameter, citation, source_location or scope was changed (the rule carries the corrected values and the verification correction says what changed); unverifiable = the rule rests on statute text that could not be read (leginfo.legislature.ca.gov returns 403 bot protection and was not bypassed; www.cdph.ca.gov and www.gov.ca.gov are refused by the proxy), even where an agency summary matches; refuted = contradicted or absent, none found.",
-    "in_scope_rules_checked": 105,
+    "in_scope_rules_checked": 108,
     "out_of_scope_rules_unchanged": 0,
     "counts": {
-      "confirmed": 92,
-      "corrected": 10,
+      "confirmed": 90,
+      "corrected": 15,
       "unverifiable": 3,
       "refuted": 0
     },
-    "id_check": "All 105 ids start with 'cert-' and are unique. None collides with tradecomply/data/rulebook.json (2,094 rules) or with any rule id in another research/*.json pack, checked 2026-11-25. All categories are in the set already used by the rulebook.",
+    "id_check": "All 105 ids start with 'cert-' and are unique. None collides with tradecomply/data/rulebook.json (2,094 rules) or with any rule id in another research/*.json pack, checked 2026-11-25. All categories are in the set already used by the rulebook. 2026-11-25 second pass: the 3 added ids start with 'cert-' and do not collide with tradecomply/data/rulebook.json or any research pack.",
     "quote_check": "105 of 105 verbatim_quotes string-match the freshly fetched source text after normalization. Five needed the encoding/markup normalization only: three 1532.1 quotes (the page renders the 'l' in '(l)(3)' as a separate italic element and m3 as a superscript), the 344.30(l) quote (same 'l' markup) and the 745.227 action-level quote (ft2 superscript).",
     "producer_claims_checked": [
       "Claim: 105 rules, all ids 'cert-', no clashes. Confirmed.",
@@ -3058,6 +3199,7 @@
       "www.federalregister.gov",
       "www.law.cornell.edu",
       "www.ecfr.gov/current/ pages"
-    ]
+    ],
+    "second_pass_review": "2026-11-25 adversarial legal-accuracy review of tradecomply/trade_certifications.py: re-fetched 8 CCR 290.0, 290.1, 291.0-291.5, 292.0, 293.0, 294.0, 296.1-296.3, 344.1, 344.2, 344.20-344.22, 344.30, 461, 462, 470, 750, 753, 770, 771, 780, 1532.1, 1604.4, 1604.26, 1604.29, 3000, 3001, 5006.1, 5006.2, 5238 (www.dir.ca.gov), the DIR ECU FAQ, DOSH pressure vessel and elevator FAQ pages, DOSH CCCM forms, the CSLB 2022 Law Book (Labor Code 108.2, PDF pp. 919-921) and 40 CFR 745.82-745.92, 745.103, 745.227, 19.4 (eCFR versioner API, issue date 2026-11-20). Added 3 rules (cert-crane-5006-2-exceptions, cert-rrp-minor-repair-includes-trade-work, cert-rrp-target-housing-exclusions-defined) and corrected 5 (crane OIT restrictions, crane certificate validity and no-cost rule, boiler definitions, elevator periodic fees, lead training trigger). AB 1707 remains unverifiable: no official source reachable without bypassing bot protection shows its enactment."
   }
 }

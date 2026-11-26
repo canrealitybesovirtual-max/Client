@@ -27,9 +27,10 @@ spend when a hardship is granted above the valuation threshold) is used only whe
 the result is verified=False.
 
 Known gaps, stated in results instead of guessed: the CBC text itself was not readable (CBC values are the LADBS and
-San Diego restatements); CBC Table 11B-208.2 was not read (the federal Table 208.2 is used as the floor); the CBC
-"covered multifamily dwelling" unit count was not read; the valuation threshold is known only for the calendar years
-the rulebook lists (2026: $209,208); the CBC 11B-202.4 exceptions other than Exception 8 were not read.
+San Diego restatements; CBC Table 11B-208.2 comes from LADBS P/BC 2026-084 and is cross-checked against the federal
+Table 208.2); the CBC "covered multifamily dwelling" unit count was not read; the valuation threshold is known only
+for the calendar years the rulebook lists (2026: $209,208); the CBC 11B-202.4 exceptions other than Exception 8 were
+not read; CBC 11B-208.2.3 residential (public housing) parking is not computed.
 
 Not legal values (so not in the rulebook): the spellings below that map a user's words (work types, uses, cities,
 parking facility kinds, element names) onto the rules.
@@ -69,8 +70,15 @@ PK_FACILITY, PK_VAN6, PK_STALL = ("ada-cbc-11b-208-parking-per-facility", "ada-c
 PK_AISLE_MARK, PK_SIGN, PK_TOW = ("ada-cbc-11b-502-3-access-aisle-marking",
                                   "ada-cbc-11b-502-6-parking-signs-minimum-fine", "ada-cbc-11b-502-8-tow-away-sign")
 PK_VERT, PK_SURFACE = "ada-cbc-11b-502-5-vertical-clearance", "ada-cbc-11b-502-6-4-surface-isa"
+PK_TABLE, PK_TRUCK = "ada-cbc-11b-208-2-table", "ada-cbc-11b-208-1-exc1-bus-truck-delivery"
+PK_MEASURE, PK_SLOPE = "ada-cbc-11b-502-1-measure-from-centerline", "ada-cbc-11b-502-4-parking-surface-slope"
+PK_VERT80, PK_SIGN80 = ("ada-cbc-11b-502-5-existing-multistory-80-in",
+                        "ada-cbc-11b-502-6-sign-circulation-path-80-in")
+EVCS = "ada-cbc-11b-228-3-evcs-table"
+ENTR_ALL = "ada-cbc-11b-206-4-1-all-entrances-new-buildings"
 # CBC 11B public housing
 PH_UNITS, PH_DEF = "ada-cbc-11b-233-public-housing-units", "ada-cbc-public-housing-definition"
+PH_ALTER = "ada-cbc-11b-233-3-4-public-housing-alterations"
 # CBC 11A covered multifamily
 A_APPLY, A_MAINTAIN = "ada-cbc-11a-1101a-application", "ada-cbc-11a-1102a-2-maintain-as-built-standards"
 A_MULTI10, A_MULTI_ELEV = ("ada-cbc-11a-1102a-3-1-multistory-no-elevator-10-percent",
@@ -80,6 +88,7 @@ A_GROUND, A_PK, A_PK_DIM = ("ada-cbc-11a-1104a-ground-floor-units-adaptable", "a
 A_VAN8, A_DOORS, A_TEMP = ("ada-cbc-11a-1109a-8-6-van-1-in-8", "ada-cbc-11a-1126a-doors",
                            "ada-cbc-11a-1102a-6-temporary-restrictions")
 A_SITE, A_IMPRACT = "ada-cbc-11a-1110a-site-accessible-route", "ada-cbc-11a-1150a-site-impracticality"
+A_SIGNS = "ada-cbc-11a-1109a-8-8-parking-signs"
 PLAN_CHECK = "ada-local-plan-check-not-ada-fha-review"
 # CASp, Civil Code 1938, business license fee
 CASP, LEASE_STATUS, LEASE_STMT = ("ada-casp-definition-and-services", "ada-civ-1938-casp-status-in-lease",
@@ -103,7 +112,7 @@ F_BARRIER, F_BARRIER_NO_POT, F_PENALTY = ("ada-28cfr36-304-barrier-removal",
 # ADA Title II (28 CFR 35.151)
 T2_20, T2_SERIES, T2_PROGRAM = ("ada-28cfr35-151-title-ii-20-percent", "ada-28cfr35-151-title-ii-series-3-years",
                                 "ada-28cfr35-151b2-program-access-no-pot")
-T2_2010_DATE = "ada-28cfr35-151c-title-ii-2010-standards-date"
+T2_2010_DATE, T2_MINOR = "ada-28cfr35-151c-title-ii-2010-standards-date", "ada-28cfr35-151b4-minor-work-no-trigger"
 F_SAFE, T2_SAFE = "ada-28cfr36-403a2-1991-standards-safe-harbor", "ada-28cfr35-151-title-ii-safe-harbor"
 # 2010 ADA Standards (36 CFR part 1191)
 S_SITES, S_NO_REDUCE, S_RES_EXC = ("ada-2010-std-203-2-construction-sites-exempt",
@@ -132,7 +141,8 @@ RULE_IDS = (ALTERED, POT_REQ, POT_ELEMENTS, THRESHOLD, CAP20, ABOVE, ADJ_EXCL, L
             F_BARRIER, F_BARRIER_NO_POT, F_PENALTY, T2_20, T2_SERIES, T2_PROGRAM, T2_2010_DATE, F_SAFE, T2_SAFE,
             S_SITES, S_NO_REDUCE,
             S_RES_EXC, S_PK_TABLE, S_VAN, S_PK_DIM, S_ENTRANCES, S_STEEP, FHA_COVERED, FHA_FIRST_DEF, FHA_DATE,
-            FHA_ENTRANCE, FHA_COMMON, FHA_UNIT, FHA_SAFE, FHA_LOCAL, FHA_MODS, FHA_HUD, FHA_DOJ)
+            FHA_ENTRANCE, FHA_COMMON, FHA_UNIT, FHA_SAFE, FHA_LOCAL, FHA_MODS, FHA_HUD, FHA_DOJ,
+            PK_TABLE, PK_TRUCK, PK_MEASURE, PK_SLOPE, PK_VERT80, PK_SIGN80, EVCS, ENTR_ALL, PH_ALTER, A_SIGNS, T2_MINOR)
 
 EPS = 1e-9                      # float comparison slack, not a legal value
 
@@ -236,6 +246,9 @@ def _date(value, field: str, default: Optional[date] = None) -> date:
     try:
         if m:
             return date(int(m.group(3)), int(m.group(1)), int(m.group(2)))
+        # ISO date, optionally with a time ("2026-05-01T10:00"); anything else after the date is rejected
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}(?:[T ]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?", s):
+            raise ValueError
         return date.fromisoformat(s[:10])
     except ValueError:
         raise ValueError(f"{field} must be a date like 2026-11-25 (or 11/25/2026), got {value!r}") from None
@@ -259,6 +272,9 @@ def _num(name: str, value) -> Optional[float]:
     return v
 
 
+_USD_MAX = 100_000_000_000         # input sanity bound ($100 billion), not a legal value
+
+
 def _usd(name: str, value) -> Optional[float]:
     """Dollars from 150000, '$150,000', '150k', '1.2M'; None stays None."""
     if value is None or (isinstance(value, str) and not value.strip()):
@@ -277,6 +293,10 @@ def _usd(name: str, value) -> Optional[float]:
         raise ValueError(f"{name} must be a finite dollar amount, got {value!r}")
     if v < 0:
         raise ValueError(f"{name} cannot be negative, got {value!r}")
+    if v > _USD_MAX:
+        shown = _usd_s(v) if v < 1e15 else f"${v:.3g}"
+        raise ValueError(f"{name} {shown} is more than {_usd_s(_USD_MAX)}; check the number (cents typed as "
+                         "dollars, extra zeros)")
     return v
 
 
@@ -331,23 +351,52 @@ def _numtok(t: str) -> Optional[float]:
     return None
 
 
-def _length(name: str, value, unit: str = "in") -> Optional[float]:
-    """Inches from 32, '32 in', '32"', "2'-8\"", '2 ft 8 in', '3/4"', '1-1/2 in' or '9 ft'. Bare numbers are in `unit`
-    ('in' or 'ft'); None stays None."""
+_MM_PER_IN = 25.4                # unit conversion (exact), not a legal value
+
+
+def _bare_check(name: str, v: float, unit: str, bare_range: Optional[tuple]) -> None:
+    """A bare number far outside what the field could hold was probably given in the other unit: say so instead of
+    silently passing (108 'feet' of stall width, a 3 'inch' counter)."""
+    if bare_range is None:
+        return
+    lo, hi = bare_range
+    if (lo is not None and v < lo) or (hi is not None and v > hi):
+        other = "inches" if unit == "ft" else "feet"
+        raise ValueError(f"{name} {_n(v)} does not look like {'feet' if unit == 'ft' else 'inches'} (bare numbers "
+                         f"are {'feet' if unit == 'ft' else 'inches'} here); if you measured {other}, write the "
+                         f"unit, e.g. '{_n(v)} {'in' if unit == 'ft' else 'ft'}'")
+
+
+def _length(name: str, value, unit: str = "in", bare_range: Optional[tuple] = None) -> Optional[float]:
+    """Inches from 32, '32 in', '32 in.', '32"', "2'-8\"", '2 ft 8 in', '2ft8in', '3/4"', '1-1/2 in', '9 ft' or
+    metric ('813 mm', '81.3 cm', '2.5 m'). Bare numbers are in `unit` ('in' or 'ft'); a bare number outside
+    `bare_range` (in that unit) is rejected as probably the other unit. None stays None."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
-    bad = ValueError(f"{name} must be a length like 32, '32 in', '2\\'-8\"' or '9 ft', got {value!r}")
+    bad = ValueError(f"{name} must be a length like 32, '32 in', '2\\'-8\"', '9 ft' or '813 mm', got {value!r}")
     if isinstance(value, bool):
         raise bad
     if isinstance(value, (int, float)):
         v = float(value)
         if not math.isfinite(v) or v < 0:
             raise ValueError(f"{name} must be a length of 0 or more, got {value!r}")
+        _bare_check(name, v, unit, bare_range)
         return v * (12 if unit == "ft" else 1)
     s = str(value).strip().lower()
     for a, b in (("”", '"'), ("“", '"'), ("″", '"'), ("’", "'"), ("‘", "'"), ("′", "'")):
         s = s.replace(a, b)
     s = s.replace(",", "")
+    if s.startswith("-"):
+        raise ValueError(f"{name} must be a length of 0 or more, got {value!r}")
+    mm = re.fullmatch(r"(\d*\.?\d+)\s*(mm|millimet(?:er|re)s?|cm|centimet(?:er|re)s?|m|met(?:er|re)s?)\.?", s)
+    if mm:
+        u = mm.group(2)
+        factor = 1 if u.startswith(("mm", "milli")) else 10 if u.startswith(("cm", "centi")) else 1000
+        return float(mm.group(1)) * factor / _MM_PER_IN
+    s = re.sub(r"(\d)\s*([a-z])", r"\1 \2", s)                   # 2ft8in -> 2 ft8in
+    s = re.sub(r"([a-z])\s*(\d)", r"\1 \2", s)                   # ft8in -> ft 8in
+    s = re.sub(r"\b(inches|inch|ins|in)\.", "in", s)
+    s = re.sub(r"\b(feet|foot|ft)\.", "ft", s)
     s = re.sub(r"\b(inches|inch|ins)\b", "in", s)
     s = re.sub(r"\b(feet|foot)\b", "ft", s)
     s = re.sub(r"(\d)-(\d+\s*/\s*\d+)", r"\1 \2", s)           # 1-1/2 -> 1 1/2
@@ -368,32 +417,46 @@ def _length(name: str, value, unit: str = "in") -> Optional[float]:
     inches = _numtok(rest)
     if inches is None:
         raise bad
-    if not has_ft and not has_in and unit == "ft":
-        return inches * 12
+    if not has_ft and not has_in:
+        _bare_check(name, inches, unit, bare_range)
+        if unit == "ft":
+            return inches * 12
     return feet * 12 + inches
 
 
 def _slope(name: str, value) -> Optional[float]:
-    """Rise/run from a percent (8.33, '8.33%') or a ratio ('1:12', '1 in 12'); None stays None."""
+    """Rise/run from a percent (8.33, '8.33%') or a ratio ('1:12', '1/12', '1 in 12'); None stays None. A bare number
+    between 0 and 1 (0.0833) is rejected: it could be a fraction (8.33%) or a percent (0.0833%), and reading it the
+    wrong way would pass a slope 100 times too steep."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     bad = ValueError(f"{name} must be a percent (8.33 or '8.33%') or a ratio like '1:12', got {value!r}")
     if isinstance(value, bool):
         raise bad
+    pct_sign = False
     if isinstance(value, (int, float)):
-        v = float(value) / 100
+        if not math.isfinite(float(value)):
+            raise ValueError(f"{name} must be a slope of 0 or more, got {value!r}")
+        raw = float(value)
+        v = raw / 100
     else:
         s = str(value).strip().lower()
-        m = re.fullmatch(r"(\d*\.?\d+)\s*%?", s)
-        r = re.fullmatch(r"(\d*\.?\d+)\s*(?::|in|to)\s*(\d*\.?\d+)", s)
+        m = re.fullmatch(r"(-?\d*\.?\d+)\s*(%|percent|pct)?", s)
+        r = re.fullmatch(r"(\d*\.?\d+)\s*(?::|/|in|to)\s*(\d*\.?\d+)", s)
         if m:
-            v = float(m.group(1)) / 100
+            raw, pct_sign = float(m.group(1)), bool(m.group(2))
+            v = raw / 100
         elif r and float(r.group(2)) > 0 and float(r.group(1)) <= float(r.group(2)):
+            raw, pct_sign = None, True
             v = float(r.group(1)) / float(r.group(2))
         else:
             raise bad
     if not math.isfinite(v) or v < 0:
         raise ValueError(f"{name} must be a slope of 0 or more, got {value!r}")
+    if not pct_sign and raw is not None and 0 < raw < 1:
+        raise ValueError(f"{name} {raw:g} is ambiguous: bare numbers are percents here. Write '{_n(raw * 100)}%' (or a "
+                         f"ratio like '1:{_n(1 / raw)}') if {raw:g} is rise over run, or '{raw:g}%' if you mean less "
+                         "than one percent")
     return v
 
 
@@ -415,7 +478,7 @@ def _jurisdiction(value) -> tuple[str, str, Optional[str]]:
     w = _words(value)
     if not w:
         return "other", "not given", None
-    toks = w.split()
+    toks = [t for t in w.split() if not re.fullmatch(r"\d{5}(?:\d{4})?", t)]          # drop ZIP codes
     county = any(t in ("county", "unincorporated") for t in toks)
     core_ = " ".join(t for t in toks if t not in _FILLER and t not in ("county", "unincorporated"))
     for key, names, city, agency in (("los_angeles", _LA, "Los Angeles", "LADBS"),
@@ -425,7 +488,12 @@ def _jurisdiction(value) -> tuple[str, str, Optional[str]]:
                 return "other", f"County of {city}", (
                     f"County of {city} is not the City of {city}: the {agency} forms below apply only to work that "
                     f"agency permits. Use your building department's Exception 8 / unreasonable-hardship form.")
-            return key, f"City of {city} ({agency})", None
+            named_agency = any(t in ("ladbs", "dbs", "dsd", "sddsd", "lacity", "city") for t in toks)
+            note = None if named_agency else (
+                f"'{str(value).strip()}' was taken to mean the City of {city} ({agency}). A {city} mailing address "
+                f"can also be in unincorporated {city} County or another city; if {agency} does not issue the permit, "
+                "its forms below do not apply.")
+            return key, f"City of {city} ({agency})", note
     return "other", str(value).strip(), None
 
 
@@ -437,7 +505,9 @@ _WORK = (  # first match wins, so the most demanding reading of "remodel and rep
                     "t i", "build out", "buildout", "historic restoration")),
     ("structural_repair", ("structural repair", "structural repairs", "structural")),
     ("addition", ("addition", "additions", "add on", "expansion")),
-    ("barrier_removal", ("barrier removal", "barrier", "readily achievable")),
+    ("barrier_removal", ("barrier removal", "barrier", "readily achievable", "ada upgrade", "ada upgrades",
+                         "accessibility upgrade", "accessibility upgrades", "ada retrofit", "ada compliance work",
+                         "accessibility improvements")),
     ("program_access", ("program access", "program accessibility")),
     ("parking_resurfacing_restriping", ("resurfacing", "resurface", "restriping", "restripe", "re striping",
                                         "re stripe", "slurry seal", "parking lot")),
@@ -447,6 +517,10 @@ _WORK = (  # first match wins, so the most demanding reading of "remodel and rep
                           "painting", "paint", "repaint", "wallpapering", "wallpaper", "asbestos removal",
                           "asbestos abatement", "mechanical", "electrical", "hvac")),
 )
+
+
+_WORK_LABEL = {"maintenance_only": "maintenance work", "minor_work_only": "minor work (windows, hardware, controls, "
+               "outlets, signage)", "barrier_removal": "barrier-removal work", "program_access": "program-access work"}
 
 
 def _work_type(value) -> str:
@@ -468,9 +542,13 @@ _FACILITY = (
                                      "affordable housing", "multifamily", "multi family", "apartments", "apartment",
                                      "condo", "condos")),
     ("public_entity", ("public entity", "public building", "government", "public agency", "title ii", "city hall",
-                       "school district", "county building", "state building", "municipal")),
+                       "school district", "county building", "state building", "municipal", "public school",
+                       "public library", "fire station", "police station", "courthouse", "community college",
+                       "public university", "state university")),
     ("public_accommodation", ("public accommodation", "place of public accommodation", "retail", "store", "shop",
-                              "restaurant", "bank", "hotel", "title iii")),
+                              "restaurant", "bank", "hotel", "title iii", "medical office", "dental office",
+                              "doctor", "dentist", "clinic", "health care", "healthcare", "gym", "theater",
+                              "private school", "day care", "daycare")),
     ("commercial_facility", ("commercial facility", "commercial", "office", "warehouse", "industrial", "factory")),
 )
 
@@ -791,7 +869,8 @@ def _standards(acc: _Acc, title_ii: bool, d: date) -> str:
         acc.use(T2_2010_DATE)
         start = _date(P(T2_2010_DATE, "mandatory_2010_standards_from"), "rule date")
         return (f"2010 ADA Standards (physical construction starting on or after {start}; {d} used as the start)"
-                if d >= start else f"Not the 2010 Standards: construction started before {start}")
+                if d >= start else f"2010 ADA Standards not mandatory: construction started before {start} (see 28 "
+                                   "CFR 35.151(c) for the standards allowed then)")
     acc.use(F_2010_DATE)
     mandatory = _date(P(F_2010_DATE, "mandatory_2010_standards_from"), "rule date")
     opt_from = _date(P(F_2010_DATE, "optional_period.from"), "rule date")
@@ -816,6 +895,11 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
         raise ValueError(f"construction_cost_usd must be more than 0 (the permit valuation / construction cost of this "
                          f"alteration), got {construction_cost_usd!r}")
     app = _date(permit_application_date, "permit_application_date", default=logic.today_ca())
+    ada_start = _date(P(F_ALTER, "alterations_after"), "rule date")
+    if app <= ada_start:
+        raise ValueError(f"permit_application_date {app} is not after {ada_start}: the ADA alteration rules cover "
+                         f"alterations after {ada_start} (28 CFR 36.402(a)) and this tool prices current projects. "
+                         "Give this project's permit application date (e.g. 2026-11-25).")
     x = _usd("path_of_travel_costs_included_usd", path_of_travel_costs_included_usd) or 0.0
     if x > c + EPS:
         raise ValueError(f"path_of_travel_costs_included_usd ({_usd_s(x)}) cannot be more than construction_cost_usd "
@@ -845,11 +929,15 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
         acc.notes.append("affects_primary_function_area was not known, so the federal test assumes the work affects "
                          "an area containing a primary function (the stricter reading).")
     base_override = _usd("primary_function_alteration_cost_usd", primary_function_alteration_cost_usd)
+    if base_override is not None and base_override > c - x + EPS:
+        raise ValueError(f"primary_function_alteration_cost_usd ({_usd_s(base_override)}) cannot be more than this "
+                         f"job's cost less its path-of-travel work ({_usd_s(c)} - {_usd_s(x)} = {_usd_s(c - x)}): it "
+                         "is the part of this alteration that is in primary function areas")
     if _usd("prior_alterations_cost_usd", prior_alterations_cost_usd) and prior_alterations:
         raise ValueError("give prior_alterations_cost_usd (one total) or prior_alterations (a list), not both")
-    juris, juris_label, county_note = _jurisdiction(jurisdiction)
-    if county_note:
-        acc.notes.append(county_note)
+    juris, juris_label, juris_note = _jurisdiction(jurisdiction)
+    if juris_note:
+        acc.notes.append(juris_note)
     hardship = bool(_bool("hardship_requested", hardship_requested))
     tenant_only = bool(_bool("tenant_only_alteration", tenant_only_alteration))
     built_1991 = bool(_bool("path_elements_built_to_1991_standards", path_elements_built_to_1991_standards))
@@ -860,6 +948,11 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
     acc.use(ADJ_EXCL, LOOKBACK)
     acc.math.append(f"Adjusted construction cost = C {_usd_s(c)} this project - {_usd_s(x)} path-of-travel work "
                     f"inside it + B {_usd_s(b_ca)} prior {ca_years}-year alterations = {_usd_s(adj)}")
+    if adj <= EPS:
+        acc.notes.append("All of this job's cost is path-of-travel work and there is no prior work, so the adjusted "
+                         "construction cost is $0 and Exception 8 adds no further spend. If the job is access work "
+                         "only, re-run with work_type barrier_removal (or program_access for a public entity); either "
+                         "way every element you alter must fully comply.")
     elements = list(P(POT_ELEMENTS, "path_of_travel_elements"))
 
     # ---------------- California (CBC 11B-202.4)
@@ -934,10 +1027,19 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
                         f"{P(SD_RATIFY, 'submit')}."), SD_RATIFY))
             else:
                 ca_expl += " (Set hardship_requested=true to see what a hardship finding involves.)"
+        if hardship and ca_status != "full_compliance":
+            acc.notes.append("hardship_requested was ignored: the unreasonable-hardship finding matters only when the "
+                             "adjusted construction cost is above the valuation threshold"
+                             + (f" ({_usd_s(thr)} for {app.year}). At or below it Exception 8 already limits the "
+                                f"spend to {_pct(cap_frac)}." if thr is not None else
+                                f"; the {app.year} threshold is not on file."))
         if other_exc:
-            acc.notes.append(f"For {work.replace('_', ' ')} the California figures are computed as for an alteration. "
+            label = _WORK_LABEL.get(work, work)
+            ca_expl = f"Only if plan check treats this {label} as an alteration that triggers CBC 11B-202.4: {ca_expl}"
+            acc.notes.append(f"For {label} the California figures are computed as for an alteration. "
                              "CBC 11B-202.4 has other exceptions besides Exception 8 that were not in the verified "
-                             "rulebook; ask plan check whether one covers this work.")
+                             "rulebook; ask plan check whether one covers this work before you price any "
+                             "path-of-travel upgrades.")
         if ca_status == "capped_20_percent":
             all_comply = full is not None and full <= cap + EPS
             if juris == "los_angeles" and not all_comply:
@@ -978,7 +1080,7 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
     elif work == "parking_resurfacing_restriping":
         fed_expl = ("Whether federal rules treat resurfacing or restriping as an alteration is not in the verified "
                     "rulebook; restripe to current accessible parking rules.")
-    elif work == "barrier_removal":
+    elif work == "barrier_removal" and fac != "commercial_facility":
         acc.use(F_BARRIER_NO_POT)
         fed_status = "not_triggered"
         fed_expl = ("Work done solely to remove barriers (28 CFR 36.304) does not trigger the federal path-of-travel "
@@ -999,8 +1101,13 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
         fed_expl = (f"{_cap(_join(P(F_WHAT, 'not_alterations_unless_usability_affected')))} are not "
                     "alterations unless they affect the usability of the building. If yours does, re-run as an "
                     "alteration.")
-    elif work in ("minor_work_only", "maintenance_only"):
-        fed_expl = "The Title II rule for this kind of work is not in the verified rulebook."
+    elif work == "minor_work_only":
+        acc.use(T2_MINOR)
+        fed_status = "not_triggered"
+        fed_expl = (f"Title II: alterations to {_join(P(T2_MINOR, 'non_triggering_work'))} are not treated as "
+                    "affecting a primary function area, so no federal path-of-travel duty.")
+    elif work == "maintenance_only":
+        fed_expl = "The Title II rule for maintenance-type work is not in the verified rulebook."
     elif not affects:
         acc.use(T2_20 if t2 else F_POT)
         if not t2:
@@ -1023,6 +1130,16 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
             acc.notes.append("The federal base assumes all of the construction cost (less path-of-travel work) "
                              "alters primary function areas. If part of it is in non-primary areas (corridors, "
                              "restrooms, storage, mechanical rooms), give primary_function_alteration_cost_usd.")
+        if b_fed:
+            acc.notes.append(f"Federally only earlier alterations to primary function areas on this path of travel "
+                             f"count ({P(T2_SERIES if t2 else F_SERIES, 'lookback_years')}-year series rule); leave "
+                             "out earlier work that only touched corridors, restrooms, storage or other non-primary "
+                             "areas. California's Exception 8 look-back counts all of it.")
+        if work == "barrier_removal":
+            acc.use(F_BARRIER)
+            acc.notes.append("The readily achievable barrier-removal duty (28 CFR 36.304) is a public accommodation's; "
+                             "a commercial facility not open to the public does not have it, so its access work is "
+                             "an ordinary alteration and the federal path-of-travel limit above applies.")
         if t2:
             acc.notes.append("Title II: restrooms count as a primary function area only if "
                              f"{P(T2_20, 'restrooms_primary_function_only_if')}.")
@@ -1096,7 +1213,11 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
         ca_short += " if plan check treats this as an alteration (another CBC 11B-202.4 exception may apply)"
     summary = f"California: {ca_short}. Federal {law.split(' (')[0]}: {fed_short}."
     if combined is not None:
-        summary += f" Plan at least {_usd_s(combined)} of path-of-travel work."
+        summary += (f" If it is an alteration, plan at least {_usd_s(combined)} of path-of-travel work." if other_exc
+                    else f" Plan at least {_usd_s(combined)} of path-of-travel work.")
+    ask_first = (f"First ask plan check whether this {_WORK_LABEL.get(work, work)} is an alteration that triggers CBC "
+                 "11B-202.4 or falls under another 11B-202.4 exception; only if it triggers 11B-202.4: "
+                 if other_exc and ca_status != "not_triggered" else "")
     if ca_status == "capped_20_percent":
         if juris == "los_angeles":
             how = "File LADBS's Summary of Accessibility Upgrades form with your unreasonable-hardship request."
@@ -1119,6 +1240,7 @@ def path_of_travel_obligation(construction_cost_usd, permit_application_date=Non
     else:
         nxt = ("Restripe to current accessible parking rules: run accessible_parking_requirements for the space "
                "counts, stall sizes, signs and markings.")
+    nxt = ask_first + nxt
     res = PathOfTravelResult(permit_application_date=app.isoformat(), work_type=work, facility=fac,
                              jurisdiction=juris_label, path_of_travel_elements=elements, prior_alterations=prior_lines,
                              california=ca, federal=fed, full_path_of_travel_cost_usd=full, combined_budget_usd=budget,
@@ -1133,10 +1255,12 @@ ParkingUse = Literal["general", "hospital_outpatient", "rehab_outpatient_pt", "c
 _PARKING_USE = (
     ("covered_multifamily", ("covered multifamily", "multifamily", "multi family", "apartment", "apartments",
                              "condo", "condos", "condominium", "residential", "11a")),
-    ("rehab_outpatient_pt", ("rehab", "rehabilitation", "physical therapy", "outpatient physical therapy", "pt")),
-    ("hospital_outpatient", ("hospital", "hospital outpatient", "outpatient")),
+    ("rehab_outpatient_pt", ("physical therapy", "outpatient physical therapy", "pt", "physical rehabilitation",
+                             "mobility rehabilitation", "rehab outpatient pt")),
+    ("hospital_outpatient", ("hospital", "hospital outpatient")),
     ("general", ("general", "public accommodation", "commercial", "retail", "office", "restaurant", "public building",
-                 "government", "11b", "store", "shopping center", "warehouse")),
+                 "government", "11b", "store", "shopping center", "warehouse", "medical office", "dental office",
+                 "doctor", "dentist", "clinic", "staff", "employee")),
 )
 _KINDS = (  # CBC 1109A facility types, in the rule's words (index into ada-cbc-11a-1109a-parking-percentages)
     (1, ("private garage", "private garages", "tuck under", "tuck under garage")),
@@ -1150,6 +1274,18 @@ def _parking_use(value) -> str:
     w = _words(value or "general")
     if w.replace(" ", "_") in {k for k, _ in _PARKING_USE}:
         return w.replace(" ", "_")
+    therapy = any(_has(w, p) for p in ("physical", "mobility", "therapy", "pt"))
+    if any(_has(w, p) for p in ("rehab", "rehabilitation")) and not therapy:
+        raise ValueError(f"use {value!r} is ambiguous: the 20% rate (rehab_outpatient_pt) is only for patient and "
+                         "visitor parking at rehabilitation facilities specializing in conditions that affect mobility "
+                         "and outpatient physical therapy facilities. Other rehabilitation (for example substance-use "
+                         "treatment) is 'general'. If you meant a renovation, that is work_type, not use.")
+    if _has(w, "outpatient") and not therapy and not _has(w, "hospital"):
+        raise ValueError(f"use {value!r} is ambiguous: the 10% rate (hospital_outpatient) is for patient and visitor "
+                         "parking at hospital outpatient facilities (including free-standing buildings giving a "
+                         "hospital's outpatient clinical services); outpatient physical therapy is rehab_outpatient_pt "
+                         "(20%); a doctor's, dental or other clinic not run as a hospital outpatient facility is "
+                         "'general'.")
     for key, phrases in _PARKING_USE:
         if any(_has(w, p) for p in phrases):
             return key
@@ -1176,6 +1312,9 @@ class ParkingFacilityIn(BaseModel):
     total_spaces: Union[int, str] = Field(description="All parking spaces in this lot or garage")
     ev_charging_spaces: Union[int, str] = Field(0, description=(
         "EV charging spaces included in total_spaces (CBC 11B: they are not parking spaces)"))
+    bus_truck_delivery_spaces: Union[int, str] = Field(0, description=(
+        "CBC 11B only: spaces in total_spaces used exclusively for buses, trucks, other delivery vehicles or "
+        "vehicle impound (exempt from the count)"))
     kind: Optional[str] = Field(None, description="Multifamily only: garage, private garage, carport or lot")
     assigned: Optional[bool] = Field(None, description=(
         "Multifamily only: spaces assigned to residents (true) or unassigned/visitor (false)"))
@@ -1183,11 +1322,23 @@ class ParkingFacilityIn(BaseModel):
         "Override for this facility: general, hospital_outpatient or rehab_outpatient_pt"))
 
 
+class EvcsCount(BaseModel):
+    ev_charging_spaces: int
+    van_accessible: int
+    standard_accessible: int
+    ambulatory: int
+    math: str
+
+
 class ParkingFacilityOut(BaseModel):
     name: str
     total_spaces: int
     ev_charging_spaces: int = 0
+    bus_truck_delivery_spaces: int = 0
     counted_spaces: int
+    accessible_evcs: Optional[EvcsCount] = Field(None, description=(
+        "CBC 11B-228.3: accessible EV charging stations required for the EV spaces, if all of them are one "
+        "charging level and connector type and are for public or common use"))
     use: str
     required_accessible: int
     van_accessible: Optional[int] = Field(None, description="CBC 11B: per facility. CBC 11A: see the totals")
@@ -1231,17 +1382,39 @@ def _facilities(facilities, total_spaces) -> list[dict]:
         if total is None:
             raise ValueError(f"facilities[{i}].total_spaces is required")
         ev = _count(f"facilities[{i}].ev_charging_spaces", f.get("ev_charging_spaces")) or 0
-        if ev > total:
-            raise ValueError(f"facilities[{i}]: ev_charging_spaces ({ev}) cannot exceed total_spaces ({total})")
-        out.append({"name": str(f.get("name") or f"Facility {i + 1}").strip(), "total": total, "ev": ev,
-                    "kind": f.get("kind"), "assigned": _bool(f"facilities[{i}].assigned", f.get("assigned")),
-                    "use": f.get("use")})
+        truck = _count(f"facilities[{i}].bus_truck_delivery_spaces", f.get("bus_truck_delivery_spaces")) or 0
+        if ev + truck > total:
+            raise ValueError(f"facilities[{i}]: ev_charging_spaces ({ev}) + bus_truck_delivery_spaces ({truck}) cannot "
+                             f"exceed total_spaces ({total}); both are counted inside total_spaces")
+        out.append({"name": str(f.get("name") or f"Facility {i + 1}").strip()[:120], "total": total, "ev": ev,
+                    "truck": truck, "kind": f.get("kind"),
+                    "assigned": _bool(f"facilities[{i}].assigned", f.get("assigned")), "use": f.get("use")})
     return out
 
 
-def _table_208(n: int) -> tuple[int, str]:
-    """2010 ADA Standards Table 208.2 -> (required accessible spaces, math)."""
-    for r in P(S_PK_TABLE, "table"):
+def _evcs(n: int) -> EvcsCount:
+    """CBC Table 11B-228.3.2.1 for one EVCS facility (one charging level and connector type)."""
+    cols = ("van", "standard", "ambulatory")
+    for r in P(EVCS, "table"):
+        if r["from"] <= n <= r["to"]:
+            got = {c: int(r[c]) for c in cols}
+            m = f"{n} EV charging spaces is in the {r['from']}-{r['to']} row"
+            break
+    else:
+        over = P(EVCS, "over_100")
+        o = int(over["over"])
+        got = {c: int(over[c]["base"]) + math.ceil((n - o) / int(over[c]["per"])) for c in cols}
+        m = (f"{n} EV charging spaces is over {o}: " + "; ".join(
+            f"{c} {over[c]['base']} + ceil({n - o}/{over[c]['per']}) = {got[c]}" for c in cols))
+    return EvcsCount(ev_charging_spaces=n, van_accessible=got["van"], standard_accessible=got["standard"],
+                     ambulatory=got["ambulatory"], math=m + f" -> {got['van']} van accessible, {got['standard']} "
+                                                            f"standard accessible, {got['ambulatory']} ambulatory")
+
+
+def _table_208(n: int, rid: str = S_PK_TABLE) -> tuple[int, str]:
+    """A parking table in the Table 208.2 layout (CBC Table 11B-208.2 or 2010 ADA Standards Table 208.2) ->
+    (required accessible spaces, math)."""
+    for r in P(rid, "table"):
         lo, hi = r["from"], r["to"]
         if n < lo or (hi is not None and n > hi):
             continue
@@ -1271,10 +1444,13 @@ def accessible_parking_requirements(facilities=None, total_spaces=None, use: str
     if any(_has(wt, p) for p in ("resurfacing", "resurface", "restriping", "restripe", "re stripe", "re striping",
                                  "slurry seal")):
         wtype = "resurfacing_restriping"
-    elif wt in ("new or altered", "new", "new construction", "alteration", "altered", "addition", "remodel"):
+    elif wt in ("new or altered", "new", "new construction", "alteration", "altered", "addition", "remodel",
+                "new lot", "new parking lot", "new garage", "tenant improvement", "ti", "renovation", "expansion",
+                "reconstruction", "rebuild"):
         wtype = "new_or_altered"
     else:
-        raise ValueError(f"work_type must be new_or_altered or resurfacing_restriping, got {work_type!r}")
+        raise ValueError("work_type must be new_or_altered (new lot or garage, remodel, addition, tenant improvement) "
+                         f"or resurfacing_restriping (resurface, restripe, slurry seal), got {work_type!r}")
     facs = _facilities(facilities, total_spaces)
     if wtype == "resurfacing_restriping":
         acc.use(RESTRIPE)
@@ -1285,19 +1461,24 @@ def accessible_parking_requirements(facilities=None, total_spaces=None, use: str
     if covered_dwelling_units not in (None, ""):
         raise ValueError("covered_dwelling_units is for use covered_multifamily (CBC 11A) only")
 
-    acc.use(PK_FACILITY, S_PK_TABLE, PK_VAN6, S_VAN)
+    acc.use(PK_FACILITY, PK_TABLE, S_PK_TABLE, PK_VAN6, S_VAN)
     div, vmin = _divisor(P(PK_VAN6, "formula")), int(P(PK_VAN6, "min_van_spaces"))
     out = []
+    table_differs = False
     for f in facs:
         fuse = _parking_use(f["use"]) if f["use"] else puse
         if fuse == "covered_multifamily":
             raise ValueError(f"{f['name']}: CBC 11A multifamily parking and CBC 11B parking are counted separately; "
                              "run use covered_multifamily on its own")
-        n = f["total"] - f["ev"]
+        n = f["total"] - f["ev"] - f["truck"]
         if n == 0:
             req, m = 0, "no parking spaces counted"
         elif fuse == "general":
-            req, m = _table_208(n)
+            req, m = _table_208(n, PK_TABLE)
+            fed_req, fed_m = _table_208(n, S_PK_TABLE)
+            if fed_req > req:                       # the two tables match today; never report less than either
+                table_differs = True
+                req, m = fed_req, f"{m}; federal Table 208.2 requires more: {fed_m}"
         else:
             key = ("hospital_outpatient_fraction" if fuse == "hospital_outpatient"
                    else "rehab_and_outpatient_pt_fraction")
@@ -1308,22 +1489,46 @@ def accessible_parking_requirements(facilities=None, total_spaces=None, use: str
         van = 0 if req == 0 else max(vmin, math.ceil(req / div))
         if req:
             m += f"; van-accessible = max({vmin}, ceil({req}/{div})) = {van}"
+        less = [f"{f['ev']:,} EV charging spaces"] * bool(f["ev"]) + [
+            f"{f['truck']:,} bus/truck/delivery spaces"] * bool(f["truck"])
+        if less:
+            m = f"{f['total']:,} spaces - {' - '.join(less)} = {n:,} counted; " + m
+        evcs = None
         if f["ev"]:
-            m = f"{f['total']:,} spaces - {f['ev']:,} EV charging spaces = {n:,} counted; " + m
+            acc.use(EVCS)
+            evcs = _evcs(f["ev"])
         out.append(ParkingFacilityOut(name=f["name"], total_spaces=f["total"], ev_charging_spaces=f["ev"],
-                                      counted_spaces=n, use=fuse, required_accessible=req, van_accessible=van, math=m))
+                                      bus_truck_delivery_spaces=f["truck"], counted_spaces=n, accessible_evcs=evcs,
+                                      use=fuse, required_accessible=req, van_accessible=van, math=m))
         acc.math.append(f"{f['name']}: {m}")
+        if evcs:
+            acc.math.append(f"{f['name']} EV charging (Table 11B-228.3.2.1): {evcs.math}")
     if len(out) > 1:
         acc.notes.append("Each lot or garage is counted separately; the total is not based on all the site's "
                          "spaces together (CBC 11B-208, 2010 ADA Standards 208.2).")
     if any(f.ev_charging_spaces for f in out):
-        acc.notes.append("EV charging spaces are not parking spaces for this count (CBC 11B-228.3, as cited by LADBS).")
+        acc.notes.append(
+            "EV charging spaces are not parking spaces for this count (CBC 11B-208.1). Accessible EV charging stations "
+            "are required separately (CBC 11B-228.3, Table 11B-228.3.2.1): accessible_evcs assumes all the EV "
+            f"spaces in a lot are one charging level and connector type, because {P(EVCS, 'facility_is')} is its own "
+            f"facility; chargers {_join(P(EVCS, 'exempt'), 'or')} are exempt. Recount per combination if they "
+            "differ.")
+    if any(f.bus_truck_delivery_spaces for f in out):
+        acc.use(PK_TRUCK)
+        acc.notes.append(f"Spaces used only for {_join(P(PK_TRUCK, 'exempt_space_uses'), 'or')} were left out (CBC "
+                         f"11B-208.1 Exception 1), provided {P(PK_TRUCK, 'proviso')}. Confirm with plan check that "
+                         "those spaces are used exclusively that way.")
     if any(f.use != "general" for f in out):
         acc.notes.append("The hospital and rehab percentages apply to patient and visitor spaces; count staff parking "
-                         "as a separate facility with use 'general'.")
-    acc.notes.append("CBC Table 11B-208.2 itself was not in the verified rulebook, so the general count uses the "
-                     "federal 2010 ADA Standards Table 208.2 as the floor; confirm with plan check that the CBC table "
-                     "does not require more.")
+                         "as a separate facility with use 'general'. The 20% rate is only for rehabilitation "
+                         "facilities specializing in conditions that affect mobility and for outpatient physical "
+                         "therapy facilities.")
+    acc.notes.append(("CBC Table 11B-208.2 (as LADBS restates it for the 2025 CBC) and federal Table 208.2 give the "
+                      "same counts." if not table_differs else
+                      "Federal Table 208.2 required more than the CBC table for at least one facility; the larger "
+                      "number is used.")
+                     + " Residential (public housing) parking under CBC 11B-208.2.3 is counted differently and is not "
+                       "computed here.")
     # dimensions and markings (CBC 11B-502, with the federal minimums for comparison)
     sv = lambda k: P(PK_STALL, k)                                            # noqa: E731
     fed = lambda k: P(S_PK_DIM, k)                                           # noqa: E731
@@ -1342,15 +1547,27 @@ def accessible_parking_requirements(facilities=None, total_spaces=None, use: str
             f"({_n(sv('van_aisle_min_ft_with_9ft_stall') * 12)} in) layout meets both statements."), PK_STALL, PK_VAN6),
         acc.req("Vertical clearance", (
             f"{P(PK_VERT, 'vertical_clearance_text')} ({_n(P(PK_VERT, 'vertical_clearance_min_in'))} in) minimum at "
-            f"accessible spaces and along at least one vehicle route to them from the site entrances and exits."),
-            PK_VERT),
+            f"accessible spaces and along at least one vehicle route to them from the site entrances and exits. In "
+            f"an existing multistory garage, car (not van) accessible spaces, their aisles and routes may have "
+            f"{_n(P(PK_VERT80, 'existing_multistory_car_min_in'))} in; keep any existing clearance between "
+            f"{_n(P(PK_VERT80, 'maintain_existing_between_in')[0])} and "
+            f"{_n(P(PK_VERT80, 'maintain_existing_between_in')[1])} in."), PK_VERT, PK_VERT80),
+        acc.req("Surface slope", (
+            f"Accessible spaces and aisles no steeper than {P(PK_SLOPE, 'slope_max')} "
+            f"({_n(P(PK_SLOPE, 'slope_max_pct'))}%) in any direction, aisle level with the space, no changes in level "
+            "or detectable warnings in them."), PK_SLOPE),
+        acc.req("How to measure", (
+            f"Measure stall and aisle widths from the {P(PK_MEASURE, 'measure_from')} (a space or aisle not next to "
+            "another may include its full outside line)."), PK_MEASURE),
     ]
     signs = [
         acc.req("Accessible space sign", (
             f"International Symbol of Accessibility sign, reflectorized, at least "
             f"{_n(P(PK_SIGN, 'reflectorized_min_area_sq_in'))} sq in, bottom at least "
-            f"{_n(P(PK_SIGN, 'sign_bottom_height_min_in'))} in above grade; van spaces add '{P(PK_SIGN, 'van_text')}'; "
-            f"added text or a sign below the symbol reads '{P(PK_SIGN, 'required_text')}'."), PK_SIGN),
+            f"{_n(P(PK_SIGN, 'sign_bottom_height_min_in'))} in above grade, or "
+            f"{_n(P(PK_SIGN80, 'in_circulation_path_bottom_min_in'))} in where the sign is within a walk or other "
+            f"circulation path; van spaces add '{P(PK_SIGN, 'van_text')}'; added text or a sign below the symbol reads "
+            f"'{P(PK_SIGN, 'required_text')}'."), PK_SIGN, PK_SIGN80),
         acc.req("Tow-away sign", (
             f"At least {_n(P(PK_TOW, 'sign_min_width_in'))} x {_n(P(PK_TOW, 'sign_min_height_in'))} in with "
             f"{_n(P(PK_TOW, 'letter_height_min_in'))} in letters, at {P(PK_TOW, 'location')}; fill in "
@@ -1374,6 +1591,13 @@ def accessible_parking_requirements(facilities=None, total_spaces=None, use: str
            + f". Put them on the shortest accessible route to the entrance and dimension stalls, aisles, signs and "
              f"the {P(PK_SIGN, 'required_text')} text on the site plan.") if total_req else (
         "No accessible spaces are required because no parking spaces were counted.")
+    ev_out = [f for f in out if f.accessible_evcs]
+    if ev_out:
+        ev_txt = "; ".join(f"{f.name}: {f.accessible_evcs.van_accessible} van accessible, "
+                           f"{f.accessible_evcs.standard_accessible} standard accessible, "
+                           f"{f.accessible_evcs.ambulatory} ambulatory" for f in ev_out)
+        summary += f" Accessible EV charging stations (CBC 11B-228.3): {ev_txt}."
+        nxt += " Lay out the accessible EV charging stations separately (see accessible_evcs)."
     res = ParkingResult(code="CBC 11B / 2010 ADA Standards", use=puse, work_type=wtype, facilities=out,
                         total_required_accessible=total_req, total_van_accessible=total_van, dimensions=dims,
                         signs_and_markings=signs, summary=summary, next_step=nxt)
@@ -1393,6 +1617,12 @@ def _parking_11a(acc: _Acc, facs: list[dict], covered_dwelling_units, wtype: str
     for f in facs:
         if f["use"] and _parking_use(f["use"]) != "covered_multifamily":
             raise ValueError(f"{f['name']}: CBC 11A multifamily parking and CBC 11B parking are counted separately")
+        if f["truck"]:
+            raise ValueError(f"{f['name']}: bus_truck_delivery_spaces is a CBC 11B exception (11B-208.1); the verified "
+                             "CBC 11A rules have no such exception, so leave those spaces in total_spaces")
+        if f["total"] == 0:
+            acc.notes.append(f"{f['name']} has no parking spaces, so it was not counted as a parking facility.")
+            continue
         kind = _kind(f["kind"])
         t = by_type.setdefault(kind, {"assigned": 0, "unassigned": 0, "ev": 0, "names": []})
         if f["assigned"] is None:
@@ -1400,6 +1630,14 @@ def _parking_11a(acc: _Acc, facs: list[dict], covered_dwelling_units, wtype: str
         t["assigned" if f["assigned"] else "unassigned"] += f["total"]
         t["ev"] += f["ev"]
         t["names"].append(f["name"])
+    if not by_type:
+        res = ParkingResult(code="CBC 11A (covered multifamily)", use="covered_multifamily", work_type=wtype,
+                            facilities=[], total_required_accessible=0, total_van_accessible=0,
+                            total_van_accessible_literal_minimum=0, covered_dwelling_units=units,
+                            summary="No parking is provided, so CBC 11A requires no accessible parking spaces.",
+                            next_step=("If parking is added later, re-run with its spaces: each parking facility "
+                                       "serving covered dwellings must then provide accessible parking."))
+        return acc.finish(res)
     test_units = _ceil_frac(unit_frac, units)
     test_a = max(test_units, per_type * len(by_type))
     acc.math.append(f"Rate on units: {_pct(unit_frac)} x {units:,} covered units = {_n(unit_frac * units)}, rounded up "
@@ -1423,6 +1661,13 @@ def _parking_11a(acc: _Acc, facs: list[dict], covered_dwelling_units, wtype: str
                                       required_accessible=req, math=m))
     total_req = max(test_a, test_b)
     acc.math.append(f"Smallest total that passes every test = max({test_a}, {test_b}) = {total_req}")
+    spaces = sum(t["assigned"] + t["unassigned"] for t in by_type.values())
+    if total_req > spaces:
+        acc.notes.append(f"The {_pct(unit_frac)}-of-units test gives {total_req} accessible spaces but only {spaces} "
+                         f"spaces are provided, so every space is counted as accessible ({spaces}). Confirm with "
+                         "plan check; a project this short of parking may need more spaces.")
+        acc.math.append(f"Capped at the {spaces} spaces provided")
+        total_req = spaces
     div = _divisor(P(A_VAN8, "formula_conservative"))
     vmin = int(P(A_VAN8, "min_van_spaces"))
     van_lit, van_cons = max(vmin, total_req // div), max(vmin, math.ceil(total_req / div))
@@ -1454,11 +1699,25 @@ def _parking_11a(acc: _Acc, facs: list[dict], covered_dwelling_units, wtype: str
             f"{_n(d('vertical_clearance_min_in'))} in ({_ftin(d('vertical_clearance_min_in'))}) minimum in garages to "
             "the accessible spaces."), A_PK_DIM),
     ]
-    signs = [acc.req("Access aisle marking", f"{_cap(d('aisle_marking'))}.", A_PK_DIM)]
+    sg = lambda k: P(A_SIGNS, k)                                             # noqa: E731
+    any_unassigned = any(t["unassigned"] for t in by_type.values())
+    signs = [
+        acc.req("Access aisle marking", f"{_cap(d('aisle_marking'))}.", A_PK_DIM),
+        acc.req("Accessible space sign", (
+            f"Reflective {sg('symbol')} sign at each accessible space, at least {_n(sg('min_area_sq_in'))} sq in, "
+            f"bottom at least {_n(sg('bottom_min_in'))} in above the ground or "
+            f"{_n(sg('on_accessible_route_bottom_min_in'))} in where it stands on an accessible route; van spaces add "
+            f"'{sg('van_text')}'. "
+            + ("Required at the unassigned (visitor) accessible spaces; spaces assigned to residents do not need "
+               "these signs." if any_unassigned else
+               "All the spaces here are assigned to residents, so these signs are not required (CBC 1109A.4).")),
+            A_SIGNS),
+    ]
     summary = (f"{total_req} accessible resident/visitor space{'s' if total_req != 1 else ''} for {units:,} covered "
                f"units, {van_cons} van-accessible.")
-    nxt = (f"Show {total_req} accessible spaces ({van_cons} van) on the site plan, at least {per_type} in each type of "
-           f"parking facility, on an accessible route to the dwelling entrances they serve.")
+    nxt = (f"Show {total_req} accessible space{'s' if total_req != 1 else ''} ({van_cons} van) on the site plan, at "
+           f"least {per_type} in each type of parking facility, on an accessible route to the dwelling entrances they "
+           "serve.")
     res = ParkingResult(code="CBC 11A (covered multifamily)", use="covered_multifamily", work_type=wtype,
                         facilities=out, total_required_accessible=total_req, total_van_accessible=van_cons,
                         total_van_accessible_literal_minimum=van_lit, covered_dwelling_units=units, dimensions=dims,
@@ -1505,7 +1764,8 @@ def accessibility_field_check(door_clear_width=None, door_opening_depth=None, le
                               checkout_counter=False, turning_space_diameter=None, parking_stall_width=None,
                               parking_aisle_width=None, parking_stall_length=None, van_space=False,
                               parking_vertical_clearance=None, parking_sign_bottom_height=None,
-                              existing_building=False) -> FieldCheckResult:
+                              existing_building=False, parking_surface_slope=None, existing_parking_structure=False,
+                              sign_in_circulation_path=None) -> FieldCheckResult:
     acc = _Acc()
     checks: list[Check] = []
     # ---- door (11B-404.2.3)
@@ -1562,10 +1822,12 @@ def accessibility_field_check(door_clear_width=None, door_opening_depth=None, le
                else f"Regrade to {P(RAMP, 'running_slope_max')} or flatter.")
         ids = [RAMP]
         if not ok and _bool("existing_building", existing_building):
-            rows = [r for r in P(S_STEEP, "table") if rs <= _ratio(r["slope_not_steeper_than"]) + EPS
+            # the one Table 405.2 band the slope falls in ("steeper than A but not steeper than B"), if its rise fits
+            rows = [r for r in P(S_STEEP, "table")
+                    if _ratio(r["slope_steeper_than"]) + EPS < rs <= _ratio(r["slope_not_steeper_than"]) + EPS
                     and (rise is None or rise <= r["max_rise_in"] + EPS)]
             if rows:
-                r = min(rows, key=lambda r: r["max_rise_in"])
+                r = rows[0]
                 ids.append(S_STEEP)
                 fix += (f" Federally (2010 Standards 405.2), an existing site or building with no room for a "
                         f"{P(RAMP, 'running_slope_max')} ramp may use up to {r['slope_not_steeper_than']} for a rise "
@@ -1631,7 +1893,8 @@ def accessibility_field_check(door_clear_width=None, door_opening_depth=None, le
                              "pass" if wcs <= mx + EPS else "fail", f"Regrade the walk to {_n(mx * 100)}% cross "
                              "slope or less.", WALK))
     # ---- sales / service counter (11B-904.4)
-    ch, cl = _length("counter_height", counter_height), _length("counter_length", counter_length)
+    ch = _length("counter_height", counter_height, bare_range=(12, 96))      # a bare 3 is feet, not a 3 in counter
+    cl = _length("counter_length", counter_length)
     checkout = bool(_bool("checkout_counter", checkout_counter))
     if ch is not None:
         mx = P(COUNTER, "checkout_counter_height_max_in" if checkout else "accessible_height_max_in")
@@ -1653,9 +1916,10 @@ def accessibility_field_check(door_clear_width=None, door_opening_depth=None, le
             "pass" if ts >= mn - EPS else "fail",
             f"Clear a {_n(mn)} in circle or lay out the T-shaped space.", TURN))
     # ---- parking stall (11B-502)
-    pw = _length("parking_stall_width", parking_stall_width, "ft")
-    pa = _length("parking_aisle_width", parking_aisle_width, "ft")
-    pl = _length("parking_stall_length", parking_stall_length, "ft")
+    ft_range = (None, 30)                       # a bare 108 is inches, not a 108 ft stall
+    pw = _length("parking_stall_width", parking_stall_width, "ft", ft_range)
+    pa = _length("parking_aisle_width", parking_aisle_width, "ft", ft_range)
+    pl = _length("parking_stall_length", parking_stall_length, "ft", ft_range)
     van = bool(_bool("van_space", van_space))
     ft = lambda k: P(PK_STALL, k) * 12                                       # noqa: E731
     if pw is not None:
@@ -1675,9 +1939,21 @@ def accessibility_field_check(door_clear_width=None, door_opening_depth=None, le
             else:
                 result = "fail"
             measured = f"{_n(pw / 12)} ft space" + (f", {_n(pa / 12)} ft aisle" if pa is not None else "")
+            van_ids = (PK_STALL,)
+            if result != "fail" and not ok9:
+                # passes (or may pass) only on the 12 ft + 5 ft layout, which the LADBS checklist's 96 in aisle
+                # statement does not match
+                van_ids = (PK_STALL, PK_VAN6)
+                acc.notes.append(
+                    f"The {_n(P(PK_STALL, 'van_width_min_ft'))} ft space + "
+                    f"{_n(P(PK_STALL, 'van_aisle_min_ft_with_12ft_stall'))} ft aisle layout meets the CBC 11B-502 text "
+                    f"LADBS prints, but the LADBS checklist (11B-208.2.4 item) says van spaces are served by a "
+                    f"{_n(P(PK_VAN6, 'van_aisle_width_min_in'))} in aisle. In Los Angeles confirm with plan check, or "
+                    f"stripe {_n(P(PK_STALL, 'van_width_alt_min_ft'))} ft + "
+                    f"{_n(P(PK_STALL, 'van_aisle_min_ft_with_9ft_stall'))} ft, which meets both.")
             checks.append(_check(acc, "Van space width", measured, need, result,
                                  f"Re-stripe to {need}." if result == "fail" else "Measure the access aisle too.",
-                                 PK_STALL))
+                                 *van_ids))
         else:
             mn = ft("car_width_min_ft")
             checks.append(_check(acc, "Car space width", f"{_n(pw / 12)} ft", f"{_n(mn / 12)} ft minimum",
@@ -1693,20 +1969,55 @@ def accessibility_field_check(door_clear_width=None, door_opening_depth=None, le
         checks.append(_check(acc, "Accessible space length", f"{_n(pl / 12)} ft", f"{_n(mn / 12)} ft minimum",
                              "pass" if pl >= mn - EPS else "fail", f"Lengthen the space to {_n(mn / 12)} ft.",
                              PK_STALL))
+    if pw is not None or pa is not None:
+        acc.use(PK_MEASURE)
+        acc.notes.append(f"Stall and aisle widths are measured from the {P(PK_MEASURE, 'measure_from')} (CBC "
+                         "11B-502.1); a space or aisle not next to another may include its full outside line.")
+    psl = _slope("parking_surface_slope", parking_surface_slope)
+    if psl is not None:
+        mx = _ratio(P(PK_SLOPE, "slope_max"))
+        checks.append(_check(acc, "Parking space / aisle slope", _slope_s(psl),
+                             f"{P(PK_SLOPE, 'slope_max')} ({_n(P(PK_SLOPE, 'slope_max_pct'))}%) maximum in any "
+                             "direction", "pass" if psl <= mx + EPS else "fail",
+                             f"Regrade the accessible space and its aisle to {P(PK_SLOPE, 'slope_max')} or flatter in "
+                             "every direction (the aisle level with the space).", PK_SLOPE))
     pv = _length("parking_vertical_clearance", parking_vertical_clearance)
+    garage = bool(_bool("existing_parking_structure", existing_parking_structure))
     if pv is not None:
         mn = P(PK_VERT, "vertical_clearance_min_in")
-        checks.append(_check(acc, "Parking vertical clearance", _in(pv),
-                             f"{P(PK_VERT, 'vertical_clearance_text')} ({_n(mn)} in) minimum",
+        ids_v = (PK_VERT,)
+        req_v = f"{P(PK_VERT, 'vertical_clearance_text')} ({_n(mn)} in) minimum"
+        if garage:
+            ids_v = (PK_VERT, PK_VERT80)
+            if van:
+                req_v += (f" (the existing-garage {_n(P(PK_VERT80, 'existing_multistory_car_min_in'))} in allowance "
+                          "is not for van spaces)")
+            else:
+                mn = P(PK_VERT80, "existing_multistory_car_min_in")
+                lo, hi = P(PK_VERT80, "maintain_existing_between_in")
+                req_v = (f"{_n(mn)} in minimum for a car space in an existing multistory garage; keep any existing "
+                         f"clearance between {_n(lo)} and {_n(hi)} in (van spaces and their routes need {_n(hi)} in)")
+        checks.append(_check(acc, "Parking vertical clearance", _in(pv), req_v,
                              "pass" if pv >= mn - EPS else "fail",
                              f"Raise the lowest obstruction (pipes, sprinklers, signs, beams) to {_n(mn)} in at the "
-                             "accessible spaces and along one vehicle route to them.", PK_VERT))
+                             "accessible spaces and along one vehicle route to them.", *ids_v))
     sb = _length("parking_sign_bottom_height", parking_sign_bottom_height)
+    in_path = _bool("sign_in_circulation_path", sign_in_circulation_path)
     if sb is not None:
-        mn = P(PK_SIGN, "sign_bottom_height_min_in")
+        mn, mn80 = P(PK_SIGN, "sign_bottom_height_min_in"), P(PK_SIGN80, "in_circulation_path_bottom_min_in")
+        if in_path is True:
+            need_s, res_s = mn80, "pass" if sb >= mn80 - EPS else "fail"
+        elif in_path is False:
+            need_s, res_s = mn, "pass" if sb >= mn - EPS else "fail"
+        else:
+            need_s = mn80
+            res_s = "pass" if sb >= mn80 - EPS else ("needs_info" if sb >= mn - EPS else "fail")
+        fix_s = (f"If the sign stands in a walk or other circulation path, raise its bottom to {_n(mn80)} in; if it "
+                 "does not, it passes (give sign_in_circulation_path)." if res_s == "needs_info" else
+                 f"Remount the sign with its bottom at least {_n(need_s)} in above the ground.")
         checks.append(_check(acc, "Parking sign height", f"{_n(sb)} in to the bottom of the sign",
-                             f"{_n(mn)} in minimum to the bottom", "pass" if sb >= mn - EPS else "fail",
-                             f"Remount the sign with its bottom at least {_n(mn)} in above the ground.", PK_SIGN))
+                             f"{_n(mn)} in minimum to the bottom; {_n(mn80)} in if the sign is within a walk or other "
+                             "circulation path", res_s, fix_s, PK_SIGN, PK_SIGN80))
     if not checks:
         raise ValueError("give at least one measurement, e.g. door_clear_width=31.5 or ramp_rise=24 with ramp_run=264")
     passed = sum(c.result == "pass" for c in checks)
@@ -1749,7 +2060,10 @@ _USE = (
     ("public_building", ("public building", "government", "city hall", "public agency", "fire station",
                          "county building", "state building")),
     ("public_accommodation", ("public accommodation", "retail", "store", "shop", "restaurant", "bank", "hotel",
-                              "medical office", "clinic", "gym")),
+                              "medical office", "clinic", "gym", "dental office", "dental", "dentist", "doctor",
+                              "doctors office", "physician", "health care", "healthcare", "urgent care",
+                              "chiropractor", "optometrist", "shopping center", "shopping mall", "mall",
+                              "strip mall")),
     ("commercial_facility", ("commercial facility", "commercial", "office", "warehouse", "industrial", "factory")),
 )
 _SPECIAL = (
@@ -1807,7 +2121,7 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
                            ground_floor_units=None, multistory_units=None, publicly_funded=False, public_entity=False,
                            stories=None, sq_ft_per_story=None, special_facility=None,
                            sales_or_rental_establishments=None, public_entrances=None, first_occupied_date=None,
-                           as_of=None) -> TriggersResult:
+                           as_of=None, last_building_permit_date=None) -> TriggersResult:
     acc = _Acc()
     ptype = _pick(project_type, _PROJECT, "project_type")
     use = _pick(building_use, _USE, "building_use")
@@ -1821,9 +2135,25 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
     nstories = _count("stories", stories)
     sqft = _num("sq_ft_per_story", sq_ft_per_story)
     special = _pick(special_facility, _SPECIAL, "special_facility")
+    if special is None:                         # "dental office", "strip mall": the use itself is a special facility
+        wb = _words(building_use)
+        special = next((k for k, phrases in _SPECIAL if k in ("shopping_center", "health_care_office")
+                        and any(_has(wb, p.lstrip("=")) for p in phrases)), None)
+        if special and nstories is not None and sqft is not None:
+            acc.notes.append(f"building_use '{building_use}' was read as special_facility {special} for the federal "
+                             "elevator exemption.")
     shops = _count("sales_or_rental_establishments", sales_or_rental_establishments)
     entrances = _count("public_entrances", public_entrances)
     first_occ = None if first_occupied_date in (None, "") else _date(first_occupied_date, "first_occupied_date")
+    last_permit = (None if last_building_permit_date in (None, "")
+                   else _date(last_building_permit_date, "last_building_permit_date"))
+    for nm, dv in (("first_occupied_date", first_occ), ("last_building_permit_date", last_permit)):
+        if dv is not None and dv > today:
+            raise ValueError(f"{nm} {dv} is after {today}; give the actual date for the existing building (leave it "
+                             "out for new construction)")
+    if first_occ and last_permit and last_permit > first_occ:
+        raise ValueError(f"last_building_permit_date {last_permit} is after first_occupied_date {first_occ}; give the "
+                         "last permit issued before the building was first occupied")
     residential = use in ("multifamily", "public_housing", "mixed_use")
     if residential and units < 1:
         raise ValueError(f"dwelling_units must be at least 1 for building_use {use}")
@@ -1891,6 +2221,28 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
             f"communication-feature unit(s) ({_pct(cf)}, at least {mn})"
             + (f"; with {units} units (>= {adapt}) adaptable units are also required." if units >= adapt else ".")),
             PH_UNITS))
+    if use == "public_housing" and altering:
+        acc.use(PH_ALTER)
+        over, mf, cf = (int(P(PH_ALTER, "vacated_building_more_than_units")),
+                        float(P(PH_ALTER, "mobility_unit_fraction")), float(P(PH_ALTER, "communication_unit_fraction")))
+        if units > over:
+            mob, com = _ceil_frac(mf, units), _ceil_frac(cf, units)
+            acc.math.append(f"If vacated for the alteration ({units} > {over} units): mobility {_pct(mf)} x {units} "
+                            f"= {_n(mf * units)} -> {mob}; communication {_pct(cf)} x {units} = {_n(cf * units)} -> "
+                            f"{com}")
+            vac = (f"If the building is vacated for this alteration, at least {mob} unit(s) need mobility features on "
+                   f"an accessible route and {com} communication features ({_pct(mf)} / {_pct(cf)}, rounded up). ")
+        else:
+            vac = (f"The vacated-building rule (more than {over} units) does not apply to {units} unit(s). ")
+        reqs.append(acc.req("Public housing alterations (CBC 11B-233.3.4)", vac + (
+            f"A unit whose bathroom or kitchen is substantially altered, with at least one other room altered, counts "
+            f"toward the new-construction unit numbers. Adaptable-unit standards do not apply to altering units first "
+            f"occupied on or before {P(PH_ALTER, 'adaptable_not_for_first_occupancy_on_or_before')}."), PH_ALTER))
+    if ptype == "new_construction" and nonres:
+        reqs.append(acc.req("Entrances (CBC 11B-206.4.1, LADBS)", (
+            f"California: detail compliance with CBC 11B-404 at {P(ENTR_ALL, 'entrances_required_to_comply')} of the "
+            "new building (LADBS plan check item). This is stricter than the federal 60% of public entrances."),
+            ENTR_ALL))
     regimes.append(Regime(code="CBC Chapter 11B", applies=applies11b, why=why11b, requirements=reqs))
 
     # ---------------- CBC 11A
@@ -1944,16 +2296,24 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
         else:
             if ptype == "new_construction":
                 applies, when = True, f"designed and built for first occupancy after {cutoff}"
-            elif first_occ is not None:
-                applies = first_occ > cutoff
-                when = (f"first occupied {first_occ}, after {cutoff}: it had to be built to these rules; keep them"
-                        if applies else f"first occupied {first_occ}, on or before {cutoff}: the design rules do not "
-                                        "apply")
             else:
-                applies, when = None, (f"applies if the building was first occupied after {cutoff} (and its last "
-                                       f"permit was issued after "
-                                       f"{P(FHA_DATE, 'exempt_if_last_permit_or_renewal_issued_on_or_before')}); give "
-                                       "first_occupied_date")
+                permit_cut = _date(P(FHA_DATE, "exempt_if_last_permit_or_renewal_issued_on_or_before"), "rule date")
+                if last_permit is not None and last_permit <= permit_cut:
+                    applies = False
+                    when = (f"last building permit issued {last_permit}, on or before {permit_cut}: treated as "
+                            f"designed for first occupancy on or before {cutoff}, so the design rules do not apply")
+                elif first_occ is not None and first_occ <= cutoff:
+                    applies = False
+                    when = f"first occupied {first_occ}, on or before {cutoff}: the design rules do not apply"
+                elif first_occ is not None:
+                    applies = True
+                    when = (f"first occupied {first_occ}, after {cutoff}: it had to be built to these rules; keep "
+                            "them" + ("" if last_permit is not None else
+                                      f" (unless its last building permit or renewal was issued on or before "
+                                      f"{permit_cut}; give last_building_permit_date)"))
+                else:
+                    applies, when = None, (f"applies if the building was first occupied after {cutoff} and its last "
+                                           f"permit was issued after {permit_cut}; give first_occupied_date")
             if elevator is True:
                 fha_units = units
                 scope = f"elevator building: all {units} units are covered"
@@ -1965,6 +2325,8 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
             else:
                 scope = "give has_elevator: with an elevator every unit is covered, without one the ground-floor units"
             why = f"{units} units ({scope}); {when}."
+            if applies is False:
+                fha_units = None
             if applies is not False:
                 for rid in (FHA_ENTRANCE, FHA_COMMON, FHA_UNIT, FHA_SAFE, FHA_LOCAL):
                     reqs.append(acc.rule(rid))
@@ -2005,7 +2367,11 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
             why = "Maintenance-type work is not an alteration unless it affects usability."
             if use != "commercial_facility":
                 reqs.append(acc.rule(F_BARRIER))
-        if nstories is not None and sqft is not None and ptype != "maintenance_only":
+        if nstories == 1 and ptype != "maintenance_only":
+            reqs.append(acc.req("Elevator (28 CFR 36.404 / 36.401(d))", (
+                "Single-story building: there are no other stories to connect, so the elevator exemption question "
+                "does not arise. Every part of the story must still be on an accessible route."), F_ELEV))
+        elif nstories is not None and sqft is not None and ptype != "maintenance_only":
             acc.use(F_ELEV)
             smin, amin = int(P(F_ELEV, "stories_less_than")), float(P(F_ELEV, "sq_ft_per_story_less_than"))
             mall = special == "shopping_center" or (shops is not None
@@ -2038,6 +2404,10 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
     if title_ii:
         acc.use(T2_2010_DATE)
         reqs = []
+        if nstories is not None and sqft is not None:
+            acc.notes.append("The federal small-building elevator exemption (28 CFR 36.404 / 36.401(d)) is an ADA "
+                             "Title III rule for public accommodations and commercial facilities; it was not applied "
+                             "to this state or local government building.")
         if altering:
             reqs.append(acc.rule(T2_20))
             reqs.append(acc.rule(T2_PROGRAM))
@@ -2059,9 +2429,11 @@ def accessibility_triggers(project_type: str, building_use: str, dwelling_units=
         acc.math.append(f"Public entrances: {_pct(frac)} x {entrances} = {_n(frac * entrances)}, rounded up "
                         f"{entr_min}")
         general.append(acc.req("Public entrances (2010 ADA Standards 206.4.1)", (
-            f"At least {entr_min} of {entrances} public entrances accessible ({_pct(frac)}, rounded up), plus the "
-            "specific entrances 206.4.2-206.4.9 require. Check CBC 11B for California's entrance rules."),
-            S_ENTRANCES))
+            f"Federal minimum: at least {entr_min} of {entrances} public entrances accessible ({_pct(frac)}, rounded "
+            "up), plus the specific entrances 206.4.2-206.4.9 require."
+            + (f" California is stricter: LADBS applies CBC 11B-206.4.1 to "
+               f"{P(ENTR_ALL, 'entrances_required_to_comply')}, so plan for all {entrances}." if nonres else "")),
+            S_ENTRANCES, *((ENTR_ALL,) if nonres else ())))
     pens = []
     if title_iii:
         pens.append(acc.req("ADA Title III civil penalty (DOJ lawsuit)", (
@@ -2169,16 +2541,26 @@ def casp_lease_disclosure(role: str = "landlord", premises_inspected_by_casp=Non
     acc = _Acc()
     who = _role(role)
     pt = _words(property_type or "commercial")
-    if pt in ("commercial", "retail", "office", "industrial", "shop", "yard", "warehouse", "commercial lease"):
+    com = any(_has(pt, p) for p in ("commercial", "retail", "office", "industrial", "shop", "yard", "warehouse",
+                                    "restaurant", "store", "storefront", "medical office", "flex", "business"))
+    res_ = any(_has(pt, p) for p in ("residential", "apartment", "apartments", "home", "house", "dwelling", "condo",
+                                     "condominium", "duplex", "rental home"))
+    if com and not res_:
         ptype = "commercial"
-    elif pt in ("residential", "apartment", "home", "house", "dwelling", "condo", "residential lease"):
+    elif res_ and not com:
         ptype = "residential"
+    elif com and res_:
+        raise ValueError(f"property_type {property_type!r} mixes commercial and residential; run the commercial space "
+                         "(Civil Code 1938 CASp statements) and the dwelling (Fair Housing Act) separately")
     else:
-        raise ValueError(f"property_type must be commercial or residential; got {property_type!r}")
+        raise ValueError(f"property_type must be commercial (retail, office, shop, warehouse) or residential "
+                         f"(apartment, house, condo); got {property_type!r}")
     inspected = _bool("premises_inspected_by_casp", premises_inspected_by_casp)
     staff = _count("employees", employees)
     ti = bool(_bool("tenant_improvements_planned", tenant_improvements_planned))
-    lessor = (lessor_name or "Landlord").strip() or "Landlord"
+    lessor = re.sub(r"\s+", " ", str(lessor_name or "")).strip() or "Landlord"
+    if len(lessor) > 200:
+        raise ValueError(f"lessor_name is {len(lessor)} characters; give the landlord's legal name (200 at most)")
     clauses: list[Clause] = []
     rights: list[Requirement] = []
     if ptype == "commercial":
@@ -2228,6 +2610,9 @@ def casp_lease_disclosure(role: str = "landlord", premises_inspected_by_casp=Non
             f"{may_not[1]}."), FHA_MODS))
         acc.notes.append("Civil Code 1938 CASp statements are for commercial leases; this residential lease needs "
                          "none.")
+        if ti:
+            acc.notes.append("tenant_improvements_planned applies to commercial leases; for a home, the "
+                             "reasonable-modification rules above cover tenant-paid changes.")
     # business license fee (SB 1186 / AB 1379 / AB 2164) and AB 3002 notice
     fee = float(P(FEE4, "fee_usd"))
     hist = P(FEE4, "history_usd")
@@ -2242,9 +2627,13 @@ def casp_lease_disclosure(role: str = "landlord", premises_inspected_by_casp=Non
         f"(history: " + ", ".join(f"{_usd_s(v)} from {k}" for k, v in sorted(hist.items())) + rev + ")."), FEE4),
            acc.rule(AB3002)]
     sd = None
-    juris, juris_label, county_note = _jurisdiction(business_license_city)
-    if county_note:
+    juris, juris_label, juris_note = _jurisdiction(business_license_city)
+    if juris_note and juris == "other":
         acc.notes.append(f"{juris_label}: the San Diego business tax example applies only to the City of San Diego.")
+    elif juris_note and juris == "san_diego":
+        acc.notes.append(f"'{str(business_license_city).strip()}' was taken to mean the City of San Diego. The fee "
+                         "example applies only to a City of San Diego business tax certificate, not to a license from "
+                         "unincorporated San Diego County or another city with a San Diego mailing address.")
     if juris == "san_diego":
         ex = P(FEE4, "example_san_diego_mail_application_usd")
         mwe = ex["plus_per_employee_minimum_wage_enforcement_fee_usd"]
@@ -2299,7 +2688,7 @@ def _tool_docs() -> dict[str, str]:
     year = max(thr)
     cap = float(P(CAP20, "cap_fraction_of_adjusted_construction_cost"))
     stall = lambda k: _n(P(PK_STALL, k))                                     # noqa: E731
-    rows = P(S_PK_TABLE, "table")
+    rows = P(PK_TABLE, "table")
     t208 = (f"{rows[0]['from']}-{rows[0]['to']} spaces: {rows[0]['required']} ... over {rows[-1]['from'] - 1:,}: "
             f"{rows[-1]['required']}")
     return {
@@ -2331,11 +2720,13 @@ def _tool_docs() -> dict[str, str]:
             "DS-2123 compliance %, math, next step and citations. hardship_requested adds the unverified hardship "
             "minimum (verified=false)."),
         "parking": (
-            "Required accessible and van-accessible parking for each lot or garage (counted separately). CBC 11B / ADA "
-            f"Table 208.2 ({t208}), hospital outpatient "
+            "Required accessible and van-accessible parking for each lot or garage (counted separately). CBC Table "
+            f"11B-208.2, same as ADA Table 208.2 ({t208}), hospital outpatient "
             f"{_pct(P(PK_FACILITY, 'hospital_outpatient_fraction'))} and rehab/PT "
             f"{_pct(P(PK_FACILITY, 'rehab_and_outpatient_pt_fraction'))}, van spaces 1 in "
-            f"{_divisor(P(PK_VAN6, 'formula'))} (min {P(PK_VAN6, 'min_van_spaces')}); EV charging spaces excluded. "
+            f"{_divisor(P(PK_VAN6, 'formula'))} (min {P(PK_VAN6, 'min_van_spaces')}); EV charging spaces and "
+            "bus/truck/delivery-only spaces excluded, with the accessible EV charging stations (Table 11B-228.3.2.1) "
+            "counted separately. "
             "use covered_multifamily applies "
             f"CBC 11A ({_pct(P(A_PK, 'per_covered_units_fraction'))} of covered units, "
             f"{_pct(P(A_PK, 'assigned_spaces_fraction'))} of assigned and {_pct(P(A_PK, 'unassigned_spaces_fraction'))}"
@@ -2344,8 +2735,9 @@ def _tool_docs() -> dict[str, str]:
             f"). Also stall sizes (car {stall('car_width_min_ft')} ft, van {stall('van_width_min_ft')} ft + "
             f"{stall('van_aisle_min_ft_with_12ft_stall')} ft aisle or {stall('van_width_alt_min_ft')} + "
             f"{stall('van_aisle_min_ft_with_9ft_stall')} ft, {stall('stall_length_min_ft')} ft long), "
-            f"{P(PK_VERT, 'vertical_clearance_text')} clearance, signs ('{P(PK_SIGN, 'required_text')}', tow-away) and "
-            "pavement markings, with math and citations."),
+            f"{P(PK_VERT, 'vertical_clearance_text')} clearance, {P(PK_SLOPE, 'slope_max')} slopes, signs "
+            f"('{P(PK_SIGN, 'required_text')}', tow-away; {_n(P(PK_SIGN80, 'in_circulation_path_bottom_min_in'))} in "
+            "to the bottom in a walk) and pavement markings, with math and citations."),
         "field": (
             "Check field measurements against CBC 11B (LADBS 2026 restatement): door clear width "
             f"({_n(P(DOOR, 'clear_width_min_in'))} in, {_n(P(DOOR, 'deep_opening_clear_width_min_in'))} in if over "
@@ -2355,10 +2747,12 @@ def _tool_docs() -> dict[str, str]:
             f"in wide, {_n(P(RAMP, 'rise_per_run_max_in'))} in rise per run), curb ramps, site walkways "
             f"({_n(P(WALK, 'walkway_width_min_in'))} in, {_n(P(WALK, 'running_slope_max_pct'))}% running, "
             f"{_n(P(WALK, 'cross_slope_max_pct'))}% cross), counters ({_n(P(COUNTER, 'accessible_height_max_in'))} in "
-            f"high, {_n(P(COUNTER, 'accessible_length_min_in'))} in long), turning space, parking stalls, "
-            "vertical clearance and parking sign height. Lengths accept 31.5, '31 1/2 in', '2 ft 8 in' or '9 ft' "
-            "(bare numbers are inches, feet for parking stalls); slopes accept 8.33, '8.33%' or '1:12'. Returns "
-            "pass/fail/needs_info per item with the fix, a next step and citations."),
+            f"high, {_n(P(COUNTER, 'accessible_length_min_in'))} in long), turning space, parking stalls and their "
+            f"slope ({P(PK_SLOPE, 'slope_max')}), vertical clearance (existing-garage car-space allowance) and parking "
+            "sign height (80 in in a circulation path). Lengths accept 31.5, '31 1/2 in', '2 ft 8 in', '9 ft' or "
+            "'813 mm' (bare numbers are inches, feet for parking stalls); slopes accept 8.33, '8.33%', '1:12' or "
+            "'1/12' (a bare number under 1 is rejected as ambiguous). Returns pass/fail/needs_info per item with the "
+            "fix, a next step and citations."),
         "lease": (
             "Commercial lease accessibility clauses for a landlord or tenant: the Civil Code 1938 statement of whether "
             "the premises were inspected by a Certified Access Specialist (CASp) and the standard 1938(e) CASp "
@@ -2410,11 +2804,14 @@ def register(mcp) -> None:
         first_occupied_date: Annotated[Optional[str], Field(description=(
             "Existing residential building: date first occupied (FHA 1991 cutoff)"))] = None,
         as_of: Annotated[Optional[str], Field(description="ISO date; default today in California")] = None,
+        last_building_permit_date: Annotated[Optional[str], Field(description=(
+            "Existing residential building: date its last building permit (or renewal) was issued (FHA June 15, 1990 "
+            "rule)"))] = None,
     ) -> TriggersResult:
         return accessibility_triggers(project_type, building_use, dwelling_units, has_elevator, ground_floor_units,
                                       multistory_units, publicly_funded, public_entity, stories, sq_ft_per_story,
                                       special_facility, sales_or_rental_establishments, public_entrances,
-                                      first_occupied_date, as_of)
+                                      first_occupied_date, as_of, last_building_permit_date)
 
     @mcp.tool(name="path_of_travel_obligation", annotations=ro, description=docs["pot"])
     def _path_of_travel_obligation(
@@ -2475,7 +2872,8 @@ def register(mcp) -> None:
         total_spaces: Annotated[Optional[Union[int, str]], Field(description="Spaces in a single lot or garage")]
         = None,
         facilities: Annotated[Optional[list[ParkingFacilityIn]], Field(description=(
-            "Several lots or garages: [{name, total_spaces, ev_charging_spaces, kind, assigned, use}]"))] = None,
+            "Several lots or garages: [{name, total_spaces, ev_charging_spaces, bus_truck_delivery_spaces, kind, "
+            "assigned, use}]"))] = None,
         use: Annotated[str, Field(description=(
             "general (stores, offices, restaurants, public buildings), hospital_outpatient, rehab_outpatient_pt or "
             "covered_multifamily (CBC 11A)"))] = "general",
@@ -2485,9 +2883,10 @@ def register(mcp) -> None:
     ) -> ParkingResult:
         return accessible_parking_requirements(facilities, total_spaces, use, covered_dwelling_units, work_type)
 
-    L = Annotated[Num, Field(description="inches: 31.5, '31 1/2 in' or '2 ft 8 in'")]
-    S = Annotated[Num, Field(description="percent (8.33 or '8.33%') or ratio ('1:12')")]
-    LF = Annotated[Num, Field(description="feet: 9, '9 ft' or '108 in'")]
+    L = Annotated[Num, Field(description="inches: 31.5, '31 1/2 in', '2 ft 8 in' or '813 mm'")]
+    S = Annotated[Num, Field(description=(
+        "percent (8.33 or '8.33%') or ratio ('1:12'); a bare number under 1 is rejected as ambiguous"))]
+    LF = Annotated[Num, Field(description="feet: 9, '9 ft' or '108 in' (a bare number over 30 is rejected)")]
 
     @mcp.tool(name="accessibility_field_check", annotations=ro, description=docs["field"])
     def _accessibility_field_check(
@@ -2509,6 +2908,12 @@ def register(mcp) -> None:
         parking_sign_bottom_height: L = None,
         existing_building: Annotated[bool, Field(description=(
             "Existing building or site (adds the federal steeper-ramp note when a ramp fails)"))] = False,
+        parking_surface_slope: S = None,
+        existing_parking_structure: Annotated[bool, Field(description=(
+            "The stall is in an existing multistory parking garage (80 in clearance allowed at car, not van, "
+            "spaces)"))] = False,
+        sign_in_circulation_path: Annotated[Optional[bool], Field(description=(
+            "Is the parking sign within a walk or other circulation path? (then 80 in to the bottom)"))] = None,
     ) -> FieldCheckResult:
         return accessibility_field_check(door_clear_width, door_opening_depth, level_change_height,
                                          level_change_beveled, ramp_running_slope, ramp_rise, ramp_run,
@@ -2517,7 +2922,8 @@ def register(mcp) -> None:
                                          walkway_cross_slope, counter_height, counter_length, checkout_counter,
                                          turning_space_diameter, parking_stall_width, parking_aisle_width,
                                          parking_stall_length, van_space, parking_vertical_clearance,
-                                         parking_sign_bottom_height, existing_building)
+                                         parking_sign_bottom_height, existing_building, parking_surface_slope,
+                                         existing_parking_structure, sign_in_circulation_path)
 
     @mcp.tool(name="casp_lease_disclosure", annotations=ro, description=docs["lease"])
     def _casp_lease_disclosure(

@@ -256,13 +256,19 @@ def test_parking_per_facility_table_208_ev_spaces_and_van_spaces():
     assert (north.counted_spaces, north.required_accessible, north.van_accessible) == (114, 5, 1)
     assert (garage.required_accessible, garage.van_accessible) == (22, 4)
     assert (r.total_required_accessible, r.total_van_accessible) == (27, 5)
-    assert {acc.PK_FACILITY, acc.S_PK_TABLE, acc.PK_VAN6, acc.PK_STALL, acc.PK_SIGN, acc.PK_TOW} <= ids(r)
+    assert {acc.PK_FACILITY, acc.PK_TABLE, acc.S_PK_TABLE, acc.PK_VAN6, acc.PK_STALL, acc.PK_SIGN, acc.PK_TOW,
+            acc.EVCS} <= ids(r)
     assert r.verified is True
     text = " ".join(x.detail for x in r.dimensions + r.signs_and_markings)
     for s in ("9 ft wide x 18 ft long", "12 ft wide with a 5 ft aisle", "9 ft wide with an 8 ft aisle",
               "8 feet 2 inches (98 in)", "Minimum Fine $250", "17 x 22 in", "36 x 36 in", "'NO PARKING'"):
         assert s in text, s
-    assert "CBC Table 11B-208.2 itself was not in the verified rulebook" in " ".join(r.notes)
+    # CBC Table 11B-208.2 (LADBS P/BC 2026-084) is now read and matches the federal table
+    assert "CBC Table 11B-208.2 (as LADBS restates it for the 2025 CBC) and federal Table 208.2 give the same" in \
+        " ".join(r.notes)
+    # 6 EV charging spaces: Table 11B-228.3.2.1 row 5-25 -> 1 van accessible, 1 standard accessible, 0 ambulatory
+    ev = north.accessible_evcs
+    assert (ev.van_accessible, ev.standard_accessible, ev.ambulatory) == (1, 1, 0) and garage.accessible_evcs is None
 
 
 @pytest.mark.parametrize("spaces, required", [
@@ -348,7 +354,8 @@ def test_field_check_doors_levels_counters_and_parking():
     r = acc.accessibility_field_check(door_clear_width='31 1/2"', level_change_height="3/8 in",
                                       level_change_beveled="no", counter_height=36, counter_length="3 ft",
                                       parking_stall_width=9, parking_aisle_width="8 ft", van_space=True,
-                                      parking_vertical_clearance="8 ft 0 in", parking_sign_bottom_height=60)
+                                      parking_vertical_clearance="8 ft 0 in", parking_sign_bottom_height=60,
+                                      sign_in_circulation_path=False)
     assert check(r, "Door clear width").result == "fail"                  # 31.5 < 32 (11B-404.2.3)
     lvl = check(r, "Change in level")
     assert lvl.result == "fail" and "1:2" in lvl.fix                      # 1/4-1/2 in must be beveled 1:2
@@ -673,3 +680,395 @@ def test_register_and_call_every_tool_through_an_mcp_client():
     texts = [b.content[0].text for b in bad]
     assert "dollar amount" in texts[0] and "date like" in texts[1] and "whole number" in texts[2]
     assert "at least one measurement" in texts[3] and "at least 1" in texts[4] and "role must be" in texts[5]
+
+
+# ================================================================ regression tests from the 2026-11-25 review
+# Each expected value is worked by hand from the rule text re-read on 2026-11-25 (LADBS P/BC 2026-084, CL-BC-2026-026,
+# -027, -036, eCFR 28 CFR 35.151 / 36.402-36.404, 24 CFR 100.205).
+def test_review_rules_are_in_the_pack_and_verified():
+    book = {r.id: r for r in core.all_rules()}
+    for rid in (acc.PK_TABLE, acc.PK_TRUCK, acc.PK_MEASURE, acc.PK_SLOPE, acc.PK_VERT80, acc.PK_SIGN80, acc.EVCS,
+                acc.ENTR_ALL, acc.PH_ALTER, acc.A_SIGNS, acc.T2_MINOR):
+        assert book[rid].pack == "web_accessibility" and book[rid].status == "confirmed", rid
+    # the 96-inch van aisle conflict and the 10% / 20% scope were corrected
+    assert book[acc.PK_VAN6].status == "corrected" and "aisle_width_conflict" in book[acc.PK_VAN6].parameters
+    assert book[acc.PK_FACILITY].status == "corrected"
+    assert "specializing in treating conditions that affect mobility" in book[acc.PK_FACILITY].param("rehab_scope")
+    # CBC Table 11B-208.2 has exactly the federal rows
+    assert book[acc.PK_TABLE].param("table") == book[acc.S_PK_TABLE].param("table")
+
+
+# ---------------------------------------------------------------- path of travel
+def test_primary_function_cost_cannot_exceed_the_job():
+    with pytest.raises(ValueError, match="cannot be more than this job's cost less its path-of-travel work"):
+        acc.path_of_travel_obligation(100_000, "2026-05-01", primary_function_alteration_cost_usd=500_000)
+    # 100,000 - 10,000 path-of-travel work = 90,000 is the most it can be: 20% x 90,000 = 18,000
+    r = acc.path_of_travel_obligation(100_000, "2026-05-01", path_of_travel_costs_included_usd=10_000,
+                                      primary_function_alteration_cost_usd=90_000)
+    assert r.federal.disproportionality_limit_usd == 18_000
+
+
+@pytest.mark.parametrize("value, ok", [
+    ("2026-05-01T10:00", True), ("2026-05-01 10:00:00", True), ("2026-05-01T10:00:00Z", True),
+    ("2026-05-01garbage", False), ("2026-05-01 next week", False), ("1992-01-26", False),
+])
+def test_permit_date_parsing_and_pre_ada_dates(value, ok):
+    if ok:
+        assert acc.path_of_travel_obligation(100_000, value).permit_application_date == "2026-05-01"
+    else:
+        with pytest.raises(ValueError, match="date like|not after 1992-01-26"):
+            acc.path_of_travel_obligation(100_000, value)
+
+
+def test_dollar_amounts_have_a_sanity_bound():
+    with pytest.raises(ValueError, match="check the number"):
+        acc.path_of_travel_obligation(1e308, "2026-05-01")
+
+
+def test_maintenance_work_gets_conditional_spend_instructions():
+    # Reroofing is not an alteration federally (28 CFR 36.402(b)(1)); the CBC exceptions besides Exception 8 were not
+    # read, so the California 20% x 100,000 = 20,000 figure is only "if plan check treats it as an alteration".
+    r = acc.path_of_travel_obligation(100_000, "2026-05-01", work_type="REROOF", full_path_of_travel_cost_usd=5_000)
+    assert r.california.other_exceptions_unchecked and r.federal.status == "not_triggered"
+    assert "If it is an alteration, plan at least $5,000" in r.summary and "Plan at least" not in r.summary
+    assert r.next_step.startswith("First ask plan check whether this maintenance work is an alteration")
+    assert r.california.explanation.startswith("Only if plan check treats this maintenance work as an alteration")
+    # an ordinary alteration keeps the unconditional instruction
+    plain = acc.path_of_travel_obligation(100_000, "2026-05-01", full_path_of_travel_cost_usd=5_000)
+    assert "Plan at least $5,000" in plain.summary and not plain.next_step.startswith("First ask")
+
+
+def test_commercial_facility_access_work_is_an_alteration_federally():
+    # 28 CFR 36.304(a): the barrier-removal duty is a public accommodation's. An office (commercial facility) doing
+    # "ADA upgrades" is altering, so 36.403 applies: 20% x 100,000 = 20,000.
+    r = acc.path_of_travel_obligation(100_000, "2026-05-01", facility="Office", work_type="ADA upgrades")
+    assert (r.work_type, r.facility) == ("barrier_removal", "commercial_facility")
+    assert r.federal.status == "capped_20_percent" and r.federal.disproportionality_limit_usd == 20_000
+    assert acc.F_BARRIER in ids(r) and acc.F_BARRIER_NO_POT not in ids(r)
+    assert "commercial facility not open to the public does not have it" in " ".join(r.notes)
+    store = acc.path_of_travel_obligation(100_000, "2026-05-01", facility="store", work_type="ADA upgrades")
+    assert store.federal.status == "not_triggered" and acc.F_BARRIER_NO_POT in ids(store)
+
+
+def test_title_ii_minor_work_does_not_trigger_path_of_travel():
+    # 28 CFR 35.151(b)(4)(i)(B): windows, hardware, controls, electrical outlets and signage
+    r = acc.path_of_travel_obligation(100_000, "2026-05-01", facility="public school", work_type="new door hardware")
+    assert r.facility == "public_entity" and r.federal.law.startswith("ADA Title II")
+    assert r.federal.status == "not_triggered" and acc.T2_MINOR in ids(r) and "signage" in r.federal.explanation
+
+
+def test_hardship_flag_below_threshold_and_zero_adjusted_cost_are_explained():
+    r = acc.path_of_travel_obligation(100_000, "2026-05-01", hardship_requested=True)
+    assert "hardship_requested was ignored" in " ".join(r.notes) and acc.ABOVE not in ids(r) and r.verified
+    z = acc.path_of_travel_obligation(100_000, "2026-05-01", path_of_travel_costs_included_usd=100_000)
+    assert z.california.adjusted_construction_cost_usd == 0 and "re-run with work_type barrier_removal" in \
+        " ".join(z.notes)
+
+
+def test_federal_prior_work_counts_only_primary_function_areas_note():
+    r = acc.path_of_travel_obligation(100_000, "2026-05-01",
+                                      prior_alterations=[{"date": "2025-01-10", "cost_usd": 20_000}])
+    assert r.federal.counted_prior_cost_usd == 20_000
+    assert "only earlier alterations to primary function areas" in " ".join(r.notes)
+
+
+@pytest.mark.parametrize("value, fac", [
+    ("medical office", "public_accommodation"), ("Dental Office", "public_accommodation"),
+    ("public school", "public_entity"), ("fire station", "public_entity"), ("warehouse", "commercial_facility"),
+])
+def test_facility_aliases(value, fac):
+    assert acc.path_of_travel_obligation(100_000, "2026-05-01", facility=value).facility == fac
+
+
+@pytest.mark.parametrize("value, key, assumed", [
+    ("Los Angeles, CA 90012", "los_angeles", True), ("LA", "los_angeles", True), ("City of Los Angeles", "los_angeles",
+                                                                                 False),
+    ("LADBS", "los_angeles", False), ("San Diego 92101", "san_diego", True), ("City of San Diego", "san_diego", False),
+])
+def test_jurisdiction_zip_codes_and_the_city_assumption_note(value, key, assumed):
+    k, _, note = acc._jurisdiction(value)
+    assert k == key and (note is not None) is assumed
+    if assumed:
+        assert "unincorporated" in note
+
+
+# ---------------------------------------------------------------- parking
+def test_evcs_are_counted_separately_with_table_11b_228_3_2_1():
+    # 150 EV spaces (over 100): van 1 + ceil(50/300) = 2; standard 3 + ceil(50/60) = 4; ambulatory 3 + ceil(50/50) = 4.
+    # Parking: 300 - 150 = 150 counted -> 101-150 row -> 5.
+    r = acc.accessible_parking_requirements(facilities=[{"total_spaces": 300, "ev_charging_spaces": 150}])
+    f = r.facilities[0]
+    assert (f.counted_spaces, f.required_accessible) == (150, 5)
+    assert (f.accessible_evcs.van_accessible, f.accessible_evcs.standard_accessible, f.accessible_evcs.ambulatory) == \
+        (2, 4, 4)
+    assert acc.EVCS in ids(r) and "one charging level and connector type" in " ".join(r.notes)
+    assert "Accessible EV charging stations (CBC 11B-228.3): Facility 1: 2 van accessible, 4 standard accessible, " \
+           "4 ambulatory." in r.summary
+    for n, want in ((4, (1, 0, 0)), (25, (1, 1, 0)), (50, (1, 1, 1)), (75, (1, 2, 2)), (100, (1, 3, 3)),
+                    (101, (2, 4, 4))):
+        e = acc._evcs(n)
+        assert (e.van_accessible, e.standard_accessible, e.ambulatory) == want, n
+
+
+def test_bus_truck_delivery_spaces_are_exempt_from_the_11b_count():
+    # 60 - 10 truck - 30 EV = 20 counted -> 1-25 row -> 1 (CBC 11B-208.1 Exception 1)
+    r = acc.accessible_parking_requirements(facilities=[{"total_spaces": 60, "bus_truck_delivery_spaces": 10,
+                                                         "ev_charging_spaces": 30}])
+    assert (r.facilities[0].counted_spaces, r.total_required_accessible) == (20, 1)
+    assert acc.PK_TRUCK in ids(r) and "passenger drop-off and loading zone" in " ".join(r.notes)
+    with pytest.raises(ValueError, match="cannot exceed total_spaces"):
+        acc.accessible_parking_requirements(facilities=[{"total_spaces": 60, "bus_truck_delivery_spaces": 40,
+                                                         "ev_charging_spaces": 30}])
+    with pytest.raises(ValueError, match="CBC 11B exception"):
+        acc.accessible_parking_requirements(facilities=[{"total_spaces": 60, "bus_truck_delivery_spaces": 5}],
+                                            use="apartments", covered_dwelling_units=40)
+
+
+@pytest.mark.parametrize("use, outcome", [
+    ("rehab", "ambiguous"), ("drug rehab center", "ambiguous"), ("outpatient clinic", "ambiguous"),
+    ("outpatient physical therapy", 20), ("physical rehabilitation", 20), ("Hospital Outpatient", 10),
+    ("medical office", 4), ("dental office", 4),          # 100 spaces: 76-100 row -> 4
+])
+def test_hospital_and_rehab_rates_need_the_right_facility(use, outcome):
+    if outcome == "ambiguous":
+        with pytest.raises(ValueError, match="ambiguous"):
+            acc.accessible_parking_requirements(total_spaces=100, use=use)
+    else:          # 10% x 100 = 10; 20% x 100 = 20
+        assert acc.accessible_parking_requirements(total_spaces=100, use=use).total_required_accessible == outcome
+
+
+def test_multifamily_zero_spaces_cap_and_signs():
+    none = acc.accessible_parking_requirements(total_spaces=0, use="apartments", covered_dwelling_units=10)
+    assert none.total_required_accessible == 0 and none.facilities == []
+    # 500 units: 2% = 10, but only 5 spaces exist -> all 5, with a note
+    cap = acc.accessible_parking_requirements(total_spaces=5, use="apartments", covered_dwelling_units=500)
+    assert cap.total_required_accessible == 5 and "only 5 spaces are provided" in " ".join(cap.notes)
+    vis = acc.accessible_parking_requirements(total_spaces=40, use="condos", covered_dwelling_units=40)
+    sign = next(s for s in vis.signs_and_markings if s.item == "Accessible space sign")
+    assert acc.A_SIGNS in sign.rule_ids and "70 sq in" in sign.detail and "80 in" in sign.detail
+    assert "Required at the unassigned" in sign.detail
+    mine = acc.accessible_parking_requirements(facilities=[{"total_spaces": 40, "assigned": True}],
+                                               use="multifamily", covered_dwelling_units=40)
+    assert "not required" in next(s for s in mine.signs_and_markings if s.item == "Accessible space sign").detail
+    assert mine.next_step.startswith("Show 1 accessible space (1 van)")
+
+
+def test_11b_parking_details_from_the_2026_bulletin():
+    r = acc.accessible_parking_requirements(total_spaces=40, work_type="tenant improvement")
+    text = " ".join(x.detail for x in r.dimensions + r.signs_and_markings)
+    for s in ("80 in", "1:48 (2.083%)", "centerline of the markings", "within a walk or other circulation path"):
+        assert s in text, s
+    assert {acc.PK_VERT80, acc.PK_SLOPE, acc.PK_MEASURE, acc.PK_SIGN80} <= ids(r)
+    with pytest.raises(ValueError, match="work_type must be"):
+        acc.accessible_parking_requirements(total_spaces=40, work_type="repave")
+
+
+# ---------------------------------------------------------------- field check
+@pytest.mark.parametrize("value, result", [
+    (0.0833, "ambiguous"), ("0.10", "ambiguous"), (0.5, "ambiguous"),
+    ("0.5%", "pass"), ("1/12", "pass"), ("1/10", "fail"), (8.33, "pass"), (0, "pass"), ("-2%", "error"),
+])
+def test_slope_decimals_are_not_silently_read_as_percents(value, result):
+    if result == "ambiguous":
+        with pytest.raises(ValueError, match="ambiguous"):
+            acc.accessibility_field_check(ramp_running_slope=value)
+    elif result == "error":
+        with pytest.raises(ValueError):
+            acc.accessibility_field_check(ramp_running_slope=value)
+    else:
+        assert check(acc.accessibility_field_check(ramp_running_slope=value), "Ramp running slope").result == result
+
+
+@pytest.mark.parametrize("kwargs, item, result", [
+    ({"parking_stall_width": "108 in"}, "Car space width", "pass"),           # 108 in = 9 ft
+    ({"parking_stall_width": "8.99"}, "Car space width", "fail"),
+    ({"counter_height": "3 ft"}, "Sales/service counter height", "fail"),     # 36 in > 34 in
+    ({"door_clear_width": "813 mm"}, "Door clear width", "pass"),             # 813 / 25.4 = 32.01 in
+    ({"door_clear_width": "81 cm"}, "Door clear width", "fail"),              # 810 / 25.4 = 31.89 in
+    ({"door_clear_width": "32 in."}, "Door clear width", "pass"),
+    ({"door_clear_width": "2ft8in"}, "Door clear width", "pass"),
+])
+def test_length_units(kwargs, item, result):
+    assert check(acc.accessibility_field_check(**kwargs), item).result == result
+
+
+@pytest.mark.parametrize("kwargs, msg", [
+    ({"parking_stall_width": 108}, "does not look like feet"),
+    ({"parking_stall_length": "216"}, "does not look like feet"),
+    ({"counter_height": 3}, "does not look like inches"),
+    ({"door_clear_width": "-32 in"}, "0 or more"),
+])
+def test_implausible_bare_numbers_are_rejected(kwargs, msg):
+    with pytest.raises(ValueError, match=msg):
+        acc.accessibility_field_check(**kwargs)
+
+
+@pytest.mark.parametrize("height, in_path, result", [
+    (60, None, "needs_info"), (79, None, "needs_info"), (80, None, "pass"), (59, None, "fail"),
+    (70, True, "fail"), (80, True, "pass"), (60, False, "pass"), (59.5, False, "fail"),
+])
+def test_parking_sign_height_in_a_circulation_path(height, in_path, result):
+    # CBC 11B-502.6: 60 in to the bottom; Exception: 80 in within a circulation path
+    c = check(acc.accessibility_field_check(parking_sign_bottom_height=height, sign_in_circulation_path=in_path),
+              "Parking sign height")
+    assert c.result == result and acc.PK_SIGN80 in c.rule_ids
+
+
+@pytest.mark.parametrize("clear, garage, van, result", [
+    (90, True, False, "pass"),     # existing multistory garage, car space: 80 in minimum
+    (79, True, False, "fail"),
+    (90, True, True, "fail"),      # the exception is not for van spaces: 98 in
+    (90, False, False, "fail"),    # not an existing garage: 98 in
+])
+def test_existing_garage_vertical_clearance_exception(clear, garage, van, result):
+    c = check(acc.accessibility_field_check(parking_vertical_clearance=clear, existing_parking_structure=garage,
+                                            van_space=van), "Parking vertical clearance")
+    assert c.result == result and (acc.PK_VERT80 in c.rule_ids) is garage
+
+
+@pytest.mark.parametrize("slope, result", [("2%", "pass"), ("1:48", "pass"), ("2.5%", "fail"), ("1:20", "fail")])
+def test_parking_surface_slope(slope, result):
+    assert check(acc.accessibility_field_check(parking_surface_slope=slope), "Parking space / aisle slope").result == \
+        result
+
+
+def test_van_12_plus_5_layout_flags_the_ladbs_96_inch_statement():
+    r = acc.accessibility_field_check(parking_stall_width=12, parking_aisle_width=5, van_space=True)
+    c = check(r, "Van space width")
+    assert c.result == "pass" and acc.PK_VAN6 in c.rule_ids and "In Los Angeles confirm with plan check" in \
+        " ".join(r.notes)
+    nine = acc.accessibility_field_check(parking_stall_width=9, parking_aisle_width=8, van_space=True)
+    assert acc.PK_VAN6 not in check(nine, "Van space width").rule_ids
+    assert "centerline of the markings" in " ".join(nine.notes)
+
+
+@pytest.mark.parametrize("kwargs, expect", [
+    ({"ramp_running_slope": "1:11"}, "up to 1:10 for a rise of 6 in"),        # band 1:12-1:10, rise unknown
+    ({"ramp_rise": 2, "ramp_run": 18}, "up to 1:8 for a rise of 3 in"),       # 1:9 is in the 1:10-1:8 band
+    ({"ramp_rise": 5, "ramp_run": 45}, None),                                 # 1:9 band allows 3 in only
+    ({"ramp_running_slope": "1:7"}, None),                                    # steeper than 1:8 is prohibited
+])
+def test_existing_ramp_uses_the_table_405_2_band_the_slope_is_in(kwargs, expect):
+    c = check(acc.accessibility_field_check(existing_building=True, **kwargs), "Ramp running slope")
+    assert c.result == "fail"
+    if expect:
+        assert expect in c.fix and acc.S_STEEP in c.rule_ids
+    else:
+        assert acc.S_STEEP not in c.rule_ids
+
+
+# ---------------------------------------------------------------- triggers
+def test_health_care_office_has_no_federal_elevator_exemption():
+    # 36.401(d)(2) / 36.404(a): the exemption is not available for the professional office of a health care provider
+    r = acc.accessibility_triggers("new", "dental office", stories=2, sq_ft_per_story=2000)
+    assert r.building_use == "public_accommodation" and r.federal_elevator_exempt is False
+    assert "read as special_facility health_care_office" in " ".join(r.notes)
+
+
+def test_single_story_building_is_not_told_it_needs_an_elevator():
+    r = acc.accessibility_triggers("new", "strip mall", stories=1, sq_ft_per_story=9000)
+    assert r.federal_elevator_exempt is None
+    assert any(q.detail.startswith("Single-story building") for x in r.regimes for q in x.requirements)
+
+
+def test_new_building_entrances_california_is_stricter_than_60_percent():
+    r = acc.accessibility_triggers("new", "retail", public_entrances=5, as_of=AS_OF)
+    assert r.accessible_public_entrances_min == 3                          # ceil(60% x 5 = 3)
+    assert acc.ENTR_ALL in ids(r) and "plan for all 5" in " ".join(g.detail for g in r.general)
+    assert any(q.item.startswith("Entrances (CBC 11B-206.4.1") for q in regime(r, "CBC Chapter 11B").requirements)
+
+
+@pytest.mark.parametrize("first, permit, applies, covered", [
+    ("1991-06-01", "1990-05-01", False, None),    # last permit on or before 1990-06-15 (24 CFR 100.205(a))
+    ("1991-06-01", "1990-06-15", False, None),
+    ("1991-06-01", "1990-06-16", True, 10),
+    ("1991-06-01", None, True, 10),
+])
+def test_fha_june_15_1990_permit_rule(first, permit, applies, covered):
+    r = acc.accessibility_triggers("remodel", "apartments", dwelling_units=10, has_elevator=True,
+                                   first_occupied_date=first, last_building_permit_date=permit, as_of=AS_OF)
+    fha = regime(r, "Fair Housing")
+    assert fha.applies is applies and r.fha_covered_units == covered
+    assert ("FHA-covered" in r.summary) is applies
+    if permit is None:
+        assert "give last_building_permit_date" in fha.why
+
+
+@pytest.mark.parametrize("kwargs, msg", [
+    ({"first_occupied_date": "2030-01-01"}, "is after"),
+    ({"first_occupied_date": "1995-01-01", "last_building_permit_date": "1996-01-01"}, "after first_occupied_date"),
+])
+def test_existing_building_dates_are_checked(kwargs, msg):
+    with pytest.raises(ValueError, match=msg):
+        acc.accessibility_triggers("remodel", "apartments", dwelling_units=10, has_elevator=True, as_of=AS_OF, **kwargs)
+
+
+def test_public_housing_alterations_vacated_building_rule():
+    # 40 > 15 units: mobility ceil(5% x 40 = 2) = 2; communication ceil(2% x 40 = 0.8) = 1
+    r = acc.accessibility_triggers("alteration", "public housing", dwelling_units=40)
+    req = next(q for q in regime(r, "CBC Chapter 11B").requirements if "233.3.4" in q.item)
+    assert "at least 2 unit(s) need mobility features" in req.detail and "1 communication" in req.detail
+    assert acc.PH_ALTER in ids(r)
+    small = acc.accessibility_triggers("alteration", "public housing", dwelling_units=12)
+    assert "does not apply to 12 unit(s)" in next(q for q in regime(small, "CBC Chapter 11B").requirements
+                                                   if "233.3.4" in q.item).detail
+
+
+def test_title_ii_building_is_not_given_the_title_iii_elevator_exemption():
+    r = acc.accessibility_triggers("new", "city hall", stories=2, sq_ft_per_story=2000)
+    assert r.federal_elevator_exempt is None and "was not applied" in " ".join(r.notes)
+
+
+# ---------------------------------------------------------------- lease
+def test_lease_property_type_words_and_limits():
+    assert acc.casp_lease_disclosure(property_type="retail space").property_type == "commercial"
+    assert acc.casp_lease_disclosure(property_type="single family house").property_type == "residential"
+    with pytest.raises(ValueError, match="mixes commercial and residential"):
+        acc.casp_lease_disclosure(property_type="apartment and retail")
+    with pytest.raises(ValueError, match="200 at most"):
+        acc.casp_lease_disclosure(lessor_name="X" * 201)
+    r = acc.casp_lease_disclosure("tenant", business_license_city="San Diego, CA 92101", employees=3)
+    # $38 + 3 x $1.47 = $42.41; $38 + 3 x $2.82 = $46.46
+    assert r.san_diego_example.estimated_total_usd == [42.41, 46.46]
+    assert "City of San Diego business tax certificate" in " ".join(r.notes)
+
+
+# ---------------------------------------------------------------- MCP: the new parameters and errors
+def test_new_parameters_and_errors_through_an_mcp_client():
+    mcp = FastMCP("t")
+    acc.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            ok = {
+                "field": await c.call_tool("accessibility_field_check", {
+                    "parking_surface_slope": "2.5%", "parking_vertical_clearance": 90,
+                    "existing_parking_structure": True, "parking_sign_bottom_height": "70 in",
+                    "sign_in_circulation_path": True}),
+                "trig": await c.call_tool("accessibility_triggers", {
+                    "project_type": "remodel", "building_use": "apartments", "dwelling_units": 10,
+                    "has_elevator": True, "first_occupied_date": "1991-06-01",
+                    "last_building_permit_date": "1990-05-01", "as_of": AS_OF}),
+                "park": await c.call_tool("accessible_parking_requirements", {
+                    "facilities": [{"total_spaces": 60, "bus_truck_delivery_spaces": 10, "ev_charging_spaces": 30}]}),
+            }
+            bad = [await c.call_tool(n, a, raise_on_error=False) for n, a in [
+                ("accessibility_field_check", {"ramp_running_slope": 0.0833}),
+                ("accessibility_field_check", {"parking_stall_width": 108}),
+                ("accessible_parking_requirements", {"total_spaces": 25, "use": "rehab"}),
+                ("path_of_travel_obligation", {"construction_cost_usd": 100000,
+                                               "primary_function_alteration_cost_usd": 500000}),
+            ]]
+            return {k: v.structured_content for k, v in ok.items()}, bad
+    ok, bad = asyncio.run(run())
+    results = {c["item"]: c["result"] for c in ok["field"]["checks"]}
+    assert results == {"Parking space / aisle slope": "fail", "Parking vertical clearance": "pass",
+                       "Parking sign height": "fail"}
+    fha = next(r for r in ok["trig"]["regimes"] if r["code"].startswith("Fair Housing"))
+    assert fha["applies"] is False and ok["trig"]["fha_covered_units"] is None
+    assert ok["park"]["facilities"][0]["counted_spaces"] == 20 and ok["park"]["total_required_accessible"] == 1
+    assert ok["park"]["facilities"][0]["accessible_evcs"]["van_accessible"] == 1    # 30 EV: 26-50 row -> 1/1/1
+    assert all(b.is_error for b in bad)
+    texts = [b.content[0].text for b in bad]
+    assert "ambiguous" in texts[0] and "does not look like feet" in texts[1] and "ambiguous" in texts[2]
+    assert "cannot be more than this job's cost" in texts[3]

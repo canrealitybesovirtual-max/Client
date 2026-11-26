@@ -1458,7 +1458,9 @@
     "weekly_hours_threshold": 40,
     "overtime_multiplier": 1.5,
     "rate_base": "basic rate of pay (may be computed as FLSA regular-rate equivalent, 29 CFR 5.15(c))",
-    "includes_watchpersons_guards": true
+    "includes_watchpersons_guards": true,
+    "clause_inserted_in_addition_to_dba_clauses": true,
+    "applies_only_if_subject_to_cwhssa_overtime": true
    },
    "applies_to": "Contractors and subcontractors employing laborers or mechanics on federal or federally assisted contracts subject to the Contract Work Hours and Safety Standards Act",
    "citation": "40 U.S.C. 3702 (as implemented); 29 CFR 5.5(b)(1); 2 CFR part 200 Appendix II (E); FAR 22.301",
@@ -1466,10 +1468,10 @@
    "verbatim_quote": "in any contract in an amount in excess of $100,000 and subject to the overtime provisions of the Contract Work Hours and Safety Standards Act.",
    "effective": "2023-10-23 (DOL Davis-Bacon final rule, 88 FR 57526/57731, Aug. 23, 2023; eCFR version date)",
    "read_from_primary_text": true,
-   "notes": "For direct federal FAR contracts the clause is inserted only above $200,000 since 2025-10-01 (see fed-cwhssa-far-clause-200k). California daily overtime (over 8 hours/day) on state public works is separate and stricter.",
+   "notes": "For direct federal FAR contracts the clause is inserted only above $200,000 since 2025-10-01 (see fed-cwhssa-far-clause-200k). California daily overtime (over 8 hours/day) on state public works is separate and stricter. 29 CFR 5.5(b) puts the CWHSSA clauses in contracts over $100,000 'and subject to the overtime provisions of the Contract Work Hours and Safety Standards Act', and says 'These clauses must be inserted in addition to the clauses required by paragraph (a) of this section or 29 CFR 4.6' (the Davis-Bacon or Service Contract clauses); 2 CFR 200 Appendix II(E) says 'Where applicable'. On a federal grant that is not under a Davis-Bacon Related Act, coverage is not settled by the regulation; confirm with the agency.",
    "verification": {
     "status": "confirmed",
-    "checked_against": "eCFR 29 CFR 5.5; eCFR 2 CFR part 200; eCFR 2 CFR part 200 Appendix II, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 29 CFR 5.15(c)(1); FAR 22.301. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. $100,000, 40 hours, 1.5x, guards/watchpersons and FLSA regular-rate tolerance confirmed.",
+    "checked_against": "eCFR 29 CFR 5.5; eCFR 2 CFR part 200; eCFR 2 CFR part 200 Appendix II, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 29 CFR 5.15(c)(1); FAR 22.301. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. $100,000, 40 hours, 1.5x, guards/watchpersons and FLSA regular-rate tolerance confirmed. Adversarial legal review 2026-11-25: 29 CFR 5.5(b) introductory text and 2 CFR 200 Appendix II(E) re-fetched (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API); clause_inserted_in_addition_to_dba_clauses and applies_only_if_subject_to_cwhssa_overtime added from that text.",
     "correction": ""
    }
   },
@@ -1489,7 +1491,13 @@
     "agency_head_waiver_max_usd": 500,
     "formula": "LD = 33 * number_of_(worker, calendar_day)_pairs_with_unpaid_overtime_in_workweeks_over_40",
     "adjusted_annually_by": "DOL inflation adjustment (Federal Civil Penalties Inflation Adjustment Act)",
-    "no_2026_adjustment_published_in_ecfr_as_of": "2026-11-23"
+    "no_2026_adjustment_published_in_ecfr_as_of": "2026-11-23",
+    "history_by_effective_date_usd": {
+     "2022-01-18": 29,
+     "2023-01-15": 31,
+     "2024-01-15": 32,
+     "2025-01-15": 33
+    }
    },
    "applies_to": "Contractors and subcontractors on CWHSSA-covered contracts",
    "citation": "29 CFR 5.5(b)(2); 29 CFR 5.8(a)-(d); FAR 22.302; FAR 52.222-4(b)",
@@ -1500,7 +1508,7 @@
    "notes": "eCFR version history shows 29 CFR 5.5/5.8 amounts of $31 (2023), $32 (2024) and $33 (amended 90 FR 1859, Jan. 10, 2025, in eCFR from 2025-01-15); no 2026 amendment appears in eCFR through 2026-11-23, so $33 remains the current amount. FAR 22.302 says DOL adjusts it no later than January 15 each year; recheck in January 2027.",
    "verification": {
     "status": "confirmed",
-    "checked_against": "eCFR 29 CFR 5.5; eCFR 29 CFR 5.8, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 29 CFR 5.8(a)-(d); FAR 22.302(a), (c); FAR 52.222-4(b) (MAY 2018); eCFR point-in-time copies of 29 CFR 5.8 at 2023-01-12, 2023-01-15, 2024-01-11, 2024-01-15, 2025-01-14, 2025-01-15, 2026-01-15 and 2026-11-23. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. Amounts: $29 to 2023-01-14, $31 from 2023-01-15 (88 FR 2215), $32 from 2024-01-15 (89 FR 1815), $33 from 2025-01-15 (90 FR 1859); still $33 on 2026-01-15 and 2026-11-23. $500 agency-head limit confirmed in 5.8(b), (d) and FAR 22.302(c).",
+    "checked_against": "eCFR 29 CFR 5.5; eCFR 29 CFR 5.8, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 29 CFR 5.8(a)-(d); FAR 22.302(a), (c); FAR 52.222-4(b) (MAY 2018); eCFR point-in-time copies of 29 CFR 5.8 at 2023-01-12, 2023-01-15, 2024-01-11, 2024-01-15, 2025-01-14, 2025-01-15, 2026-01-15 and 2026-11-23. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. Amounts: $29 to 2023-01-14, $31 from 2023-01-15 (88 FR 2215), $32 from 2024-01-15 (89 FR 1815), $33 from 2025-01-15 (90 FR 1859); still $33 on 2026-01-15 and 2026-11-23. $500 agency-head limit confirmed in 5.8(b), (d) and FAR 22.302(c). Adversarial legal review 2026-11-25: 29 CFR 5.8(a) re-fetched as eCFR point-in-time copies at 2022-01-17 ($27), 2022-01-18 ($29), 2023-01-14 ($29), 2023-01-15 ($31), 2024-01-14 ($31), 2024-01-15 ($32), 2025-01-14 ($32), 2025-01-15 ($33) and current 2026-11-23 ($33), with the eCFR version list for 5.8 (versions dated 2022-01-18, 2023-01-15, 2024-01-15, 2025-01-15); history_by_effective_date_usd added from those copies. The 2023 amount took effect 2023-01-15, not 2023-01-01.",
     "correction": ""
    }
   },
@@ -1963,7 +1971,8 @@
     "effective": "2025-10-01",
     "typical_min_self_perform_pct": 12,
     "clause": "FAR 52.236-1",
-    "excluded_programs": "FAR subparts 19.5, 19.8, 19.13, 19.14, 19.15"
+    "excluded_programs": "FAR subparts 19.5, 19.8, 19.13, 19.14, 19.15",
+    "may_insert_at_or_below_threshold": true
    },
    "applies_to": "Prime contractors (and where flowed down, subcontractors) on direct federal construction contracts under the FAR (e.g., USACE, GSA, VA, Navy, NPS work in California)",
    "citation": "FAR 36.501(a)-(b); FAR 52.236-1",
@@ -1974,7 +1983,7 @@
    "notes": "The actual percentage is filled into the clause by the contracting officer; 12% is the ordinary floor in FAR 36.501(a).",
    "verification": {
     "status": "confirmed",
-    "checked_against": "eCFR 48 CFR (FAR) 36.501; eCFR 48 CFR (FAR) 52.236-1, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: FAR 52.236-1 (APR 1984); eCFR point-in-time copies of FAR 36.501 at 2025-09-30 ($1.5 million) and 2025-10-01. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. $2 million, prior $1.5 million, 12% ordinary floor and excluded subparts confirmed. The plain-English remark that set-aside contracts use limitations-on-subcontracting rules instead is explanatory; FAR 52.219-14 was not read.",
+    "checked_against": "eCFR 48 CFR (FAR) 36.501; eCFR 48 CFR (FAR) 52.236-1, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: FAR 52.236-1 (APR 1984); eCFR point-in-time copies of FAR 36.501 at 2025-09-30 ($1.5 million) and 2025-10-01. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. $2 million, prior $1.5 million, 12% ordinary floor and excluded subparts confirmed. The plain-English remark that set-aside contracts use limitations-on-subcontracting rules instead is explanatory; FAR 52.219-14 was not read. Adversarial legal review 2026-11-25: FAR 36.501(b) re-fetched (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API): 'The contracting officer may insert the clause on solicitations and contracts when a fixed-price construction contract is contemplated and the contract amount is expected to be $2 million or less.' may_insert_at_or_below_threshold added.",
     "correction": ""
    }
   },
@@ -2608,7 +2617,8 @@
     "post_award_request_requires_explanation": true,
     "cots_content_test": "waived for COTS construction material that is not wholly or predominantly iron or steel; for COTS material that is wholly or predominantly iron or steel, the test applies only to its iron and steel content, excluding COTS fasteners (FAR 52.225-9(a) 'Domestic construction material', (b)(1))",
     "critical_items_extra_preference": "for critical items or materials with critical components, the 20% differential is increased by the FAR 25.105 preference factor (52.225-9(b)(3)(i)(B))",
-    "items_delivered_before_2024_pct": 60
+    "items_delivered_before_2024_pct": 60,
+    "trade_agreements_version": "FAR 52.225-11: when the contracting officer has determined that the WTO GPA and Free Trade Agreements apply, the Buy American restrictions are waived for designated country construction materials"
    },
    "applies_to": "Prime contractors (and where flowed down, subcontractors) on direct federal construction contracts under the FAR (e.g., USACE, GSA, VA, Navy, NPS work in California)",
    "citation": "FAR 52.225-9 (OCT 2022); 41 U.S.C. chapter 83",
@@ -2619,7 +2629,7 @@
    "notes": "Large contracts may use the Trade Agreements versions (FAR 52.225-11) instead; trade agreement thresholds were not researched. Critical-item price preferences in 52.225-9(b)(3) were not summarized.",
    "verification": {
     "status": "corrected",
-    "checked_against": "eCFR 48 CFR (FAR) 52.225-9, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: FAR 52.225-9(a), (b)(1), (b)(3)(i)(A)-(B), (c)(1)(iv) (OCT 2022). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section",
+    "checked_against": "eCFR 48 CFR (FAR) 52.225-9, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: FAR 52.225-9(a), (b)(1), (b)(3)(i)(A)-(B), (c)(1)(iv) (OCT 2022). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section Adversarial legal review 2026-11-25: FAR 52.225-11(b)(1)-(2) read (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API): 'the Buy American restrictions are waived for designated country construction materials'; trade_agreements_version added. The trade agreement dollar thresholds (FAR 25.402) were not read and are not in the rule.",
     "correction": "The 65% (2024-2028) and 75% (2029+) figures, the <5% foreign iron/steel limit, the 20% differential and the post-award explanation rule (52.225-9(c)(1)(iv)) are confirmed. The parameter 'cots_exempt_from_content_test: true' was too broad. 52.225-9(b)(1) waives the content test for COTS material 'except that for construction material that consists wholly or predominantly of iron or steel ... the domestic content test is applied only to the iron and steel content'. It was replaced by cots_content_test. The critical-item preference (b)(3)(i)(B) and the 60% figure for pre-2024 deliveries were added, and plain_english was updated."
    }
   },
@@ -3325,7 +3335,8 @@
      "procurement of recovered materials (200.323) (Appendix II(J))",
      "telecom prohibition (200.216) (Appendix II(K))",
      "domestic preferences (200.322) (Appendix II(L))"
-    ]
+    ],
+    "breach_remedies_threshold_is": "the simplified acquisition threshold 'which is the inflation adjusted amount determined by the Civilian Agency Acquisition Council and the Defense Acquisition Regulations Council (Councils) as authorized by 41 U.S.C. 1908' (the FAR 2.101 figure), not a recipient's own lower threshold"
    },
    "applies_to": "Contractors and subcontractors on construction paid with federal financial assistance (grants, cooperative agreements) passed through California state or local agencies",
    "citation": "2 CFR 200.327; 2 CFR part 200 Appendix II (A)-(L)",
@@ -3336,7 +3347,7 @@
    "notes": "Appendix II(C) still references Executive Order 11246 and 41 CFR part 60; the current status of EO 11246 obligations was not verified from an official source in this session (federalregister.gov/dol.gov blocked), so no separate EEO rule is included.",
    "verification": {
     "status": "corrected",
-    "checked_against": "eCFR 2 CFR part 200; eCFR 2 CFR part 200 Appendix II, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 2 CFR 200.327; 2 CFR 180.220; 2 CFR 200.1 'Simplified acquisition threshold'. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section",
+    "checked_against": "eCFR 2 CFR part 200; eCFR 2 CFR part 200 Appendix II, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 2 CFR 200.327; 2 CFR 180.220; 2 CFR 200.1 'Simplified acquisition threshold'. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section Adversarial legal review 2026-11-25: Appendix II(A) re-fetched (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API): it defines the threshold as the Councils' inflation adjusted amount, so breach_remedies_threshold_is was added and tools measure breach remedies against the FAR figure even when the recipient sets a lower SAT for bonding (2 CFR 200.326 / 200.1).",
     "correction": "Every dollar threshold is confirmed in Appendix II(A), (B), (D), (E), (G) and (I): SAT, $10,000, $2,000, $100,000, $150,000 and $100,000. The 'any_amount' list was inaccurate. Appendix II(C) EEO applies 'Except as otherwise provided under 41 CFR Part 60' to contracts meeting the 41 CFR 60-1.3 definition. Appendix II(H) debarment applies to contract awards under 2 CFR 180.220, which are generally $25,000 or more or any contract needing Federal consent. The list was renamed no_dollar_threshold_stated_in_appendix_ii and these qualifications were added; plain_english was updated. The (A) breach-remedies threshold is the FAR inflation-adjusted SAT, confirmed as $350,000."
    }
   },
@@ -3566,16 +3577,100 @@
     "checked_against": "eCFR 48 CFR (FAR) 22.404-2, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 29 CFR 1.2 'Type of construction'; 29 CFR 1.6(b)(1). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. FAR 22.404-2(b)-(c) four schedules, 4-story residential limit, no inclusion by reference and guidance before bid opening confirmed.",
     "correction": ""
    }
+  },
+  {
+   "id": "fed-state-procurement-own-policies-200-317",
+   "title": "State agencies (Caltrans, DGS, DWR, ...) procure under their own state rules; 2 CFR 200.318-200.326 (including the 200.326 bond minimums) bind local agencies, not the State",
+   "plain_english": "When a State, or any agency or instrumentality of a State (for example Caltrans, DGS or DWR), buys or contracts under a federal award, it follows the same policies and procedures it uses with its own money. Only if it has none does it fall back on 2 CFR 200.318 through 200.327. It must still comply with 200.321 (small, minority and women's businesses), 200.322 (domestic preferences), 200.323 (recovered materials) and 200.327 (the Appendix II contract clauses). So the federal minimum bonding of 2 CFR 200.326 (5% bid guarantee, 100% performance and payment bonds) does not govern a California state agency's own contract; state law and the bid documents set the bonds. Cities, counties, special districts, school districts and other local governments, including subrecipients of a State, must follow 200.318 through 200.327.",
+   "category": "definition",
+   "parameters": {
+    "state_follows_own_procurement_policies": true,
+    "state_fallback_if_no_policies": "2 CFR 200.318 through 200.327",
+    "state_must_also_comply_with": [
+     "200.321",
+     "200.322",
+     "200.323",
+     "200.327"
+    ],
+    "others_including_state_subrecipients_follow": "2 CFR 200.318 through 200.327",
+    "state_definition": "any State of the United States ... and any agency or instrumentality thereof exclusive of local governments (2 CFR 200.1 'State')",
+    "local_government_examples": [
+     "county",
+     "municipality",
+     "city",
+     "town",
+     "local public authority",
+     "special district",
+     "school district",
+     "intrastate district",
+     "council of governments"
+    ],
+    "not_binding_on_state_with_own_policies": [
+     "2 CFR 200.326 bonding requirements"
+    ]
+   },
+   "applies_to": "Contractors on construction paid with federal financial assistance where the awarding body is a California state agency (Caltrans, DGS, DWR and other State agencies or instrumentalities); contrast local agencies, which follow 2 CFR 200.318-200.327",
+   "citation": "2 CFR 200.317; 2 CFR 200.1 ('State', 'Local government')",
+   "source_location": "https://www.ecfr.gov/current/title-2/section-200.317; https://www.ecfr.gov/current/title-2/section-200.1 (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API)",
+   "verbatim_quote": "When conducting procurement transactions under a Federal award, a State or Indian Tribe must follow the same policies and procedures it uses for procurements with non-Federal funds.",
+   "effective": "2024-10-01 (current eCFR version of 2 CFR 200.317)",
+   "read_from_primary_text": true,
+   "notes": "Whether a particular California body is a State instrumentality (for example the University of California or the California State University) was not researched; the tools treat only named State departments as the State. Federal-aid highway contracts are also governed by 23 CFR part 635 (635.110(b): State DOT bonding procedures need FHWA Division Administrator approval).",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "Adversarial legal review 2026-11-25: eCFR 2 CFR 200.317 and 2 CFR 200.1 ('State', 'Local government') fetched (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API); eCFR version list for 200.317 (current version dated 2024-10-01); 23 CFR 635.110(b) read. verbatim_quote string-matched exactly in the fetched 200.317 text.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "fed-fta-buy-america-all-us-components",
+   "title": "FTA Buy America: iron, steel and manufactured products produced in the U.S.; a manufactured product needs ALL components of U.S. origin",
+   "plain_english": "FTA may not obligate funds for a project unless all iron, steel and manufactured products used in it are produced in the United States. Steel and iron: all manufacturing processes in the U.S. (except metallurgical processes refining steel additives); this covers construction materials made primarily of steel or iron (structural steel, beams, columns, running and contact rail), not steel or iron used as components of other manufactured products or rolling stock. A manufactured product: all of its manufacturing processes in the U.S. and all of its components of U.S. origin (a component is U.S. origin if it is manufactured in the U.S., wherever its subcomponents come from). That is stricter than the BABA 55% component test. Rolling stock has its own rule (49 CFR 661.11). FTA may waive the requirement for public interest, non-availability, or price: the price-differential waiver is granted when the lowest bid offering the foreign item times 1.25 is less than the lowest bid offering the U.S. item.",
+   "category": "prohibition",
+   "parameters": {
+    "covered_items": [
+     "iron",
+     "steel",
+     "manufactured products"
+    ],
+    "steel_iron_standard": "all steel and iron manufacturing processes in the United States, except metallurgical processes involving refinement of steel additives",
+    "steel_iron_scope": "construction materials made primarily of steel or iron used in infrastructure projects (e.g. structural steel or iron, beams and columns, running rail and contact rail); not steel or iron used as components or subcomponents of other manufactured products or rolling stock",
+    "manufactured_product_all_processes_in_us": true,
+    "manufactured_product_us_origin_components_pct_required": 100,
+    "component_us_origin_if": "manufactured in the United States, regardless of the origin of its subcomponents",
+    "rolling_stock": "49 CFR 661.11",
+    "waivers": [
+     "public interest",
+     "non-availability",
+     "price differential"
+    ],
+    "price_differential_waiver_if_lowest_foreign_bid_times": 1.25,
+    "price_differential_cost_increase_pct_more_than": 25,
+    "general_waivers": "49 CFR 661.7 Appendix A: items excepted under FAR 25.104; microprocessors, computers and software used solely to process or store data; small purchases",
+    "rolling_stock_covered_by_this_rule": false
+   },
+   "applies_to": "Contractors and suppliers on FTA-assisted projects let by California transit agencies (LA Metro, BART, VTA, SFMTA, MTS, OCTA and others)",
+   "citation": "49 CFR 661.1; 49 CFR 661.5(a)-(d); 49 CFR 661.7(b)-(d) and Appendix A",
+   "source_location": "https://www.ecfr.gov/current/title-49/section-661.5; https://www.ecfr.gov/current/title-49/section-661.7; https://www.ecfr.gov/current/title-49/section-661.1 (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API)",
+   "verbatim_quote": "(2) All of the components of the product must be of U.S. origin. A component is considered of U.S. origin if it is manufactured in the United States, regardless of the origin of its subcomponents.",
+   "effective": "In force (49 CFR 661.5 last amended 74 FR 30239, June 25, 2009; unchanged in eCFR through 2026-11-23)",
+   "read_from_primary_text": true,
+   "notes": "2 CFR 184.2(a): part 184 (BABA) does not apply to a Buy America Preference meeting or exceeding section 70914 that a Federal agency applied to infrastructure awards before November 15, 2021. Whether FTA also applies the BABA construction-material standards (lumber, glass, drywall, plastics, non-ferrous metals) on its projects was not read from an FTA source; follow the contract's Buy America provisions. The rolling stock domestic-content percentage (661.11) and the 661.13 certification forms were not read. 661.7(d) still refers to 'section 165(b)(4) of the Act'; its 1.25 test is quoted as written.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "Adversarial legal review 2026-11-25: eCFR 49 CFR 661.1, 661.3, 661.5 and 661.7 fetched (eCFR text current as of 2026-11-23, retrieved 2026-11-25 via the eCFR versioner API); 2 CFR 184.2(a) read. verbatim_quote string-matched exactly in the fetched 661.5 text; the 1.25 price test is 661.7(d); general waivers are 661.7 Appendix A(a)-(c).",
+    "correction": ""
+   }
   }
  ],
  "refuted": [],
  "verification_meta": {
   "verified_on": "2026-11-25",
-  "method": "Independent re-verification of all 130 rules (every id starts with 'fed-'; none collides with tradecomply/data/rulebook.json or any other research pack). Sources were fetched fresh on 2026-11-25 into a new scratch folder; nothing was reused from the author's downloads. Sources: eCFR versioner API full-text XML current as of 2026-11-23 for 29 CFR parts 1, 3, 5, 13, 23; 48 CFR parts 1, 2, 4, 19, 22, 28, 36, 52 and FAR 3.808; 2 CFR parts 25, 180, 184, 200; 49 CFR part 26; 23 CFR parts 633 and 635. Also eCFR version histories, plus point-in-time copies for 2025-09-30 / 2025-10-01 (FAR 1.109, 2.101, 3.808, 4.1102, 19.702, 22.305, 22.1803, 28.102-1/-2, 36.501), 29 CFR 5.8 (2023-2026), 23 CFR 635.410 (2025), 23 CFR part 633 (2026-06-09/10), 49 CFR 26.65 and 26.67, and 29 CFR parts 1, 3, 5 as of 2023-10-22 to test the 'new in the 2023 rule' notes. California sources were the DIR copy of 8 CCR 16001 (https://www.dir.ca.gov/t8/16001.html) and the DLSE Public Works Manual, October 2023 (https://www.dir.ca.gov/dlse/PWManualCombined.pdf, pdftotext). Each verbatim_quote was string-matched against the fresh text after collapsing whitespace and normalizing quotes and dashes, and checked to fall inside the section named in source_location. All 129 primary-text quotes matched exactly; the EO 14026 quote matched nothing. Every parameter value, threshold, date, citation and applies_to scope was then read against the section text. Statuses: confirmed = the official text states the rule and parameters. corrected = a parameter, formula, scope, citation or wording was fixed against the text, in place, with the change described in verification.correction. unverifiable = the primary text could not be read. refuted = contradicted by or absent from the source (none). Not reachable from this session (the network proxy refused the host; no bot protection was bypassed): www.dol.gov, www.acquisition.gov, www.govinfo.gov, uscode.house.gov, www.federalregister.gov, www.law.cornell.edu, www.fhwa.dot.gov, www.transportation.gov. Consequences: the EO 14026 revocation, the EO 13706 and EO 11246 status, the current DOT-posted DBE size cap, the Miller Act claim deadlines (40 U.S.C. 3133(b)) and Caltrans guidance remain unverified. This file does not rebuild tradecomply/data/rulebook.json; scripts/build_rulebook.py must be re-run to pick up this pack.",
-  "in_scope_rules_checked": 130,
+  "method": "Independent re-verification of all 130 rules (every id starts with 'fed-'; none collides with tradecomply/data/rulebook.json or any other research pack). Sources were fetched fresh on 2026-11-25 into a new scratch folder; nothing was reused from the author's downloads. Sources: eCFR versioner API full-text XML current as of 2026-11-23 for 29 CFR parts 1, 3, 5, 13, 23; 48 CFR parts 1, 2, 4, 19, 22, 28, 36, 52 and FAR 3.808; 2 CFR parts 25, 180, 184, 200; 49 CFR part 26; 23 CFR parts 633 and 635. Also eCFR version histories, plus point-in-time copies for 2025-09-30 / 2025-10-01 (FAR 1.109, 2.101, 3.808, 4.1102, 19.702, 22.305, 22.1803, 28.102-1/-2, 36.501), 29 CFR 5.8 (2023-2026), 23 CFR 635.410 (2025), 23 CFR part 633 (2026-06-09/10), 49 CFR 26.65 and 26.67, and 29 CFR parts 1, 3, 5 as of 2023-10-22 to test the 'new in the 2023 rule' notes. California sources were the DIR copy of 8 CCR 16001 (https://www.dir.ca.gov/t8/16001.html) and the DLSE Public Works Manual, October 2023 (https://www.dir.ca.gov/dlse/PWManualCombined.pdf, pdftotext). Each verbatim_quote was string-matched against the fresh text after collapsing whitespace and normalizing quotes and dashes, and checked to fall inside the section named in source_location. All 129 primary-text quotes matched exactly; the EO 14026 quote matched nothing. Every parameter value, threshold, date, citation and applies_to scope was then read against the section text. Statuses: confirmed = the official text states the rule and parameters. corrected = a parameter, formula, scope, citation or wording was fixed against the text, in place, with the change described in verification.correction. unverifiable = the primary text could not be read. refuted = contradicted by or absent from the source (none). Not reachable from this session (the network proxy refused the host; no bot protection was bypassed): www.dol.gov, www.acquisition.gov, www.govinfo.gov, uscode.house.gov, www.federalregister.gov, www.law.cornell.edu, www.fhwa.dot.gov, www.transportation.gov. Consequences: the EO 14026 revocation, the EO 13706 and EO 11246 status, the current DOT-posted DBE size cap, the Miller Act claim deadlines (40 U.S.C. 3133(b)) and Caltrans guidance remain unverified. This file does not rebuild tradecomply/data/rulebook.json; scripts/build_rulebook.py must be re-run to pick up this pack. Adversarial legal review 2026-11-25: two rules added from primary text read in that review (fed-state-procurement-own-policies-200-317 from 2 CFR 200.317 / 200.1; fed-fta-buy-america-all-us-components from 49 CFR 661.1, 661.5, 661.7) and parameters added to fed-cwhssa-liquidated-damages-33, fed-cwhssa-overtime-over-40, fed-appendix-ii-contract-thresholds and fed-far-buy-american-construction-65pct from re-fetched eCFR text.",
+  "in_scope_rules_checked": 132,
   "out_of_scope_rules_unchanged": 0,
   "counts": {
-   "confirmed": 113,
+   "confirmed": 115,
    "corrected": 16,
    "unverifiable": 1
   }

@@ -48,14 +48,15 @@ def test_every_pack_rule_is_used_or_explained():
     assert consts == set(fp.RULE_IDS)
     assert set(fp.RULE_IDS) <= set(book)
     pack = {i for i, r in book.items() if r.pack == "web_federal-works"}
-    assert len(pack) == 130
+    # 130 verified rules + 2 added in the 2026-11-25 legal review (2 CFR 200.317, 49 CFR 661.5), both confirmed
+    assert len(pack) == 132 and {fp.STATE_PROC, fp.FTA_BA} <= pack
     used = {i for i in fp.RULE_IDS if i.startswith("fed-")}
     assert used | set(fp.NOT_USED) == pack and not used & set(fp.NOT_USED)
-    # the verifier's summary: 113 confirmed + 16 corrected, 1 unverifiable (EO 14026 status)
+    # the verifier's summary: 115 confirmed + 16 corrected, 1 unverifiable (EO 14026 status)
     assert [i for i in pack if not book[i].verified] == [fp.EO14026]
     assert book[fp.EO14026].status == "unverifiable"
     # California rules borrowed from other packs are verified
-    assert all(book[i].verified for i in (fp.ECPR, fp.BP7108, fp.PW_OT, fp.PEN_1813))
+    assert all(book[i].verified for i in (fp.ECPR, fp.BP7108, fp.PW_OT, fp.PEN_1813, fp.PCC_10262))
 
 
 def test_corrected_values_are_the_ones_used():
@@ -107,6 +108,12 @@ def test_unknown_funding_lists_the_choices():
     ("US Army Corps of Engineers, Los Angeles District", "federal_agency",
      "US Army Corps of Engineers, Los Angeles District"),
     ("VA San Diego Healthcare System", "federal_agency", "VA San Diego Healthcare System"),
+    # CalVet is a state agency although "Veterans Affairs" is also a federal name
+    ("California Department of Veterans Affairs", "california_public_agency",
+     "California Department of Veterans Affairs"),
+    ("U.S. Department of Veterans Affairs", "federal_agency", "U.S. Department of Veterans Affairs"),
+    ("Naval Facilities Engineering Systems Command Southwest", "federal_agency",
+     "Naval Facilities Engineering Systems Command Southwest"),
     ("Acme Homes LLC", "other", "Acme Homes LLC"),
     (None, "not_given", None),
 ])
@@ -224,8 +231,11 @@ def test_usace_direct_federal_job():
     assert req(r, "Anti-lobbying certification").applies
     assert "day 8" in req(r, "Pay subcontractors within 7 days").what_to_do
     assert "up to 10%" in req(r, "Retainage").what_to_do
-    # FAR 52.225-9: 65% for items delivered 2024-2028
-    assert "over 65% of component cost (items delivered 2024-2028)" in req(r, "Buy American").what_to_do
+    # FAR 52.225-9: 65% for items delivered 2024-2028, 75% from 2029 (by delivery year, not today's year);
+    # FAR 52.225-11 accepts designated-country material
+    ba = req(r, "Buy American").what_to_do
+    assert "over 65% for items delivered in 2024-2028; over 75% for items delivered from 2029" in ba
+    assert "FAR 52.225-11" in ba and "designated-country" in ba
     # EO 13706: 1 h per 30 h, 56 h cap
     assert "1 hour of paid sick leave per 30 hours" in req(r, "Federal paid sick leave").what_to_do
     # the unverifiable EO 14026 status item makes the whole result unverified ...
@@ -305,9 +315,11 @@ def test_subcontractor_on_transit_job():
     # bonds belong to the prime; subs get no bond requirement items
     assert not any(q.area == "Bonds" for q in r.requirements)
     assert r.bonds.notes[0].startswith("These are the prime contractor's bonds")
-    # transit is BABA infrastructure; FTA-specific rules are not in the rulebook
-    baba = req(r, "Build America, Buy America")
-    assert baba.applies and "FTA and FAA program-specific" in baba.what_to_do
+    # FTA jobs use 49 CFR 661.5 (every component of a manufactured product of U.S. origin), not BABA's 55% test
+    assert not any(q.item.startswith("Build America") for q in r.requirements)
+    fta = req(r, "FTA Buy America")
+    assert fta.applies is True and fp.FTA_BA in fta.rule_ids and fta.verified
+    assert "all of its components of U.S. origin" in fta.what_to_do and "BABA 55% test" in fta.what_to_do
 
 
 def test_grant_with_unknown_program_and_city_alias():
@@ -321,8 +333,12 @@ def test_grant_with_unknown_program_and_city_alias():
     assert r2.davis_bacon_applies is True and req(r2, "Build America, Buy America").applies is True
     r3 = fp.federal_project_requirements(900_000, "HUD CDBG", "SD", davis_bacon_related_act=False, as_of=AS_OF)
     assert r3.davis_bacon_applies is False and r3.california_prevailing_wage_also_applies is None
-    # CWHSSA still applies to the grant contract over $100,000 (2 CFR 200 App. II(E))
-    assert req(r3, "CWHSSA weekly overtime").applies is True
+    # 29 CFR 5.5(b): the CWHSSA clause goes in "in addition to" the Davis-Bacon clauses, and App. II(E) says "where
+    # applicable", so on a grant that is not a Davis-Bacon Related Act coverage is not settled
+    ot3 = req(r3, "CWHSSA weekly overtime")
+    assert ot3.applies is None and "29 CFR 5.5(b)" in ot3.why and "confirm with the agency" in ot3.why
+    assert req(r, "CWHSSA weekly overtime").applies is None                  # DBRA status unknown
+    assert req(r2, "CWHSSA weekly overtime").applies is True                 # DBRA program
 
 
 def test_fema_disaster_demolition():
@@ -373,6 +389,72 @@ def test_appendix_ii_clause_thresholds():
     assert "Clean Air Act" in not_req and "remedies for breach (over $350,000)" in not_req
 
 
+def test_caltrans_prime_pays_subs_under_pcc_10262():
+    # B&P 7108.5(e): applies to public works "except where Section 10262 of the Public Contract Code applies";
+    # PCC 10262: on a state agency contract the prime pays subs within 7 days of each progress payment
+    r = caltrans_local_job(awarding_agency="Caltrans District 11")
+    pay = req(r, "Pay subcontractors within 7 days")
+    assert pay.rule_ids[0] == fp.PCC_10262 and fp.BP7108 not in pay.rule_ids
+    assert "PCC 10262" in pay.what_to_do and "Contractors State License Board" in pay.what_to_do
+    assert r.verified
+    # a city is not a state agency (B&P 7108.5), and a sub paying its own subs stays under B&P 7108.5
+    assert fp.BP7108 in req(caltrans_local_job(), "Pay subcontractors").rule_ids
+    sub = caltrans_local_job(awarding_agency="Caltrans", is_prime=False, your_contract_value_usd=50_000)
+    assert fp.BP7108 in req(sub, "Pay subcontractors").rule_ids
+    assert fp._is_state_agency("State of California DGS") and not fp._is_state_agency("UC San Diego")
+
+
+def test_breach_remedies_follow_the_sat_in_effect():
+    # 2 CFR 200 App. II(A): remedies for breach over the simplified acquisition threshold "which is the inflation
+    # adjusted amount determined by the [FAR] Councils": $250,000 before 2025-10-01, $350,000 after (FAR 2.101).
+    # An agency's own lower SAT (2 CFR 200.1) moves the 200.326 bonding threshold, not this clause.
+    old = caltrans_local_job(prime_contract_value_usd=300_000, as_of="2025-06-01", bid_opening_date=None)
+    assert "remedies for breach (over $250,000)" in req(old, "Required federal grant clauses").what_to_do.split(
+        "Not required")[0]                                                     # $300,000 > $250,000
+    new = caltrans_local_job(prime_contract_value_usd=300_000, bid_opening_date=None)
+    assert "remedies for breach (over $350,000)" in req(new, "Required federal grant clauses").what_to_do.split(
+        "Not required")[1]                                                     # $300,000 <= $350,000
+    city = caltrans_local_job(prime_contract_value_usd=300_000, recipient_sat_usd=200_000, bid_opening_date=None)
+    w = req(city, "Required federal grant clauses")
+    assert "remedies for breach (over $350,000)" in w.what_to_do.split("Not required")[1]   # still the FAR SAT
+    assert "Appendix II(A)" in w.why and fp.FAR_THRESH in w.rule_ids
+    assert core.rule(fp.APPX_II).param("breach_remedies_threshold_is").startswith("the simplified acquisition")
+    # ... while the bonds use the agency's own $200,000 threshold: $300,000 > $200,000
+    assert req(city, "Federal minimum bonding").applies is True and city.bonds.regime == "2_cfr_200_326"
+
+
+def test_subcontractor_anti_lobbying_goes_tier_by_tier():
+    # 2 CFR 200 App. II(I): each tier certifies to the tier above on a bid/award over $100,000
+    big = caltrans_local_job(is_prime=False, your_contract_value_usd=150_000)
+    assert "your $150,000 subcontract is over $100,000, so you must certify" in req(
+        big, "Required federal grant clauses").why
+    small = caltrans_local_job(is_prime=False, your_contract_value_usd=100_000)     # $100,000 is not over $100,000
+    assert "is not over $100,000, so you need not certify" in req(small, "Required federal grant clauses").why
+
+
+def test_davis_bacon_related_act_flag_only_counts_for_grants():
+    # a federal agency's own contract is covered by the Davis-Bacon Act itself; FHWA money is DBRA money
+    u = usace_job(davis_bacon_related_act=False, include_unverified=False)
+    assert u.davis_bacon_applies is True and any("davis_bacon_related_act was ignored" in n for n in u.notes)
+    h = caltrans_local_job(davis_bacon_related_act=False)
+    assert h.davis_bacon_applies is True and any("Related Act money" in n for n in h.notes)
+    assert usace_job(recipient_sat_usd=100_000, include_unverified=False).bonds.regime == "miller_act"
+
+
+def test_e_verify_flow_down_needs_the_prime_clause():
+    # FAR 22.1803: the prime contract carries 52.222-54 only over $150,000 (and 120+ days); 52.222-54(e) then
+    # reaches subcontracts over $3,500. $140,000 prime: nothing to flow down even to a $20,000 sub
+    s = fp.federal_project_requirements(140_000, "USACE", is_prime=False, your_contract_value_usd=20_000,
+                                        as_of=AS_OF, include_unverified=False)
+    ev = req(s, "E-Verify flow-down")
+    assert ev.applies is False and "$140,000 is not over $150,000" in ev.why and fp.EV_PRIME in ev.rule_ids
+    s2 = fp.federal_project_requirements(400_000, "USACE", is_prime=False, your_contract_value_usd=20_000,
+                                         as_of=AS_OF, include_unverified=False)
+    assert req(s2, "E-Verify flow-down").applies is True                        # $20,000 > $3,500
+    s3 = fp.federal_project_requirements(400_000, "USACE", is_prime=False, as_of=AS_OF, include_unverified=False)
+    assert req(s3, "E-Verify flow-down").applies is None                        # subcontract amount not given
+
+
 def test_design_build_and_e_verify_short_job():
     r = caltrans_local_job(design_build=True)
     assert req(r, "Perform 30% with your own forces").applies is False
@@ -384,7 +466,8 @@ def test_design_build_and_e_verify_short_job():
 
 
 @pytest.mark.parametrize("kw,match", [
-    (dict(prime_contract_value_usd=-1), "finite number of at least 0"),
+    (dict(prime_contract_value_usd=-1), "finite number above 0"),
+    (dict(prime_contract_value_usd="$0"), "finite number above 0"),
     (dict(prime_contract_value_usd=float("inf")), "finite number"),
     (dict(prime_contract_value_usd="lots"), "must be a number"),
     (dict(funding_source="direct federal"), "California public agency, so its contract is not a direct federal"),
@@ -567,12 +650,18 @@ def test_workweek_start_changes_the_weeks():
 
 
 def test_liquidated_damages_amount_by_date():
-    hist = core.rule(fp.CWH_LD).param("history_usd")
+    # 29 CFR 5.8(a) (eCFR point-in-time copies): $29 from 2022-01-18, $31 from 2023-01-15, $32 from 2024-01-15,
+    # $33 from 2025-01-15 - each change is on its date, not on January 1
+    hist = core.rule(fp.CWH_LD).param("history_by_effective_date_usd")
+    assert hist == {"2022-01-18": 29, "2023-01-15": 31, "2024-01-15": 32, "2025-01-15": 33}
     r = fp.federal_overtime_exposure(crew_week(), as_of="2024-06-01")
-    assert r.liquidated_damages_per_worker_day_usd == hist["2024"] == 32
-    assert any("priced at the 2024 amount" in n for n in r.notes)
+    assert r.liquidated_damages_per_worker_day_usd == 32
+    assert any("priced at the $32 amount in effect from 2024-01-15" in n for n in r.notes)
+    for as_of, amount in (("2024-01-14", 31), ("2024-01-15", 32), ("2023-01-14", 29), ("2023-01-15", 31),
+                          ("2025-01-14", 32), ("2025-01-15", 33), ("2022-06-01", 29)):
+        assert fp.federal_overtime_exposure(crew_week(), as_of=as_of).liquidated_damages_per_worker_day_usd == amount
     with pytest.raises(ValueError, match="before the earliest"):
-        fp.federal_overtime_exposure(crew_week(), as_of="2022-06-01")
+        fp.federal_overtime_exposure(crew_week(), as_of="2022-01-17")
 
 
 @pytest.mark.parametrize("ts,match", [
@@ -612,6 +701,26 @@ def test_baba_manufactured_product_55_percent():
     assert r2.complies is False                                               # 55% is not "greater than 55%"
     r3 = fp.buy_america_check("baba", "manufactured", components=PANEL)
     assert r3.complies is None and "manufactured_in_us" in r3.missing
+
+
+@pytest.mark.parametrize("program,extra", [("baba", {}), ("fhwa", {"fhwa_obligation_date": "2026-10-15"})])
+def test_exactly_55_percent_fails_despite_float_noise(program, extra):
+    # 2 CFR 184.5 and 23 CFR 635.410(c) both need MORE than 55%. $2,750 / $5,000 is exactly 55%, although
+    # 2750 / 5000 * 100 evaluates to 55.00000000000001 in binary floating point.
+    comps = [{"name": "housing", "cost_usd": 2750, "domestic": True}, {"name": "drive", "cost_usd": 2250,
+                                                                       "domestic": False}]
+    r = fp.buy_america_check(program, "manufactured product", components=comps, manufactured_in_us=True, **extra)
+    assert r.domestic_content_pct == 55 and r.complies is False
+    assert "= 55% <= 55%" in line(r, "Domestic component cost share").math
+
+
+def test_far_manufactured_item_with_iron_components_gets_a_hint():
+    # FAR 52.225-9 tests material that is wholly or predominantly iron/steel by its foreign iron and steel content;
+    # the module flags the iron/steel share so the user can re-run as iron_steel. ($3,000 + $3,000) / $10,000 = 60%
+    r = fp.buy_america_check("FAR", "manufactured product", components=PANEL, manufactured_in_us=True,
+                             delivery_date="2026-12-01")
+    assert r.complies is False                                                   # 60% is not > 65%
+    assert any("Iron and steel are 30% of this item's component cost" in n for n in r.notes)
 
 
 @pytest.mark.parametrize("delivered,dom,ok,threshold", [
@@ -779,3 +888,186 @@ def test_register_and_call_through_mcp_client():
     assert all(x["disclaimer"] == core.DISCLAIMER for x in (reqs, wages, ot, ba))
     assert all(b.is_error for b in bad)
     assert "ambiguous" in bad[1].content[0].text and "ambiguous" in bad[4].content[0].text
+
+
+# ================================================================ 2026-11-25 legal review regressions
+def test_state_agency_contract_is_outside_2cfr200_326_bonds():
+    # 2 CFR 200.317: "a State ... must follow the same policies and procedures it uses for procurements with
+    # non-Federal funds"; 2 CFR 200.1 "State" includes any agency or instrumentality of the State (Caltrans), not
+    # local governments. So the 5% / 100% / 100% federal minimum of 200.326 is a local-agency rule.
+    state = caltrans_local_job(awarding_agency="Caltrans District 11")
+    b = req(state, "Federal minimum bonding")
+    assert b.applies is False and "2 CFR 200.317" in b.why and fp.STATE_PROC in b.rule_ids and b.verified
+    assert state.bonds.regime == "none" and state.bonds.bid_guarantee_usd is None
+    assert not any(x.item.endswith("(2 CFR 200.326)") for x in state.line_items)
+    assert "Line up your surety" not in state.next_step
+    assert core.rule(fp.STATE_PROC).param("state_must_also_comply_with") == ["200.321", "200.322", "200.323",
+                                                                               "200.327"]
+    # App. II clauses still reach the State's contract (200.327 is on the must-comply list)
+    assert req(state, "Required federal grant clauses").applies is True
+    # a city on the same money is a local government: the federal minimum applies ($480,000 > $350,000)
+    city = caltrans_local_job()
+    assert req(city, "Federal minimum bonding").applies is True and city.bonds.bid_guarantee_usd == 24_000
+    # a sub on the Caltrans job gets no bond item and no prime bond amounts
+    sub = caltrans_local_job(awarding_agency="Caltrans", is_prime=False, your_contract_value_usd=50_000)
+    assert sub.bonds.regime == "none" and not any(q.area == "Bonds" for q in sub.requirements)
+    assert fp.STATE_PROC in {c.rule_id for c in sub.citations}
+
+
+def test_fta_buy_america_needs_every_component_us_origin():
+    # 49 CFR 661.5(d): all manufacturing processes in the U.S. AND "All of the components of the product must be of
+    # U.S. origin" - stricter than BABA's > 55%. A 60% product passes BABA but fails FTA.
+    baba = fp.buy_america_check("baba", "manufactured", domestic_component_cost_usd=60, total_component_cost_usd=100,
+                                manufactured_in_us=True)
+    fta = fp.buy_america_check("FTA", "manufactured", domestic_component_cost_usd=60, total_component_cost_usd=100,
+                               manufactured_in_us=True)
+    assert baba.complies is True
+    assert fta.program == "fta_buy_america" and fta.complies is False and fta.verified
+    assert any("would pass the BABA 55% test" in n for n in fta.notes)
+    assert "FTA waiver" in fta.next_step and line(fta, "U.S.-origin component share").value == 60
+    ok = fp.buy_america_check("transit", "manufactured", components=[
+        {"name": "frame", "cost_usd": 700, "domestic": True}, {"name": "drive", "cost_usd": 300, "domestic": True}],
+        manufactured_in_us=True)
+    assert ok.complies is True
+    assert fp.buy_america_check("fta", "manufactured", domestic_component_cost_usd=100, total_component_cost_usd=100,
+                                manufactured_in_us=False).complies is False          # final manufacture abroad
+    # steel: all processes in the U.S.; asks for the fact when it is missing
+    steel = fp.buy_america_check("federal transit", "rebar")
+    assert steel.complies is None and steel.missing[0].startswith("all_manufacturing_in_us")
+    assert "refinement of steel additives" in steel.test
+    # a construction material FTA's rule does not classify: not settled, never a silent pass
+    lumber = fp.buy_america_check("FTA", "lumber", all_manufacturing_in_us=True)
+    assert lumber.applies is True and lumber.complies is None and "cannot settle" in lumber.next_step
+    assert any("49 CFR 661.11" in n for n in lumber.notes)                            # rolling stock not tested
+
+
+@pytest.mark.parametrize("dom,foreign,waiver", [(125, 100, False), (125.01, 100, True), (124.99, 100, False)])
+def test_fta_price_differential_waiver_boundary(dom, foreign, waiver):
+    # 49 CFR 661.7(d): granted "if the amount of the lowest ... bid offering the item ... not produced in the United
+    # States multiplied by 1.25 is less than the amount of the lowest ... bid offering the item ... produced in the
+    # United States": $100 x 1.25 = $125, so $125 exactly is no waiver.
+    r = fp.buy_america_check("FTA", "steel", all_manufacturing_in_us=False, cost_if_domestic_usd=dom,
+                             cost_if_foreign_usd=foreign)
+    assert r.exception_possible is waiver and "x 1.25" in r.exception_test
+
+
+def test_faa_is_not_silently_tested_as_baba():
+    for name in ("FAA", "faa aip", "AIP", "federal_airport", "Airport Improvement Program"):
+        with pytest.raises(ValueError, match="FAA's own Buy American terms"):
+            fp.buy_america_check(name, "manufactured", domestic_component_cost_usd=60, total_component_cost_usd=100,
+                                 manufactured_in_us=True)
+    r = fp.federal_project_requirements(5_000_000, "FAA AIP", "San Diego County Regional Airport Authority",
+                                        as_of=AS_OF)
+    baba = req(r, "Build America, Buy America")
+    assert baba.applies is None and "FAA's own Buy American terms" in baba.why and "airport sponsor" in baba.what_to_do
+
+
+def test_far_self_performance_clause_is_optional_at_or_below_2m():
+    # FAR 36.501(b): required over $2 million; "may insert the clause" at $2 million or less
+    r = usace_job(prime_contract_value_usd=2_000_000)
+    sp = req(r, "Self-performance clause")
+    assert sp.applies is False and "lets the contracting officer include it" in sp.what_to_do
+    assert core.rule(fp.SELF_PERF).param("may_insert_at_or_below_threshold") is True
+    assert req(usace_job(), "Self-performance clause").applies is True             # $2,400,000
+
+
+@pytest.mark.parametrize("name,kind", [
+    ("Salvation Army", "other"), ("Federal Express", "other"), ("U.S. Army Fort Irwin", "federal_agency"),
+    ("Department of the Army", "federal_agency"), ("US Army Corps of Engineers", "federal_agency"),
+    ("California Army National Guard", "california_public_agency"), ("Federal Aviation Administration",
+                                                                      "federal_agency"),
+    ("California Department of Veterans Affairs", "california_public_agency"), ("VA Palo Alto", "federal_agency"),
+])
+def test_agency_words_are_not_too_broad(name, kind):
+    assert fp.classify_agency(name)[0] == kind
+
+
+def test_nonprofit_grant_subrecipient_is_not_called_federal():
+    r = fp.federal_project_requirements(400_000, "HUD", "Salvation Army", as_of=AS_OF)
+    assert r.awarding_agency_kind == "other" and r.funding_source == "federal_grant"
+
+
+@pytest.mark.parametrize("value", ["Caltrans", "City of LA", "County of San Diego"])
+def test_funding_source_given_as_an_agency_gets_a_hint(value):
+    with pytest.raises(ValueError, match="names an agency, not where the money comes from"):
+        fp.federal_project_requirements(400_000, value, as_of=AS_OF)
+
+
+def test_string_flags_are_parsed_not_truthy():
+    # bool("false") is True in Python; a form that posts "false" must not become a prime contractor
+    r = fp.federal_project_requirements(400_000, "USACE", is_prime="false", your_contract_value_usd=100_000,
+                                        as_of=AS_OF)
+    assert r.your_role == "subcontractor"
+    assert fp.federal_project_requirements(400_000, "USACE", is_prime="No", as_of=AS_OF).your_role == "subcontractor"
+    assert fp.federal_project_requirements(900_000, "HUD", "SD", davis_bacon_related_act="yes",
+                                           as_of=AS_OF).davis_bacon_applies is True
+    with pytest.raises(ValueError, match="is_prime must be true or false"):
+        fp.federal_project_requirements(400_000, "USACE", is_prime="maybe", as_of=AS_OF)
+    assert fp.buy_america_check("baba", "manufactured", domestic_component_cost_usd=60, total_component_cost_usd=100,
+                                manufactured_in_us="yes").complies is True
+    ot = fp.federal_overtime_exposure(crew_week(), funding_source="FHWA", awarding_agency="City of San Diego",
+                                      california_public_works="false", as_of=AS_OF)
+    assert ot.california_public_works is False
+
+
+def test_absurd_amounts_and_bad_components_get_clear_errors():
+    with pytest.raises(ValueError, match="not a realistic figure"):
+        fp.federal_project_requirements(1e15, "USACE", as_of=AS_OF)
+    with pytest.raises(ValueError, match="not a realistic figure"):
+        fp.davis_bacon_vs_ca_prevailing(1e13, 1, coverage="federal_only")
+    with pytest.raises(ValueError, match="component 1: cost_usd"):
+        fp.buy_america_check("baba", "manufactured", components=[{"name": "x", "cost_usd": -1, "domestic": True}])
+    with pytest.raises(ValueError, match="component 2: cost_usd"):
+        fp.buy_america_check("baba", "manufactured", components=[{"name": "a", "cost_usd": 1, "domestic": True},
+                                                                  {"name": "x", "cost_usd": 1e13, "domestic": True}])
+    with pytest.raises(ValueError, match="components must be a list"):
+        fp.buy_america_check("baba", "manufactured", components={"name": "x"})
+
+
+def test_overtime_tool_grant_coverage_follows_davis_bacon():
+    # 29 CFR 5.5(b): on grant money the CWHSSA clause rides with the Davis-Bacon clauses; still priced as if it applies
+    r = fp.federal_overtime_exposure(crew_week(), prime_contract_value_usd=500_000, funding_source="HUD CDBG",
+                                     as_of=AS_OF)
+    assert r.cwhssa_applies is None and "29 CFR 5.5(b)" in r.cwhssa_reason and r.liquidated_damages_usd > 0
+    hw = fp.federal_overtime_exposure(crew_week(), prime_contract_value_usd=500_000, funding_source="FHWA",
+                                      as_of=AS_OF)
+    assert hw.cwhssa_applies is True
+
+
+def test_leave_and_minimum_wage_items_do_not_overstate_california_law():
+    r = usace_job()
+    assert "check whether it also reaches this site" in req(r, "Federal paid sick leave").what_to_do
+    assert "California minimum" not in req(r, "Federal contractor minimum wage").what_to_do
+
+
+def test_fta_and_faa_through_mcp_client():
+    mcp = FastMCP("t")
+    fp.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            tools = {t.name: t for t in await c.list_tools()}
+            fta = await c.call_tool("buy_america_check", {
+                "program": "FTA", "item_type": "manufactured product", "domestic_component_cost_usd": "$60",
+                "total_component_cost_usd": 100, "manufactured_in_us": True})
+            faa = await c.call_tool("buy_america_check", {"program": "FAA", "item_type": "steel"},
+                                    raise_on_error=False)
+            sub = await c.call_tool("federal_project_requirements", {
+                "prime_contract_value_usd": 480_000, "funding_source": "FHWA", "awarding_agency": "Caltrans",
+                "as_of": AS_OF})
+            return tools, fta.structured_content, faa, sub.structured_content
+    tools, fta, faa, state = asyncio.run(run())
+    assert "fta_buy_america" in tools["buy_america_check"].description
+    assert fta["program"] == "fta_buy_america" and fta["complies"] is False
+    assert faa.is_error and "FAA's own Buy American terms" in faa.content[0].text
+    assert state["bonds"]["regime"] == "none"
+
+
+def test_ignored_inputs_are_reported():
+    r = caltrans_local_job(awarding_agency="Caltrans", recipient_sat_usd=100_000, stafford_act_disaster_funds=True,
+                           infrastructure_project=False)
+    assert r.bonds.regime == "none"
+    assert any(n.startswith("recipient_sat_usd was ignored for bonding") for n in r.notes)
+    assert any(n.startswith("stafford_act_disaster_funds was ignored") for n in r.notes)
+    assert any(n.startswith("infrastructure_project was ignored") for n in r.notes)
+    assert req(r, "FHWA Buy America").applies is True                  # not switched off by the stray flags

@@ -155,7 +155,7 @@ def test_sd_night_street_work_dates_the_tcp_and_noise_permit_steps():
     assert (tcp.due, tcp.status, tcp.estimate) == ("2026-11-06", "passed", True)
     n = deadline(r, "Deliver the neighbor notice")
     assert (n.due, n.due_time) == ("2026-12-05", "22:00")
-    assert "behind DSD's processing estimate" in r.next_step and "2026-12-01" in r.next_step
+    assert "past DSD's recommended filing date" in r.next_step and "2026-12-01" in r.next_step
     assert any("skipped: 2026-11-11 Veterans Day, 2026-11-26 Thanksgiving Day" in m for m in r.math)
     assert {lr.SD_NP_TCP_FIRST, lr.SD_NP_5WD, lr.SD_TCP_15BD, lr.SD_NP_NOTICE, lr.SD_NP_DS3073,
             lr.SD_TCP_NO_PERMIT, lr.SD_PENALTY} <= ids(r)
@@ -332,7 +332,7 @@ def test_sd_street_job_with_dumpster_night_work_and_trench():
         ("Traffic Control Processing Fee", 175.36), ("Dumpster fee", 353.14),
         ("Processing fee (dumpster / container permit)", 87.68), ("Construction Noise Permit", 529.71)]
     assert r.fees_total_usd == 1759.65
-    assert r.next_step.startswith("Behind the city's processing estimate") and "2026-12-07" in r.next_step
+    assert r.next_step.startswith("Past the city's recommended filing date") and "2026-12-07" in r.next_step
     c = req(r, "Placement").detail                                          # IB 718 clearances
     assert "10 ft" in c and "25 ft" in c and "15 ft" in c and "red (no parking)" in c
     assert "$1,000,000.00" in req(r, "Insurance").detail
@@ -656,3 +656,211 @@ def test_mcp_rejects_bad_values_with_clear_errors():
     assert all(errors), errors
     assert "No city jobsite rules for 'Irvine'" in errors[0] and "ISO date" in errors[1]
     assert "bin_type must be" in errors[3] and "is not clear" in errors[4] and "weeks is required" in errors[5]
+
+
+# ---------------------------------------------------------------- regression tests (adversarial review 2026-11-25)
+def test_cross_pack_rules_are_wired_and_verified():
+    book = {r.id: r for r in core.all_rules()}
+    assert set(lr.OTHER_PACK_RULES) <= set(lr.RULE_IDS)
+    assert all(book[i].verified for i in lr.OTHER_PACK_RULES), [i for i in lr.OTHER_PACK_RULES if not book[i].verified]
+    # 40 CFR 61.141: "Facility ... excluding residential buildings having four or fewer dwelling units"
+    assert book[lr.NESHAP_FAC].param("excluded_residential_max_units") == 4
+
+
+@pytest.mark.parametrize("when,as_of,due", [
+    # DST starts 2027-03-14: 2027-03-15 21:00 PDT = 03-16 04:00 UTC; - 72 h = 03-13 04:00 UTC = 2027-03-12 20:00 PST
+    # (the old wall-clock subtraction said 21:00, an hour short of 72 real hours).
+    ("2027-03-15T21:00", AS_OF, ("2027-03-12", "20:00")),
+    # DST ends 2026-11-01: 2026-11-03 05:00 PST = 13:00 UTC; - 72 h = 10-31 13:00 UTC = 2026-10-31 06:00 PDT.
+    ("2026-11-03T05:00", "2026-10-20", ("2026-10-31", "06:00")),
+])
+def test_72_hour_neighbor_notice_counts_real_hours_across_dst(when, as_of, due):
+    r = lr.construction_hours("SD", when, is_holiday=False, as_of=as_of)
+    n = deadline(r, "Deliver the neighbor notice")
+    assert (n.due, n.due_time) == due
+
+
+def test_emergency_48_hours_across_dst_and_night_work_next_step():
+    # Sat 2026-10-31 10:00 PDT = 17:00 UTC; + 48 h = 11-02 17:00 UTC = 2026-11-02 09:00 PST.
+    r = lr.construction_hours("SD", "2026-10-31T10:00", emergency_work=True, as_of="2026-10-20")
+    e = deadline(r, "Notify the Noise Abatement Administrator")
+    assert (e.due, e.due_time) == ("2026-11-02", "09:00")
+    night = lr.construction_hours("SD", "2026-12-01T02:00", emergency_work=True, as_of=AS_OF)
+    assert night.next_step.startswith("Emergency work: notify the Noise Abatement Administrator by 2026-12-03 02:00")
+    assert "no emergency exception for night" in night.next_step
+
+
+def test_holiday_closure_rule_is_a_requirement_only_for_work_inside_the_closure():
+    # Private-property night work Tue 2026-12-01 19:00: Thanksgiving (11/26) is only in the run-up, so DSD's "3 business
+    # days before a holiday closure" date (11/25 11/24 11/23 -> 11/23) is a recommendation, not "already late".
+    r = lr.construction_hours("SD", "2026-12-01T19:00", as_of=AS_OF)
+    h = deadline(r, "File before the Thanksgiving Day closure")
+    assert (h.due, h.status, h.estimate) == ("2026-11-23", "passed", True)
+    assert "already late" not in r.next_step and "recommended filing date" in r.next_step
+    n = deadline(r, "Deliver the neighbor notice")                      # 12/01 19:00 - 72 h
+    assert (n.due, n.due_time, n.estimate) == ("2026-11-28", "19:00", False)
+    # Sat 2026-07-04 21:00 is inside the July 3 (Friday) closure: 3 business days before 7/3 = 7/2 7/1 6/30 -> 6/30.
+    j = lr.construction_hours("SD", "2026-07-04T21:00", as_of="2026-06-20")
+    jh = deadline(j, "File before the Independence Day closure")
+    assert (jh.due, jh.estimate) == ("2026-06-30", False)
+
+
+def test_saturday_after_a_friday_city_holiday_is_flagged():
+    r = lr.construction_hours("SD", "2026-07-04T10:00", as_of="2026-06-20")
+    assert r.status == "allowed" and any("Independence Day holiday" in n and "SDMC 21.0104" in n for n in r.notes)
+
+
+@pytest.mark.parametrize("call,msg", [
+    (lambda: lr.construction_hours("SD", "9999-12-31T10:00", as_of=AS_OF), "between 1970 and 2100"),
+    (lambda: lr.construction_debris_plan("SD", "demolition", 2000, final_inspection_date="1900-01-01", as_of=AS_OF),
+     "between 1970 and 2100"),
+    (lambda: lr.local_jobsite_requirements("SD", "2026-12-14", work_in_public_right_of_way=True, blocks=1,
+                                           weeks_in_street="10 days", as_of=AS_OF), "number of weeks"),
+    (lambda: lr.local_jobsite_requirements("LA", "2027-03-01", earthwork_cubic_yards="2k cy",
+                                           hillside_grading_area=True, as_of=AS_OF), "number of cy"),
+    (lambda: lr.local_jobsite_requirements("LA", earthwork_cubic_yards=1e12, as_of=AS_OF),
+     "cannot be above 50,000,000"),
+    (lambda: lr.construction_debris_plan("Long Beach", "new home", project_value_usd="$5 million", as_of=AS_OF),
+     "write the full number"),
+    (lambda: lr.construction_debris_plan("Sacramento", "new home", project_value_usd="250k", as_of=AS_OF),
+     "write the full number"),
+    (lambda: lr.construction_debris_plan("SD", "demolition", 2000, total_debris_tons="40 tonnes", as_of=AS_OF),
+     "number of tons"),
+    (lambda: lr.construction_debris_plan("SD", "new home", "2400 m2", as_of=AS_OF), "number of sq ft"),
+    (lambda: lr.construction_debris_plan("SD", "demolition", 2000, total_debris_tons=0, diverted_tons=0, as_of=AS_OF),
+     "more than 0"),
+    (lambda: lr.construction_debris_plan("SD", "new home", 2400, hauling="we will not self-haul", as_of=AS_OF),
+     "is unclear"),
+    (lambda: lr.san_diego_right_of_way_fees(blocks=1, weeks="30 days"), "number of weeks"),
+    (lambda: lr.local_jobsite_requirements("LA", demolition=True, contractor_license_classes="Asbestos", as_of=AS_OF),
+     "not a CSLB license class"),
+    (lambda: lr.local_jobsite_requirements("SD", building_dwelling_units=1, as_of=AS_OF), "set demolition=true"),
+    (lambda: lr.normalize_city("La Jolla"), "La Jolla is in the City of San Diego"),
+])
+def test_hostile_inputs_get_clear_errors_not_silent_answers(call, msg):
+    with pytest.raises(ValueError, match=msg):
+        call()
+
+
+def test_units_that_match_the_field_are_still_accepted():
+    r = lr.san_diego_right_of_way_fees(blocks="2 blocks", weeks="4 weeks")
+    # 2 x $131.52 + ceil(4 - 3) = 1 week x 2 x $87.68 + 2 requests x $87.68 = 263.04 + 175.36 + 175.36 = $613.76
+    assert r.total_usd == 613.76
+    assert lr.construction_debris_plan("SD", "new home", "2,400 sq ft", as_of=AS_OF).deposit_usd == 960.0
+
+
+@pytest.mark.parametrize("classes,qualifies", [("C21", True), (["Class C-21 Wrecking"], True), ("c 21", True),
+                                               ("Class A, B", True), (["B"], False), ("B-2", False)])
+def test_la_demolition_license_spellings(classes, qualifies):
+    # LADBS IB P/BC 2026-039 A.2: demolition permits go to C-21 or A (owner and B exceptions aside).
+    r = lr.local_jobsite_requirements("LA", demolition=True, contractor_license_classes=classes, as_of=AS_OF)
+    detail = req(r, "Who may pull").detail
+    assert detail.endswith(" qualify.") is qualifies
+    assert ("are not C-21 or A" in detail) is (not qualifies)
+
+
+def test_sd_demolition_now_gets_the_asbestos_survey_and_air_district_notice():
+    # 40 CFR 61.145(b): 10 working days (Monday-Friday incl. holidays) before Mon 2026-12-14:
+    # 12/11 12/10 12/09 12/08 12/07 12/04 12/03 12/02 12/01 11/30 -> 2026-11-30.
+    r = lr.local_jobsite_requirements("SD", "2026-12-14", demolition=True, as_of=AS_OF)
+    assert "Asbestos inspection before demolition" in [x.item for x in r.requirements]
+    n = deadline(r, "Asbestos/demolition notice")
+    assert n.due == "2026-11-30" and "San Diego County Air Pollution Control District" in req(r, "Asbestos/demo").detail
+    assert "four or fewer" not in req(r, "Asbestos/demo").detail and "4 or fewer" in req(r, "Asbestos/demo").detail
+    assert {lr.NESHAP, lr.NESHAP_FAC, lr.NESHAP_INSPECT, lr.AIR_DISTRICT} <= ids(r) and r.verified is True
+
+
+def test_small_residential_demolition_is_outside_federal_neshap_but_not_the_air_district():
+    # Single-family house (1 unit <= 4): air-district rule, not NESHAP. 10 working days before Thu 2027-01-14:
+    # 1/13 1/12 1/11 1/8 1/7 1/6 1/5 1/4 1/1 12/31 -> 2026-12-31 (holidays counted, as NESHAP counts them).
+    r = lr.local_jobsite_requirements("LA", "2027-01-14", demolition=True, building_dwelling_units=1, as_of=AS_OF)
+    d = req(r, "Demolition notice to the air district")
+    assert d.due == "2026-12-31" and d.rule_ids == [lr.AIR_DISTRICT, lr.NESHAP_FAC] and "South Coast AQMD" in d.detail
+    assert lr.NESHAP not in ids(r) and "Asbestos inspection before demolition" not in [x.item for x in r.requirements]
+    big = lr.local_jobsite_requirements("LA", "2027-01-14", demolition=True, building_dwelling_units="12 units",
+                                        as_of=AS_OF)
+    assert "12 dwelling units, more than 4" in req(big, "Asbestos/demolition notice").detail
+    assert "non-residential" in req(lr.local_jobsite_requirements("LA", demolition=True, building_dwelling_units=0,
+                                                                  as_of=AS_OF), "Asbestos/demolition notice").detail
+    assert "detached garage" in req(big, "45-year demolition notice").detail      # LAMC 91.106.4.5 ADU exception
+
+
+def test_la_hillside_notice_counts_on_site_grading_and_haul_route_date_is_an_estimate():
+    # "Notification requirements for over 1000 CY of earthwork in the Hillside Grading Area" (LADBS correction sheet):
+    # 3,000 cy of cut/fill with only 400 cy exported -> no haul-route hearing, but the 10-day notice applies.
+    r = lr.local_jobsite_requirements("LA", "2027-03-01", grading_cubic_yards=3000, earthwork_cubic_yards=400,
+                                      hillside_grading_area=True, as_of=AS_OF)
+    assert r.triggers == ["3,000 cy of earthwork in a Hillside Grading Area"] and r.fees == []
+    assert "grading is 3,000 cy" in req(r, "Neighbor notices").detail
+    exact = lr.local_jobsite_requirements("LA", grading_cubic_yards=1000, hillside_grading_area=True, as_of=AS_OF)
+    assert not [x for x in exact.requirements if x.item.startswith("Neighbor notices")]     # "over 1000"
+    # 8 weeks is a minimum processing time, so the filing date is a recommendation: 2027-01-04 - 8 weeks = 2026-11-09.
+    late = lr.local_jobsite_requirements("LA", "2027-01-04", earthwork_cubic_yards=2500, hillside_grading_area=True,
+                                         as_of=AS_OF)
+    h = deadline(late, "Haul route approval")
+    assert (h.due, h.estimate, h.status) == ("2026-11-09", True, "passed")
+    assert late.next_step.startswith("Past the city's recommended filing date")
+
+
+def test_hcr_scope_and_unused_holiday_flag_are_explained():
+    r = lr.construction_hours("LA", "2026-12-01T10:00", hcr_district=True, is_holiday=False, as_of=AS_OF)
+    assert any("single-family residential" in n for n in r.notes)
+    sf = lr.construction_hours("SF", "2026-12-25T10:00", is_holiday=True, as_of=AS_OF)
+    assert any("is_holiday does not change the San Francisco hours" in n for n in sf.notes)
+
+
+def test_sd_storage_container_extension_and_row_permit_sequencing():
+    # IB 718: permit up to 7 days; 2026-12-14 + 7 = 12/21; 5 working days earlier: 12/18 12/17 12/16 12/15 12/14.
+    r = lr.local_jobsite_requirements("SD", "2026-12-14", uses_street_for_bin=True, bin_type="storage container",
+                                      weeks_in_street=3, as_of=AS_OF)
+    assert deadline(r, "Extend the storage container permit").due == "2026-12-14"
+    row = lr.local_jobsite_requirements("SD", "2026-12-14", work_in_public_right_of_way=True,
+                                        builds_in_right_of_way=True, as_of=AS_OF)
+    assert "get the ROW permit approved first" in req(row, "Public Right-of-Way Permit").detail
+
+
+def test_debris_rounding_minor_work_outside_sd_and_landfill_estimate():
+    # 12.99 / 20 = 64.95% -> shown 64.9% (never rounded up to the 65% threshold); refund pro-rated.
+    r = lr.construction_debris_plan("SD", "demolition", 2000, total_debris_tons=20, diverted_tons=12.99, as_of=AS_OF)
+    assert r.diversion_achieved_percent == 64.9 and r.refund_outlook == "pro_rated" and "64.9%" in r.summary
+    la = lr.construction_debris_plan("LA", "roofing", 3000, as_of=AS_OF)
+    assert la.project_type == "minor work (roofing projects)" and la.deposit_required is None
+    assert lr.CALGREEN not in ids(la) and any("applies only in San Diego" in n for n in la.notes)
+    lb = lr.construction_debris_plan("Long Beach", "re-roof", project_value_usd=40000, as_of=AS_OF)
+    assert lb.deposit_usd is None and lb.city_fee_usd is None
+    assert "residential or non-residential" in str(pytest.raises(ValueError, lr.construction_debris_plan, "SD",
+                                                                 "kitchen remodel", 1500).value)
+    # Self-haul 10 t, 7 t diverted: 3 t x $241 = $723 at the weighed-load rate, flagged as an estimate.
+    s = lr.construction_debris_plan("SD", "new home", 2400, total_debris_tons=10, diverted_tons=7, hauling="our own trucks",
+                                    as_of=AS_OF)
+    assert s.landfill_cost_usd == 723.0 and lr.VC23115_U in ids(s)
+    note = next(n for n in s.notes if n.startswith("landfill_cost_usd is an estimate"))
+    assert "$108.00 tier 1" in note and "$233.00-$234.00/t" in note
+
+
+def test_mcp_accepts_string_license_classes_and_rejects_absurd_values():
+    mcp = FastMCP("t")
+    lr.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            ok = await c.call_tool("local_jobsite_requirements", {"city": "LA", "demolition": True,
+                                                                  "contractor_license_classes": "C-21",
+                                                                  "building_dwelling_units": 1, "as_of": AS_OF})
+            errs = []
+            for name, args in [("local_jobsite_requirements", {"city": "SD", "earthwork_cubic_yards": 1e308}),
+                               ("construction_hours", {"city": "SD", "when": "9999-12-31T23:59"}),
+                               ("construction_debris_plan", {"city": "SD", "project_type": "demolition",
+                                                             "total_debris_tons": 0})]:
+                try:
+                    await c.call_tool(name, args)
+                    errs.append(None)
+                except Exception as e:
+                    errs.append(str(e))
+            return ok.structured_content, errs
+    ok, errs = asyncio.run(run())
+    assert any(r["item"] == "Who may pull the demolition permit" and r["detail"].endswith("qualify.")
+               for r in ok["requirements"])
+    assert all(errs), errs
+    assert "cannot be above" in errs[0] or "less than or equal" in errs[0]
+    assert "between 1970 and 2100" in errs[1] and ("more than 0" in errs[2] or "greater than 0" in errs[2])

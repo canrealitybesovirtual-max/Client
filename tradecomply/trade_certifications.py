@@ -24,7 +24,16 @@ come from research/web_permits-building.verified.json (rrp-...). Its rrp-firm-ce
 result that needs EPA firm certification is verified=False, which is correct.
 
 Not legal values (so not in the rulebook): the task, credential, building, area and equipment spellings below, which
-only map a user's words onto the rules; DUE_SOON_DAYS (a display window); and the US gallon (231 cubic inches).
+only map a user's words onto the rules (including _WINDOW_REPLACEMENT, _DELIVERY and _OIT_TASK_WORDS); DUE_SOON_DAYS
+(a display window); MAX_AREA_HOURS (an input sanity bound); and the US gallon (231 cubic inches).
+
+Second-pass legal review (2026-11-25), each change read in the official text: 8 CCR 5006.2 exceptions (derricks,
+sideboom cranes, equipment rated 2,000 lb or less, delivery knuckle-booms under 25 ft / 15,000 lb, digger derricks)
+and operator-in-training task limits; 5-year cap on a crane certificate; 8 CCR 753 boiler definitions (safety valve
+setting, hot-water boilers); 461(h) indefinite air-tank permits are not declared overdue when the stamp is unknown;
+40 CFR 745.83 electrical work in pre-1978 housing above 6 / 20 sq ft is an RRP renovation; 745.103 senior housing and
+0-bedroom dwellings are not target housing unless a child under 6 lives there; NEC Article 517 (care facilities)
+flagged for a Residential Electrician; 344.30(a)(16) screw elevators and (g) the permit processing fee.
 """
 import calendar
 import math
@@ -77,10 +86,12 @@ R_INT, R_EXT, R_CLEAN = ("cert-rrp-interior-containment-6-feet", "cert-rrp-exter
 R_DUST, R_EMERG = "cert-rrp-dust-clearance-action-levels-2026", "cert-rrp-emergency-renovation-exemption"
 R_COF, R_COF_NOTICE, R_PEN = ("cert-rrp-child-occupied-facility-definition", "cert-rrp-child-occupied-facility-notice",
                               "cert-rrp-penalty-tsca-49772")
+R_TRADES, R_EXCL = "cert-rrp-minor-repair-includes-trade-work", "cert-rrp-target-housing-exclusions-defined"
 # cranes (8 CCR 5006.1, 5006.2)
 C_EVAL, C_EXAM, C_GOV = ("cert-crane-operator-employer-evaluation", "cert-crane-certification-exam-components",
                          "cert-crane-government-license-option")
 C_OIT, C_GI = "cert-crane-operator-in-training-supervision", "cert-crane-general-industry-5006-1"
+C_EXC = "cert-crane-5006-2-exceptions"
 # elevators and other conveyances (8 CCR 3000-3001, 344.30), personnel hoists (8 CCR 1604)
 V_PERMIT, V_2YR, V_NEW = ("cert-elev-permit-to-operate-required", "cert-elev-two-year-permit-full-maintenance",
                           "cert-elev-new-installation-plans-and-acceptance-inspection")
@@ -108,6 +119,7 @@ B_ONSITE, B_QUAL, B_RENEW = ("cert-blaster-licensed-blaster-on-site", "cert-blas
                              "cert-blaster-license-5-year-renewal")
 
 DUE_SOON_DAYS = 60                  # display window for "renew soon", not a legal number
+MAX_AREA_HOURS = 100_000            # input sanity bound (about 48 years of full-time work), not a legal number
 GALLONS_PER_CU_FT = 1728 / 231      # US gallon = 231 cubic inches (a unit definition, not law)
 
 Status = Literal["required", "conditional", "not_required"]
@@ -266,10 +278,19 @@ def classes_from(value) -> Optional[set[str]]:
 
 _BUILDINGS = (
     ("child_occupied", r"day ?care|child ?care|preschool|pre school|kindergarten|nursery school|head start"),
+    # 40 CFR 745.103: housing for the elderly / persons with disabilities and 0-bedroom dwellings are not target
+    # housing unless a child under 6 lives there; care facilities also raise the NEC Article 517 question for a
+    # Residential Electrician (8 CCR 290.1)
+    ("senior_or_care", r"senior (housing|apartments?|living|community|communities|center)|retirement (homes?|"
+                       r"community|communities|housing)|housing for (the )?(elderly|disabled|persons with "
+                       r"disabilities)|elderly housing|\b(55|62) ?(\+|plus)|assisted living|nursing (homes?|"
+                       r"facility|facilities)|skilled nursing|board and care|residential care|memory care|"
+                       r"group homes?"),
+    ("zero_bedroom", r"studio (apartments?|units?)|efficienc(y|ies) (apartments?|units?|studios?)|\bsro\b|"
+                     r"single room occupancy|dorm\w*|barracks|rooming house|room rentals?|rented rooms?"),
     ("school", r"\bschools?\b|elementary|college|university|campus|classrooms?"),
     ("two_unit", r"duplex|two unit|2 unit|two family|2 family"),
-    ("multifamily", r"multi ?family|apartments?|condos?|condominiums?|triplex|fourplex|[34] ?plex|multi unit|"
-                    r"nursing home|assisted living|senior housing"),
+    ("multifamily", r"multi ?family|apartments?|condos?|condominiums?|triplex|fourplex|[34] ?plex|multi unit"),
     ("hotel_motel", r"hotels?|motels?|lodging"),
     ("single_family", r"single family|\bsfr\b|\bsfd\b|\bhouse\b|\bhome\b|residence|townhouse|townhome|\badu\b|"
                       r"mobile home|manufactured home"),
@@ -281,7 +302,8 @@ _BUILDINGS = (
 )
 BUILDING_TYPES = tuple(k for k, _ in _BUILDINGS)
 _HOUSING = ("single_family", "two_unit", "multifamily", "residential")
-_RESIDENTIAL = _HOUSING + ("hotel_motel",)
+_NOT_TARGET_UNLESS_CHILD = ("senior_or_care", "zero_bedroom")       # 40 CFR 745.103
+_RESIDENTIAL = _HOUSING + ("hotel_motel", "zero_bedroom")            # Residential Electrician occupancies
 
 
 def building_from(value) -> Optional[str]:
@@ -325,11 +347,15 @@ _TASK_PATTERNS = (
      r"|(use|using|run|running) (the )?(permanent|building) elevators?"),
     ("personnel_hoist", None, r"\b(personnel hoists?|construction elevators?|man ?hoists?|buck ?hoists?|alimak|"
                               r"construction hoists?|worker hoists?)\b"),
-    ("elevator", None, r"\b(elevators?|escalators?|dumbwaiters?|moving walks?|moving walkways?|wheelchair lifts?|"
+    ("elevator", None, r"\b(elevators?(?! (shafts?|pits?|hoistways?|lobby|lobbies|cores?|doors? frames?))|escalators?|dumbwaiters?|moving walks?|moving walkways?|wheelchair lifts?|"
                        r"stair ?lifts?|stairway (chair )?lifts?|platform lifts?|conveyances?|vrcs?|"
                        r"vertical reciprocating conveyors?|material lifts?)\b"),
     ("blasting", None, r"\b(blast|blasts|blasting|explosives?|dynamite|detonat\w*|implosion)\b"),
-    ("crane", None, r"\b(cranes?|derricks?|boom trucks?|knuckle ?booms?)\b"),
+    # 8 CCR 5006.2 Exceptions: digger derricks, derricks / sideboom cranes, small delivery knuckle-booms
+    ("crane", "digger_derrick", r"\b(digger derricks?|(electric )?line trucks?)\b"),
+    ("crane", "derrick_sideboom", r"\b(derricks?|side ?booms?( cranes?)?)\b"),
+    ("crane", "knuckle_boom", r"\b(knuckle ?booms?( cranes?| trucks?)?|articulating (boom )?cranes?)\b"),
+    ("crane", None, r"\b(cranes?|boom trucks?)\b"),
     ("pressure_vessel", "air", r"\b(air compressors?|compressors? (tanks?|receivers?)|air tanks?|air receivers?|"
                                r"receiver tanks?|compressed air)\b"),
     ("pressure_vessel", "lpg", r"\b(propane( tanks?)?|lpg|lp gas|liquefied petroleum)\b"),
@@ -355,7 +381,8 @@ _TASK_PATTERNS = (
                               r"feeders?|generator hookup|motor hookup)\b"),
     ("lead", None, r"\b(paint\w*|repaint\w*|sanding|scrape|scraping|stripping|demo|demolition|demolish\w*|"
                    r"remodel\w*|renovat\w*|window (replacement|replace\w*|install\w*)|replac\w* (the )?windows?|"
-                   r"door replacement|drywall|plaster\w*|lead (paint|based|abatement|safe|hazard|dust|removal|work)|"
+                   r"door replacement|drywall (repair|patch\w*|remov\w*|demo\w*|cut\w*|tear\w*|replac\w*)|"
+                   r"(cut|cutting|patch|patching|open|opening) (into |up )?(the )?(drywall|walls?|ceilings?)|plaster\w*|lead (paint|based|abatement|safe|hazard|dust|removal|work)|"
                    r"siding|(door|window|wood|interior|exterior) trim|trim (carpentry|work|replacement)|abatement|"
                    r"tear out|tear off|gut)\b"),
 )
@@ -365,11 +392,17 @@ _SUB_LABEL = {"general": "electrical work", "fire_alarm": "fire alarm (fire/life
               "air": "air tanks (compressor receivers)", "lpg": "LP-gas (propane) tanks", "boiler": "boilers"}
 
 
+_DELIVERY = r"\b(deliver\w*|unload\w*|offload\w*|drop(ping)? off|stock(ing)?|boom (delivery|drop))\b"
+
+
 def classify_task(task: str) -> list[tuple[str, Optional[str]]]:
     """'Rewire kitchen and demo plaster' -> [('electrical', 'general'), ('lead', None)]."""
     w, hits = _words(task), []
+    whole = w
     for trade, sub, pat in _TASK_PATTERNS:
         if re.search(pat, w):
+            if sub == "knuckle_boom" and re.search(_DELIVERY, whole):
+                sub = "knuckle_boom_delivery"
             key = (trade, None if trade == "lead" else sub)
             if key not in hits:
                 hits.append(key)
@@ -534,6 +567,11 @@ class _Need:
     anyone_supervised: bool = False                     # anyone may work under the credential holder's supervision
 
 
+_WINDOW_REPLACEMENT = (r"\bwindows? (replacement|replac\w*|install\w*|change ?out)|"
+                       r"\b(replac\w*|install\w*|swap\w*) (the |new |all )*windows?\b(?! (trim|sills?|casings?|"
+                       r"frames?|stools?|aprons?))")
+
+
 def _context(employer_license_classes, year_built, built_before_1978, building_type, lead_exposure_ug_m3, day,
              lead_free_determination=False, interior_painted_sqft_per_room=None, exterior_painted_sqft=None,
              lead_tasks=(), emergency_renovation=False, dust_clearance_testing=False, crane_outside_construction=False,
@@ -554,12 +592,13 @@ def _context(employer_license_classes, year_built, built_before_1978, building_t
     exterior = _num("exterior_painted_sqft", exterior_painted_sqft, 0)
     minor, minor_why = None, ""
     if interior is not None or exterior is not None:
-        text = _words(" ".join(lead_tasks))
-        never = []
-        if re.search(r"window", text) and re.search(r"replac|install", text):
-            never.append("window replacement")
-        if re.search(r"\bdemo\b|demolition|demolish", text):
-            never.append("demolition of painted surfaces")
+        never = []                          # judged task by task: 'paint window trim' + 'install drywall' is not
+        for t in lead_tasks:                # a window replacement
+            tw = _words(t)
+            if re.search(_WINDOW_REPLACEMENT, tw) and "window replacement" not in never:
+                never.append("window replacement")
+            if re.search(r"\bdemo\b|demolition|demolish", tw) and "demolition of painted surfaces" not in never:
+                never.append("demolition of painted surfaces")
         if never:
             minor, minor_why = False, (f"{_join(never)} is never minor repair and maintenance "
                                        f"({_join(P(R_MINOR, 'never_minor_if'), 'or')} disqualify it)")
@@ -609,7 +648,7 @@ def _electrical_need(sub: str, ctx: _Ctx) -> _Need:
     maybe = []
     if residential:
         accept = accept + [RE]
-    elif ctx.building is None:
+    elif ctx.building in (None, "senior_or_care"):        # unknown building, or a care facility (NEC Art. 517?)
         maybe = [RE]
     ids = [E_C10, E_DEF, E_TYPES] + ([E_RES] if (RE in accept or maybe) else []) \
         + ([E_SPEC] if set(accept) & {FLS, VDV, NRLT} else []) + [E_APPR, E_TRAINEE, E_RATIO, E_QUAL]
@@ -628,7 +667,8 @@ def _electrical_need(sub: str, ctx: _Ctx) -> _Need:
             "volt-amperes or more for a C-10 must be certified (C-7 low-voltage and C-45 sign work within those "
             "license scopes is exempt). Give employer_license_classes to settle it."), ids + [E_C7], accept, alt,
             maybe)
-    foremen = "; foremen who also work with the tools too" if P(E_DEF, "foremen_who_use_tools_must_be_certified") else ""
+    foremen = (", including foremen who sometimes work with the tools" if
+               P(E_DEF, "foremen_who_use_tools_must_be_certified") else "")
     return _Need("electrical", sub, "required", (
         f"Your company holds C-10, so anyone making electrical connections of {va} volt-amperes or more for it must be "
         f"certified{foremen}. Connections under {va} VA are not covered."), ids, accept, alt, maybe)
@@ -661,6 +701,15 @@ def _rrp_need(ctx: _Ctx) -> _Need:
         base, where = "required", f"pre-{cutoff} housing (target housing; excluded: {excluded})"
     elif ctx.building == "child_occupied":
         base, where, more = "required", f"a pre-{cutoff} child-occupied facility", more + [R_COF]
+    elif ctx.building in _NOT_TARGET_UNLESS_CHILD:
+        what = (f"housing for the elderly (reserved for households with someone {P(R_EXCL, 'elderly_housing_min_age_at_initial_occupancy')}"
+                " or older at initial occupancy) or for persons with disabilities"
+                if ctx.building == "senior_or_care" else
+                f"a 0-bedroom dwelling ({_join(P(R_EXCL, 'zero_bedroom_examples'))})")
+        base, more = "conditional", more + [R_EXCL, R_COF]
+        where = (f"pre-{cutoff} target housing. {what[0].upper() + what[1:]} is not target housing unless a child "
+                 f"under {P(R_EXCL, 'child_age_lt')} lives or is expected to live there; it is still covered where "
+                 "part of it is a child-occupied facility")
     elif ctx.building in ("school", "public_or_commercial", "hotel_motel"):
         d = (f"visited by the same child under {P(R_COF, 'child_age_lt')} on at least {P(R_COF, 'min_days_per_week')} "
              f"days a week, {P(R_COF, 'min_hours_per_visit_day')} hours a day, {P(R_COF, 'min_hours_per_week')} hours "
@@ -702,14 +751,35 @@ def _cdph_need(ctx: _Ctx) -> _Need:
             ids, accept)
     return _Need("lead_cdph", None, "not_required", (
         f"Exposure {_n(ctx.exposure)} ug/m3 < {_n(lim)} ug/m3 (8-hour TWA): CDPH certification is not triggered. "
-        f"Cal/OSHA lead training still applies above the action level ({_n(rel['cal_osha_action_level_8hr'])} "
-        "ug/m3)."), ids)
+        f"Cal/OSHA's lead training program still applies to employees "
+        f"{P(L_CDPH, 'calosha_training_program_trigger').split(' (')[0]} "
+        f"({_n(rel['cal_osha_action_level_8hr'])} ug/m3)."), ids)
 
 
-def _crane_need(ctx: _Ctx) -> _Need:
-    ids = [C_EXAM, C_GOV, C_EVAL, C_OIT] + ([C_GI] if ctx.crane_gi else [])
-    why = ("Each crane or derrick operator in construction must hold a certificate from an accredited certifying "
-           "entity for the equipment type, or a qualifying government license, AND be evaluated by the employer.")
+def _crane_need(ctx: _Ctx, sub: Optional[str] = None) -> _Need:
+    still = ("; the training and qualification rules of 8 CCR 5006 still apply" if
+             P(C_EXC, "section_5006_training_still_applies") else "")
+    if sub == "derrick_sideboom":
+        return _Need("crane", sub, "not_required", (
+            f"8 CCR 5006.2 operator certification and evaluation do not apply to operators of "
+            f"{_join(P(C_EXC, 'exempt_equipment'))}{still}."), [C_EXC])
+    if sub == "digger_derrick" and P(C_EXC, "digger_derricks_exempt"):
+        return _Need("crane", sub, "not_required", (
+            "Operators of electric line trucks (digger derricks) regulated by the High Voltage Electrical Safety "
+            f"Orders are outside 8 CCR 5006.2. This does not cover {P(C_EXC, 'digger_derrick_exception_excludes')}: "
+            "their operators need certification."), [C_EXC])
+    ids = [C_EXAM, C_GOV, C_EVAL, C_OIT, C_EXC] + ([C_GI] if ctx.crane_gi else [])
+    why = ("Each crane operator in construction must hold a certificate from an accredited certifying entity for the "
+           "equipment type, or a qualifying government license, AND be evaluated by the employer. Not required for "
+           f"equipment rated {_n(P(C_EXC, 'exempt_if_rated_capacity_lb_lte'))} lb or less, or for derricks and "
+           f"sideboom cranes{still}.")
+    if sub == "knuckle_boom_delivery":
+        lim = P(C_EXC, "delivery_knuckle_boom_exempt_if")
+        return _Need("crane", sub, "conditional", (
+            f"An articulating/knuckle-boom crane {P(C_EXC, 'delivery_knuckle_boom_condition')} needs no certified "
+            f"operator if its boom is under {_n(lim['boom_ft_lt'])} ft or its rated capacity is under "
+            f"{_n(lim['or_capacity_lb_lt'])} lb (check the data plate). Larger, or used for anything other than "
+            "delivery: " + why), ids, accept=[CRANE_CERT, CRANE_GOV], alt=[CRANE_OIT])
     if ctx.crane_gi:
         why += (f" Outside construction (8 CCR 5006.1) the certificate is valid up to "
                 f"{P(C_GI, 'certificate_max_validity_years')} years; mobile cranes with a boom under "
@@ -725,9 +795,10 @@ def _elevator_need(ctx: _Ctx) -> _Need:
             "to the public, so DOSH conveyance certification and permits do not apply (other license law still "
             "does: elevator work is C-11)."), [V_EXCL])
     ids = [V_CCCM_ONLY, V_CCCM, V_CQCC, V_TEMP] + ([V_EXCL] if ctx.building in ("two_unit", "residential") else [])
-    why = ("Installing, maintaining, repairing, altering or replacing elevators, escalators, lifts and other "
-           "conveyances covered by the Elevator Safety Orders may be done only by a Certified Competent Conveyance "
-           "Mechanic (CCCM) employed by a Certified Qualified Conveyance Company (CQCC).")
+    why = (f"DOSH states that {_join(P(V_CCCM_ONLY, 'covered_work'))} on any elevator, escalator, lift or other "
+           "conveyance covered by the Elevator Safety Orders may be done only by a Certified Competent Conveyance "
+           "Mechanic (CCCM) working for a Certified Qualified Conveyance Company (CQCC). New installations are filed "
+           "and inspected through the installing elevator company.")
     if ctx.building == "residential":
         why += " If it is a single-unit private home not open to the public, the Elevator Safety Orders do not apply."
     return _Need("elevator", None, "required", why, ids, accept=[CCCM, TCCCM])
@@ -746,7 +817,7 @@ def _needs(trade: str, sub: Optional[str], ctx: _Ctx) -> list[_Need]:
     if trade == "lead":
         return [_rrp_need(ctx), _cdph_need(ctx)]
     if trade == "crane":
-        return [_crane_need(ctx)]
+        return [_crane_need(ctx, sub)]
     if trade == "elevator":
         return [_elevator_need(ctx)]
     if trade == "blasting":
@@ -821,6 +892,15 @@ def _accept_label(kind: str) -> str:
     return _kind_label(kind)
 
 
+def _re_maybe_text(building: Optional[str]) -> str:
+    """Why a Residential Electrician certification is only possibly enough (8 CCR 290.1)."""
+    if building == "senior_or_care":
+        return (f"only if this senior or care building is not an occupancy under NEC Article "
+                f"{_join(P(E_RES, 'excluded_nec_articles'))}, which a Residential Electrician may not work in; "
+                "confirm against the electrical plans")
+    return "only if the building is residential (give building_type)"
+
+
 def _electrical_reqs(acc, need: _Need, tasks, ctx) -> list[CertRequirement]:
     label = f"DIR electrician certification for {_SUB_LABEL[need.sub]}"
     if need.status == "not_required":
@@ -842,7 +922,7 @@ def _electrical_reqs(acc, need: _Need, tasks, ctx) -> list[CertRequirement]:
                     "certified Nonresidential Lighting Technician")
     acceptable = [_accept_label(k) for k in need.accept + need.maybe]
     if need.maybe:
-        acceptable[-1] += " - only if the building is residential (give building_type)"
+        acceptable[-1] += " - " + _re_maybe_text(ctx.building)
     ids = need.ids + [E_PRESUME, E_FEE, E_FEE_TRAINEE] + ([E_NOGRACE] if ctx.out_of_state else [])
     why = need.why + (" Out-of-state electricians must be California-certified before they start: there is no grace "
                       "period, even for a short job." if ctx.out_of_state else "")
@@ -966,18 +1046,30 @@ def _cdph_req(acc, need: _Need, tasks) -> CertRequirement:
                 ids, why=need.why, **kw)
 
 
+def _oit_limits() -> str:
+    return ("an operator-in-training may not run the crane, unless certified, for: "
+            + _join(P(C_OIT, "trainee_prohibited_unless_certified"), "or"))
+
+
 def _crane_req(acc, need: _Need, tasks) -> CertRequirement:
     gov = P(C_GOV, "max_validity_years")
+    if need.status == "not_required":
+        return _req(acc, "crane", "Crane operator certification (8 CCR 5006.2)", "each operator", "not_required",
+                    tasks, need.ids, why=need.why)
+    yrs = P(C_EXAM, "option1_certificate_max_validity_years")
     return _req(acc, "crane", "Crane operator certification and employer evaluation", "each crane operator",
                 need.status, tasks, need.ids, issuer="Accredited certifying entity (Option 1) or a government "
                 "licensing office (Option 2)",
                 acceptable=[f"Certificate from an accredited certifying entity for the equipment type (after "
-                            f"{_join(P(C_EXAM, 'required_components'))}); portable statewide",
+                            f"{_join(P(C_EXAM, 'required_components'))}); portable statewide; valid at most {yrs} "
+                            f"years, then recertify every {P(C_EXAM, 'recertify_every_years')} years",
                             f"Government license: valid only within the issuing jurisdiction and for at most {gov} "
                             "years"],
                 alternatives=["Operator-in-training after formal and practical instruction, continuously monitored "
                               "on site by a trainer who holds a valid certificate for that crane type, stays within "
-                              "sight and communication, and has no other duties while observing"],
+                              "sight and communication, and has no other duties while observing; " + _oit_limits()],
+                cost_detail=("The employer must provide the certification or license at no cost to the employee."
+                             if P(C_EXAM, "employer_provides_at_no_cost_to_employee") else None),
                 proof_on_site=(f"The employer's written evaluation ({_join(P(C_EVAL, 'record_contents'))}) kept at the "
                                "worksite while the operator is employed, plus the certificate."),
                 why=need.why, how_to_get=("Copy each operator's certificate and confirm it lists the crane type; "
@@ -1016,6 +1108,16 @@ def _elevator_reqs(acc, need: _Need, tasks) -> list[CertRequirement]:
                  how_to_get=("The installing CQCC files plans or a notice of intent and requests the acceptance "
                              "inspection; the device needs a DOSH permit to operate before service (run "
                              "equipment_operating_permits for fees and timing)."))]
+
+
+def _trade_work_rrp_text() -> str:
+    imax, emax = P(R_TRADES, "interior_max_sqft_per_room"), P(R_TRADES, "exterior_max_sqft")
+    return (f"EPA counts {_join(P(R_TRADES, 'trades_named'))} as exempt minor repair and maintenance only while it "
+            f"disturbs {_n(imax)} sq ft or less of painted surface per room inside and {_n(emax)} sq ft or less "
+            "outside" + (" (a removed painted component counts in full)" if
+                         P(R_TRADES, "removed_component_counts_entire_area") else "")
+            + ", with no window replacement, demolition of painted surfaces or prohibited practices. Cutting into "
+            "painted walls or ceilings beyond that is a renovation under the RRP rule.")
 
 
 def certifications_required(tasks, employer_license_classes=None, year_built=None, building_type=None,
@@ -1107,6 +1209,19 @@ def certifications_required(tasks, employer_license_classes=None, year_built=Non
                                                       "state." if ctx.city_la else ""),
                                  how_to_get="Run equipment_operating_permits with the tank size, safety valve "
                                             "setting and type to see whether a permit is needed and what it costs."))
+    # electrical work in a pre-1978 building: 40 CFR 745.83 counts it as minor repair only up to 6 / 20 sq ft of
+    # painted surface, so above that it is an RRP renovation even with no painting task on the list
+    elec_tasks = list(dict.fromkeys(t for (trade, _), ts in groups.items() if trade == "electrical" for t in ts))
+    if elec_tasks and ("lead", None) not in groups and ctx.pre1978:
+        need = _rrp_need(ctx)
+        if need.status != "not_required" or ctx.minor is True:
+            need.ids = list(need.ids) + [R_TRADES]
+            if need.status != "not_required" and ctx.minor is None:
+                need.status = "conditional"
+                need.why = (_trade_work_rrp_text() + " Give interior_painted_sqft_per_room / exterior_painted_sqft to "
+                            "settle it. " + need.why)
+            at = max((i for i, r in enumerate(reqs) if r.trade == "electrical"), default=-1) + 1
+            reqs[at:at] = _rrp_reqs(acc, need, elec_tasks, ctx)
     res = CertificationsRequiredResult(employer_license_classes=sorted(ctx.classes or []), building_type=ctx.building,
                                        pre_1978=ctx.pre1978, unrecognized_tasks=unrecognized)
     res.requirements = reqs
@@ -1294,9 +1409,10 @@ def _deadline(cred: Credential, kind: Optional[str], day: date, acc: _Acc) -> Cr
                            f"({P(E_RENEW, 'ce_must_be_from')}) and a sworn statement of "
                            f"{_n(P(E_RENEW, 'industry_hours_required_in_prior_3_years'))} industry hours in the last "
                            f"{P(E_RENEW, 'renewal_interval_years')} years; fee {_usd(P(E_FEE_RENEW, 'renewal_fee_usd'))}. "
-                           f"8 CCR 291.5(b) wants it received {P(E_FILE, 'regulation_days_before_expiration')} days "
-                           f"before expiration ({renew_by}); DIR's FAQ accepts a postmark on or before {expires}. Use "
-                           f"the earlier date. Renewals are accepted from {window}.")
+                           f"To renew without a lapse, 8 CCR 291.5(c) requires the renewal to be postmarked or "
+                           f"received {P(E_FILE, 'regulation_days_before_expiration')} days before the certification "
+                           f"period ends ({renew_by}); DIR's FAQ says postmarked on or before {expires}. Use the "
+                           f"earlier date. Renewals are accepted from {window}.")
             acc.math.append(f"{cred.type}: renew by {expires} - {P(E_FILE, 'conservative_days_before_expiration')} "
                             f"days = {renew_by}")
             _ab1707(acc, renew_by)
@@ -1354,10 +1470,12 @@ def _deadline(cred: Credential, kind: Optional[str], day: date, acc: _Acc) -> Cr
             chk.renewal = "Renew with CDPH before it expires (CDPH renewal terms are not in this rulebook)."
     elif kind in (CRANE_CERT, CRANE_GOV):
         ids = [C_EXAM] + ([C_GOV] if kind == CRANE_GOV else [])
-        if expires is None and issued and kind == CRANE_GOV:
-            expires = _plus_years(issued, P(C_GOV, "max_validity_years"))
-            acc.math.append(f"{cred.type}: issued {issued} + at most {P(C_GOV, 'max_validity_years')} years = valid "
-                            f"no later than {expires}")
+        if expires is None and issued:          # Option 1 (5006.2(d)(1)) and Option 2 (5006.2(e)(3)(B)) caps
+            yrs = (P(C_GOV, "max_validity_years") if kind == CRANE_GOV else
+                   P(C_EXAM, "option1_certificate_max_validity_years"))
+            expires = _plus_years(issued, yrs)
+            acc.math.append(f"{cred.type}: issued {issued} + at most {yrs} years = valid no later than {expires} "
+                            "(use the card's own date if it is earlier)")
         if expires:
             renew_by = expires
             chk.renewal = "Recertify with the certifying entity (or licensing office) before it expires."
@@ -1419,6 +1537,10 @@ def _deadline(cred: Credential, kind: Optional[str], day: date, acc: _Acc) -> Cr
     chk.days_left = (expires - day).days
     if day > expires:
         chk.status = "expired"
+        if not chk.issues:
+            chk.issues.append(f"Expired {expires}" + (" (from the issue date: the longest the credential can last)"
+                                                      if cred.expires is None else "")
+                              + ": it no longer covers this work until renewed.")
     elif renew_by and day > renew_by:
         chk.status = "renewal_overdue"
         chk.issues.append(f"Past the renew-by date {renew_by}: file the renewal today.")
@@ -1500,7 +1622,7 @@ def check_crew_certifications(crew, employer_license_classes=None, year_built=No
                     blast_job.append(w.name)
                 if need.trade == "elevator":
                     elevator_job = True
-                st, cov, issue = _cover(need, m, checks, qualifier)
+                st, cov, issue = _cover(need, m, checks, qualifier, ctx.building)
                 if issue and issue not in w.issues:
                     w.issues.append(issue)
                 if cov:
@@ -1579,6 +1701,12 @@ def check_crew_certifications(crew, employer_license_classes=None, year_built=No
         finding("Nonresidential lighting trainees", "ok" if nrlt else "problem",
                 f"{_join(nrlt_trainees)} must be supervised on site by a certified Nonresidential Lighting Technician"
                 + (f" ({_join(nrlt)} on this crew)." if nrlt else "; none on this crew."), E_NRLT_T)
+    elec_workers = [w.name for w in res.workers if any(t.startswith("electrical") for t in w.trades)]
+    if elec_workers and not renovator_job and ctx.pre1978 and _rrp_need(ctx).status != "not_required":
+        finding("EPA RRP for electrical work in a pre-1978 building", "confirm",
+                f"{_join(elec_workers)}: {_trade_work_rrp_text()} If the work goes past that, the RRP work practices "
+                "apply and a certified renovator must be on site for the signs, containment and cleaning (run "
+                "certifications_required with the painted areas).", R_TRADES, R_APPLY, R_ONSITE)
     if renovator_job:
         ren = [n for n, (_, w, ch) in by_name.items()
                if any(c.kind == RENOVATOR and c.status in ("valid", "renew_soon", "renewal_overdue") for c in ch)]
@@ -1683,8 +1811,8 @@ def check_crew_certifications(crew, employer_license_classes=None, year_built=No
     return acc.finish(res)
 
 
-def _cover(need: _Need, m: CrewMember, checks: list[CredentialCheck], qualifier: bool
-           ) -> tuple[str, Optional[str], str]:
+def _cover(need: _Need, m: CrewMember, checks: list[CredentialCheck], qualifier: bool,
+           building: Optional[str] = None) -> tuple[str, Optional[str], str]:
     """-> (worker status for this need, credential that covers it, issue)."""
     cond = need.status == "conditional"
     best = _best(checks, need.accept)
@@ -1703,8 +1831,7 @@ def _cover(need: _Need, m: CrewMember, checks: list[CredentialCheck], qualifier:
             return "ok", _kind_label(QUALIFIER), ""
         maybe = _best(checks, need.maybe)
         if maybe and maybe.status != "expired":
-            return "confirm", maybe.label, (f"{_etype(RE)} covers only residential buildings; give building_type to "
-                                            "confirm.")
+            return "confirm", maybe.label, f"{_etype(RE)} covers this {_re_maybe_text(building)}."
         alt = _best(checks, need.alt)
         if alt and alt.status not in ("expired", "missing_info"):
             if alt.kind == APPRENTICE:
@@ -1719,6 +1846,16 @@ def _cover(need: _Need, m: CrewMember, checks: list[CredentialCheck], qualifier:
     elif need.alt:
         alt = _best(checks, need.alt)
         if alt and alt.status not in ("expired", "missing_info"):
+            if need.trade == "crane":
+                hard, rigging = _oit_restricted(m.task)
+                if hard:
+                    return "not_qualified", alt.label, (f"An operator-in-training may not run the crane for "
+                                                        f"{_join(hard, 'or')} unless certified (8 CCR 5006.2(b)(3)): "
+                                                        "assign a certified operator.")
+                if rigging:
+                    return "confirm", alt.label, (f"{rigging[0][0].upper() + rigging[0][1:]}: allowed for an "
+                                                  "operator-in-training only if the trainer has determined the "
+                                                  "trainee's skills are sufficient; record that determination.")
             return "ok_with_supervision", alt.label, ""
     if need.anyone_supervised:
         return "ok_with_supervision", None, "May work only under the licensed blaster's direct supervision."
@@ -1733,6 +1870,24 @@ def _cover(need: _Need, m: CrewMember, checks: list[CredentialCheck], qualifier:
     if cond:
         return "confirm", None, msg + " " + need.why
     return "not_qualified", None, msg
+
+
+# task words for the 8 CCR 5006.2(b)(3)(A)-(E) operator-in-training limits, in the rule's list order (spellings only)
+_OIT_TASK_WORDS = (r"power ?lines?|energized (lines?|conductors?)|overhead (power |electric )?lines?|utility lines?",
+                   r"personnel (lift\w*|hoist\w*|baskets?|platforms?)|man ?baskets?|(hoist\w*|lift\w*|fly\w*) "
+                   r"(personnel|workers|people|crews?)",
+                   r"tandem|multi(ple)? ?(crane|equipment)|dual crane|(two|2) cranes?",
+                   r"\bshafts?\b|cofferdams?|tank farms?",
+                   r"christmas tree\w*|multiple ?lift rigging|multi ?lift rigging|\bmlr\b")
+
+
+def _oit_restricted(task: str) -> tuple[list[str], list[str]]:
+    """-> (circumstances an operator-in-training may never work in, multiple-lift rigging if named)."""
+    w = _words(task)
+    limits = P(C_OIT, "trainee_prohibited_unless_certified")
+    hits = [limits[i] for i, pat in enumerate(_OIT_TASK_WORDS) if re.search(pat, w)]
+    rigging = [h for h in hits if h == limits[-1]]
+    return [h for h in hits if h != limits[-1]], [r.split(" (")[0] for r in rigging]
 
 
 def _worker_next_step(w: WorkerCheck) -> str:
@@ -1882,7 +2037,7 @@ def electrician_certification_path(certification_type, hours_by_area=None, compl
         raise ValueError("hours_by_area must be like {'commercial wiring': 4000, 'residential wiring': 2500}")
     sums: dict[str, list] = {}
     for area, hrs in items:
-        h = _num(f"hours for {area!r}", hrs, 0)
+        h = _num(f"hours for {area!r}", hrs, 0, MAX_AREA_HOURS)
         key = _area_key(kind, str(area), caps) or f"not listed: {str(area).strip()}"
         sums.setdefault(key, [0.0, []])
         sums[key][0] += h
@@ -2045,7 +2200,8 @@ class EquipmentItem(BaseModel):
     volume_cu_ft: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description="Tank volume, cubic feet")
     volume_gallons: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description=(
         "Tank volume / water capacity, gallons (air tanks or LPG tanks)"))
-    safety_valve_psi: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description="Air tank safety valve setting")
+    safety_valve_psi: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description=(
+        "Safety valve set pressure, psi (air tank; or a steam boiler's steam safety valve)"))
     mawp_psi: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description="Maximum allowable working pressure "
                                                                                      "on the code plate")
     portable: Optional[bool] = Field(None, description="Air tank: portable (e.g. a towable or wheeled compressor)?")
@@ -2054,8 +2210,11 @@ class EquipmentItem(BaseModel):
     dot_cylinder: bool = Field(False, description="LPG: a DOT cylinder (e.g. forklift or BBQ bottle)")
     lpg_use: Optional[str] = Field(None, description="LPG: storage, dispensing, skid, trap, transport or mobile fuel")
     boiler_type: Optional[str] = Field(None, description=(
-        "Boiler: power (steam over the DOSH threshold), low-pressure, miniature or high-temperature water"))
+        "Boiler: steam, power, hot water, low-pressure, miniature or high-temperature water"))
     steam_psig: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description="Boiler steam pressure, psig")
+    water_psi: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description="Hot-water boiler: water pressure, psi")
+    water_temp_f: Optional[float] = Field(None, ge=0, le=1500, allow_inf_nan=False, description=(
+        "Hot-water boiler: water temperature, degrees F"))
     heating_surface_sqft: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     steam_drum_inside_diameter_in: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
     water_capacity_gallons: Optional[float] = Field(None, ge=0, allow_inf_nan=False)
@@ -2255,10 +2414,26 @@ def _air_tank(it, p: EquipmentPermit, ids, day, city_la):
         what = {True: "portable", False: "non-portable", None: "portable assumed: the shorter term; give portable"}
         p.permit_term = (f"up to {yrs} years from inspection ({what[it.portable]}); expires early on "
                          f"{_join(P(PV_AIR_TERM, 'expires_early_on'), 'or')}")
+        # 461(h) cannot be ruled out: a tank of 25 cu ft or less may hold an indefinite permit, so no due date is
+        # declared overdue until the code plate and stamp are known
+        maybe_indef = (vol <= indef_vol and it.asme_stamped is not False
+                       and (it.mawp_psi is None or it.mawp_psi <= indef_mawp))
+        if maybe_indef:
+            ids.append(PV_AIR_INDEF)
+            missing = _join([x for x, v in (("mawp_psi", it.mawp_psi), ("asme_stamped", it.asme_stamped)) if v is None])
+            p.permit_term = (f"indefinite if the code plate shows a maximum allowable working pressure of "
+                             f"{_n(indef_mawp)} psi or less and the tank is ASME Code stamped (or DOSH-accepted "
+                             f"equivalent); otherwise {p.permit_term}. Give {missing} to settle it")
+            p.math.append(f"{vol:.3f} cu ft <= {_n(indef_vol)} cu ft: indefinite permit possible (8 CCR 461(h)); "
+                          f"{missing} not given")
         if last:
             exp = _plus_years(last, yrs)
-            p.permit_expires_by, p.next_inspection_due, p.overdue = exp.isoformat(), exp.isoformat(), day > exp
-            p.math.append(f"last inspection {last} + {yrs} years = {exp}")
+            if maybe_indef:
+                p.math.append(f"if it does not qualify for an indefinite permit: last inspection {last} + {yrs} years "
+                              f"= {exp}" + (" (past)" if day > exp else ""))
+            else:
+                p.permit_expires_by, p.next_inspection_due, p.overdue = exp.isoformat(), exp.isoformat(), day > exp
+                p.math.append(f"last inspection {last} + {yrs} years = {exp}")
     if it.rented:
         p.why += " A tank that needs a permit may not be rented out for workplace use until the permit is issued."
     if not city_la:
@@ -2311,43 +2486,88 @@ def _boiler(it, p, ids, day, city_la):
     ids += [PV_BOILER, PV_BOILER_SMALL]
     exempt_types = P(PV_BOILER_SMALL, "exempt_types")
     limits = P(PV_BOILER_SMALL, "exempt_if_all_lte")
+    dfn = P(PV_BOILER_SMALL, "definitions_8_ccr_753")
+    still = "construction, installation and automatic-control rules still apply"
     btype = _words(it.boiler_type)
     hit = next((t for t in exempt_types if btype and _words(t).replace(" boilers", "").replace(" boiler", "") in btype),
                None)
-    if hit:
+
+    def exempt(why):
         p.status, p.permit_required = "exempt", False
-        p.why = (f"{hit[0].upper() + hit[1:]} need no permit or annual inspection, but must meet the construction, "
-                 "installation and control rules.")
-        return
+        p.why = why
+
+    if hit:
+        return exempt(f"{hit[0].upper() + hit[1:]} need no permit or annual inspection (8 CCR 771), but {still}.")
     vals = {k: getattr(it, k) for k in limits}
     if all(v is not None for v in vals.values()):
         within = all(vals[k] <= limits[k] for k in limits)
         p.math.append(", ".join(f"{k.replace('_', ' ')} {_n(vals[k])} {'<=' if vals[k] <= limits[k] else '>'} "
                                 f"{_n(limits[k])}" for k in limits) + (" -> small boiler, exempt" if within else ""))
         if within:
-            p.status, p.permit_required = "exempt", False
-            p.why = "Within every small-boiler limit: no permit or annual inspection."
+            return exempt(f"Within every small-boiler limit: no permit or annual inspection (8 CCR 771); {still}.")
+    steam_named = bool(re.search(r"steam|power|high pressure", btype))
+    hot_named = bool(re.search(r"hot water|water heat\w*|hydronic|heating water|\bhw\b", btype))
+    lp_steam = dfn["low_pressure_steam_max_psi_lte"]
+    if hot_named and not steam_named and it.steam_psig is None:
+        psi, temp = it.water_psi, it.water_temp_f
+        lp_psi, lp_t = dfn["low_pressure_hot_water_max_psi_lte"], dfn["low_pressure_hot_water_max_temp_f_lte"]
+        h_min, h_psi, h_t = (dfn["high_temperature_water_min_temp_f_gt"], dfn["high_temperature_water_if_psi_gt"],
+                             dfn["high_temperature_water_if_temp_f_gt"])
+        if psi is None or temp is None:
+            p.status, p.why = "need_info", (
+                f"Give water_psi and water_temp_f. A hot-water boiler at {_n(lp_psi)} psi or less and {_n(lp_t)} F or "
+                f"less is a low-pressure boiler, and one heating water above {_n(h_min)} F at over {_n(h_psi)} psi or "
+                f"above {_n(h_t)} F is a high-temperature water boiler (8 CCR 753); neither needs a permit or annual "
+                "inspection (8 CCR 771).")
             return
-    thr = P(PV_BOILER, "dosh_listed_threshold_steam_psig_gt")
-    power = bool(re.search(r"power|high pressure", btype))
-    if it.steam_psig is not None or power:
-        if power or it.steam_psig > thr:
-            if it.steam_psig is not None:
-                p.math.append(f"steam {_n(it.steam_psig)} psig > {_n(thr)} psig -> power boiler on DOSH's permit list")
-            p.status, p.permit_required = "permit_required", True
-        else:
-            p.math.append(f"steam {_n(it.steam_psig)} psig <= {_n(thr)} psig -> not on DOSH's power-boiler permit list")
-            p.status, p.permit_required = "exempt", False
-            p.why = ("At or below DOSH's listed steam threshold, so likely a low-pressure boiler (no permit); "
-                     "DOSH notes exemptions depend on capacity and pressure: confirm with the Pressure Vessel Unit.")
+        if psi <= lp_psi and temp <= lp_t:
+            p.math.append(f"water {_n(psi)} psi <= {_n(lp_psi)} and {_n(temp)} F <= {_n(lp_t)} F -> low-pressure "
+                          "(hot water heating) boiler")
+            return exempt(f"Low-pressure hot-water heating boiler (8 CCR 753): no permit or annual inspection "
+                          f"(8 CCR 771); {still}.")
+        if temp > h_min and (psi > h_psi or temp > h_t):
+            p.math.append(f"water {_n(temp)} F > {_n(h_min)} F at {_n(psi)} psi (over {_n(h_psi)} psi or "
+                          f"{_n(h_t)} F) -> high-temperature water boiler")
+            return exempt(f"High-temperature water boiler (8 CCR 753): no permit or annual inspection (8 CCR 771); "
+                          f"{still}.")
+        p.math.append(f"water {_n(psi)} psi > {_n(lp_psi)} psi at {_n(temp)} F (not above {_n(h_min)} F): neither "
+                      "low-pressure nor high-temperature water -> subject to annual inspection")
+    elif it.steam_psig is not None and it.steam_psig <= lp_steam:     # the 753 numbers decide, not the label
+        valve = it.safety_valve_psi
+        if valve is None:
+            p.status, p.why = "need_info", (
+                f"Steam {_n(it.steam_psig)} psig <= {_n(lp_steam)} psi: a low-pressure steam boiler (no permit) only "
+                f"if its steam safety valve is also set at {_n(lp_steam)} psi or less (8 CCR 753). Give "
+                "safety_valve_psi from the valve's nameplate.")
             return
+        if valve <= lp_steam:
+            p.math.append(f"steam {_n(it.steam_psig)} psig and safety valve {_n(valve)} psi <= {_n(lp_steam)} psi -> "
+                          "low-pressure steam boiler")
+            return exempt(f"Low-pressure steam boiler (8 CCR 753): no permit or annual inspection (8 CCR 771); "
+                          f"{still}.")
+        p.math.append(f"steam {_n(it.steam_psig)} psig but safety valve {_n(valve)} psi > {_n(lp_steam)} psi -> not a "
+                      "low-pressure boiler -> subject to annual inspection")
+    elif it.steam_psig is not None and it.steam_psig > dfn["power_boiler_steam_psi_gt"]:
+        p.math.append(f"steam {_n(it.steam_psig)} psig > {_n(dfn['power_boiler_steam_psi_gt'])} psi -> power boiler "
+                      "(8 CCR 753)")
+    elif re.search(r"power|high pressure", btype):
+        p.math.append(f"described as a {it.boiler_type} -> subject to annual inspection (not low-pressure, miniature "
+                      "or high-temperature water)")
     else:
-        p.status, p.why = "need_info", ("Give boiler_type, steam_psig, or all five size limits ("
-                                        + ", ".join(k.replace('_', ' ') for k in limits) + ").")
+        p.status, p.why = "need_info", (
+            (f"Give steam_psig and safety_valve_psi: a steam boiler at {_n(lp_steam)} psi or less with its safety valve "
+             f"set at {_n(lp_steam)} psi or less is a low-pressure boiler (no permit); above that it is a power boiler "
+             "(permit and yearly inspection)." if steam_named else
+             "Give boiler_type (steam, power, hot water, low-pressure, miniature), steam_psig and safety_valve_psi, "
+             "water_psi and water_temp_f, or all five size limits ("
+             + ", ".join(k.replace('_', ' ') for k in limits) + ")."))
         return
+    p.status, p.permit_required = "permit_required", True
     ids += [PV_FEES, PV_FOLLOWUP] + ([PV_LA] if city_la else [])
     yrs = P(PV_BOILER, "inspection_interval_years")
     p.why = "May not be operated until a permit to operate is issued and posted under glass on or near the boiler."
+    p.before_use = ("Internal and external inspection by DOSH or a qualified insurance-company inspector, then the "
+                    "permit posted, before it is operated.")
     p.permit_term = (f"inspected internally and externally every {yrs} year; permit expires on "
                      f"{P(PV_BOILER, 'permit_expires_on')}; temporary permits up to "
                      f"{P(PV_BOILER, 'temporary_permit_max_days')} days for repairs")
@@ -2509,6 +2729,8 @@ def _conveyance(it, p, ids, day, kind, building):
         pkey = _cable_tier_key(it.stories)
     elif kind == "elevator" and drive == "rack_and_pinion":
         pkey = "rack_and_pinion_elevator"
+    elif kind == "elevator" and drive == "screw":
+        pkey = "screw_type_elevator"
     elif kind == "escalator":
         pkey = "escalator_moving_walk"
     elif kind == "wheelchair_stair_lift":
@@ -2520,6 +2742,9 @@ def _conveyance(it, p, ids, day, kind, building):
                           basis=f"{_usd(per[pkey])} per unit ({pkey.replace('_', ' ')}), at most "
                                 f"{P(V_FEE_PERIODIC, 'max_charged_inspections_per_permit_year')} charged per permit year",
                           rule_id=V_FEE_PERIODIC))
+    mail = P(V_FEE_PERIODIC, "permit_processing_and_mailing_fee_max_usd")
+    p.fees.append(Fee(item="Permit processing and mailing", amount_usd=mail, when="recurring",
+                      basis=f"actual cost, at most {_usd(mail)} per permit issued", rule_id=V_FEE_PERIODIC))
     p.math.append(f"unpaid fees double after {P(V_LATE, 'payment_due_days')} days; an inspection that ends in an "
                   f"Order Prohibiting Use adds {_usd(P(V_LATE, 'order_prohibiting_use_fee_usd'))}")
 
@@ -2583,7 +2808,9 @@ def equipment_operating_permits(equipment, city=None, building_type=None, as_of=
                       + [f"{p.label}: {p.why}" for p in need]
                       + [f"{p.label}: {p.before_use}" for p in res.items if p.status == "permit_required" and p.before_use
                          and not p.overdue])
-    res.next_step = res.next_steps[0] if res.next_steps else "No permit to operate is needed for this equipment."
+    res.next_step = (res.next_steps[0] if res.next_steps else
+                     "Keep each permit to operate posted and renew it before it expires." if res.permits_required else
+                     "No permit to operate is needed for this equipment.")
     return acc.finish(res)
 
 
@@ -2607,7 +2834,8 @@ def _tool_docs() -> dict:
             "Safety, Voice Data Video, Nonresidential Lighting; trainee, apprentice and qualifier routes; C-7/C-45 "
             f"exemptions), EPA RRP certified renovator and firm certification for pre-{cutoff} housing and "
             f"child-occupied facilities (with the minor-repair test), CDPH lead certification at {lead} ug/m3, crane "
-            "operator certification plus employer evaluation, elevator CCCM/CQCC certification, a licensed blaster "
+            "operator certification plus employer evaluation (not for derricks, sideboom cranes, 2,000 lb equipment "
+            "or small delivery knuckle-booms), elevator CCCM/CQCC certification, a licensed blaster "
             "on site, and personnel hoist / pressure vessel permits. Returns each requirement as required / "
             "conditional / not_required with who must hold it, acceptable credentials, cost, proof to keep on site, "
             "why, citations, the exposure and next steps."),
@@ -2651,7 +2879,8 @@ def register(mcp) -> None:
     cutoff = P(R_APPLY, "built_before_year")
     lead = _n(P(L_CDPH, "exposure_twa_8hr_ug_per_m3_gte"))
     classes_doc = "Your CSLB classifications, e.g. ['C-10'] or 'B, C-7' (decides whether electrician rules apply)"
-    building_doc = ("single_family, two_unit, multifamily, residential, hotel_motel, child_occupied, school, "
+    building_doc = ("single_family, two_unit, multifamily, residential, hotel_motel, senior_or_care (senior housing, "
+                    "assisted living, nursing home), zero_bedroom (studios, dorms, SROs), child_occupied, school, "
                     "public_or_commercial or industrial (words like 'house', 'apartment', 'daycare', 'office' work)")
 
     @mcp.tool(name="certifications_required", annotations=ro, description=docs["required"])

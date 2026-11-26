@@ -1,7 +1,8 @@
 """TradeComply CA: MCP server for California construction trade compliance.
 
 TradeComply CA: California construction compliance tools for AI agents (licenses, liens, payments, payroll, safety,
-public works, permits, contracts, business filings, project setup and a searchable verified rulebook).
+public works, permits, contracts, business filings, project setup, jobsite safety, HR mandates, accessibility,
+equipment emissions, city jobsite rules, worker certifications, federal projects and a searchable verified rulebook).
 
 Values come from tradecomply/data/rulebook.json (checked against official sources) and tradecomply/rules.py. Every
 result carries `verified`, citations and a disclaimer. Not legal advice.
@@ -91,7 +92,8 @@ def check_subcontractor_compliance(
 
 
 MODULES = ("rulebook_tools", "licensing", "contracts", "payments", "payroll", "safety_programs", "public_works",
-           "building", "business_ops", "project_setup")
+           "building", "business_ops", "project_setup", "jobsite_safety", "hr_compliance", "accessibility",
+           "equipment_emissions", "local_rules", "trade_certifications", "federal_projects")
 for _name in MODULES:
     importlib.import_module(f"tradecomply.{_name}").register(mcp)
 

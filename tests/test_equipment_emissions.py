@@ -38,7 +38,7 @@ def test_module_uses_exactly_the_verified_air_pack():
     book = {r.id: r for r in core.all_rules()}
     pack = {r.id for r in book.values() if r.pack == "web_air-equipment"}
     assert len(pack) == 138 and set(ee.RULE_IDS) == pack and len(ee.RULE_IDS) == len(set(ee.RULE_IDS))
-    assert all(book[i].verified for i in ee.RULE_IDS)          # 122 confirmed + 16 corrected, none unverifiable
+    assert all(book[i].verified for i in ee.RULE_IDS)          # 107 confirmed + 31 corrected, none unverifiable
     assert book[ee.ORD_ADD_ONROAD].status == "corrected"       # optional_500hp_or_less moved from 2035 to 2028
     assert book[ee.ORD_ADD_ONROAD].param("effective_by_fleet_size.optional_500hp_or_less") == "2028-01-01"
 
@@ -288,7 +288,8 @@ def test_no_covered_machines():
     ({"vehicles": [{"hp": 100, "engine_tier": "T2", "designation": "museum"}]}, "designation must be"),
     ({"total_fleet_hp": 100, "fleet_owner_type": "alien"}, "fleet_owner_type must be"),
     ({"total_fleet_hp": 100, "operating_counties": ["Gotham"]}, "not a California county"),
-    ({"total_fleet_hp": 100, "as_of": "11/25/2026"}, "ISO date"),
+    ({"total_fleet_hp": 100, "as_of": "25/11/2026"}, "ISO date"),     # day-first: month 25 does not exist
+    ({"total_fleet_hp": 100, "as_of": "next Tuesday"}, "ISO date"),
 ])
 def test_fleet_bad_inputs(kwargs, msg):
     with pytest.raises(ValueError, match=msg):
@@ -401,8 +402,9 @@ def test_truck_and_bus_options_and_tables():
     assert "'NE' on both doors in 3-inch letters" in req(nox, "Truck and Bus NOx exempt area").detail
     assert ee.truck_compliance(33000, 2005, operating_counties=["Humboldt"], has_pm_filter=False,
                                as_of=AS_OF).truck_and_bus_status == "noncompliant"
-    # lighter table (26,000 lb or less): '2021': '2004-2006'; heavier: '1994-1995' -> 2016-01-01
-    assert ee.truck_compliance(20000, 2005, as_of=AS_OF).original_replacement_deadline == "2021"
+    # lighter table (26,000 lb or less, 'Compliance Date as of January 1'): '2021-01-01': '2004-2006';
+    # heavier: '1994-1995' -> 2016-01-01
+    assert ee.truck_compliance(20000, 2005, as_of=AS_OF).original_replacement_deadline == "2021-01-01"
     assert ee.truck_compliance(52000, 1995, as_of=AS_OF).original_replacement_deadline == "2016-01-01"
     ok = ee.truck_compliance(52000, 2016, as_of=AS_OF)
     assert ok.truck_and_bus_status == "compliant_2010_engine" and ok.original_replacement_deadline is None
@@ -771,3 +773,270 @@ def test_mcp_rejects_bad_values_with_clear_errors():
     assert all(errors), errors
     assert "cannot be below 0" in errors[0] and "ambiguous" in errors[1] and "role must be" in errors[2]
     assert "must be a number" in errors[3] and "not a California county" in errors[4]
+
+
+# ================================================================ adversarial review 2026-11-25 (regressions)
+# Each expectation below was worked by hand from the official text re-read on 2026-11-25 (froa-1.pdf 2449-2449.1,
+# tbfinalreg.pdf 2025, the HD I/M order 2195-2196.1, 13 CCR 2485, SCAQMD Rules 403/403.1, SJVAPCD Rules
+# 8011/8021/8041, the PERP FAQ of Sept. 29, 2026 and CARB's July 2025 enforcement notice).
+def test_review_corrected_rules_carry_the_added_text():
+    r = core.rule(ee.TB_APPLIES)
+    assert r.status == "corrected" and r.verified
+    assert "dedicated snow-removal vehicles" in r.param("excluded")
+    assert any(e.startswith("two-engine on-road vehicles subject to 13 CCR 2449") for e in r.param("excluded"))
+    assert "2022.1(a)(1)" in r.quote and "(13) Except for two-engine sweepers" in r.quote
+    assert core.rule(ee.IDLE_FINE).citation_text.startswith("CARB truck idling fact sheet")
+    assert "2480" not in core.rule(ee.IDLE_FINE).citation_text           # school bus idling is not the source
+    assert core.rule(ee.CV_PLAN).param("daily_records_retention_years") == 3
+    assert core.rule(ee.TB_2010).param("schedule_lighter_26000_or_less")["2021-01-01"] == "2004-2006"
+
+
+def test_state_and_federal_fleets_are_never_captive_attainment_area_fleets():
+    # 2449(c)(6): fleets of the United States or the State of California are large fleets and never captive, even
+    # when every vehicle stays in the listed counties; 2449.1(f)(2)(A) still excuses R99 while operating there.
+    st = ee.offroad_fleet_obligations(800, "state agency", operating_counties=["Humboldt"], as_of=AS_OF)
+    assert st.fleet_size == "large" and st.captive_attainment_area is False
+    assert "white on red" in req(st, "EIN label").detail
+    assert "captive" not in req(st, "ROAR").detail
+    assert st.renewable_diesel_required is False and "Not required while the machines operate" in exact(
+        st, "Renewable diesel").detail
+    biz = ee.offroad_fleet_obligations(800, "business", operating_counties=["Humboldt"], as_of=AS_OF)
+    assert biz.fleet_size == "small" and biz.captive_attainment_area is True
+    assert "white on green" in req(biz, "EIN label").detail
+    assert ee.offroad_fleet_obligations(800, "federal", operating_counties="Humboldt",
+                                        as_of=AS_OF).captive_attainment_area is False
+
+
+def test_r99_exemptions_name_the_county_vehicle_exemption():
+    r = ee.offroad_fleet_obligations(900, operating_counties=["Kern"], as_of=AS_OF)
+    d = req(r, "Renewable diesel (R99/R100)").detail
+    assert r.renewable_diesel_required is True
+    assert "any machine while it operates in one of the 2449(c)(6) counties" in d and "Humboldt" in d
+
+
+def test_medium_fleet_label_and_sanity_limits():
+    # 2449(c)(28)(B): medium = neither small (<= 2,500) nor large (> 5,000); 2,500.5 hp is medium
+    r = ee.offroad_fleet_obligations(2500.5, as_of=AS_OF)
+    assert r.fleet_size == "medium" and "2,500 hp < 2,500.5 hp <= 5,000 hp" in r.summary
+    with pytest.raises(ValueError, match="cannot be above 10,000,000"):
+        ee.offroad_fleet_obligations(1e300, as_of=AS_OF)
+    with pytest.raises(ValueError, match="less than or equal to 20000"):
+        ee.offroad_fleet_obligations(vehicles=[{"hp": 25000, "engine_tier": "T4f"}], as_of=AS_OF)
+
+
+def test_us_style_dates_are_read_month_first():
+    a = ee.offroad_fleet_obligations(900, as_of="11/25/2026")
+    b = ee.offroad_fleet_obligations(900, as_of=AS_OF)
+    assert a.next_annual_report_due == b.next_annual_report_due == "2027-03-01"
+
+
+def test_new_fleet_tier_phase_out_applies_at_once_and_low_use_reporting_continues():
+    # 2449(d)(4)(A)-(C): idling, adding-vehicle limits and Tier phase-out apply immediately to a new fleet
+    r = ee.offroad_fleet_obligations(900, new_fleet=True, vehicle_added_on="2026-11-01", as_of=AS_OF)
+    assert "tier phase-out" in req(r, "Report the new fleet").detail and req(r, "Report the new fleet").due == "2026-12-01"
+    # 2449(g)(2): fleet reporting ends 2036, but low-use vehicles are reported for as long as the fleet has them
+    late = ee.offroad_fleet_obligations(vehicles=[{"hp": 300, "engine_tier": "Tier 3"},
+                                                  {"name": "Old dozer", "hp": 200, "engine_tier": "Tier 1",
+                                                   "designation": "low use"}], as_of="2037-03-02")
+    assert late.next_annual_report_due is None
+    assert any("permanent low-use vehicles keep being reported" in n for n in late.notes)
+    assert req(late, "Low-use hour meter readings").due == "2038-03-01"
+    assert "three consecutive years" in veh(late, "Old dozer").detail      # 2449(c)(43)(F) rolling average
+
+
+def test_optional_schedule_counts_on_road_engines_by_the_tier_pairing():
+    # (e)(16): all vehicles count. On-road MY2008 > MY1999 (Tier 1 pairing) counts as Tier 2 or better:
+    # (150 Tier 3 + 100 on-road MY2008) / 400 = 62.5% < 75% since 2026-01-01; 75% x 400 = 300 -> short 50 hp
+    r = ee.offroad_fleet_obligations(vehicles=[{"hp": 150, "engine_tier": "Tier 1"}, {"hp": 150, "engine_tier": "Tier 3"},
+                                               {"hp": 100, "engine_tier": "on-road 2008"}],
+                                     uses_optional_500hp_schedule=True, as_of=AS_OF)
+    c = r.optional_schedule_check
+    assert (c.counted_hp, c.tier2_or_better_hp, c.percent_tier2_or_better) == (400, 250, 62.5)
+    assert c.meets_current_requirement is False and "at least 50 hp" in r.next_step
+    assert "optional 500 hp schedule" in r.summary
+    # an old on-road engine (MY1995 <= 1999) is not Tier 2 or better: 150 / 450 = 33.3%, no longer silently passing
+    old = ee.offroad_fleet_obligations(vehicles=[{"hp": 150, "engine_tier": "Tier 2"},
+                                                 {"hp": 300, "engine_tier": "on-road 1995"}],
+                                       uses_optional_500hp_schedule=True, as_of=AS_OF)
+    assert old.optional_schedule_check.percent_tier2_or_better == 33.3
+    assert old.optional_schedule_check.meets_current_requirement is False
+
+
+def test_contracting_private_owner_report_route_and_sign_wording():
+    o = ee.offroad_contracting_requirements("developer", hires_haul_trucks=True, as_of=AS_OF)
+    assert o.role == "private_owner" and o.duties_apply is False and "no 13 CCR 2449(i)-(j)" in o.summary
+    assert has_req(o, "Hired diesel trucks")
+    p = ee.offroad_contracting_requirements("GC", noncompliance_discovered_on="2026-11-27", as_of=AS_OF)
+    d = req(p, "Report uncertified").detail
+    assert "dieselcomplaints@arb.ca.gov" in d and "diesel.complaints@arb.ca.gov" in d and "web form" in d
+    assert ee.ORD_ENFORCE in req(p, "Report uncertified").rule_ids
+    s = ee.offroad_contracting_requirements("GC", as_of=AS_OF)
+    assert req(s, "CARB off-road jobsite sign").detail.startswith("If machines will operate 8 calendar days or more")
+
+
+@pytest.mark.parametrize("use,phrase", [
+    ("snow plow", "dedicated snow-removal vehicles"),
+    ("two engine crane", "offroad_fleet_obligations"),
+    ("motor home", "run it as vehicle_use='truck'"),
+])
+def test_truck_and_bus_exclusions_of_2025c(use, phrase):
+    r = ee.truck_compliance(40000, 2005, vehicle_use=use, as_of=AS_OF)
+    assert r.truck_and_bus_applies is False and r.truck_and_bus_status == "not_subject"
+    assert r.clean_truck_check_applies is True                      # 2195(b) has no such exclusions
+    assert any(phrase in n for n in r.notes)
+
+
+def test_pickup_is_outside_the_truck_idling_rule_and_crane_must_be_explicit():
+    # 2485(h)(6): a pickup truck (Vehicle Code 471) is not a 'commercial motor vehicle'
+    p = ee.truck_compliance(11500, 2018, vehicle_use="pickup truck", as_of=AS_OF)
+    assert p.idling_limit_applies is False and any("2485(h)(6)" in n for n in p.notes)
+    assert ee.truck_compliance(11500, 2018, vehicle_use="truck", as_of=AS_OF).idling_limit_applies is True
+    with pytest.raises(ValueError, match="two_engine_crane"):
+        ee.truck_compliance(40000, 2016, vehicle_use="crane", as_of=AS_OF)
+
+
+def test_truck_paths_government_note_and_nox_area_travel():
+    r = ee.truck_compliance(40000, 2007, owner_type="city", as_of=AS_OF)
+    assert any("2022.1(a)(1)" in n for n in r.notes)
+    assert "VDECS retrofit that achieves 2010 model year equivalent emissions" in req(r, "Truck and Bus: NOT").detail
+    assert "VDECS" in r.next_step
+    nox = ee.truck_compliance(60000, 2004, operating_counties="Humboldt, Del Norte", has_pm_filter=True, as_of=AS_OF)
+    assert "only for repairs or other services" in req(nox, "Truck and Bus NOx").detail
+    assert ee.TB_NOX in req(nox, "Truck and Bus NOx").rule_ids
+
+
+def test_obd_status_is_read_from_the_engine_model_year():
+    # 2195.1: OBD-equipped = diesel MY2013+, alternative fuel MY2018+
+    assert any("MY2015 >= MY2013" in m and "-> yes" in m for m in ee.truck_compliance(60000, 2015, as_of=AS_OF).math)
+    cng = ee.truck_compliance(60000, 2015, fuel="CNG", as_of=AS_OF)
+    assert any("MY2015 < MY2018" in m for m in cng.math)
+    assert "not OBD-equipped, so it stays at 2" in req(cng, "Clean Truck Check testing").detail
+    assert any("-> no" in m for m in ee.truck_compliance(60000, 2015, obd_equipped=False, as_of=AS_OF).math) is False
+
+
+def test_clean_truck_check_deadlines_use_month_and_day_only():
+    # an old registration date keeps its month and day: deadlines Mar 15 and Sep 15 (months 12 and 6)
+    old = ee.truck_compliance(60000, 2015, registration_expires="2005-03-15", as_of=AS_OF)
+    assert [d.deadline for d in old.next_deadlines] == ["2027-03-15", "2027-09-15"]
+    assert any("has already passed" in n for n in old.notes)
+    assert exact(old, "Registration renewal").due == "2027-03-15"
+    # Aug 31 -> month 6 is February: last day of the month (2027-02-28)
+    aug = ee.truck_compliance(60000, 2015, registration_expires="2027-08-31", as_of=AS_OF)
+    assert [d.deadline for d in aug.next_deadlines] == ["2027-02-28", "2027-08-31"]
+    assert aug.next_deadlines[0].earliest_test == "2026-11-30"          # 2027-02-28 - 90 days
+    with pytest.raises(ValueError, match="more than a year away"):
+        ee.truck_compliance(60000, 2015, registration_expires="2090-03-15", as_of=AS_OF)
+
+
+def test_vin_sets_deadlines_for_trucks_registered_outside_california():
+    # 2195.1 'Compliance year' (1): VIN ending 9 -> compliance year ends on the last day of July; semiannual deadlines
+    # on the last day of months 6 and 12 -> January 31 and July 31 (the fact sheet's own example)
+    r = ee.truck_compliance(80000, 2019, ca_registered=False, vin="1FUJGLDR9KLKY1239", as_of=AS_OF)
+    assert [(d.deadline, d.earliest_test) for d in r.next_deadlines] == [("2027-01-31", "2026-11-02"),
+                                                                         ("2027-07-31", "2027-05-02")]
+    assert "VIN" not in r.next_step and "2027-01-31" in r.next_step
+    no_vin = ee.truck_compliance(80000, 2019, ca_registered=False, as_of=AS_OF)
+    assert not no_vin.next_deadlines and "Give the VIN" in no_vin.next_step
+    # an OBD truck whose next deadlines pass the regulation's 3-year mark (2024-10-01 + 3 years) gets a caveat
+    q = ee.truck_compliance(80000, 2019, ca_registered=False, vin="3", as_of="2027-11-01")
+    assert any("2027-10-01" in n and "quarterly" in n for n in q.notes)
+    with pytest.raises(ValueError, match="vin must be"):
+        ee.truck_compliance(80000, 2019, ca_registered=False, vin="ABCDEFG", as_of=AS_OF)
+
+
+def test_idling_fine_is_stated_as_carbs_figure():
+    d = req(ee.truck_compliance(40000, 2016, as_of=AS_OF), "Idling").detail
+    assert "CARB says" in d and "$1,000.00 a day" in d and "Health and Safety Code" in d
+
+
+def test_coachella_plan_city_county_route_records_and_riverside_scope():
+    r = ee.dust_control_requirements("Riverside", coachella_valley=True, disturbed_acres="8,000 sq ft",
+                                     earthmoving_start="2027-01-15", as_of=AS_OF)
+    plan = req(r, "Coachella Valley fugitive dust control plan")
+    assert r.plan_submit_by == "2026-12-16" and "Rule 403.1(i)(4)" in plan.detail
+    assert "Coachella Valley Fugitive Dust Control Class" in plan.detail
+    assert exact(r, "Coachella Valley daily records").detail.endswith("at least 3 years.")
+    assert "city or county" in r.next_step
+    assert not any(n.startswith("Only the non-desert part") for n in r.notes)
+    assert any(n.startswith("Riverside County, Coachella Valley") for n in r.notes)
+    plain = ee.dust_control_requirements("Riverside", disturbed_acres=2, as_of=AS_OF)
+    assert any("coachella_valley=true" in n for n in plain.notes)
+
+
+def test_large_operation_exemptions_of_rule_403g7_g8():
+    r = ee.dust_control_requirements("SCAQMD", disturbed_acres=60, as_of=AS_OF)
+    assert r.large_operation is True
+    assert any("Rule 403(g)(7)" in n and "Rule 403(g)(8)" in n for n in r.notes)
+
+
+def test_san_joaquin_notice_uses_site_area_and_other_review_fixes():
+    # 8021 §6.4.1: residential site 1 to < 10 acres in area -> 48-hour notice, even with 0.8 acre disturbed
+    r = ee.dust_control_requirements("Fresno", disturbed_acres=0.8, site_acres=3, project_type="residential",
+                                     earthmoving_start="2027-01-11", as_of=AS_OF)
+    assert r.plan_required is False and exact(r, "48-hour notice to the District").due == "2027-01-09"
+    unknown = ee.dust_control_requirements("Fresno", disturbed_acres=0.8, project_type="residential", as_of=AS_OF)
+    assert not has_req(unknown, "48-hour") and any("give site_acres" in n for n in unknown.notes)
+    # 8041 §5.6: paved interior roads -> track-out device; §5.5: rural project size 12 acres -> 50 ft rule
+    t = ee.dust_control_requirements("Tulare", disturbed_acres=4, site_acres=12, urban_area=False,
+                                     paved_interior_roads=True, as_of=AS_OF)
+    assert t.trackout_control_required is True
+    assert req(t, "Track-out reaching 50 ft").detail.startswith("Prevent track-out")
+    # 8011 §4.3: 3,000 ft or higher is outside Regulation VIII
+    hi = ee.dust_control_requirements("Kern", disturbed_acres=20, site_elevation_ft="3,000 ft", as_of=AS_OF)
+    assert hi.plan_required is False and has_req(hi, "Regulation VIII does not apply")
+    lo = ee.dust_control_requirements("Kern", disturbed_acres=20, site_elevation_ft=2999, as_of=AS_OF)
+    assert lo.plan_required is True
+    with pytest.raises(ValueError, match="cannot be smaller than disturbed_acres"):
+        ee.dust_control_requirements("Fresno", disturbed_acres=5, site_acres=2, as_of=AS_OF)
+
+
+def test_perp_seasonal_source_categories_and_fleet_average_opt_in():
+    # FAQ Q4: at one location 2+ years and run 3+ months a year -> seasonal source, not portable
+    s = ee.portable_engine_requirements(300, years_at_same_location=2, months_operated_per_year=3, as_of=AS_OF)
+    assert s.portable is False and "seasonal source" in s.summary and "stationary source" in s.next_step
+    assert ee.portable_engine_requirements(300, years_at_same_location=2, months_operated_per_year=2.5,
+                                           as_of=AS_OF).portable is None
+    # FAQ Q14: an engine owned by an agricultural source is outside the ATCM
+    ag = ee.portable_engine_requirements(300, special_category="agricultural", as_of=AS_OF)
+    assert ag.subject_to_atcm is False and "agricultural source" in ag.summary
+    with pytest.raises(ValueError, match="ambiguous"):
+        ee.portable_engine_requirements(300, special_category="emergency", as_of=AS_OF)
+    big = ee.portable_engine_requirements(300, fleet_total_bhp=2000, as_of=AS_OF)
+    assert "only if you opted into it by 2019-06-30" in req(big, "Portable engine fleet").detail
+
+
+def test_mcp_accepts_the_new_inputs():
+    mcp = FastMCP("t")
+    ee.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            return [(await c.call_tool(n, a)).structured_content for n, a in [
+                ("truck_compliance", {"gvwr_lbs": "80,000 lb", "engine_model_year": 2019, "ca_registered": False,
+                                      "vin": "9", "as_of": AS_OF}),
+                ("dust_control_requirements", {"air_district": "Valley Air", "disturbed_acres": "0.8 ac",
+                                               "site_acres": "3 acres", "project_type": "homes",
+                                               "earthmoving_start": "01/11/2027", "daily_import_export_cy": "10 cy",
+                                               "as_of": AS_OF}),
+                ("portable_engine_requirements", {"engine_bhp": 300, "special_category": "harbor craft",
+                                                  "as_of": AS_OF}),
+                ("offroad_contracting_requirements", {"role": "owner", "as_of": AS_OF}),
+                ("offroad_fleet_obligations", {"total_fleet_hp": 900, "operating_counties": "Humboldt, Lake",
+                                               "as_of": AS_OF}),
+            ]]
+    t, d, p, o, f = asyncio.run(run())
+    assert t["next_deadlines"][0]["deadline"] == "2027-01-31"
+    assert any(r["item"] == "48-hour notice to the District" and r["due"] == "2027-01-09" for r in d["requirements"])
+    assert p["subject_to_atcm"] is False and o["role"] == "private_owner" and f["captive_attainment_area"] is True
+
+
+def test_non_list_inputs_raise_clear_errors_instead_of_crashing():
+    # found by fuzzing: operating_counties=2010 or vehicles=-1 used to raise TypeError
+    with pytest.raises(ValueError, match="operating_counties must be a list"):
+        ee.offroad_fleet_obligations(900, operating_counties=2010, as_of=AS_OF)
+    with pytest.raises(ValueError, match="vehicles must be a list"):
+        ee.offroad_fleet_obligations(vehicles=-1, as_of=AS_OF)
+    with pytest.raises(ValueError, match="operating_counties must be a list"):
+        ee.truck_compliance(40000, 2004, operating_counties=True, as_of=AS_OF)
+    one = ee.offroad_fleet_obligations(vehicles={"hp": 158, "engine_tier": "Tier 2"}, as_of=AS_OF)
+    assert one.total_fleet_hp == 158 and len(one.vehicles) == 1

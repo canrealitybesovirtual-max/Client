@@ -40,9 +40,9 @@ def test_module_rules_exist_and_statuses_match_the_verified_pack():
     book = {r.id: r for r in core.all_rules()}
     assert set(tc.RULE_IDS) <= set(book)
     pack = {r.id for r in book.values() if r.pack == "web_trade-certs"}
-    assert len(pack) == 105
+    assert len(pack) == 108                                   # 105 + 3 added in the 2026-11-25 second-pass review
     used = set(tc.RULE_IDS) & pack
-    assert len(used) >= 95                                    # 96 of the 105 pack rules drive a code path
+    assert len(used) >= 99                                    # 99 of the 108 pack rules drive a code path
     # the pack's 3 unverifiable rules; the 2 used ones make a result verified=False when cited
     assert book[tc.E_AB1707].status == "unverifiable" and book[tc.V_CCCM_ONLY].status == "unverifiable"
     assert book["cert-lead-blood-lead-20-triggers-calosha"].status == "unverifiable"
@@ -97,7 +97,7 @@ def test_license_classes(value, expected):
 @pytest.mark.parametrize("value,expected", [
     ("single family home", "single_family"), ("Apartment building", "multifamily"), ("duplex", "two_unit"),
     ("home daycare", "child_occupied"), ("high school", "school"), ("office building", "public_or_commercial"),
-    ("Refinery", "industrial"), ("nursing home", "multifamily"), ("public_or_commercial", "public_or_commercial"),
+    ("Refinery", "industrial"), ("nursing home", "senior_or_care"), ("public_or_commercial", "public_or_commercial"),
 ])
 def test_building_types(value, expected):
     assert tc.building_from(value) == expected
@@ -592,7 +592,7 @@ def test_path_rejects_bad_inputs(kwargs, msg):
 def test_air_tanks():
     r = tc.equipment_operating_permits([
         {"kind": "air compressor", "label": "Towable", "volume_gallons": 30, "safety_valve_psi": 150, "portable": True,
-         "last_inspected_on": "2023-10-01", "inspection_hours": 1.1},
+         "mawp_psi": 200, "last_inspected_on": "2023-10-01", "inspection_hours": 1.1},
         {"kind": "pancake compressor", "label": "Pancake", "volume_gallons": 6, "safety_valve_psi": 135},
         {"kind": "air tank", "label": "Edge", "volume_cu_ft": 1.5, "safety_valve_psi": 150},
         {"kind": "air tank", "label": "HiValve", "volume_cu_ft": 1.2, "safety_valve_psi": 200},
@@ -603,8 +603,8 @@ def test_air_tanks():
         {"kind": "air receiver", "label": "Unsure", "volume_cu_ft": 40, "last_inspected_on": "2023-10-01"},
     ], city="San Diego", as_of=AS_OF)
     tow = item(r, "Towable")
-    # 30 gal / (1728/231) = 4.010 cu ft > 1.5 (461(f)); portable permit <= 3 years from inspection (461(d)):
-    # 2023-10-01 + 3 = 2026-10-01 < as_of -> overdue
+    # 30 gal / (1728/231) = 4.010 cu ft > 1.5 (461(f)); MAWP 200 > 150 so no indefinite permit (461(h)); portable
+    # permit <= 3 years from inspection (461(d)): 2023-10-01 + 3 = 2026-10-01 < as_of -> overdue
     assert tow.status == "permit_required" and tow.permit_expires_by == "2026-10-01" and tow.overdue is True
     assert any("4.010 cu ft > 1.5 cu ft" in m for m in tow.math)
     # 344.2(b) $45 permit + 344.1(a) $150/h billed in 0.25 h steps: 1.1 h -> 1.25 h x $150 = $187.50
@@ -632,7 +632,9 @@ def test_lpg_tanks_and_boilers():
         {"kind": "LPG", "label": "skid", "volume_gallons": 500, "lpg_use": "skid tank"},
         {"kind": "propane", "label": "DOT", "volume_gallons": 400, "dot_cylinder": True},
         {"kind": "boiler", "label": "power", "steam_psig": 125, "last_inspected_on": "2025-12-01"},
-        {"kind": "boiler", "label": "lowp", "steam_psig": 15},
+        {"kind": "boiler", "label": "lowp", "steam_psig": 15, "safety_valve_psi": 15},
+        {"kind": "boiler", "label": "lowp-novalve", "steam_psig": 15},
+        {"kind": "boiler", "label": "lowp-hivalve", "steam_psig": 12, "safety_valve_psi": 30},
         {"kind": "boiler", "label": "mini", "boiler_type": "miniature"},
         {"kind": "boiler", "label": "small", "heating_surface_sqft": 100, "steam_drum_inside_diameter_in": 16,
          "mawp_psi": 100, "water_capacity_gallons": 35, "burner_input_btu_per_hr": 400000},
@@ -647,10 +649,13 @@ def test_lpg_tanks_and_boilers():
     power = item(r, "power")
     # 770(a): yearly inspection: 2025-12-01 + 1 year = 2026-12-01 (not yet overdue)
     assert power.status == "permit_required" and power.next_inspection_due == "2026-12-01" and not power.overdue
-    assert item(r, "lowp").status == "exempt"                            # not above DOSH's 15 psig listing
+    # 8 CCR 753: low-pressure = steam pressure AND steam safety valve setting not exceeding 15 psi
+    assert item(r, "lowp").status == "exempt"
+    assert item(r, "lowp-novalve").status == "need_info" and "safety_valve_psi" in item(r, "lowp-novalve").why
+    assert item(r, "lowp-hivalve").status == "permit_required"
     assert item(r, "mini").status == "exempt" and item(r, "small").status == "exempt"   # 771(a), all limits "<="
     assert item(r, "unknown").status == "need_info"
-    assert r.permits_required == 3
+    assert r.permits_required == 4
 
 
 def test_personnel_hoists():
@@ -686,9 +691,10 @@ def test_elevator_fees():
     assert next(f for f in hyd.fees if f.item == "Periodic reinspection").amount_usd == 450       # 2 x $225
     # (i)(3): $350 x 12 = $4,200; (b): 6.2 h -> 7 h x $225 = $1,575; (a): cabled 11-20 stories $450
     trac = item(r, "Trac")
-    assert [f.amount_usd for f in trac.fees] == [4200, 1575, 450] and trac.one_time_fees_usd == 5775
+    # (g): permit processing and mailing, actual cost up to $15 per permit (recurring, not in the one-time total)
+    assert [f.amount_usd for f in trac.fees] == [4200, 1575, 450, 15] and trac.one_time_fees_usd == 5775
     # (i)(7)-(8): $900 + 2 x $225 = $1,350; (a): $675 x 3 = $2,025
-    assert [f.amount_usd for f in item(r, "Esc").fees] == [1350, 225, 2025]
+    assert [f.amount_usd for f in item(r, "Esc").fees] == [1350, 225, 2025, 15]
     assert item(r, "DW").fees[0].amount_usd == 1100                      # (i)(5): $550 x 2
     assert item(r, "WL").fees[0].amount_usd == 450                       # (i)(6)
     # (j)(3)-(4): $900 + $225 = $1,125; (j)(1): one or two alterations $450
@@ -808,3 +814,254 @@ def test_mcp_rejects_bad_values_with_clear_errors():
     errors = asyncio.run(run())
     assert all(errors), errors
     assert "spaceship" in errors[0] and "unique" in errors[2] and "plumber" in errors[3] and "forklift" in errors[4]
+
+
+# ================================================================ 2026-11-25 second-pass legal review regressions
+# Each value below was read in the official text re-fetched on 2026-11-25 (8 CCR 5006.2, 753, 771, 344.30, 291.5,
+# 1532.1 on www.dir.ca.gov; 40 CFR 745.83 and 745.103 via the eCFR versioner API); the arithmetic is in the comments.
+def test_second_pass_rules_are_verified_and_carry_the_regulation_numbers():
+    exc = core.rule(tc.C_EXC)
+    assert exc.verified and exc.status == "confirmed"
+    # 5006.2 Exception (1): "2,000 pounds or less"; Exception (2): boom "less than 25 feet" or "less than 15,000 pounds"
+    assert exc.param("exempt_if_rated_capacity_lb_lte") == 2000
+    assert exc.param("delivery_knuckle_boom_exempt_if") == {"boom_ft_lt": 25, "or_capacity_lb_lt": 15000}
+    assert exc.param("exempt_equipment") == ["derricks", "sideboom cranes"]
+    # 745.103: elderly = 62 or older at initial occupancy; child under 6
+    excl = core.rule(tc.R_EXCL)
+    assert excl.verified and excl.param("elderly_housing_min_age_at_initial_occupancy") == 62
+    assert excl.param("child_age_lt") == 6
+    trades = core.rule(tc.R_TRADES)
+    assert trades.verified and "electrical work" in trades.param("trades_named")
+    assert (trades.param("interior_max_sqft_per_room"), trades.param("exterior_max_sqft")) == (6, 20)
+    # 8 CCR 753 definitions: low-pressure steam <= 15 psi (pressure and valve); hot water <= 160 psi and <= 250 F
+    d = core.rule(tc.PV_BOILER_SMALL).param("definitions_8_ccr_753")
+    assert (d["low_pressure_steam_max_psi_lte"], d["low_pressure_hot_water_max_psi_lte"],
+            d["low_pressure_hot_water_max_temp_f_lte"], d["high_temperature_water_min_temp_f_gt"]) == (15, 160, 250, 212)
+    # 344.30(a)(16) screw type elevator $225; (g) processing and mailing "up to a maximum of $15.00"
+    assert core.rule(tc.V_FEE_PERIODIC).param("usd_per_unit")["screw_type_elevator"] == 225
+    assert core.rule(tc.V_FEE_PERIODIC).param("permit_processing_and_mailing_fee_max_usd") == 15
+    # 5006.2(d)(1) certificates "valid for a maximum of five (5) years"; (c)(1) "at no cost to employees"
+    assert core.rule(tc.C_EXAM).param("option1_certificate_max_validity_years") == 5
+    assert core.rule(tc.C_EXAM).param("employer_provides_at_no_cost_to_employee") is True
+    for rid in (tc.C_OIT, tc.C_EXAM, tc.PV_BOILER_SMALL, tc.V_FEE_PERIODIC, tc.L_CDPH):
+        assert core.rule(rid).status == "corrected" and core.rule(rid).verified
+
+
+@pytest.mark.parametrize("task,expected", [
+    ("derrick operation for steel", [("crane", "derrick_sideboom")]),
+    ("sideboom pipe laying", [("crane", "derrick_sideboom")]),
+    ("digger derrick setting poles", [("crane", "digger_derrick")]),
+    ("knuckle boom truck delivering drywall", [("crane", "knuckle_boom_delivery")]),
+    ("knuckle boom crane setting trusses", [("crane", "knuckle_boom")]),
+    ("boom truck pick", [("crane", None)]),
+    ("hang drywall", []),                                                 # new drywall disturbs no paint
+    ("drywall repair", [("lead", None)]),
+    ("cut into walls for new circuits", [("electrical", "general"), ("lead", None)]),
+    ("frame elevator shaft", []),                                         # shaft framing is not conveyance work
+    ("crane over the elevator shaft", [("crane", None)]),
+])
+def test_classify_second_pass(task, expected):
+    assert tc.classify_task(task) == expected
+
+
+def test_derricks_sideboom_and_digger_derricks_need_no_5006_2_certification():
+    r = tc.certifications_required(["derrick operation", "sideboom crane", "digger derrick for poles"], as_of=AS_OF)
+    assert [q.status for q in r.requirements] == ["not_required", "not_required"]
+    assert all(q.verified and tc.C_EXC in q.rule_ids for q in r.requirements)
+    assert "8 CCR 5006 still apply" in r.requirements[0].why
+    assert "ASME B30.5" in r.requirements[1].why                          # truck cranes are not excepted
+    assert r.required_count == 0
+
+
+def test_delivery_knuckle_boom_is_conditional_and_other_cranes_list_the_exceptions():
+    r = tc.certifications_required(["knuckle boom truck delivering drywall", "crane pick of RTUs"], as_of=AS_OF)
+    kb, crane = r.requirements
+    assert kb.status == "conditional" and "under 25 ft" in kb.why and "under 15,000 lb" in kb.why
+    assert crane.status == "required" and "2,000 lb or less" in crane.why and "derricks and sideboom" in crane.why
+    assert "no cost to the employee" in crane.cost_detail                 # 5006.2(c)(1)
+    assert "valid at most 5 years" in crane.acceptable[0]                 # 5006.2(d)(1)
+    assert "hoisting personnel" in crane.alternatives[0] and "20 ft" in crane.alternatives[0]
+    assert kb.verified and crane.verified
+
+
+@pytest.mark.parametrize("task,status", [
+    ("crane personnel lift", "not_qualified"), ("crane pick near power lines", "not_qualified"),
+    ("tandem crane pick", "not_qualified"), ("crane over the elevator shaft", "not_qualified"),
+    ("crane christmas tree rigging", "confirm"),                           # (b)(3)(E): trainer may allow it
+    ("crane pick of RTUs", "ok_with_supervision"),
+])
+def test_operator_in_training_task_limits(task, status):
+    r = tc.check_crew_certifications([
+        {"name": "O", "task": task, "credentials": ["crane operator in training"], "supervised_by": "C"},
+        {"name": "C", "task": "crane operator", "credentials": ["NCCCO crane operator exp 2028-01-01"],
+         "employer_evaluated": True}], as_of=AS_OF)
+    w = worker(r, "O")
+    assert w.status == status
+    if status == "not_qualified":
+        assert "8 CCR 5006.2(b)(3)" in w.issues[0] and w.can_do_task is False
+        assert r.cleared_to_start is False
+
+
+def test_crane_certificate_without_expiry_is_capped_at_5_years_from_issue():
+    r = tc.check_crew_certifications([
+        {"name": "Old", "task": "crane operator", "credentials": [{"type": "NCCCO crane operator",
+                                                                    "issued": "2020-01-01"}], "employer_evaluated": True},
+        {"name": "New", "task": "crane operator", "credentials": [{"type": "NCCCO crane operator",
+                                                                    "issued": "2023-06-15"}], "employer_evaluated": True},
+    ], as_of=AS_OF)
+    old, new = worker(r, "Old"), worker(r, "New")
+    # 2020-01-01 + 5 = 2025-01-01 < 2026-11-25 -> expired; 2023-06-15 + 5 = 2028-06-15 -> valid
+    assert old.credentials[0].expires == "2025-01-01" and old.status == "expired" and old.can_do_task is False
+    assert "Expired 2025-01-01" in old.issues[0]                          # an expired card always says why
+    assert new.credentials[0].expires == "2028-06-15" and new.status == "ok"
+
+
+def test_electrical_work_in_a_pre_1978_house_flags_rrp():
+    base = dict(employer_license_classes="C-10", year_built=1950, building_type="house", as_of=AS_OF)
+    r = tc.certifications_required(["rewire bedrooms"], **base)
+    ren = req(r, "EPA certified renovator")
+    # 745.83: electrical work is minor repair only up to 6 sq ft per room inside / 20 sq ft outside
+    assert ren.status == "conditional" and tc.R_TRADES in ren.rule_ids
+    assert "6 sq ft or less" in ren.why and "20 sq ft or less" in ren.why and "electrical work" in ren.why
+    assert [q.trade for q in r.requirements][:2] == ["electrical", "lead_rrp"]
+    # 4 sq ft <= 6 -> minor repair: RRP not required; 8 sq ft > 6 -> renovation: required
+    small = tc.certifications_required(["rewire bedrooms"], interior_painted_sqft_per_room=4, **base)
+    assert req(small, "EPA RRP certification").status == "not_required"
+    big = tc.certifications_required(["rewire bedrooms"], interior_painted_sqft_per_room=8, **base)
+    assert req(big, "EPA certified renovator").status == "required"
+    # not triggered for a 1990 house or an industrial building
+    for kw in (dict(base, year_built=1990), dict(base, building_type="factory")):
+        assert all(q.trade == "electrical" for q in tc.certifications_required(["rewire bedrooms"], **kw).requirements)
+    crew = tc.check_crew_certifications([{"name": "G", "task": "rewire bedrooms",
+                                          "credentials": ["General Electrician exp 2028-01-01"]}], **base)
+    f = finding(crew, "EPA RRP for electrical work")
+    assert f.status == "confirm" and f.verified and crew.cleared_to_start is True
+
+
+@pytest.mark.parametrize("building,expected", [
+    ("senior housing", "senior_or_care"), ("assisted living", "senior_or_care"), ("55+ community", "senior_or_care"),
+    ("studio apartment", "zero_bedroom"), ("college dorm", "zero_bedroom"), ("SRO hotel", "zero_bedroom"),
+    ("apartment building", "multifamily"),
+])
+def test_senior_and_zero_bedroom_buildings(building, expected):
+    assert tc.building_from(building) == expected
+
+
+@pytest.mark.parametrize("building,status", [("senior housing", "conditional"), ("studio apartment", "conditional"),
+                                             ("apartment building", "required")])
+def test_rrp_target_housing_exclusions(building, status):
+    r = tc.certifications_required(["scrape and repaint"], year_built=1960, building_type=building, as_of=AS_OF)
+    ren = req(r, "EPA certified renovator")
+    assert ren.status == status
+    if status == "conditional":
+        # 745.103: not target housing "unless any child who is less than 6 years of age resides"
+        assert tc.R_EXCL in ren.rule_ids and "child under 6" in ren.why
+
+
+def test_residential_electrician_in_a_care_facility_must_be_confirmed():
+    r = tc.certifications_required(["pull wire"], employer_license_classes="C-10", building_type="nursing home",
+                                   as_of=AS_OF)
+    assert "NEC Article 517" in r.requirements[0].acceptable[-1] and "confirm" in r.requirements[0].acceptable[-1]
+    crew = tc.check_crew_certifications([{"name": "R", "task": "pull wire", "credentials": [
+        "Residential Electrician exp 2028-01-01"]}], employer_license_classes="C-10", building_type="assisted living",
+        as_of=AS_OF)
+    assert worker(crew, "R").status == "confirm" and "Article 517" in worker(crew, "R").issues[0]
+
+
+def test_window_replacement_is_judged_task_by_task():
+    base = dict(year_built=1960, building_type="house", interior_painted_sqft_per_room=3, as_of=AS_OF)
+    # 'paint window trim' + 'patch plaster' is not a window replacement: 3 sq ft <= 6 -> minor repair
+    r = tc.certifications_required(["paint window trim", "patch plaster"], **base)
+    assert req(r, "EPA RRP certification").status == "not_required"
+    r = tc.certifications_required(["replace windows", "patch plaster"], **base)
+    assert req(r, "EPA certified renovator").status == "required"        # window replacement is never minor
+
+
+def test_boilers_follow_the_8_ccr_753_definitions():
+    r = tc.equipment_operating_permits([
+        {"kind": "boiler", "label": "hw-low", "boiler_type": "hot water heating", "water_psi": 30, "water_temp_f": 180},
+        {"kind": "boiler", "label": "hw-htw", "boiler_type": "hot water", "water_psi": 200, "water_temp_f": 300},
+        {"kind": "boiler", "label": "hw-gap", "boiler_type": "hot water", "water_psi": 200, "water_temp_f": 200},
+        {"kind": "boiler", "label": "hw-?", "boiler_type": "hydronic"},
+        {"kind": "boiler", "label": "steam-?", "boiler_type": "steam"},
+        {"kind": "boiler", "label": "power-10", "boiler_type": "power boiler", "steam_psig": 10, "safety_valve_psi": 10},
+        {"kind": "boiler", "label": "power", "boiler_type": "power boiler"},
+    ], as_of=AS_OF)
+    # 30 psi <= 160 and 180 F <= 250 F -> low-pressure; 300 F > 212 F at 200 psi > 160 -> high-temperature water
+    assert item(r, "hw-low").status == "exempt" and item(r, "hw-htw").status == "exempt"
+    # 200 psi > 160 at 200 F (not above 212 F): neither -> annual inspection and permit (770(a), 780)
+    assert item(r, "hw-gap").status == "permit_required"
+    assert item(r, "hw-?").status == "need_info" and "water_temp_f" in item(r, "hw-?").why
+    assert item(r, "steam-?").status == "need_info" and "safety_valve_psi" in item(r, "steam-?").why
+    assert item(r, "power-10").status == "exempt"                       # the 753 numbers decide, not the label
+    pw = item(r, "power")
+    assert pw.status == "permit_required" and pw.before_use
+    assert r.verified is True
+
+
+def test_a_boiler_that_needs_a_permit_never_says_no_permit_is_needed():
+    r = tc.equipment_operating_permits([{"kind": "boiler", "steam_psig": 125}], as_of=AS_OF)
+    assert r.permits_required == 1 and "No permit" not in r.next_step and "inspection" in r.next_step
+
+
+def test_air_tank_that_may_hold_an_indefinite_permit_is_not_called_overdue():
+    r = tc.equipment_operating_permits([
+        {"kind": "compressor", "label": "maybe", "volume_gallons": 20, "mawp_psi": 150,
+         "last_inspected_on": "2023-11-24"},
+        {"kind": "compressor", "label": "no-stamp", "volume_gallons": 20, "mawp_psi": 150, "asme_stamped": False,
+         "last_inspected_on": "2023-11-24"},
+    ], as_of=AS_OF)
+    maybe = item(r, "maybe")
+    # 2.674 cu ft <= 25 and MAWP 150 <= 150, stamp unknown -> 461(h) indefinite permit possible: no overdue claim
+    assert maybe.overdue is False and maybe.permit_expires_by is None and "asme_stamped" in maybe.permit_term
+    assert tc.PV_AIR_INDEF in maybe.rule_ids and any("2026-11-24 (past)" in m for m in maybe.math)
+    # not stamped -> 461(d) portable (assumed) 3 years: 2023-11-24 + 3 = 2026-11-24 < 2026-11-25 -> overdue
+    assert item(r, "no-stamp").overdue is True and item(r, "no-stamp").permit_expires_by == "2026-11-24"
+
+
+def test_screw_elevator_periodic_fee_and_permit_processing_fee():
+    p = tc.equipment_operating_permits([{"kind": "elevator", "drive": "screw", "stories": 3}], building_type="office",
+                                       as_of=AS_OF).items[0]
+    # (i)(3): $350 x 3 stories = $1,050; (a)(16): $225 periodic; (g): processing and mailing at most $15
+    assert [(f.item, f.amount_usd, f.when) for f in p.fees] == [
+        ("Erection/installation permit incl. plan approval", 1050, "one_time"), ("DOSH inspection", 225, "per_hour"),
+        ("Periodic reinspection", 225, "recurring"), ("Permit processing and mailing", 15, "recurring")]
+    assert p.one_time_fees_usd == 1050
+
+
+def test_renewal_lead_training_and_cccm_wording_match_the_text():
+    crew = tc.check_crew_certifications([{"name": "G", "task": "pull wire", "credentials": [
+        "General Electrician exp 2027-06-30"]}], employer_license_classes="C-10", as_of=AS_OF)
+    renewal = worker(crew, "G").credentials[0].renewal
+    # 8 CCR 291.5(c): "postmarked or received at DAS 30 days before the end of the certification period"
+    assert "291.5(c)" in renewal and "postmarked or received 30 days" in renewal and "2027-05-31" in renewal
+    assert "291.5(b)" not in renewal
+    r = tc.certifications_required(["demo plaster"], lead_exposure_ug_m3=20, as_of=AS_OF)
+    # 1532.1(l)(1)(C)1.: training for employees exposed "at or above the action level on any day"
+    assert "at or above the action level on any day" in req(r, "CDPH").why
+    e = tc.certifications_required(["elevator repair"], building_type="office", as_of=AS_OF)
+    cccm = req(e, "Certified Competent Conveyance Mechanic")
+    # DOSH FAQ: "maintenance, repairs, alterations, or replacements" (installation is not in that list)
+    assert "maintenance, repairs, alterations, and replacements" in cccm.why and "Installing" not in cccm.why
+
+
+def test_path_rejects_absurd_hours():
+    with pytest.raises(ValueError, match="cannot be above 100000"):
+        tc.electrician_certification_path("GE", hours_by_area={"commercial": 1e30}, as_of=AS_OF)
+
+
+def test_mcp_accepts_the_new_boiler_and_building_fields():
+    mcp = FastMCP("t")
+    tc.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            eq = await c.call_tool("equipment_operating_permits", {"equipment": [
+                {"kind": "boiler", "boiler_type": "hot water", "water_psi": 30, "water_temp_f": 180}],
+                "as_of": AS_OF})
+            cr = await c.call_tool("certifications_required", {
+                "tasks": ["scrape paint"], "year_built": 1960, "building_type": "senior apartments", "as_of": AS_OF})
+            return eq.structured_content, cr.structured_content
+    eq, cr = asyncio.run(run())
+    assert eq["items"][0]["status"] == "exempt"
+    assert cr["building_type"] == "senior_or_care" and cr["requirements"][0]["status"] == "conditional"

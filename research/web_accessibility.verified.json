@@ -1,6 +1,6 @@
 {
   "domain": "Accessibility for California construction: CBC Chapter 11B path-of-travel upgrades on alterations (11B-202.3/202.4), the Exception 8 20% cost cap and the 2026 DSA valuation threshold, the priority list, adjusted construction cost and 3-year aggregation, local hardship procedures (LADBS, San Diego DS-2123), common 11B dimensional requirements for tenant improvements and parking, public housing (11B-233), CBC Chapter 11A covered multifamily scoping, parking, doors and site rules, CASp and the Civil Code 1938 commercial lease statement, the $4 state disability-access fee on business licenses, federal ADA alterations and path of travel (28 CFR 36.402-36.406, 35.151) with the 20% disproportionality rule, barrier removal, key 2010 ADA Standards scoping (36 CFR 1191), ADA Title III civil penalties, and Fair Housing Act design and construction requirements (24 CFR 100.201-100.205) with HUD and DOJ penalties",
-  "source_doc": "Official sources fetched and read on 2026-11-25. eCFR versioner API (version of 2026-11-23): 28 CFR part 36 (36.104, 36.304, 36.401-36.406, 36.504), 28 CFR part 35 (35.151), 28 CFR 85.5 (table 1), 24 CFR part 100 subpart D (100.200-100.205), 24 CFR 180.671, 36 CFR part 1191 Appendices B and D (2004 ADAAG text forming the 2010 ADA Standards). City of Los Angeles LADBS (dbs.lacity.gov): 2026 LABC checklists CL-BC-2026-026 Commercial Accessibility (eff. 01/01/2026, rev. 09/23/2026), CL-BC-2026-027 Residential Accessibility (rev. 08/21/2026), CL-BC-2026-032 Group B and M, CL-BC-2026-036 Public Housing; Counter Plan Check Correction Sheet PC/STR/Corr.Lst.058 (eff. 1-1-2026, rev. 4-3-2026) and the 2020 LABC version; forms PC/DAD/App.20 (Rev. 1/26/15) and PC-DAD.Mod6. City of San Diego (sandiego.gov): Form DS-2123 Determination of Unreasonable Hardship Exception (January 2026), Accessibility Guide for Small Businesses (June 2015), Treasurer Business Tax Rates and Fees and Apply pages (SB 1186 / AB 1379 / AB 2164 / AB 3002), Ask a CASp page, and two City lease documents quoting Civil Code 1938. CSLB-hosted California Commission on Disability Access 'A Guide to Accessible Parking for the Construction Industry' (CBC 2022 Edition, 05-15-2024) and CSLB Industry Bulletin 21-18. The CBC (Title 24 Part 2) itself could not be read: codes.iccsafe.org and dgs.ca.gov (DSA, BSC, CCDA) are not reachable from this session, so CBC rules quote LADBS and San Diego restatements and cite the CBC section those agencies give. BLOCKED (nothing taken from them as a source): leginfo.legislature.ca.gov (bot protection; not bypassed), www.dgs.ca.gov (DSA 'Valuation Threshold Update for 2026', DSA Access Compliance Reference Materials, 2025 CBC Advisory Manual, CASp pages and Best Practices Manual, CCDA pages, BSC 2025 and 2025 Intervening Cycle code change documents), codes.iccsafe.org, www.hcd.ca.gov, www.ada.gov, www.access-board.gov, www.hud.gov, www.justice.gov, www.govinfo.gov, www.federalregister.gov, courts.ca.gov (Judicial Council DAL forms), govt.westlaw.com (21 CCR CASp regulations) and finance.lacity.gov. California statutes that rest only on those sources (Civil Code 52, 54.3, 55.3-55.32, 55.51-55.57 including 55.53 report/certificate details, 55.54 stay and early evaluation conference, 55.56 statutory damages and the reduced $1,000/$2,000 amounts and small-business test; Civil Code 1938 lease-date coverage, report delivery and rescission terms; Gov. Code 4459.5-4459.8 and the 4467 revenue split; H&SC 19955-19959) are NOT in this pack as rules. Search excerpts were used only to find official documents and to flag conflicts in notes. No California accessibility statute or CBC change effective 2027-01-01 was found in any source read; AB 649 (2025-2026) was reported in search results as held in committee on 2026-08-13 (not verified), and 2025 Intervening Cycle CBC amendments (BSC, 2026) could not be read.",
+  "source_doc": "Official sources fetched and read on 2026-11-25. eCFR versioner API (version of 2026-11-23): 28 CFR part 36 (36.104, 36.304, 36.401-36.406, 36.504), 28 CFR part 35 (35.151), 28 CFR 85.5 (table 1), 24 CFR part 100 subpart D (100.200-100.205), 24 CFR 180.671, 36 CFR part 1191 Appendices B and D (2004 ADAAG text forming the 2010 ADA Standards). City of Los Angeles LADBS (dbs.lacity.gov): 2026 LABC checklists CL-BC-2026-026 Commercial Accessibility (eff. 01/01/2026, rev. 09/23/2026), CL-BC-2026-027 Residential Accessibility (rev. 08/21/2026), CL-BC-2026-032 Group B and M, CL-BC-2026-036 Public Housing; Counter Plan Check Correction Sheet PC/STR/Corr.Lst.058 (eff. 1-1-2026, rev. 4-3-2026) and the 2020 LABC version; forms PC/DAD/App.20 (Rev. 1/26/15) and PC-DAD.Mod6; Information Bulletin P/BC 2026-084 Accessibility Details for Parking (eff. 01-01-2026, rev. 11-23-2025; read 2026-11-25). City of San Diego (sandiego.gov): Form DS-2123 Determination of Unreasonable Hardship Exception (January 2026), Accessibility Guide for Small Businesses (June 2015), Treasurer Business Tax Rates and Fees and Apply pages (SB 1186 / AB 1379 / AB 2164 / AB 3002), Ask a CASp page, and two City lease documents quoting Civil Code 1938. CSLB-hosted California Commission on Disability Access 'A Guide to Accessible Parking for the Construction Industry' (CBC 2022 Edition, 05-15-2024) and CSLB Industry Bulletin 21-18. The CBC (Title 24 Part 2) itself could not be read: codes.iccsafe.org and dgs.ca.gov (DSA, BSC, CCDA) are not reachable from this session, so CBC rules quote LADBS and San Diego restatements and cite the CBC section those agencies give. BLOCKED (nothing taken from them as a source): leginfo.legislature.ca.gov (bot protection; not bypassed), www.dgs.ca.gov (DSA 'Valuation Threshold Update for 2026', DSA Access Compliance Reference Materials, 2025 CBC Advisory Manual, CASp pages and Best Practices Manual, CCDA pages, BSC 2025 and 2025 Intervening Cycle code change documents), codes.iccsafe.org, www.hcd.ca.gov, www.ada.gov, www.access-board.gov, www.hud.gov, www.justice.gov, www.govinfo.gov, www.federalregister.gov, courts.ca.gov (Judicial Council DAL forms), govt.westlaw.com (21 CCR CASp regulations) and finance.lacity.gov. California statutes that rest only on those sources (Civil Code 52, 54.3, 55.3-55.32, 55.51-55.57 including 55.53 report/certificate details, 55.54 stay and early evaluation conference, 55.56 statutory damages and the reduced $1,000/$2,000 amounts and small-business test; Civil Code 1938 lease-date coverage, report delivery and rescission terms; Gov. Code 4459.5-4459.8 and the 4467 revenue split; H&SC 19955-19959) are NOT in this pack as rules. Search excerpts were used only to find official documents and to flag conflicts in notes. No California accessibility statute or CBC change effective 2027-01-01 was found in any source read; AB 649 (2025-2026) was reported in search results as held in committee on 2026-08-13 (not verified), and 2025 Intervening Cycle CBC amendments (BSC, 2026) could not be read.",
   "rules": [
     {
       "id": "ada-cbc-11b-202-3-altered-elements-comply",
@@ -282,7 +282,7 @@
       "verbatim_quote": "The “Summary of Accessibility Upgrades” Form should be completed and submitted for review, as not all elements are shown to comply with minimum accessibility Code standards.",
       "effective": "2026-01-01",
       "read_from_primary_text": true,
-      "notes": "IB/P/BC 2026-076 is listed by LADBS as effective 01/19/2026 (listing seen only in search results; its PDF was not located). The older LADBS form PC/DAD/App.20 (Rev. 1/26/15) shows the layout: cost of features provided (A) / adjusted cost of proposed construction (B) = percentage upgrades provided.",
+      "notes": "IB/P/BC 2026-076 is listed by LADBS as effective 01/19/2026 (listing seen only in search results; its PDF was not located). The older LADBS form PC/DAD/App.20 (Rev. 1/26/15) shows the layout: cost of features provided (A) / adjusted cost of proposed construction (B) = percentage upgrades provided. [Review 2026-11-25: the form number is printed in CL-BC-2026-026 itself (PDF p.2, Section III: 'P/BC 2026-076 - Summary of Accessibility Upgrades for Commercial Projects'); the 01/19/2026 effective date is still unverified and the form's PDF was still not located.]",
       "verification": {
         "status": "confirmed",
         "checked_against": "LADBS CL-BC-2026-026 Commercial Accessibility (eff. 01/01/2026, rev. 09/23/2026) https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-026-Acc_Commercial.pdf (re-fetched 2026-11-25) PDF p.2, Section III (lists 'P/BC 2026-076 - Summary of Accessibility Upgrades for Commercial Projects') and Section A items 3-4; LADBS Counter Plan Check Correction Sheet PC/STR/Corr.Lst.058 (eff. 1-1-2026, rev. 4-3-2026) https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/counter-plan-corrections-sheet.pdf (re-fetched 2026-11-25) PDF pp.7-8, item H.3 (request for Unreasonable Hardship); LADBS PC/DAD/App.20 Summary of Accessibility Upgrades (Rev. 1/26/15) https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/application-for-unreasonable-hardship-to-disabled-access-requirements-pc-dad-app20.pdf (re-fetched 2026-11-25) (A / B layout); the 01/19/2026 effective date of P/BC 2026-076 in notes was not seen in any fetched source",
@@ -588,14 +588,16 @@
     {
       "id": "ada-cbc-11b-208-parking-per-facility",
       "title": "Count required accessible parking separately for each parking lot or structure",
-      "plain_english": "The number of accessible spaces is figured separately for each parking facility on a site, not from the site's total. Hospital outpatient parking needs 10% accessible and rehabilitation or outpatient physical therapy parking needs 20%.",
+      "plain_english": "The number of accessible spaces is figured separately for each parking facility on a site, not from the site's total. Patient and visitor parking for hospital outpatient facilities (including free-standing buildings giving a hospital's outpatient clinical services) needs 10% accessible; patient and visitor parking for rehabilitation facilities specializing in conditions that affect mobility, and for outpatient physical therapy facilities, needs 20%.",
       "category": "threshold",
       "parameters": {
         "count_basis": "each parking facility separately",
         "hospital_outpatient_fraction": 0.1,
         "rehab_and_outpatient_pt_fraction": 0.2,
         "evcs_are_parking_spaces": false,
-        "general_table": "CBC Table 11B-208.2 (not read; see ada-2010-std-208-2-parking-table for the federal table)"
+        "general_table": "CBC Table 11B-208.2 (see ada-cbc-11b-208-2-table; same rows as the federal table)",
+        "hospital_outpatient_scope": "patient and visitor parking serving hospital outpatient facilities and free-standing buildings providing outpatient clinical services of a hospital",
+        "rehab_scope": "patient and visitor parking serving rehabilitation facilities specializing in treating conditions that affect mobility, and outpatient physical therapy facilities"
       },
       "applies_to": "Alterations, additions, structural repairs and new construction of public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B), including tenant improvements",
       "citation": "CBC 11B-208, 11B-208.2, 11B-208.2.1, 11B-208.2.2 (as cited by LADBS)",
@@ -605,22 +607,23 @@
       "read_from_primary_text": true,
       "notes": "Quoted from the LADBS 2026 LABC plan check checklist, which restates CBC (Title 24 Part 2) Chapter 11B sections for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. Same page: 'Ten percent of patient and visitor parking spaces provided to serve hospital outpatient facilities' and 'Twenty percent ... rehabilitation facilities ... and outpatient physical therapy facilities'; item 1: EVCS are not parking spaces (see 11B-228.3).",
       "verification": {
-        "status": "confirmed",
+        "status": "corrected",
         "checked_against": "LADBS CL-BC-2026-026 Commercial Accessibility (eff. 01/01/2026, rev. 09/23/2026) https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-026-Acc_Commercial.pdf (re-fetched 2026-11-25) PDF p.8, Section D items 1-4; CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
-        "correction": ""
+        "correction": "Fractions and per-facility counting confirmed. Scope corrected: the 20% rate is only for rehabilitation facilities 'specializing in treating conditions that affect mobility' and outpatient physical therapy facilities (CL-BC-2026-026 item D.4), and the 10% rate covers 'free-standing buildings providing outpatient clinical services of a hospital' (item D.3); both apply to patient and visitor spaces only. plain_english rewritten and parameters hospital_outpatient_scope and rehab_scope added. general_table updated to point to the CBC table read from LADBS P/BC 2026-084."
       }
     },
     {
       "id": "ada-cbc-11b-208-van-accessible-1-in-6",
       "title": "One in every six accessible spaces (minimum one) must be van accessible",
-      "plain_english": "Of the required accessible parking spaces, one in every six (or fraction of six), and at least one, must be van accessible with a 96-inch access aisle on the passenger side, signed 'van accessible'.",
+      "plain_english": "Of the required accessible parking spaces, one in every six (or fraction of six), and at least one, must be van accessible and signed 'van accessible'. The LADBS checklist says van spaces are served by a 96-inch aisle on the passenger side; the CBC text LADBS prints in P/BC 2026-084 allows a 12-ft van space with a 5-ft aisle or a 9-ft van space with an 8-ft (96-inch) aisle. The 9 ft + 8 ft layout meets both.",
       "category": "threshold",
       "parameters": {
         "van_ratio": "1 per 6 required accessible spaces or fraction",
         "min_van_spaces": 1,
         "van_aisle_width_min_in": 96,
         "aisle_side": "opposite the driver's side when entering forward",
-        "formula": "van_spaces = max(1, ceil(required_accessible / 6))"
+        "formula": "van_spaces = max(1, ceil(required_accessible / 6))",
+        "aisle_width_conflict": "CL-BC-2026-026 item D.6 states a 96-inch aisle for van spaces; LADBS P/BC 2026-084 (eff. 01-01-2026) prints 11B-208.2.4 without an aisle width and 11B-502.2 / 11B-502.3.1 allowing a 144-inch van space with a 60-inch aisle, or a 108-inch van space with a 96-inch aisle"
       },
       "applies_to": "Alterations, additions, structural repairs and new construction of public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B), including tenant improvements",
       "citation": "CBC 11B-208.2.4, 11B-502 (as cited by LADBS)",
@@ -628,11 +631,11 @@
       "verbatim_quote": "One in every six or fraction of six parking spaces required by Section 11B-208.2 Minimum Number, but not less than one, shall be served by an access aisle 96 inches wide minimum placed on the side opposite the driver’s side when the vehicle is going forward into the parking space and shall be designated “van accessible”.",
       "effective": "2026-01-01",
       "read_from_primary_text": true,
-      "notes": "Quoted from the LADBS 2026 LABC plan check checklist, which restates CBC (Title 24 Part 2) Chapter 11B sections for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. For CBC 11A covered multifamily parking the ratio is one in every eight (see ada-cbc-11a-1109a-8-6-van-1-in-8).",
+      "notes": "Quoted from the LADBS 2026 LABC plan check checklist, which restates CBC (Title 24 Part 2) Chapter 11B sections for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. For CBC 11A covered multifamily parking the ratio is one in every eight (see ada-cbc-11a-1109a-8-6-van-1-in-8). [Review 2026-11-25: LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking' (eff. 01-01-2026, rev. 11-23-2025), PDF p.2, restates 11B-208.2.4 as 'For every six or fraction of six parking spaces required by Section 11B-208.2 to comply with Section 11B-502, at least one shall be a van parking space complying with Section 11B-502.' (no aisle width), and PDF pp.3-4 restate 11B-502.2 (van 144 in, or 108 in with a 96 in aisle) and 11B-502.3.1 (aisles 60 in minimum). The checklist item's 96-inch wording conflicts with that text.]",
       "verification": {
-        "status": "confirmed",
+        "status": "corrected",
         "checked_against": "LADBS CL-BC-2026-026 Commercial Accessibility (eff. 01/01/2026, rev. 09/23/2026) https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-026-Acc_Commercial.pdf (re-fetched 2026-11-25) PDF p.8, Section D item 6 ('or fraction of six ... but not less than one' supports the ceil formula); CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
-        "correction": ""
+        "correction": "Ratio (one in six or fraction, minimum one), designation and passenger-side aisle confirmed. The 96-inch aisle is stated by the checklist only: the CBC text restated in LADBS P/BC 2026-084 allows a 12-ft van space with a 60-inch aisle. plain_english rewritten to state both, and parameter aisle_width_conflict added."
       }
     },
     {
@@ -2393,7 +2396,7 @@
       "verbatim_quote": "208.2 Minimum Number. Parking spaces complying with 502 shall be provided in accordance with Table 208.2 except as required by 208.2.1, 208.2.2, and 208.2.3. Where more than one parking facility is provided on a site, the number of accessible spaces provided on the site shall be calculated according to the number of spaces required for each parking facility.",
       "effective": "2012-03-15",
       "read_from_primary_text": true,
-      "notes": "Text read from the eCFR edition of 36 CFR part 1191 current on 2026-11-23. Under 28 CFR 36.104 and 35.104 the 2010 ADA Standards consist of the 2004 ADAAG (36 CFR part 1191 Appendices B and D, 2009 edition) plus DOJ subpart D rules; if the Access Board has amended this provision since 2009, the DOJ-adopted 2009 text controls. The ceil() rounding for the 2% row is inferred, not stated in the table. CBC Table 11B-208.2 was not read; use it for California projects where it is stricter.",
+      "notes": "Text read from the eCFR edition of 36 CFR part 1191 current on 2026-11-23. Under 28 CFR 36.104 and 35.104 the 2010 ADA Standards consist of the 2004 ADAAG (36 CFR part 1191 Appendices B and D, 2009 edition) plus DOJ subpart D rules; if the Access Board has amended this provision since 2009, the DOJ-adopted 2009 text controls. The ceil() rounding for the 2% row is inferred, not stated in the table. CBC Table 11B-208.2, as restated by LADBS P/BC 2026-084 (eff. 01-01-2026), has the same rows (see ada-cbc-11b-208-2-table).",
       "verification": {
         "status": "confirmed",
         "checked_against": "eCFR 36 CFR part 1191 Appendices B and D https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-36.xml?part=1191 via the eCFR versioner API (full text as of 2026-11-23), re-fetched 2026-11-25; the www.ecfr.gov/current HTML section page redirects to a bot check (unblock.federalregister.gov), which was not bypassed; eCFR point-in-time history for part 1191 begins 2016-12-13, so the DOJ-adopted 2009 edition could not be compared, Appendix B 208.2, Table 208.2, 208.2.1, 208.2.2, 208.2.4; eCFR 28 CFR part 36 https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-28.xml?part=36 36.104 ('2004 ADAAG means ... appendices B and D to 36 CFR part 1191 (2009)')",
@@ -2881,21 +2884,416 @@
         "checked_against": "eCFR 28 CFR part 85 https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-28.xml?part=85 via the eCFR versioner API (full text as of 2026-11-23), re-fetched 2026-11-25; the www.ecfr.gov/current HTML section page redirects to a bot check (unblock.federalregister.gov), which was not bypassed, 85.5(a)-(b) and table 1 rows 28 CFR 85.3(b)(3)(i)-(ii) (127,983 / 131,308; 255,964 / 262,614)",
         "correction": ""
       }
+    },
+    {
+      "id": "ada-cbc-11b-208-2-table",
+      "title": "CBC Table 11B-208.2: minimum accessible parking spaces per parking facility",
+      "plain_english": "Count accessible parking for each lot or garage from CBC Table 11B-208.2: 1 for 1-25 spaces, 2 for 26-50, 3 for 51-75, 4 for 76-100, 5 for 101-150, 6 for 151-200, 7 for 201-300, 8 for 301-400, 9 for 401-500, 2 percent of the total for 501-1,000, and 20 plus 1 for each 100 (or fraction) over 1,000. Hospital outpatient, mobility-rehabilitation and residential parking follow their own rules.",
+      "category": "threshold",
+      "parameters": {
+        "table": [
+          {
+            "from": 1,
+            "to": 25,
+            "required": 1
+          },
+          {
+            "from": 26,
+            "to": 50,
+            "required": 2
+          },
+          {
+            "from": 51,
+            "to": 75,
+            "required": 3
+          },
+          {
+            "from": 76,
+            "to": 100,
+            "required": 4
+          },
+          {
+            "from": 101,
+            "to": 150,
+            "required": 5
+          },
+          {
+            "from": 151,
+            "to": 200,
+            "required": 6
+          },
+          {
+            "from": 201,
+            "to": 300,
+            "required": 7
+          },
+          {
+            "from": 301,
+            "to": 400,
+            "required": 8
+          },
+          {
+            "from": 401,
+            "to": 500,
+            "required": 9
+          },
+          {
+            "from": 501,
+            "to": 1000,
+            "required_percent_of_total": 2
+          },
+          {
+            "from": 1001,
+            "to": null,
+            "required": "20 plus 1 for each 100, or fraction thereof, over 1000"
+          }
+        ],
+        "count_basis": "each parking facility separately",
+        "except_as_required_by": [
+          "11B-208.2.1 hospital outpatient",
+          "11B-208.2.2 rehabilitation / outpatient PT",
+          "11B-208.2.3 residential facilities"
+        ],
+        "same_as_federal_table": "ada-2010-std-208-2-parking-table (identical rows)"
+      },
+      "applies_to": "Alterations, additions, structural repairs and new construction of public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B), including tenant improvements",
+      "citation": "CBC 11B-208.2, Table 11B-208.2 (as restated by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 1; 11B-208.2 Minimum number and Table 11B-208.2)",
+      "verbatim_quote": "Parking spaces complying with Section 11B-502 shall be provided in accordance with Table 11B-208.2 except as required by Sections 11B-208.2.1, 11B-208.2.2 and 11B-208.2.3. Where more than one parking facility is provided on a site, the number of accessible spaces provided on the site shall be calculated according to the number of spaces required for each parking facility.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. The table printed on the same page matches federal Table 208.2 row for row. The rounding of the 2 percent row is not stated; CCDA's parking guide says CBC 11B-104 calls for always rounding up when calculating percentages for numbers of facilities.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 1; Table 11B-208.2) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization; the bulletin splits '11B-' and '208.2.2' across a line). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-208-1-exc1-bus-truck-delivery",
+      "title": "Bus, truck, delivery and impound parking is exempt from the accessible parking count",
+      "plain_english": "Parking spaces used only for buses, trucks, other delivery vehicles or vehicle impound do not have to meet CBC 11B-208, as long as a lot the public uses has an accessible passenger drop-off and loading zone (CBC 11B-503). EV charging spaces are not parking spaces for this count either.",
+      "category": "definition",
+      "parameters": {
+        "exempt_space_uses": [
+          "buses",
+          "trucks",
+          "other delivery vehicles",
+          "vehicular impound"
+        ],
+        "proviso": "lots accessed by the public provide a passenger drop-off and loading zone complying with 11B-503",
+        "evcs_are_parking_spaces": false
+      },
+      "applies_to": "Alterations, additions, structural repairs and new construction of public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B), including tenant improvements",
+      "citation": "CBC 11B-208.1 Exception 1 (as restated by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 1; 11B-208.1 General, Exception 1)",
+      "verbatim_quote": "Parking spaces used exclusively for buses, trucks, other delivery vehicles or vehicular impound shall not be required to comply with Section 11B-208 provided that lots accessed by the public are provided with a passenger drop-off and loading zone complying with Section 11B-503.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. Same page, 11B-208.1: 'electric vehicle charging stations are not parking spaces'.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 1; 11B-208.1 Exception 1) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-502-1-measure-from-centerline",
+      "title": "Measure accessible stall and aisle widths from the centerline of the stripes",
+      "plain_english": "Where accessible parking spaces and aisles are striped, measure their widths from the centerline of the stripes. Only where a space or aisle is not next to another space or aisle may the full width of its outside line be included.",
+      "category": "process_step",
+      "parameters": {
+        "measure_from": "centerline of the markings",
+        "exception": "space or aisle not adjacent to another space or aisle: full line width may be included"
+      },
+      "applies_to": "Alterations, additions, structural repairs and new construction of public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B), including tenant improvements",
+      "citation": "CBC 11B-502.1 (as restated by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 3; 11B-502.1 General and Exception)",
+      "verbatim_quote": "Where parking spaces are marked with lines, width measurements of parking spaces and access aisles shall be made from the centerline of the markings.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 3; 11B-502.1) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-502-4-parking-surface-slope",
+      "title": "Accessible parking spaces and aisles: slopes no steeper than 1:48, aisle level with the space",
+      "plain_english": "Accessible parking spaces and their access aisles may not slope more than 1:48 (2.083%) in any direction, the aisle must be at the same level as the space, and changes in level and detectable warnings are not allowed in them.",
+      "category": "threshold",
+      "parameters": {
+        "slope_max": "1:48",
+        "slope_max_pct": 2.083,
+        "aisle_same_level_as_space": true,
+        "not_permitted": [
+          "changes in level",
+          "slopes exceeding 1:48",
+          "detectable warnings"
+        ]
+      },
+      "applies_to": "Alterations, additions, structural repairs and new construction of public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B), including tenant improvements",
+      "citation": "CBC 11B-502.4 (as restated by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 4; 11B-502.4 Floor or ground surfaces)",
+      "verbatim_quote": "Parking spaces and access aisles serving them shall comply with Section 11B-302. Access aisles shall be at the same level as the parking spaces they serve. Changes in level, slopes exceeding 1:48, and detectable warnings shall not be permitted.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. 1:48 = 2.083% (arithmetic); the CBC 11A figure is the same (1109A.8.3).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 4; 11B-502.4) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-502-5-existing-multistory-80-in",
+      "title": "Existing multistory garages: 80 in clearance allowed at car (not van) accessible spaces",
+      "plain_english": "In an existing multistory parking facility, accessible car spaces, their aisles and the vehicle routes to them need 80 inches of vertical clearance instead of 98, and any existing clearance between 80 and 98 inches must be kept. Van spaces, their aisles and routes still need 98 inches.",
+      "category": "threshold",
+      "parameters": {
+        "existing_multistory_car_min_in": 80,
+        "maintain_existing_between_in": [
+          80,
+          98
+        ],
+        "not_for": "van parking spaces, their access aisles and vehicular routes serving them",
+        "general_min_in": 98
+      },
+      "applies_to": "Existing multistory parking facilities serving public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B)",
+      "citation": "CBC 11B-502.5 Exception (as restated by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 4; 11B-502.5 Vertical clearance and Exception)",
+      "verbatim_quote": "In existing multistory parking facilities, car parking spaces, access aisles and vehicular routes serving them shall provide a vertical clearance of 80 inches (2032 mm) minimum. Existing vertical clearance in excess of 80 inches (2032 mm) and less than 98 inches (2489 mm) shall be maintained. This exception shall not apply to van parking spaces, access aisles or vehicular routes serving them.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. The rule itself on the same page: 'Parking spaces, access aisles and vehicular routes serving them shall provide a vertical clearance of 98 inches (2489 mm) minimum.'",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 4; 11B-502.5 Exception) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-502-6-sign-circulation-path-80-in",
+      "title": "Accessible parking signs in a walk or other circulation path: bottom at 80 in minimum",
+      "plain_english": "An accessible parking sign normally has its bottom at least 60 inches above the ground, but a sign located within a circulation path (a walk or other pedestrian route) must have its bottom at least 80 inches above the walking surface.",
+      "category": "threshold",
+      "parameters": {
+        "in_circulation_path_bottom_min_in": 80,
+        "otherwise_bottom_min_in": 60
+      },
+      "applies_to": "Alterations, additions, structural repairs and new construction of public accommodations, commercial buildings and public buildings in California (CBC Chapter 11B), including tenant improvements",
+      "citation": "CBC 11B-502.6 Exception (as restated by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 4; 11B-502.6 Identification, Exception)",
+      "verbatim_quote": "Signs located within a circulation path shall be a minimum of 80 inches (2032 mm) above the finish floor or ground surface measured to the bottom of the sign.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. The CBC 11A parking sign rule is the same height on accessible routes (CL-BC-2026-027 item 26, 1109A.8.8.1).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 4; 11B-502.6 Exception) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-228-3-evcs-table",
+      "title": "Accessible EV charging stations: CBC Table 11B-228.3.2.1 (public and common use)",
+      "plain_english": "EV charging spaces are not counted as parking; accessible EV charging stations are required separately. For public or common-use chargers, each combination of charging level and connector type is its own facility, and Table 11B-228.3.2.1 sets how many must be van accessible, standard accessible and ambulatory. Private chargers for one driver and fleet-only chargers are exempt from the count.",
+      "category": "threshold",
+      "parameters": {
+        "table": [
+          {
+            "from": 1,
+            "to": 4,
+            "van": 1,
+            "standard": 0,
+            "ambulatory": 0
+          },
+          {
+            "from": 5,
+            "to": 25,
+            "van": 1,
+            "standard": 1,
+            "ambulatory": 0
+          },
+          {
+            "from": 26,
+            "to": 50,
+            "van": 1,
+            "standard": 1,
+            "ambulatory": 1
+          },
+          {
+            "from": 51,
+            "to": 75,
+            "van": 1,
+            "standard": 2,
+            "ambulatory": 2
+          },
+          {
+            "from": 76,
+            "to": 100,
+            "van": 1,
+            "standard": 3,
+            "ambulatory": 3
+          }
+        ],
+        "over_100": {
+          "van": {
+            "base": 1,
+            "per": 300
+          },
+          "standard": {
+            "base": 3,
+            "per": 60
+          },
+          "ambulatory": {
+            "base": 3,
+            "per": 50
+          },
+          "over": 100
+        },
+        "facility_is": "each combination of charging level and EV connector type",
+        "exempt": [
+          "not available to the general public and designated for an individual EV driver",
+          "not available to the general public and serving only fleet vehicles"
+        ],
+        "multi_vehicle_charger": "counts as the number of vehicles it can charge at once",
+        "existing_facilities": "count includes both existing and new EVCS when new ones are added"
+      },
+      "applies_to": "Public-use and common-use electric vehicle charging stations at facilities covered by CBC Chapter 11B in California",
+      "citation": "CBC 11B-228.3.2, Table 11B-228.3.2.1 (as restated by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 7; 11B-228.3.2 and 11B-228.3.2.1; Table 11B-228.3.2.1 on PDF page 8)",
+      "verbatim_quote": "Where EVCS are provided for public use or common use, EVCS complying with Section 11B-812 shall be provided in accordance with Table 11B-228.3.2.1.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. Same page: 'Each combination of charging level (such as: AC Level 1, AC Level 2, DC Fast Charge) and EV connector type shall be considered as a facility.' Table row '101 and over': '1, plus 1 for each 300, or fraction thereof, over 100' (van accessible), '3, plus 1 for each 60, or fraction thereof, over 100' (standard), '3, plus 1 for each 50, or fraction thereof, over 100' (ambulatory). Vehicle space sizes (11B-812.6) are not used by the tools.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms/pc17/accessible-details-for-parking.pdf (LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking', effective 01-01-2026, revised 11-23-2025; PDF page 7; 11B-228.3.2; table on p.8) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization; the bulletin splits '11B-' and '228.3.2' across a line). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11a-1109a-8-8-parking-signs",
+      "title": "CBC 11A accessible parking signs: 70 sq in, 60 in to the bottom, 80 in on accessible routes",
+      "plain_english": "Each accessible space reserved for persons with disabilities in covered multifamily parking gets a reflective International Symbol of Accessibility sign of at least 70 square inches, bottom at least 60 inches above the ground, or 80 inches where the sign is on an accessible route. Van spaces add 'Van Accessible'. Unassigned accessible spaces need the signs; where parking is assigned, the 1109A.8.8 signs are not required.",
+      "category": "required_notice",
+      "parameters": {
+        "min_area_sq_in": 70,
+        "bottom_min_in": 60,
+        "on_accessible_route_bottom_min_in": 80,
+        "van_text": "Van Accessible",
+        "symbol": "International Symbol of Accessibility (1143A.8)",
+        "required_for_unassigned": true,
+        "required_for_assigned": false
+      },
+      "applies_to": "Parking serving covered multifamily dwellings in California (CBC 11A)",
+      "citation": "CBC 1109A.8.8, 1109A.8.8.1, 1109A.4, 1109A.5 (as cited by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-027-Acc_Residential.pdf (LADBS Residential Accessibility Plan Check Correction Sheets (2026 LABC), CL-BC-2026-027, effective 01/01/2026, revised 08/21/2026; PDF page 5; Section B, items 26-28; items 16-17 on PDF page 4)",
+      "verbatim_quote": "The sign shall not be smaller than 70 square inches in area, and shall be posted 60 inches minimum above the finish floor or ground surface, measured to the bottom of the sign. Signs located on accessible routes shall be posted at a minimum height of 80 inches above the finish floor or ground surface of the accessible route, measured to the bottom of the sign.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from the LADBS 2026 LABC Residential Accessibility checklist, which restates CBC Chapter 11A (HCD 1-AC) sections for the 2025 CBC cycle (effective 2026-01-01). CBC text itself not fetched. Item 16 (1109A.4): 'When assigned parking is provided, signage as required by Section 1109A.8.8 shall not be required.' Item 17 (1109A.5, unassigned parking): 'Accessible parking spaces shall be provided with signage as required by Section 1109A.8.8.' Item 28: van spaces have an additional sign or language stating 'Van Accessible' below the symbol.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-027-Acc_Residential.pdf (LADBS Residential Accessibility Plan Check Correction Sheets (2026 LABC), CL-BC-2026-027, effective 01/01/2026, revised 08/21/2026; PDF page 5; items 26-28; p.4 items 16-17) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-233-3-4-public-housing-alterations",
+      "title": "Public housing alterations: vacated buildings over 15 units need 5% mobility and 2% communication units",
+      "plain_english": "When a public housing building with more than 15 units is vacated to be altered, at least 5% of its units must get mobility features on an accessible route and at least 2% communication features. Where a unit's bathroom or kitchen is substantially altered and at least one other room is altered, that unit counts toward the new-construction numbers. Adaptable-unit standards do not apply to altering units first occupied on or before March 13, 1991.",
+      "category": "threshold",
+      "parameters": {
+        "vacated_building_more_than_units": 15,
+        "mobility_unit_fraction": 0.05,
+        "communication_unit_fraction": 0.02,
+        "unit_trigger": "bathroom or kitchen substantially altered and at least one other room altered",
+        "adaptable_not_for_first_occupancy_on_or_before": "1991-03-13"
+      },
+      "applies_to": "Alterations of public housing (housing built or altered by, for, or on behalf of a public entity) in California",
+      "citation": "CBC 11B-233.3.4.1, 11B-233.3.4.2, 11B-233.3.4.3 (as cited by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-036-Acc_Public_Housing.pdf (LADBS Public Housing Accessibility checklist (2026 LABC), CL-BC-2026-036, effective 01/01/2026, revised 08/21/2026; PDF page 3; Section B, item 2.c.i-iii)",
+      "verbatim_quote": "Where a building is vacated for the purposes of alteration, and the altered building contains more than 15 residential dwelling units, at least 5 percent of the residential dwelling units shall comply with Sections 11B-809.2 through 11B-809.4 and shall be on an accessible route as required by Section 11B-206. In addition, at least 2 percent of the residential dwelling units shall comply with Section 11B-809.5.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. Each item carries a '- see exception' note whose text the checklist does not print; the rounding of the percentages is not stated (ceil is used as for 11B-233.3.1).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-036-Acc_Public_Housing.pdf (LADBS Public Housing Accessibility checklist (2026 LABC), CL-BC-2026-036, effective 01/01/2026, revised 08/21/2026; PDF page 3; item 2.c) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization; the checklist splits '11B-' and '809.5' across a line). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-cbc-11b-206-4-1-all-entrances-new-buildings",
+      "title": "California new buildings: every entrance and exterior ground-floor exit must be accessible",
+      "plain_english": "For a new building, LADBS plan check asks for accessible-door compliance (CBC 11B-404) at all entrances and exterior ground-floor exits, citing CBC 11B-206.4.1. This is stricter than the federal rule of 60% of public entrances.",
+      "category": "threshold",
+      "parameters": {
+        "entrances_required_to_comply": "all entrances and exterior ground-floor exits",
+        "applies_to_project": "new building",
+        "door_standard": "11B-404",
+        "federal_comparison": "ada-2010-std-206-4-1-public-entrances-60-percent"
+      },
+      "applies_to": "New buildings that are public accommodations, commercial buildings or public buildings in California (CBC Chapter 11B)",
+      "citation": "CBC 11B-206.4.1 (as cited by LADBS)",
+      "source_location": "https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-026-Acc_Commercial.pdf (LADBS Commercial Accessibility Plan Check Correction Sheets (2026 LABC), CL-BC-2026-026, effective 01/01/2026, revised 09/23/2026; PDF page 5; Section C, item 15)",
+      "verbatim_quote": "For the new building proposed, detail compliance at all entrances and exterior ground-floor exits to buildings and facilities in compliance with 11B-404 Doors, Doorways, and Gates.",
+      "effective": "2026-01-01",
+      "notes": "Quoted from an LADBS 2026 LABC document that restates CBC (Title 24 Part 2) Chapter 11B for the 2025 CBC cycle (effective 2026-01-01). The CBC text itself (codes.iccsafe.org, dgs.ca.gov) could not be fetched from this session, so the section number is as cited by LADBS. The item restates the CBC requirement as a plan-check correction, not the code text.",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-026-Acc_Commercial.pdf (LADBS Commercial Accessibility Plan Check Correction Sheets (2026 LABC), CL-BC-2026-026, effective 01/01/2026, revised 09/23/2026; PDF page 5; item C.15) (fetched 2026-11-25 into a new directory; quote string-matched after whitespace normalization). CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
+        "correction": ""
+      },
+      "read_from_primary_text": true
+    },
+    {
+      "id": "ada-28cfr35-151b4-minor-work-no-trigger",
+      "title": "Title II: windows, hardware, controls, outlets and signage do not trigger path of travel",
+      "plain_english": "For a state or local government facility, altering windows, hardware, controls, electrical outlets or signage is not an alteration that affects a primary function area, so it does not trigger the federal path-of-travel rule.",
+      "category": "definition",
+      "parameters": {
+        "non_triggering_work": [
+          "windows",
+          "hardware",
+          "controls",
+          "electrical outlets",
+          "signage"
+        ]
+      },
+      "applies_to": "Facilities built or altered by, on behalf of, or for the use of state and local government entities (ADA Title II)",
+      "citation": "28 CFR 35.151(b)(4)(i)(B)",
+      "source_location": "https://www.ecfr.gov/current/title-28/section-35.151 (eCFR 28 CFR part 35 (version 2026-11-23); section 35.151(b)(4)(i)(B))",
+      "verbatim_quote": "For the purposes of this section, alterations to windows, hardware, controls, electrical outlets, and signage shall not be deemed to be alterations that affect the usability of or access to an area containing a primary function.",
+      "effective": "1992-01-26",
+      "notes": "Read from the eCFR versioner API full text of 28 CFR part 35 as of 2026-11-23 (the www.ecfr.gov HTML page redirects to a bot check, which was not bypassed). Same wording as the Title III rule, 28 CFR 36.403(c)(2).",
+      "verification": {
+        "status": "confirmed",
+        "checked_against": "eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-28.xml?part=35 (fetched 2026-11-25), 35.151(b)(4)(i)(B)",
+        "correction": ""
+      },
+      "read_from_primary_text": true
     }
   ],
   "refuted": [],
   "verification_meta": {
     "verified_on": "2026-11-25",
     "method": "Every rule (all 104) was checked against its source_location after a fresh fetch on 2026-11-25 into a new directory; the writer's downloads were not reused. Fetched: LADBS CL-BC-2026-026, -027, -032 and -036, the LADBS Counter Plan Check Correction Sheet (rev. 4-3-2026) and its 2020 version, LADBS PC/DAD/App.20; City of San Diego Form DS-2123 (January 2026), the 2015 Accessibility Guide for Small Businesses, the Treasurer btaxfees and btaxhow pages, the Ask a CASp page, the 2025 SDCCD Special Use Permit and the 2024 surf RFP; the CSLB-hosted CCDA parking guide; and eCFR full text as of 2026-11-23 for 28 CFR parts 35, 36 and 85, 24 CFR parts 100 and 180 and 36 CFR part 1191 via the eCFR versioner API. The www.ecfr.gov/current HTML pages redirect to a bot check (unblock.federalregister.gov), which was not bypassed; the same text came from the versioner API. eCFR version history was pulled for 24 CFR 180.671, 28 CFR 85.5 and 36 CFR part 1191. PDF text was extracted per page with pdftotext. Every verbatim_quote was string-matched against the fresh text after whitespace, quote and dash normalization, and all 104 matched on the page named in source_location. Two matched only after normalization: San Diego DS-2123 splits '11B-' and '202.4' across a line, and eCFR 203.9 spaces '28 m 2' differently. Every parameter number, date, citation and applies_to scope was read against the source text, and numbers not printed in the source were traced to arithmetic or unit conversion (for example 98 in = 8 ft 2 in, and 2024-02-13 = after February 12, 2024). Statuses: confirmed means the official source in source_location states the rule and its parameters. corrected means a value, date, formula, citation, scope or plain_english statement was changed to match the text. unverifiable means the decisive figure is not shown in any current official text that could be read. refuted means contradicted by the source; none were. The CBC (Title 24 Part 2), Civil Code 1938 and 55.53, and Gov. Code 4467 were not readable (codes.iccsafe.org and dgs.ca.gov are unreachable; leginfo.legislature.ca.gov blocks automated access and was not bypassed). CBC rules are therefore confirmed against the 2026 LADBS and San Diego restatements and the section numbers they cite, and Civil Code 1938 rules against official City of San Diego documents applying the statute. All ids start with 'ada-'; none duplicate an id in tradecomply/data/rulebook.json, and all categories already exist there.",
-    "in_scope_rules_checked": 104,
+    "in_scope_rules_checked": 115,
     "out_of_scope_rules_unchanged": 0,
     "counts": {
-      "corrected": 7,
-      "confirmed": 96,
+      "confirmed": 105,
+      "corrected": 9,
       "unverifiable": 1
     },
     "non_parameter_edits": [
-      "ada-cbc-valuation-threshold-2026: notes appended to say that the January 19, 2026 DSA switch-over date and the LADBS 01/19/2026 listing are unverified (search results only); status stays confirmed."
-    ]
+      "ada-cbc-valuation-threshold-2026: notes appended to say that the January 19, 2026 DSA switch-over date and the LADBS 01/19/2026 listing are unverified (search results only); status stays confirmed.",
+      "ada-2010-std-208-2-parking-table: notes updated to point to the CBC table now read (ada-cbc-11b-208-2-table)."
+    ],
+    "review_2026_11_25": "Adversarial legal-accuracy review of tradecomply/accessibility.py on 2026-11-25. Every source in source_location was fetched again into a new directory (LADBS CL-BC-2026-026, -027, -032, -036 and the counter sheet; San Diego DS-2123, the 2015 small-business guide, Treasurer btaxfees and btaxhow, the 2025 SUP and the 2024 surf RFP; the CSLB-hosted CCDA parking guide; eCFR versioner XML of 2026-11-23 for 28 CFR parts 35, 36 and 85, 24 CFR parts 100 and 180 and 36 CFR part 1191, plus the 28 CFR 85.5 and 24 CFR 180.671 version lists, which show no penalty change after 2025-07-03 and 2025-07-14). Newly read: LADBS Information Bulletin P/BC 2026-084 'Accessibility Details for Parking' (eff. 01-01-2026, rev. 11-23-2025), which prints CBC 11B-208, 11B-228.3, 11B-502 and 11B-503 text. Added 11 rules (CBC Table 11B-208.2, the 11B-208.1 bus/truck exception, 11B-502.1 measuring, 11B-502.4 slopes, the 11B-502.5 existing-garage exception, the 11B-502.6 circulation-path sign height, Table 11B-228.3.2.1 EVCS, CBC 1109A.8.8 signs, 11B-233.3.4 public housing alterations, the LADBS all-entrances item for 11B-206.4.1, and 28 CFR 35.151(b)(4)(i)(B)); corrected ada-cbc-11b-208-van-accessible-1-in-6 (96-inch aisle conflict) and ada-cbc-11b-208-parking-per-facility (10% and 20% scope). Each new quote was string-matched against the fresh text after whitespace normalization."
   }
 }

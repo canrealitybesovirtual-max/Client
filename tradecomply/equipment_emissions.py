@@ -31,9 +31,16 @@ each air district covers are the scopes the dust rules state themselves (their a
 Valley the counties parameter); a test checks every name below against that text.
 
 Not computed, because the rulebook does not have them: the off-road fleet average / BACT turnover targets (13 CCR
-2449.1(a)-(b)), Health and Safety Code penalty amounts, the current Clean Truck Check fee, the Clean Truck Check
-deadlines of trucks registered outside California (set by VIN), and the dust rules of air districts other than South
-Coast, San Joaquin Valley and the Bay Area.
+2449.1(a)-(b)), Health and Safety Code penalty amounts, the current Clean Truck Check fee, the public agency and utility
+fleet rule (13 CCR 2022-2022.1) that replaces Truck and Bus for municipal vehicles meeting it, and the dust rules of air
+districts other than South Coast, San Joaquin Valley and the Bay Area.
+
+Readings of the rule text a reviewer should know (adversarial review 2026-11-25): the jobsite sign day count takes the
+first operating day as day 1; business days skip weekends but not holidays (the date can only be early); on the
+optional 500 hp schedule an on-road engine counts as Tier 2 or better when newer than the on-road model year that
+2449.1(c) pairs with Tier 1; Clean Truck Check quarterly testing is shown from CARB's fact-sheet year, with a caveat
+from the regulation's own three-year mark; the SJV 48-hour notice and the rural 50-ft track-out test use the site's
+area (site_acres) when given, else the disturbed area with a note.
 """
 import calendar
 import math
@@ -164,6 +171,11 @@ RULE_IDS = (
 
 _COUNTY_SPELLING_RULE = "usa-regional-centers-by-county"      # spelling only, never cited
 SQFT_PER_ACRE = 43560                                          # unit conversion, not a legal value
+# Input sanity limits, not legal values: a number above these is a typo, not a real fleet, machine, truck or site.
+MAX_FLEET_HP, MAX_MACHINE_HP, MAX_GVWR_LBS, MAX_BHP = 10_000_000, 20_000, 1_000_000, 20_000
+MAX_ACRES, MAX_CY_PER_DAY, MAX_SQFT, MAX_MILES, MAX_FEET = 1_000_000, 10_000_000, 100_000_000, 1_000_000, 30_000
+HOURS_PER_LEAP_YEAR = 8784                                     # 366 x 24: the most hours a year can have
+MAX_REGISTRATION_AHEAD_DAYS = 400       # a current California registration card expires within about a year
 
 
 # ---------------------------------------------------------------- helpers
@@ -210,10 +222,12 @@ def _num(name: str, value, lo: Optional[float] = None, hi: Optional[float] = Non
         v = float(m.group(1))
     if not math.isfinite(v):
         raise ValueError(f"{name} must be a finite number, got {value!r}")
+    def bound(x: float) -> str:                       # 1900 stays 1900 (a year); 10000000 becomes 10,000,000
+        return _n(x) if abs(x) >= 10000 else f"{x:g}"
     if lo is not None and v < lo:
-        raise ValueError(f"{name} cannot be below {lo:g}, got {value!r}")
+        raise ValueError(f"{name} cannot be below {bound(lo)}, got {value!r}")
     if hi is not None and v > hi:
-        raise ValueError(f"{name} cannot be above {hi:g}, got {value!r}")
+        raise ValueError(f"{name} cannot be above {bound(hi)}, got {value!r}")
     return v
 
 
@@ -244,17 +258,24 @@ def _bool(name: str, value) -> Optional[bool]:
     raise ValueError(f"{name} must be true or false, got {value!r}")
 
 
+_US_DATE = re.compile(r"^\s*(\d{1,2})/(\d{1,2})/(\d{4})\s*$")
+
+
 def _date(value, field: str) -> Optional[date]:
+    """ISO date (2026-11-25, or the date part of 2026-11-25T08:00) or the US form 11/25/2026 (month first)."""
     if value is None or (isinstance(value, str) and not value.strip()):
         return None
     if isinstance(value, datetime):
         return value.date()
     if isinstance(value, date):
         return value
+    us = _US_DATE.match(str(value))
     try:
+        if us:
+            return date(int(us[3]), int(us[1]), int(us[2]))
         return date.fromisoformat(str(value).strip()[:10])
     except ValueError:
-        raise ValueError(f"{field} must be an ISO date like 2026-11-25, got {value!r}") from None
+        raise ValueError(f"{field} must be an ISO date like 2026-11-25 (or 11/25/2026), got {value!r}") from None
 
 
 def _as_of(value) -> date:
@@ -329,6 +350,17 @@ def _business_days_after(d: date, n: int) -> date:
 
 def _given(x: Optional[float], unit: str) -> str:
     return "not given" if x is None else f"{_n(x)} {unit}"
+
+
+def _names(value, field: str) -> Optional[list[str]]:
+    """A list of names: ['Kern', 'Tulare'], or one string 'Kern, Tulare' / 'Kern and Tulare'; None or empty -> None."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return [c.strip() for c in re.split(r"[;,/]| and ", value) if c.strip()] or None
+    if isinstance(value, (list, tuple)) and all(isinstance(c, str) for c in value):
+        return [c for c in value if c.strip()] or None
+    raise ValueError(f"{field} must be a list of county names (or one comma-separated string), got {value!r}")
 
 
 def _cit(ids) -> str:
@@ -539,13 +571,13 @@ def _engine(value) -> tuple[str, Optional[int]]:
 
 class OffRoadVehicle(BaseModel):
     name: str = Field("", description="Your name for the machine, e.g. 'CAT 320 #14'")
-    hp: float = Field(ge=0, allow_inf_nan=False, description="Maximum engine horsepower (max hp)")
+    hp: float = Field(ge=0, le=MAX_MACHINE_HP, allow_inf_nan=False, description="Maximum engine horsepower (max hp)")
     engine_tier: str = Field(description=(
         "Tier 0, Tier 1, Tier 2, Tier 3, Tier 4 interim (T4i), Tier 4 final (T4f), 'on-road 2005' for an on-road "
         "engine with its model year, or zero-emission"))
     designation: str = Field("none", description=(
         "CARB designation: none, permanent_low_use, job_corps, snow_removal or emergency"))
-    annual_hours: Optional[float] = Field(None, ge=0, allow_inf_nan=False, description=(
+    annual_hours: Optional[float] = Field(None, ge=0, le=HOURS_PER_LEAP_YEAR, allow_inf_nan=False, description=(
         "Engine hours in a calendar year (for the permanent low-use test)"))
 
 
@@ -606,7 +638,8 @@ class OffRoadFleetResult(_Base):
 
 def _captive(counties: list[str], acc: _Acc) -> tuple[Optional[bool], list[str]]:
     """All operating counties in the 2449(c)(6) list -> True. Sonoma counts only for its North Coast Air Basin part,
-    which the user must say ('northern Sonoma', 'Sonoma (North Coast)')."""
+    which the user must say ('northern Sonoma', 'Sonoma (North Coast)'). This is the county test only: the caller
+    applies the rule that fleets of the United States or the State of California are never captive."""
     acc.use(ORD_CAPTIVE)
     listed = set(P(ORD_CAPTIVE, "counties"))
     partial = str(P(ORD_CAPTIVE, "partial_county"))
@@ -644,7 +677,8 @@ def _fleet_size(hp: float, owner: str, captive: Optional[bool], acc: _Acc) -> tu
         return "large", f"{_n(hp)} hp > {_n(large_over)} hp -> large fleet"
     if hp <= small_max:
         return "small", f"{_n(hp)} hp <= {_n(small_max)} hp -> small fleet"
-    return "medium", f"{_n(P(ORD_SIZE, 'medium_min_hp'))} <= {_n(hp)} hp <= {_n(P(ORD_SIZE, 'medium_max_hp'))} -> medium fleet"
+    # 2449(c)(28)(B): a medium fleet is one that is neither small (<= small_max) nor large (> large_over)
+    return "medium", f"{_n(small_max)} hp < {_n(hp)} hp <= {_n(large_over)} hp -> medium fleet"
 
 
 def _schedule(size: str, optional_500: bool, acc: _Acc) -> list[dict]:
@@ -712,10 +746,13 @@ def _vehicle_plan(v: OffRoadVehicle, steps: list[dict], as_of: date, acc: _Acc) 
         if des == "permanent_low_use":
             ids.append(ORD_LOW_USE)
             limit = P(ORD_LOW_USE, "max_hours_per_calendar_year_exclusive")
+            avg = P(ORD_LOW_USE, "three_year_average_max_hours")
             detail += f" It must run less than {_n(limit)} hours each calendar year"
             if v.annual_hours is not None and v.annual_hours >= limit:
-                detail += f": {_n(v.annual_hours)} hours is NOT under {_n(limit)}, so it does not qualify"
-            detail += "."
+                detail += f": {_n(v.annual_hours)} hours is NOT under {_n(limit)}, so it does not qualify that way"
+            detail += (f" (or, since {P(ORD_LOW_USE, 'three_year_option_from')}, average {_n(avg)} hours or fewer a year "
+                       "over three consecutive years if it runs only in California under the same owner, with both "
+                       "hour meter readings reported).")
         plan.detail = detail
         acc.use(*ids)
         return plan
@@ -765,20 +802,33 @@ def _vehicle_plan(v: OffRoadVehicle, steps: list[dict], as_of: date, acc: _Acc) 
 
 
 def _optional_check(vehicles: list[VehiclePlan], as_of: date, acc: _Acc) -> Optional[OptionalScheduleCheck]:
-    """13 CCR 2449(e)(16) Table 1: share of hp in Tier 2 or better off-road engines. On-road-engine and zero-emission
-    machines are left out of both sides (the table speaks of engine tiers)."""
-    acc.use(ORD_OPT_500)
+    """13 CCR 2449(e)(16) Table 1: share of hp with a Tier 2 or higher engine. 'All vehicles in the fleet must be
+    included', so every subject machine counts (designated low-use ones too). An on-road engine has no off-road tier;
+    it is counted at the tier 2449.1(c) pairs it with: a model year newer than the Tier 1 step's on-road model year
+    (MY2000+) is Tier 2 or better. Zero-emission machines are not subject to 2449, so they are not in the fleet."""
+    acc.use(ORD_OPT_500, ORD_PH["small"])
     better = set(_TIERS[_TIERS.index("Tier 2"):])
-    rows = [v for v in vehicles if v.subject and v.engine in _TIERS]
+    t1_onroad_max = next(s["onroad_model_year_max"] for s in P(ORD_PH["small"], "phaseout") if s["tier"] == "Tier 1")
+    rows = [v for v in vehicles if v.subject]
     total = sum(v.hp for v in rows)
     if not total:
         return None
-    good = sum(v.hp for v in rows if v.engine in better)
+
+    def tier2_plus(v: VehiclePlan) -> bool:
+        if v.engine.startswith("on-road MY"):
+            return int(v.engine[len("on-road MY"):]) > t1_onroad_max
+        return v.engine in better
+
+    good = sum(v.hp for v in rows if tier2_plus(v))
     pct = good / total * 100
     table = sorted((_pdate(k), float(p)) for k, p in P(ORD_OPT_500, "min_percent_hp_tier2_or_higher").items())
     past = [(d, p) for d, p in table if d <= as_of]
     nxt = next(((d, p) for d, p in table if d > as_of), None)
     chk = OptionalScheduleCheck(counted_hp=total, tier2_or_better_hp=good, percent_tier2_or_better=round(pct, 1))
+    if any(v.engine.startswith("on-road MY") for v in rows):
+        acc.notes.append(f"Optional schedule: on-road engines were counted as Tier 2 or better when newer than model "
+                         f"year {t1_onroad_max} (the Tier 1 / on-road pairing of 13 CCR 2449.1(c)). That pairing is "
+                         "this tool's reading; CARB's DOORS calculation governs.")
     msg = f"Optional schedule: {_n(good)} hp Tier 2 or better / {_n(total)} hp = {pct:.1f}%"
     if past:
         d, p = past[-1]
@@ -800,13 +850,17 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
     """CARB In-Use Off-Road Diesel-Fueled Fleets (13 CCR 2449-2449.2) for one fleet."""
     today = _as_of(as_of)
     owner = _owner(fleet_owner_type)
-    hp_given = _num("total_fleet_hp", total_fleet_hp, 0)
+    hp_given = _num("total_fleet_hp", total_fleet_hp, 0, MAX_FLEET_HP)
     rents_out = bool(_bool("rents_out_equipment", rents_out_equipment))
     is_new = bool(_bool("new_fleet", new_fleet))
     added_on = _date(vehicle_added_on, "vehicle_added_on")
     opt_wanted = _bool("uses_optional_500hp_schedule", uses_optional_500hp_schedule)
-    if isinstance(operating_counties, str):
-        operating_counties = [c for c in re.split(r"[;,/]| and ", operating_counties) if c.strip()]
+    operating_counties = _names(operating_counties, "operating_counties")
+    if isinstance(vehicles, (dict, OffRoadVehicle)):
+        vehicles = [vehicles]                                     # one machine given on its own
+    if vehicles is not None and not isinstance(vehicles, (list, tuple)):
+        raise ValueError(f"vehicles must be a list of machines like [{{'hp': 158, 'engine_tier': 'Tier 2'}}], "
+                         f"got {vehicles!r}")
     machines = [v if isinstance(v, OffRoadVehicle) else OffRoadVehicle.model_validate(v) for v in (vehicles or [])]
     if hp_given is None and not machines:
         raise ValueError("give total_fleet_hp (the total max hp of every off-road diesel vehicle under common "
@@ -845,13 +899,21 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
         return acc.finish(res)
 
     captive, outside = (None, [])
+    in_listed_counties = False          # every operating county is a 2449(c)(6) county (R99 vehicle exemption)
     if operating_counties:
         captive, outside = _captive(list(operating_counties), acc)
-        res.captive_attainment_area = captive
+        in_listed_counties = captive is True
         if captive is False:
             acc.math.append(f"Captive attainment area: no ({_join(outside)} not in the 2449(c)(6) list)")
+        elif captive and owner in ("state_agency", "federal_agency"):
+            # 2449(c)(6): fleets of the United States or the State of California are large fleets and never captive,
+            # even when every vehicle stays in the listed counties.
+            captive = False
+            acc.math.append(f"Captive attainment area: no ({_OWNER_RULE_TEXT[owner]} are never captive attainment "
+                            "area fleets under 13 CCR 2449(c)(6), even inside the listed counties)")
         elif captive:
             acc.math.append("Captive attainment area: yes (every operating county is in the 2449(c)(6) list)")
+        res.captive_attainment_area = captive
     size, why = _fleet_size(hp, owner, captive, acc)
     res.fleet_size = size
     acc.math.append(f"Fleet size: {why}")
@@ -967,12 +1029,14 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
                 "designated official that the fleet met the R99/R100 renewable diesel requirement.", ORD_RD_AFF,
                 due=due)
     else:
-        acc.notes.append(f"Annual reporting for {size} fleets runs {first}-{last}; no report is due after that.")
+        acc.notes.append(f"Annual fleet reporting for {size} fleets runs {first}-{last}"
+                         + ("; permanent low-use vehicles keep being reported every March 1 for as long as the fleet "
+                            "owns or operates them." if P(ORD_ANNUAL, "low_use_vehicles_report_while_owned") else "."))
     if is_new:
         new_due = (added_on + timedelta(days=P(ORD_NEW_FLEET, "report_within_days"))) if added_on else None
         acc.req("Report the new fleet", f"Report every vehicle in DOORS within {P(ORD_NEW_FLEET, 'report_within_days')}"
-                " days of buying it or bringing it into California; the idling and adding-vehicle rules apply "
-                "immediately.", ORD_NEW_FLEET, due=new_due)
+                " days of buying it or bringing it into California. These apply immediately: "
+                + _join(P(ORD_NEW_FLEET, "immediately_applicable")) + ".", ORD_NEW_FLEET, due=new_due)
         if new_due:
             acc.math.append(f"New fleet report: {added_on} + {P(ORD_NEW_FLEET, 'report_within_days')} days = {new_due}")
     ein_days = P(ORD_EIN_APPLY, "apply_within_days")
@@ -995,7 +1059,7 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
         acc.req("Low-use hour meter readings", f"For {_join([v.name for v in lows])}: report the hour meter reading "
                 f"taken within {P(ORD_LOW_USE_METER, 'reading_window_days')} days of December 31 (January 1 the first "
                 "year) with the annual report, and keep a date-stamped photo of the meter.", ORD_LOW_USE_METER,
-                ORD_LOW_USE, due=_pdate(res.next_annual_report_due) if res.next_annual_report_due else None)
+                ORD_LOW_USE, ORD_ANNUAL, due=due)
 
     # renewable diesel (2449.1(f))
     acc.use(ORD_R99, ORD_RD_EXEMPT)
@@ -1006,10 +1070,18 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
     all_clean = bool(subject_rows) and all(v.engine == "Tier 4 final" or (v.engine.startswith("on-road MY") and
                                                                           int(v.engine[10:]) >= clean_my)
                                            for v in subject_rows)
+    listed = list(P(ORD_CAPTIVE, "counties")) + [str(P(ORD_CAPTIVE, "partial_county"))]
     if captive:
         res.renewable_diesel_required = False
         acc.req("Renewable diesel", f"Exempt from the {fuel} requirement as a captive attainment area fleet.",
                 ORD_RD_EXEMPT, ORD_CAPTIVE)
+    elif in_listed_counties:
+        # 2449.1(f)(2)(A): any vehicle is exempt while it operates in a 2449(c)(6) county, even in a fleet that is not
+        # captive (e.g. a State of California or federal fleet).
+        res.renewable_diesel_required = False
+        acc.req("Renewable diesel", f"Not required while the machines operate in the 2449(c)(6) counties (every county "
+                f"you gave is one), even though the fleet is not a captive attainment area fleet. Once a machine works "
+                f"in any other county it must use {fuel} there.", ORD_RD_EXEMPT, ORD_CAPTIVE, ORD_R99)
     elif all_clean and hp_given is None:
         res.renewable_diesel_required = False
         acc.req("Renewable diesel", f"Exempt from the {fuel} requirement: every listed machine is Tier 4 final or a "
@@ -1020,7 +1092,9 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
         wm, wd = _pmd(P(ORD_RD_EXEMPT, "winter_fuel_procure_from"))
         acc.req("Renewable diesel (R99/R100)", f"Since {P(ORD_R99, 'from')}, buy {fuel} renewable diesel and use it in "
                 "every covered machine in California, rented ones included. Exemptions: captive attainment area "
-                f"fleets; fleets made up only of Tier 4 final, MY{clean_my}+ on-road or zero-emission machines; places where "
+                "fleets, and any machine while it operates in one of the 2449(c)(6) counties ("
+                + _join(listed) + f"); fleets made up only of Tier 4 final, MY{clean_my}+ on-road or zero-emission "
+                "machines; places where "
                 f"the January 10th-percentile low is below {P(ORD_RD_EXEMPT, 'cold_temp_threshold_f')} F (only "
                 f"{_join(months)}; winter fuel may be bought from {calendar.month_name[wm]} {wd}); and days below "
                 f"{P(ORD_RD_EXEMPT, 'cold_temp_threshold_f')} F, or forecast within "
@@ -1073,7 +1147,8 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
 
     banned = [v for v in res.vehicles if v.status == "may_not_operate"]
     soon = sorted((v for v in res.vehicles if v.status == "phase_out_scheduled"), key=lambda v: v.may_not_operate_from)
-    res.summary = (f"{size.capitalize()} fleet ({why}). May add: {res.may_add_now or 'see adding_changes'}. "
+    res.summary = (f"{size.capitalize()} fleet ({why})" + (f", on the optional {_n(opt_max)} hp schedule" if opt else "")
+                   + f". May add: {res.may_add_now or 'see adding_changes'}. "
                    + (f"{len(banned)} machine(s) may not operate now. " if banned else "")
                    + (f"Next phase-out: {soon[0].name} on {soon[0].may_not_operate_from}. " if soon else "")
                    + (f"Annual DOORS report due {res.next_annual_report_due}." if res.next_annual_report_due else ""))
@@ -1102,7 +1177,7 @@ def offroad_fleet_obligations(total_fleet_hp=None, fleet_owner_type="business", 
 
 
 # ================================================================ contracting (13 CCR 2449(i)-(j)) and hired trucks
-ContractRole = Literal["prime_contractor", "public_works_awarding_body", "subcontractor"]
+ContractRole = Literal["prime_contractor", "public_works_awarding_body", "subcontractor", "private_owner"]
 _ROLE_ALIASES = {
     "prime_contractor": {"prime", "prime contractor", "gc", "general contractor", "general", "prime gc",
                          "design builder", "design build", "cmar", "cm at risk"},
@@ -1111,6 +1186,8 @@ _ROLE_ALIASES = {
                                    "water district", "state agency", "school board"},
     "subcontractor": {"sub", "subcontractor", "sub contractor", "trade contractor", "specialty contractor",
                       "equipment fleet", "fleet", "lower tier sub"},
+    "private_owner": {"owner", "private owner", "project owner", "developer", "property owner", "owner builder",
+                      "landowner", "private developer", "homeowner"},
 }
 
 
@@ -1122,7 +1199,8 @@ def _role(value) -> str:
         if w in names:
             return key
     raise ValueError("role must be prime_contractor (you hold the contract with the owner or awarding authority), "
-                     f"public_works_awarding_body or subcontractor; got {value!r}")
+                     "public_works_awarding_body, subcontractor or private_owner (a private project owner or "
+                     f"developer); got {value!r}")
 
 
 class ContractingResult(_Base):
@@ -1174,6 +1252,19 @@ def offroad_contracting_requirements(role="prime_contractor", offroad_vehicles_o
     acc.use(ORD_PRIME_DEF, ORD_AWARD_DEF)
     res = ContractingResult(role=who, duties_apply=False)
     from_ = _pdate(P(ORD_CRC_BEFORE, "from"))
+
+    if who == "private_owner":
+        acc.use(ORD_PRIME_DEF, ORD_AWARD_DEF)
+        acc.notes.append("A private project owner or developer is neither a prime contractor (the entity holding the "
+                         "contract with the owner) nor a public works awarding body (a public agency), so 13 CCR "
+                         "2449(i)-(j) puts no certificate, sign or reporting duty on you. Your prime contractor carries "
+                         "them; a fleet you hire directly is itself the prime contractor for that work.")
+        if trucks:
+            _truck_hiring(acc)
+        res.summary = "Private owner or developer: no 13 CCR 2449(i)-(j) contracting duties; your prime contractor has them."
+        res.next_step = ("Put the prime contractor's 2449(i)-(j) duties (certificates, jobsite sign, reporting) in its "
+                         "contract, and ask for its own Certificate of Reported Compliance if it brings equipment.")
+        return acc.finish(res)
 
     if who == "subcontractor":
         acc.req("Your Certificate of Reported Compliance", "Before a prime contractor or public agency signs or renews "
@@ -1258,9 +1349,14 @@ def offroad_contracting_requirements(role="prime_contractor", offroad_vehicles_o
             acc.math.append(f"Report due: {found} + {n} business days (Mon-Fri; holidays not skipped, so this is the "
                             f"earliest it can fall) = {report_due}")
         url, email = P(ORD_PRIME_REPORT, "report_to")
+        alt = core.rule(ORD_ENFORCE).param("report_email_in_notice", None)
         acc.req("Report uncertified fleets and noncompliant machines", f"Within {n} business days of finding a fleet "
-                f"without a valid certificate or a noncompliant machine on your site, report it at {url} or "
-                f"{email} with: {_join(P(ORD_PRIME_REPORT, 'required_fields'))}.", ORD_PRIME_REPORT, due=report_due)
+                f"without a valid certificate or a noncompliant machine on your site, report it on CARB's web form "
+                f"{url} (or email {email}"
+                + (f"; CARB's enforcement notice ({core.rule(ORD_ENFORCE).citation_text}) gives {alt}, so the web "
+                   "form is the safer route" if alt and alt != email else "")
+                + ") with: " + "; ".join(P(ORD_PRIME_REPORT, "required_fields")) + ". Keep a copy of what you sent.",
+                ORD_PRIME_REPORT, ORD_ENFORCE, due=report_due)
         acc.req("Tell CARB who runs each machine", "When CARB asks, immediately give the name and contact information "
                 "of the responsible party for every off-road diesel machine on the site.", ORD_PRIME_DISCLOSE)
         trig, exempt_max = P(ORD_PRIME_SIGN, "trigger_min_calendar_days"), P(ORD_PRIME_SIGN, "exempt_max_calendar_days")
@@ -1272,10 +1368,11 @@ def offroad_contracting_requirements(role="prime_contractor", offroad_vehicles_o
             if post_by:
                 acc.math.append(f"Sign: day 1 = {start} (first machine operates); calendar day "
                                 f"{P(ORD_PRIME_SIGN, 'post_by_calendar_day')} = {post_by}")
-            cond = "" if res.sign_required else f"if machines will operate {trig} calendar days or more "
+            cond = "" if res.sign_required else f"If machines will operate {trig} calendar days or more: "
             loc = P(ORD_PRIME_SIGN, "location")
-            acc.req("CARB off-road jobsite sign", f"Post CARB's sign {cond}by calendar day "
-                    f"{P(ORD_PRIME_SIGN, 'post_by_calendar_day')} after the first machine starts: lettering larger "
+            acc.req("CARB off-road jobsite sign", f"{cond}post CARB's sign by calendar day "
+                    f"{P(ORD_PRIME_SIGN, 'post_by_calendar_day')} counting the day the first machine operates as day "
+                    "1 (the earlier reading of 2449(j)(5)): lettering larger "
                     f"than {P(ORD_PRIME_SIGN, 'min_font_pt_exclusive')}-point, posted {loc[0]} or in an {loc[1]}, "
                     f"{loc[2]}, with the sections: "
                     + "; ".join(P(ORD_PRIME_SIGN, "sections")) + ". The exact wording is set by 13 CCR 2449(j)(5).",
@@ -1299,8 +1396,8 @@ def offroad_contracting_requirements(role="prime_contractor", offroad_vehicles_o
                    + (f"Jobsite sign by {res.sign_post_by}. " if res.sign_post_by else "")
                    + (f"Report due {res.noncompliance_report_due}. " if res.noncompliance_report_due else ""))
     if res.noncompliance_report_due:
-        res.next_step = (f"Report the fleet or machine to CARB by {res.noncompliance_report_due} at "
-                         f"{P(ORD_PRIME_REPORT, 'report_to')[0]} or {P(ORD_PRIME_REPORT, 'report_to')[1]}.")
+        res.next_step = (f"Report the fleet or machine to CARB by {res.noncompliance_report_due} on the web form "
+                         f"{P(ORD_PRIME_REPORT, 'report_to')[0]}, and keep a copy.")
     elif emergency:
         res.next_step = "Start the emergency file now: what happened, where, the dates, and each fleet's attestation."
     elif res.sign_post_by and _pdate(res.sign_post_by) >= today:
@@ -1327,8 +1424,14 @@ _FUEL_ALIASES = {
 # Fuel -> its name in the Truck and Bus fuels list (13 CCR 2025(b)).
 _TB_FUEL = {"diesel": "diesel", "dual_fuel": "dual-fuel", "alternative_diesel": "alternative diesel"}
 _DIESEL_FUELED = {"diesel", "alternative_diesel", "dual_fuel"}
-VehicleUse = Literal["truck", "motor_home", "agricultural", "emergency", "military_tactical"]
+VehicleUse = Literal["truck", "pickup", "motor_home", "agricultural", "emergency", "military_tactical", "snow_removal",
+                     "two_engine_crane"]
+# Vehicle use -> the start of its entry in the Clean Truck Check (2195(b)) and Truck and Bus (2025(c)) exclusion lists.
 _USE_EXCLUSION = {"emergency": "authorized emergency vehicles", "military_tactical": "military tactical vehicles"}
+_TB_USE_EXCLUSION = {"emergency": "authorized emergency vehicles", "military_tactical": "military tactical vehicles",
+                     "snow_removal": "dedicated snow-removal vehicles",
+                     "motor_home": "motor homes for non-commercial private use",
+                     "two_engine_crane": "two-engine on-road vehicles subject to 13 CCR 2449"}
 TruckOwner = Literal["private", "state_or_local_government", "federal"]
 
 
@@ -1345,17 +1448,31 @@ def _fuel(value) -> str:
 def _vehicle_use(value) -> str:
     w = _words(value or "truck")
     if w in ("truck", "bus", "dump truck", "water truck", "mixer", "concrete mixer", "boom truck", "tractor",
-             "haul truck", "work truck", "pickup", "service truck", ""):
+             "haul truck", "work truck", "service truck", "flatbed", "semi", "tractor trailer", "transfer truck",
+             "super 10", "lowboy", "vacuum truck", "concrete pump truck", "pump truck", ""):
         return "truck"
+    if "pickup" in w or "pick up" in w:
+        return "pickup"
     if "motor home" in w or "motorhome" in w or w == "rv":
         return "motor_home"
+    if "snow" in w:
+        return "snow_removal"
+    if w in ("two engine crane", "2 engine crane", "two engine water well drilling rig", "two engine drill rig",
+             "workover rig", "two engine vehicle", "two engine crane or rig"):
+        return "two_engine_crane"
+    if w in ("crane", "mobile crane", "truck crane", "drill rig", "water well drilling rig"):
+        raise ValueError(f"{value!r}: say two_engine_crane if it has a separate auxiliary engine of 50 hp or more for "
+                         "the crane or drill (13 CCR 2449 covers it instead of Truck and Bus), or truck if one engine "
+                         "drives both the truck and the equipment")
     if "agricultur" in w or w in ("ag", "farm"):
         return "agricultural"
     if "emergency" in w or w in ("fire truck", "ambulance"):
         return "emergency"
     if "military" in w:
         return "military_tactical"
-    raise ValueError(f"vehicle_use must be truck, motor_home, agricultural, emergency or military_tactical; got {value!r}")
+    raise ValueError("vehicle_use must be truck, pickup, motor_home, agricultural, emergency, military_tactical, "
+                     f"snow_removal (dedicated snow-removal vehicle) or two_engine_crane (two-engine crane, drill rig or "
+                     f"workover rig); got {value!r}")
 
 
 def _truck_owner(value) -> str:
@@ -1413,20 +1530,34 @@ class TruckResult(_Base):
     advanced_clean_fleets_applies: bool
 
 
-def _ctc_deadlines(expires: date, months_step: int, today: date, count: int = 2) -> list[date]:
-    """Compliance deadlines fall on the registration expiration day every `months_step` months (2195.1)."""
-    out = sorted({_add_months(expires, k * months_step) for k in range(-24, 25)})
+def _ctc_deadlines(anchor_month: int, day: int, months_step: int, today: date, count: int = 2) -> list[date]:
+    """Compliance deadlines (2195.1): on the compliance year's expiration day in every `months_step`-th month counted
+    from the month the compliance year ends; the last day of the month when that day does not exist. Only the month
+    and day matter, so the year of the date given is irrelevant. day=31 stands for 'the last day of the month'."""
+    months = {(anchor_month - 1 + k * months_step) % 12 + 1 for k in range(12)}
+    out = sorted(date(y, m, min(day, calendar.monthrange(y, m)[1]))
+                 for y in range(today.year, today.year + 3) for m in months)
     return [d for d in out if d >= today][:count]
+
+
+def _vin_digit(value) -> Optional[str]:
+    """The last number of a VIN (2195.1 'Compliance year' (1)); a single digit is taken as that number."""
+    if value is None or not str(value).strip():
+        return None
+    digits = re.findall(r"\d", str(value))
+    if not digits:
+        raise ValueError(f"vin must be the VIN (or just its last digit), got {value!r}")
+    return digits[-1]
 
 
 def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registered=True, registration_expires=None,
                      annual_ca_miles=None, powers_stationary_equipment=False, annual_pto_hours=None,
                      operating_counties=None, has_pm_filter=None, obd_equipped=None, vehicle_use="truck",
                      owner_type="private", vehicle_model_year=None, acquired_on=None, new_vehicle=False,
-                     leased=False, selling=False, as_of=None) -> TruckResult:
+                     leased=False, selling=False, vin=None, as_of=None) -> TruckResult:
     """Truck and Bus, Clean Truck Check, idling and Advanced Clean Fleets for one on-road vehicle."""
     today = _as_of(as_of)
-    gvwr = _num("gvwr_lbs", gvwr_lbs, 0)
+    gvwr = _num("gvwr_lbs", gvwr_lbs, 0, MAX_GVWR_LBS)
     if gvwr is None:
         raise ValueError("gvwr_lbs is required (the manufacturer's gross vehicle weight rating on the door sticker)")
     if gvwr == 0:
@@ -1439,27 +1570,34 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
     ca_reg = _bool("ca_registered", ca_registered)
     ca_reg = True if ca_reg is None else ca_reg
     expires = _date(registration_expires, "registration_expires")
-    miles = _num("annual_ca_miles", annual_ca_miles, 0)
+    if expires and expires > today + timedelta(days=MAX_REGISTRATION_AHEAD_DAYS):
+        raise ValueError(f"registration_expires {expires} is more than a year away; give the expiration date on the "
+                         "truck's current DMV registration card")
+    miles = _num("annual_ca_miles", annual_ca_miles, 0, MAX_MILES)
     stationary = bool(_bool("powers_stationary_equipment", powers_stationary_equipment))
-    pto = _num("annual_pto_hours", annual_pto_hours, 0)
+    pto = _num("annual_pto_hours", annual_pto_hours, 0, HOURS_PER_LEAP_YEAR)
+    vin_digit = _vin_digit(vin)
     pm = _bool("has_pm_filter", has_pm_filter)
     obd = _bool("obd_equipped", obd_equipped)
     bought = _date(acquired_on, "acquired_on")
     is_new = bool(_bool("new_vehicle", new_vehicle))
-    if isinstance(operating_counties, str):
-        operating_counties = [c for c in re.split(r"[;,/]| and ", operating_counties) if c.strip()]
+    operating_counties = _names(operating_counties, "operating_counties")
     acc = _Acc()
 
     # applicability
     tb_min = P(TB_APPLIES, "min_gvwr_lbs_exclusive")
-    tb_excluded = _USE_EXCLUSION.get(use) in P(TB_APPLIES, "excluded")
+    tb_excl_entry = next((e for e in P(TB_APPLIES, "excluded") if use in _TB_USE_EXCLUSION
+                          and e.startswith(_TB_USE_EXCLUSION[use])), None)
+    tb_excluded = tb_excl_entry is not None
     tb = f in _TB_FUEL and _TB_FUEL[f] in P(TB_APPLIES, "fuels") and gvwr > tb_min and not tb_excluded
     ctc_min = P(CTC_APPLIES, "min_gvwr_lbs_exclusive")
     ctc_excluded = (_USE_EXCLUSION.get(use) in P(CTC_APPLIES, "excluded")
                     or (f == "zero_emission" and "zero-emission heavy-duty vehicles" in P(CTC_APPLIES, "excluded")))
     ctc = f != "gasoline" and gvwr > ctc_min and not ctc_excluded
     idle_min = P(IDLE_TRUCK, "min_gvwr_lbs_exclusive")
-    idle = f in _DIESEL_FUELED and gvwr > idle_min
+    # 2485(h)(6): a pickup truck (Vehicle Code 471) is not a 'commercial motor vehicle', so the limit does not reach it
+    idle_pickup_out = use == "pickup" and any("pickup" in e for e in P(IDLE_TRUCK, "not_commercial_motor_vehicles"))
+    idle = f in _DIESEL_FUELED and gvwr > idle_min and not idle_pickup_out
     acf_min = P(ACF, "min_gvwr_lbs_exclusive")
     acf = owner == "state_or_local_government" and gvwr > acf_min
     acc.use(TB_APPLIES, CTC_APPLIES, IDLE_TRUCK, ACF)
@@ -1493,9 +1631,9 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
                     if _in_range(emy, _my_range(spec)):
                         res.original_replacement_deadline = _pdate(by).isoformat()
             else:
-                for yr, spec in sorted(P(TB_2010, light_key).items()):
+                for by, spec in sorted(P(TB_2010, light_key).items()):
                     if _in_range(emy, _my_range(spec)) and not res.original_replacement_deadline:
-                        res.original_replacement_deadline = yr
+                        res.original_replacement_deadline = _pdate(by).isoformat()
             low_mi = P(TB_LOW_USE, "max_ca_miles_per_year_exclusive")
             low_hr = P(TB_LOW_USE, "max_engine_or_pto_hours_exclusive")
             low_ok = miles is not None and miles < low_mi and (not stationary or (pto is not None and pto < low_hr))
@@ -1528,19 +1666,21 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
                 acc.req("Truck and Bus NOx exempt area", f"Engine MY{emy} with a PM filter, operating only in the NOx "
                         f"exempt counties: report it each January (or within {report_days} days of purchase) and mark "
                         f"'{P(TB_NOX, 'label_text')}' on both doors in {P(TB_NOX, 'label_letter_height_in')}-inch "
-                        f"letters, {P(TB_NOX, 'label_color')} {lw} x {lh} inch background (unless GPS-tracked).",
-                        TB_NOX, TB_2010)
+                        f"letters, {P(TB_NOX, 'label_color')} {lw} x {lh} inch background (unless GPS-tracked). It may "
+                        f"leave those counties only for {P(TB_NOX, 'may_leave_area_only_for')}: a job outside them "
+                        "makes it noncompliant.", TB_NOX, TB_2010)
             else:
                 res.truck_and_bus_status = "noncompliant"
                 why = f"engine MY{emy} < {need}"
                 if res.original_replacement_deadline:
                     why += f"; its phase-in deadline was {res.original_replacement_deadline}"
                 acc.req("Truck and Bus: NOT compliant", f"Since {eff} diesel trucks over {_n(tb_min)} lb GVWR need a "
-                        f"{need} or newer engine ({why}). Only two options remain: low-use (under {_n(low_mi)} "
+                        f"{need} or newer engine ({why}). To keep running this engine as it is, only two exemptions "
+                        f"remain: low-use (under {_n(low_mi)} "
                         f"California miles a year; under {_n(low_hr)} engine/PTO hours if it powers stationary "
                         "equipment such as a drill rig or concrete pump) or the NOx exempt area (PM filter, only "
-                        f"{_join(sorted(nox_counties))}). Otherwise replace or repower it.", TB_2010, TB_LOW_USE,
-                        TB_NOX)
+                        f"{_join(sorted(nox_counties))}). Otherwise bring the engine to the 2010 standard: "
+                        + _join(P(TB_2010, "compliance_paths"), "or") + ".", TB_2010, TB_LOW_USE, TB_NOX)
         sched = P(TB_DMV, ("schedule_heavier_over_26000_by_vehicle_model_year" if heavy else
                            "schedule_lighter_14001_26000_by_vehicle_model_year"))
         my_for_dmv = vmy if vmy is not None else emy
@@ -1569,6 +1709,21 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
                          + ", ".join(P(TB_PENALTIES, "statutes")) + " (amounts not in the rulebook).")
     elif f in _TB_FUEL and gvwr <= tb_min:
         acc.notes.append(f"Truck and Bus does not apply: {_n(gvwr)} lb is not over {_n(tb_min)} lb GVWR.")
+    elif tb_excluded and f in _TB_FUEL:
+        msg = f"Truck and Bus does not apply: 13 CCR 2025(c) excludes {tb_excl_entry}."
+        if use == "motor_home":
+            msg += (" That exclusion is only for non-commercial private use: a motor home used for the business (a "
+                    "jobsite office, crew quarters) is covered, so run it as vehicle_use='truck'.")
+        elif use == "two_engine_crane":
+            acc.use(ORD_APPLIES)
+            msg += " Both engines fall under CARB's off-road fleet rule instead: use offroad_fleet_obligations."
+        acc.notes.append(msg)
+    muni = next((e for e in P(TB_APPLIES, "excluded") if e.startswith("vehicles owned or operated by a municipality")),
+                None)
+    if tb and owner == "state_or_local_government" and muni:
+        acc.notes.append(f"Government trucks: 13 CCR 2025(c) also excludes {muni} (the public agency and utility fleet "
+                         "rule). That rule is not in the rulebook; if your agency complies under it, the Truck and Bus "
+                         "results here do not apply.")
 
     # Clean Truck Check (13 CCR 2195-2199)
     if ctc:
@@ -1576,6 +1731,14 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
         start = _pdate(P(CTC_START, "periodic_testing_effective"))
         q_year = P(CTC_FREQ, "quarterly_start_year_per_carb_fact_sheet")
         reg_q = _add_years(start, P(CTC_FREQ, "initial_period_years"))
+        if obd is None and emy is not None:
+            # 2195.1 'OBD-equipped vehicle': diesel engines MY2013+, alternative fuel engines MY2018+
+            yrs = P(CTC_FREQ, "obd_equipped_from_model_year")
+            kind = "diesel" if f in _DIESEL_FUELED else "alternative_fuel"
+            obd = emy >= yrs[kind]
+            acc.math.append(f"OBD-equipped: engine MY{emy} {'>=' if obd else '<'} MY{yrs[kind]} for "
+                            f"{kind.replace('_', ' ')} engines (13 CCR 2195.1) -> {'yes' if obd else 'no'} "
+                            "(pass obd_equipped to override)")
         if use in ("motor_home", "agricultural"):
             tests, step = P(CTC_FREQ, "tests_per_year_motorhome_agricultural"), 12
         elif obd and today.year >= q_year:
@@ -1592,32 +1755,60 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
                      f" years after {start}) OBD-equipped trucks test "
                      f"{P(CTC_FREQ, 'tests_per_year_obd_after_initial_period')} times a year")
             if obd is None:
-                freq += " (give obd_equipped to know which applies)"
+                freq += " (give obd_equipped or engine_model_year to know which applies)"
+            elif obd is False:
+                freq += ", but this truck is not OBD-equipped, so it stays at " \
+                        f"{P(CTC_FREQ, 'tests_per_year_initial')}"
         acc.req("Clean Truck Check testing", freq + ". To be compliant (CARB confirms within "
                 f"{P(CTC_CONDITIONS, 'deemed_compliant_within_hours')} hours): "
                 + _join(P(CTC_CONDITIONS, "conditions")) + ".", CTC_FREQ, CTC_START, CTC_CONDITIONS)
-        if ca_reg and expires and today >= start:
-            acc.use(CTC_ALIGN, CTC_WINDOW, CTC_DMV)
-            window = P(CTC_WINDOW, "early_test_window_days")
-            dls = _ctc_deadlines(expires, step, today)
+        window = P(CTC_WINDOW, "early_test_window_days")
+        dls, basis = [], None
+        if today >= start and ca_reg and expires:
+            dls = _ctc_deadlines(expires.month, expires.day, step, today)
+            basis = f"the registration expiration day ({expires.strftime('%m-%d')})"
+            if expires < today:
+                acc.notes.append(f"registration_expires {expires} has already passed: renew the registration (the DMV "
+                                 "needs Clean Truck Check compliance first). The dates below use the same month and "
+                                 "day.")
+        elif today >= start and vin_digit is not None and (not ca_reg or not expires):
+            table = P(CTC_ALIGN, "non_ca_compliance_year_end_month_by_vin_last_digit")
+            m = int(table[vin_digit])
+            dls = _ctc_deadlines(m, 31, step, today)
+            basis = (f"the last day of {calendar.month_name[m]} (VIN ends in {vin_digit}; the compliance year "
+                     f"ends on the {P(CTC_ALIGN, 'non_ca_compliance_year_ends')})")
+            if ca_reg:
+                acc.notes.append("Deadlines were set from the VIN because no registration_expires was given. The VIN "
+                                 f"schedule is for vehicles registered outside California and "
+                                 f"{P(CTC_ALIGN, 'vin_basis_also_for')} (such as exempt-plate government trucks); a "
+                                 "truck with a normal California registration uses its registration expiration date "
+                                 "instead.")
+        if dls:
+            acc.use(CTC_ALIGN, CTC_WINDOW)
             res.next_deadlines = [CleanTruckDeadline(deadline=d.isoformat(),
                                                      earliest_test=(d - timedelta(days=window)).isoformat())
                                   for d in dls]
-            acc.math.append(f"Deadlines fall on the registration expiration day ({expires.strftime('%m-%d')}) every "
-                            f"{step} months -> next: " + ", ".join(d.isoformat() for d in dls)
-                            + f"; test window opens {window} days before each")
+            acc.math.append(f"Deadlines fall on {basis} every {step} months -> next: "
+                            + ", ".join(d.isoformat() for d in dls) + f"; test window opens {window} days before each")
             acc.req("Next Clean Truck Check deadlines", " ".join(
                 f"Deadline {d}: a passing test from {d - timedelta(days=window)} counts through the following "
-                "deadline (testing earlier only covers this one)." for d in dls), CTC_ALIGN, CTC_WINDOW,
-                due=dls[0] if dls else None)
-            reg = next((d for d in sorted({_add_years(expires, k) for k in range(-3, 4)}) if d >= today), None)
+                "deadline (testing earlier only covers this one)." for d in dls), CTC_ALIGN, CTC_WINDOW, due=dls[0])
+            if obd and step == 6 and any(d >= reg_q for d in dls):
+                acc.notes.append(f"From {reg_q} ({P(CTC_FREQ, 'initial_period_years')} years after periodic testing "
+                                 "began) the regulation moves "
+                                 f"OBD-equipped trucks to quarterly deadlines; CARB's fact sheet says {q_year}. Check "
+                                 "the deadlines CARB shows in your CTC-VIS account.")
+        if today >= start and ca_reg and expires:
+            acc.use(CTC_DMV)
+            reg = expires if expires >= today else next(
+                d for d in (date(y, expires.month, min(expires.day, calendar.monthrange(y, expires.month)[1]))
+                            for y in range(today.year, today.year + 2)) if d >= today)
             dmv_days = P(CTC_DMV, "compliance_window_before_registration_days")
-            if reg:
-                res.dmv_compliance_window_start = (reg - timedelta(days=dmv_days)).isoformat()
-                acc.req("Registration renewal", f"For the DMV to renew on {reg}, every compliance condition must be met "
-                        f"within the {dmv_days} days before it (from {res.dmv_compliance_window_start}).", CTC_DMV,
-                        due=reg)
-        elif ca_reg and today >= start:
+            res.dmv_compliance_window_start = (reg - timedelta(days=dmv_days)).isoformat()
+            acc.req("Registration renewal", f"For the DMV to renew on {reg}, every compliance condition must be met "
+                    f"within the {dmv_days} days before it (from {res.dmv_compliance_window_start}).", CTC_DMV,
+                    due=reg)
+        elif ca_reg and today >= start and not dls:
             acc.use(CTC_ALIGN)
             acc.notes.append("Give registration_expires (the DMV registration expiration date) to compute the Clean "
                              "Truck Check deadlines: they fall on that day in months "
@@ -1627,8 +1818,10 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
                              + " when quarterly).")
         if not ca_reg:
             acc.use(CTC_ALIGN, CTC_PASS)
-            acc.notes.append(f"Not registered in California: deadlines are set by the {P(CTC_ALIGN, 'non_ca_registered')} "
-                             "(schedule not in the rulebook).")
+            if not dls:
+                acc.notes.append("Not registered in California: the deadlines are "
+                                 f"{P(CTC_ALIGN, 'non_ca_registered')}. Give vin (or just its last digit) to compute "
+                                 "them.")
             acc.req("Five-Day Pass", f"To bring a noncompliant truck into California for a short job, apply for a "
                     f"Five-Day Pass at least {P(CTC_PASS, 'apply_business_days_before')} business days before entry: "
                     f"up to {P(CTC_PASS, 'max_consecutive_days')} consecutive days, once per calendar year per "
@@ -1664,12 +1857,18 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
                 f"{P(IDLE_TRUCK, 'aps_limit_minutes_near_restricted_area')} minutes within "
                 f"{P(IDLE_TRUCK, 'restricted_area_distance_ft')} ft of homes, schools, hotels, hospitals, senior or child "
                 "care. Exceptions include power take-off work (" + _join(P(IDLE_PTO, "pto_work_exempt")) + "), and "
-                f"queuing more than {P(IDLE_PTO, 'queuing_exempt_if_beyond_ft')} ft from those places. Fine: up to "
-                f"{_usd(P(IDLE_FINE, 'max_fine_usd_per_day'))} a day for the owner and the driver.", IDLE_TRUCK,
-                IDLE_PTO, IDLE_RESTRICTED, IDLE_FINE)
+                f"queuing more than {P(IDLE_PTO, 'queuing_exempt_if_beyond_ft')} ft from those places. CARB says the "
+                f"owner and the driver can each be fined up to {_usd(P(IDLE_FINE, 'max_fine_usd_per_day'))} a day "
+                "(the regulation itself applies the Health and Safety Code penalties).", IDLE_TRUCK, IDLE_PTO,
+                IDLE_RESTRICTED, IDLE_FINE)
         acc.req("Driver paperwork", "If you dispatch it, give the driver your " + _join(P(IDLE_CARRIER,
                                                                                          "carrier_must_provide"))
                 + "; the driver shows them with the license and registration on request.", IDLE_CARRIER)
+
+    if idle_pickup_out and f in _DIESEL_FUELED and gvwr > idle_min:
+        acc.notes.append("The 5-minute truck idling rule (13 CCR 2485) does not apply: a pickup truck as defined in "
+                         "Vehicle Code 471 is not a 'commercial motor vehicle' under 2485(h)(6). Local idling rules "
+                         "may still apply.")
 
     # Advanced Clean Fleets
     if acf:
@@ -1695,14 +1894,18 @@ def truck_compliance(gvwr_lbs, engine_model_year=None, fuel="diesel", ca_registe
                    + (f"{P(IDLE_TRUCK, 'max_consecutive_idle_minutes')}-minute idling limit." if idle else ""))
     if res.truck_and_bus_status == "noncompliant":
         res.next_step = ("Take it off California roads or bring it into compliance: replace or repower with a "
-                         f"{P(TB_2010, 'min_engine_model_year')}+ engine, or qualify it as low-use and report it in "
-                         f"{P(TB_LOW_USE, 'system')}. The DMV will not register it as is.")
+                         f"{P(TB_2010, 'min_engine_model_year')}+ engine, retrofit a VDECS verified to 2010 model year "
+                         f"emissions, or qualify it as low-use and report it in {P(TB_LOW_USE, 'system')}. The DMV "
+                         "will not register it as is.")
     elif res.truck_and_bus_status == "unknown_engine_year":
         res.next_step = "Read the engine model year off the emission control label and run this again."
     elif res.next_deadlines:
         d = res.next_deadlines[0]
         res.next_step = (f"Book the Clean Truck Check test between {d.earliest_test} and {d.deadline}, and make sure the "
                          "annual fee is paid and the vehicle is reported.")
+    elif ctc and not ca_reg:
+        res.next_step = ("Give the VIN (its last digit sets the Clean Truck Check deadlines of a truck registered outside "
+                         "California) and schedule the tests around them.")
     elif ctc:
         res.next_step = "Find the DMV registration expiration date and schedule the Clean Truck Check tests around it."
     else:
@@ -1800,8 +2003,10 @@ def _acres(name: str, value) -> Optional[float]:
             v = float(m.group(1))
             if v < 0:
                 raise ValueError(f"{name} cannot be below 0, got {value!r}")
+            if v > MAX_SQFT:
+                raise ValueError(f"{name} cannot be above {MAX_SQFT:,} sq ft, got {value!r}")
             return v / SQFT_PER_ACRE
-    return _num(name, value, 0)
+    return _num(name, value, 0, MAX_ACRES)
 
 
 def _project_type(value) -> Optional[str]:
@@ -1840,12 +2045,19 @@ def dust_control_requirements(air_district, disturbed_acres=None, daily_import_e
                               three_axle_trips_per_day=None, urban_area=None, demolition=False,
                               near_sensitive_receptors=False, wind_gust_mph=None, average_wind_mph=None,
                               single_family_addition=False, existing_building_sqft=None, added_building_sqft=None,
+                              site_acres=None, paved_interior_roads=None, site_elevation_ft=None,
                               as_of=None) -> DustResult:
     """Construction dust rules for one site: South Coast AQMD, San Joaquin Valley APCD or Bay Area AQMD."""
     today = _as_of(as_of)
     acres = _acres("disturbed_acres", disturbed_acres)
-    imp = _num("daily_import_export_cy", daily_import_export_cy, 0)
-    moved = _num("daily_earthmoving_cy", daily_earthmoving_cy, 0)
+    site = _acres("site_acres", site_acres)
+    if acres is not None and site is not None and site + 1e-9 < acres:
+        raise ValueError(f"site_acres ({_n(site)}) cannot be smaller than disturbed_acres ({_n(acres)}): the disturbed "
+                         "area is part of the site")
+    paved_roads = _bool("paved_interior_roads", paved_interior_roads)
+    elev = _num("site_elevation_ft", site_elevation_ft, -300, MAX_FEET)
+    imp = _num("daily_import_export_cy", daily_import_export_cy, 0, MAX_CY_PER_DAY)
+    moved = _num("daily_earthmoving_cy", daily_earthmoving_cy, 0, MAX_CY_PER_DAY)
     days = _whole("earthmoving_days_at_that_volume", earthmoving_days_at_that_volume, 0, 366)
     ptype = _project_type(project_type)
     start = _date(earthmoving_start, "earthmoving_start")
@@ -1857,8 +2069,8 @@ def dust_control_requirements(air_district, disturbed_acres=None, daily_import_e
     gust = _num("wind_gust_mph", wind_gust_mph, 0, 200)
     avg_wind = _num("average_wind_mph", average_wind_mph, 0, 200)
     sfa = bool(_bool("single_family_addition", single_family_addition))
-    existing = _num("existing_building_sqft", existing_building_sqft, 0)
-    added = _num("added_building_sqft", added_building_sqft, 0)
+    existing = _num("existing_building_sqft", existing_building_sqft, 0, MAX_SQFT)
+    added = _num("added_building_sqft", added_building_sqft, 0, MAX_SQFT)
     if (existing is None) != (added is None):
         raise ValueError("give both existing_building_sqft and added_building_sqft (or neither)")
     d = _district(air_district, _bool("coachella_valley", coachella_valley))
@@ -1877,10 +2089,21 @@ def dust_control_requirements(air_district, disturbed_acres=None, daily_import_e
         return acc.finish(res)
     if d["part"]:
         acc.use(_SCOPE_RULE[d["key"]])
-        acc.notes.append(f"Only {d['part']} of {d['county']} County is in the {d['name']} (per the rule's stated "
-                         "scope). These requirements assume the site is in that part; confirm on the district's map.")
-    if d["key"] == SCAQMD and d["county"] == "Riverside" and not d["coachella"]:
-        acc.notes.append("If the site is in the Coachella Valley, Rule 403.1 also applies: pass coachella_valley=true.")
+        if d["key"] == SCAQMD and d["county"] == "Riverside":
+            # Rule 403's stated scope: the non-desert part of Riverside County, plus the Coachella Valley (Rule 403.1)
+            acc.use(CV_PLAN)
+            if d["coachella"]:
+                acc.notes.append("Riverside County, Coachella Valley: inside the South Coast AQMD (Rule 403.1 "
+                                 "applies with Rule 403). Other desert parts of the county outside the Coachella "
+                                 "Valley are not; confirm on the district's map.")
+            else:
+                acc.notes.append(f"Only {d['part']} of Riverside County and its Coachella Valley are in the "
+                                 f"{d['name']}. These requirements assume the non-desert part; if the site is in the "
+                                 "Coachella Valley, Rule 403.1 also applies: pass coachella_valley=true.")
+        else:
+            acc.notes.append(f"Only {d['part']} of {d['county']} County is in the {d['name']} (per the rule's stated "
+                             "scope). These requirements assume the site is in that part; confirm on the district's "
+                             "map.")
     volume = max(v for v in (moved, imp) if v is not None) if (moved is not None or imp is not None) else None
     if moved is not None and imp is not None and imp > moved:
         acc.math.append(f"Earth-moving volume taken as the larger of moved ({_n(moved)}) and imported/exported "
@@ -1890,7 +2113,7 @@ def dust_control_requirements(air_district, disturbed_acres=None, daily_import_e
         _south_coast(acc, res, acres, imp, volume, days, start, gust, d["coachella"], today)
     elif d["key"] == SJV:
         _san_joaquin(acc, res, acres, volume, days, ptype, start, trips, axle3, urban, demo, sfa, existing, added,
-                     today)
+                     today, site, paved_roads, elev)
     else:
         _bay_area(acc, res, acres, sensitive, avg_wind)
     return acc.finish(res)
@@ -1945,6 +2168,13 @@ def _south_coast(acc, res, acres, imp, volume, days, start, gust, coachella, tod
                     + " -> " + {True: "yes", False: "no", None: f"yes if that volume happens on {big_days} or more days"
                                 if by_vol else "unknown"}[res.large_operation])
     if res.large_operation is not False and (acres is not None or volume is not None):
+        note = ("Large-operation duties (Rule 403(e)) do not apply to "
+                + _join(P(SC_LARGE, "subdivision_e_not_applicable_to"), "or") + " (Rule 403(g)(7)).")
+        if P(SC_LARGE, "e1_A_to_C_not_required_with_approved_aqmd_dust_plan"):
+            note += (" With an AQMD-approved fugitive dust control plan and no change to its sources and controls, "
+                     "Form 403 N, the site description and the daily records of (e)(1)(A)-(C) are not required (Rule "
+                     "403(g)(8)); the signs, supervisor and Table 2 measures still are.")
+        acc.notes.append(note)
         cond = "" if res.large_operation else f"If {_n(big_cy)}+ cy/day happens on {big_days}+ days: "
         acc.req("Large Operation Notification (Form 403 N)", cond + f"file Form {P(SC_403N, 'form')} within "
                 f"{P(SC_403N, 'file_within_days')} days of qualifying, with the responsible people's names, addresses "
@@ -2002,12 +2232,20 @@ def _south_coast(acc, res, acres, imp, volume, days, start, gust, coachella, tod
                 f"{review} days, so submit by {by or f'{review} days before earthmoving'}). Valid "
                 f"{cv.param('plan_valid_years')} year; resubmit at least {cv.param('resubmit_days_before_expiration_min')}"
                 f" days before it expires. Keep it on site, post contact signs"
-                + (f", and name a dust control supervisor ({_n(sup)}+ acres)" if acres is not None and acres >= sup
-                   else f" (and name a dust control supervisor at {_n(sup)}+ acres)")
-                + f". Fees: {cv.param('fees')}.", CV_PLAN, due=by)
+                + (f", and name a dust control supervisor ({_n(sup)}+ acres) who has completed the "
+                   f"{cv.param('supervisor_class')}" if acres is not None and acres >= sup
+                   else f" (at {_n(sup)}+ acres, also name a dust control supervisor who has completed the "
+                        f"{cv.param('supervisor_class')})")
+                + f". Fees: {cv.param('fees')}. Exception "
+                "(Rule 403.1(i)(4)): the SCAQMD plan is not required for " + cv.param("plan_to_city_or_county_instead")
+                + "; the plan then goes to that city or county, so ask its grading office first.", CV_PLAN, due=by)
+        acc.req("Coachella Valley daily records", "Write down every day the dust control actions taken under Rule 403.1 "
+                f"and keep the records at least {cv.param('daily_records_retention_years')} years.", CV_PLAN)
     if res.plan_required:
-        res.next_step = (f"Submit the Coachella Valley dust control plan to SCAQMD by {res.plan_submit_by or '30 days before earthmoving'}"
-                         "; no earthmoving until it is approved.")
+        res.next_step = ("Ask the city or county whether it has a District-approved dust control ordinance (then the "
+                         "plan goes to it); otherwise submit the Coachella Valley dust control plan to SCAQMD by "
+                         f"{res.plan_submit_by or str(core.rule(CV_PLAN).param('district_review_days')) + ' days before earthmoving'}"
+                         ". No earthmoving until it is approved.")
     elif res.large_operation:
         res.next_step = (f"File Form {P(SC_403N, 'form')} within {P(SC_403N, 'file_within_days')} days of qualifying "
                          "as a large operation, name the certified dust control supervisor and put up the project "
@@ -2025,8 +2263,21 @@ def _south_coast(acc, res, acres, imp, volume, days, start, gust, coachella, tod
                       res.plan_required is not None else "") + ".")
 
 
-def _san_joaquin(acc, res, acres, volume, days, ptype, start, trips, axle3, urban, demo, sfa, existing, added, today):
+def _san_joaquin(acc, res, acres, volume, days, ptype, start, trips, axle3, urban, demo, sfa, existing, added, today,
+                 site=None, paved_roads=None, elev=None):
     acc.use(SJV_COUNTIES)
+    high = P(SJV_EXEMPT, "regulation_viii_exempt_elevation_ft_min")
+    if elev is not None and elev >= high:
+        # Rule 8011 §4.3 (incorporated by Rule 8021 §4.0): Regulation VIII does not apply at 3,000 ft or higher
+        res.plan_required, res.trackout_control_required = False, False
+        acc.math.append(f"Elevation {_n(elev)} ft vs >= {_n(high)} ft -> Regulation VIII exempt")
+        acc.req("Regulation VIII does not apply", f"Activities at {_n(high)} ft or more above sea level are exempt from "
+                "the District's fugitive dust rules (Rule 8011 §4.3): no Dust Control Plan, notice or track-out "
+                "device under Rules 8021 and 8041. Check your permit or CEQA conditions for dust measures.", SJV_EXEMPT)
+        res.summary = (f"{res.district_name}: site at {_n(elev)} ft is exempt from Regulation VIII (dust rules apply "
+                       f"below {_n(high)} ft).")
+        res.next_step = "No District dust plan or notice; follow any dust conditions in your permits."
+        return
     exempt_8021 = False
     if sfa and P(SJV_EXEMPT, "single_family_additions_exempt"):
         exempt_8021 = True
@@ -2098,15 +2349,23 @@ def _san_joaquin(acc, res, acres, volume, days, ptype, start, trips, axle3, urba
             if start:
                 acc.req("Written notice before earthmoving", f"Send it between {start - timedelta(days=notice)} and "
                         f"{start}.", SJV_DCP, due=start)
-        if res.plan_required is not True and acres is not None:
+        # Rule 8021 §6.4 keys the 48-hour notice to the construction site's area, not only the disturbed area
+        site_area = site if site is not None else acres
+        if res.plan_required is not True and site_area is not None:
             lo, hi = P(SJV_48H, "residential_acres_range" if ptype == "residential" else "nonresidential_acres_range")
-            if lo <= acres < hi:
-                h = P(SJV_48H, "notice_hours_before_earthmoving")
+            h = P(SJV_48H, "notice_hours_before_earthmoving")
+            basis = "site" if site is not None else "disturbed (give site_acres: the rule uses the site's area)"
+            if lo <= site_area < hi:
                 by = start - timedelta(days=math.ceil(h / 24)) if start else None
-                acc.math.append(f"48-hour notice: {_n(lo)} <= {_n(acres)} ac < {_n(hi)} ac -> required")
+                acc.math.append(f"48-hour notice: {_n(lo)} <= {_n(site_area)} ac {basis} < {_n(hi)} ac -> required")
                 acc.req("48-hour notice to the District", f"Written notice at least {h} hours before earthmoving starts"
                         + (f" (by the start time on {by}; e.g. a 7:00 a.m. start on {start} means 7:00 a.m. on {by})"
                            if by else "") + ".", SJV_48H, due=by)
+            elif site is None and site_area < lo:
+                acc.use(SJV_48H)
+                acc.notes.append(f"48-hour notice: required if the construction site itself is {_n(lo)} to under "
+                                 f"{_n(hi)} acres ({(ptype or 'non_residential').replace('_', '-')}), even when less "
+                                 "is disturbed (Rule 8021 §6.4); give site_acres to check.")
         acc.req("Inactive areas", f"Stabilize any disturbed area of {_n(P(SJV_INACTIVE, 'min_area_acres'))} acre or more "
                 f"left unused {P(SJV_INACTIVE, 'idle_days_min')} days or more.", SJV_INACTIVE)
         acc.req("Unpaved haul roads", f"{P(SJV_SPEED, 'max_speed_mph')} mph on uncontrolled unpaved access and haul "
@@ -2123,25 +2382,29 @@ def _san_joaquin(acc, res, acres, volume, days, ptype, start, trips, axle3, urba
             "workday. Not allowed: " + _join(P(SJV_EOD, "prohibited_methods")) + ". Allowed: "
             + _join(P(SJV_EOD, "allowed_methods"), "or") + ".", SJV_EOD)
     ft, rural_ac = P(SJV_50FT, "immediate_cleanup_ft"), P(SJV_50FT, "rural_project_min_acres")
-    if urban or (urban is False and acres is not None and acres >= rural_ac):
+    project_ac = site if site is not None else acres          # Rule 8041 §5.5: 'construction projects 10 acres ... in size'
+    if urban or (urban is False and project_ac is not None and project_ac >= rural_ac):
         acc.req(f"Track-out reaching {ft} ft", f"Prevent track-out, or remove it immediately once it extends {ft} ft or "
                 "more from the exit.", SJV_50FT)
     elif urban is None:
         acc.req(f"Track-out reaching {ft} ft", f"In a city (or an unincorporated area surrounded by one), or on a rural "
                 f"project of {_n(rural_ac)}+ acres: remove track-out immediately once it extends {ft} ft.", SJV_50FT)
     dev_trips, dev_axle = P(SJV_DEVICE, "vehicle_trips_per_day_min"), P(SJV_DEVICE, "three_axle_trips_per_day_min")
+    paved_trigger = bool(paved_roads) and P(SJV_DEVICE, "paved_interior_road_sites")
     need_dev = bool(res.plan_required) or (trips is not None and trips >= dev_trips) or \
-        (axle3 is not None and axle3 >= dev_axle)
-    res.trackout_control_required = need_dev if (trips is not None or axle3 is not None or res.plan_required) else None
+        (axle3 is not None and axle3 >= dev_axle) or paved_trigger
+    res.trackout_control_required = need_dev if (trips is not None or axle3 is not None or res.plan_required
+                                                 or paved_roads is not None) else None
     acc.use(SJV_DEVICE)
-    if trips is not None or axle3 is not None:
+    if trips is not None or axle3 is not None or paved_roads is not None:
         acc.math.append(f"Track-out device: {_given(trips, 'trips/day')} vs >= {dev_trips}; {_given(axle3, '3+-axle trips/day')} vs "
-                        f">= {dev_axle}; Dust Control Plan site: {'yes' if res.plan_required else 'no'} -> "
+                        f">= {dev_axle}; Dust Control Plan site: {'yes' if res.plan_required else 'no'}; paved interior "
+                        f"roads: {({True: 'yes', False: 'no', None: 'not given'})[paved_roads]} -> "
                         f"{'required' if need_dev else 'not required'}")
     if need_dev or res.trackout_control_required is None:
         s = core.rule(SJV_SPECS).parameters
         cond = "" if need_dev else (f"If the site has {dev_trips}+ vehicle trips a day, {dev_axle}+ trips by 3+-axle "
-                                    "vehicles, or a Dust Control Plan: ")
+                                    "vehicles, paved interior roads, or a Dust Control Plan: ")
         acc.req("Track-out device at every exit", cond + f"install one at each exit to a paved public road: a grizzly "
                 f"at least {s['grizzly_min_length_ft']} ft long, a gravel pad of {s['gravel_min_size_in']}-inch+ rock "
                 f"{s['gravel_min_depth_in']} in deep and {s['gravel_min_length_ft']} ft long, or {s['paving_min_length_ft']}"
@@ -2248,41 +2511,77 @@ def _perp_tier(value) -> Optional[str]:
     return base + (" flex" if flex else "")
 
 
+# special_category -> the start of its entry in the Portable Engine ATCM not-subject list (PERP FAQ Q14)
+_PERP_SPECIAL = {"agricultural_source": "engines owned by an agricultural source",
+                 "emergency_only": "engines used exclusively to alleviate",
+                 "hazardous_location_tier3": "engines approved to operate in hazardous locations",
+                 "military_tactical": "military-owned engines used in tactical support equipment",
+                 "harbor_craft": "engines used exclusively on harbor craft"}
+
+
+def _perp_special(value) -> Optional[str]:
+    w = _words(value or "")
+    if not w or w in ("none", "no", "n a", "na"):
+        return None
+    key = w.replace(" ", "_")
+    aliases = {"agricultural": "agricultural_source", "ag": "agricultural_source", "farm": "agricultural_source",
+               "emergency only": "emergency_only", "hazloc": "hazardous_location_tier3",
+               "hazardous location": "hazardous_location_tier3", "military": "military_tactical",
+               "harbor craft": "harbor_craft", "marine": "harbor_craft"}
+    if w in ("emergency", "emergency use", "emergency use engine"):
+        raise ValueError("'emergency' is ambiguous: an emergency-use engine (run only for maintenance, testing and "
+                         "emergencies) is still under the Portable Engine ATCM; only an engine used exclusively to "
+                         "alleviate a threat to public health and safety during an emergency event is outside it "
+                         "(special_category='emergency_only')")
+    key = key if key in _PERP_SPECIAL else aliases.get(w)
+    if not key:
+        raise ValueError("special_category must be none, " + ", ".join(_PERP_SPECIAL) + f"; got {value!r}")
+    return key
+
+
 def portable_engine_requirements(engine_bhp, engine_tier=None, fuel="diesel", propels_vehicle=False,
                                  auxiliary_engine_on_two_engine_vehicle=False, months_at_location=None,
                                  on_foundation=False, perp_registered=None, registration_expires=None,
                                  fleet_total_bhp=None, annual_hours=None, project_registered_bhp_on_site=None,
                                  extreme_ozone_district=None, project_start=None, engines_to_register=0,
-                                 equipment_units_to_register=0, renewal=False, as_of=None) -> PortableEngineResult:
+                                 equipment_units_to_register=0, renewal=False, years_at_same_location=None,
+                                 months_operated_per_year=None, special_category=None,
+                                 as_of=None) -> PortableEngineResult:
     """Portable Engine ATCM and PERP for one portable engine (generator, compressor, pump, light tower...)."""
     today = _as_of(as_of)
-    bhp = _num("engine_bhp", engine_bhp, 0)
+    bhp = _num("engine_bhp", engine_bhp, 0, MAX_BHP)
     if bhp is None:
         raise ValueError("engine_bhp is required (the engine's rated brake horsepower)")
     tier = _perp_tier(engine_tier)
     f = _fuel(fuel)
     propels = bool(_bool("propels_vehicle", propels_vehicle))
     aux = bool(_bool("auxiliary_engine_on_two_engine_vehicle", auxiliary_engine_on_two_engine_vehicle))
-    months = _num("months_at_location", months_at_location, 0)
+    months = _num("months_at_location", months_at_location, 0, 1200)
+    years_here = _num("years_at_same_location", years_at_same_location, 0, 100)
+    months_run = _num("months_operated_per_year", months_operated_per_year, 0, 12)
+    special = _perp_special(special_category)
     foundation = bool(_bool("on_foundation", on_foundation))
     registered = _bool("perp_registered", perp_registered)
     expires = _date(registration_expires, "registration_expires")
-    fleet = _num("fleet_total_bhp", fleet_total_bhp, 0)
+    fleet = _num("fleet_total_bhp", fleet_total_bhp, 0, MAX_FLEET_HP)
     hours = _num("annual_hours", annual_hours, 0, 8784)
-    proj = _num("project_registered_bhp_on_site", project_registered_bhp_on_site, 0)
+    proj = _num("project_registered_bhp_on_site", project_registered_bhp_on_site, 0, MAX_FLEET_HP)
     extreme = _bool("extreme_ozone_district", extreme_ozone_district)
     pstart = _date(project_start, "project_start")
-    n_eng = _whole("engines_to_register", engines_to_register, 0) or 0
-    n_units = _whole("equipment_units_to_register", equipment_units_to_register, 0) or 0
+    n_eng = _whole("engines_to_register", engines_to_register, 0, 10_000) or 0
+    n_units = _whole("equipment_units_to_register", equipment_units_to_register, 0, 10_000) or 0
     is_renewal = bool(_bool("renewal", renewal))
     acc = _Acc()
     acc.use(PERP_ATCM)
     min_bhp = P(PERP_ATCM, "min_bhp")
     diesel = f in _DIESEL_FUELED
-    subject = diesel and bhp >= min_bhp and not propels and not aux
+    special_entry = (next(e for e in P(PERP_ATCM, "not_subject") if e.startswith(_PERP_SPECIAL[special]))
+                     if special else None)
+    subject = diesel and bhp >= min_bhp and not propels and not aux and not special_entry
     res = PortableEngineResult(engine_bhp=bhp, subject_to_atcm=subject)
     acc.math.append(f"Portable Engine ATCM: {'diesel' if diesel else f}, {_n(bhp)} bhp vs >= {_n(min_bhp)} bhp"
                     + ("; propels a vehicle" if propels else "") + ("; two-engine vehicle auxiliary" if aux else "")
+                    + (f"; {special_entry}" if special_entry else "")
                     + f" -> {'subject' if subject else 'not subject'}")
     if propels or aux:
         acc.use(ORD_APPLIES)
@@ -2293,24 +2592,36 @@ def portable_engine_requirements(engine_bhp, engine_tier=None, fuel="diesel", pr
             f"statewide without a permit from each of the {P(PERP_VOLUNTARY, 'air_districts')} air districts. If a "
             "district requires a permit, get it even if the unit is in PERP.", PERP_VOLUNTARY)
     lim = P(PERP_PORTABLE, "max_consecutive_months_at_location")
-    if months is not None or foundation:
-        res.portable = not foundation and (months is None or months <= lim)
-        acc.math.append(f"Portable: {_n(months or 0)} consecutive months at one location vs <= {_n(lim)}"
-                        + ("; on a foundation" if foundation else "") + f" -> {'yes' if res.portable else 'no'}")
+    seas = P(PERP_PORTABLE, "seasonal_source_not_portable")
+    seasonal = (years_here is not None and months_run is not None and years_here >= seas["min_years_at_location"]
+                and months_run >= seas["min_months_operating_per_year"])
+    if months is not None or foundation or seasonal:
+        res.portable = not foundation and not seasonal and (months is None or months <= lim)
+        acc.math.append(f"Portable: {_given(months, 'consecutive months')} at one location vs <= {_n(lim)}"
+                        + ("; on a foundation" if foundation else "")
+                        + (f"; seasonal source ({_n(years_here)} years at the location, {_n(months_run)} months a year "
+                           f"vs >= {seas['min_years_at_location']} years and >= "
+                           f"{seas['min_months_operating_per_year']} months)" if seasonal else "")
+                        + f" -> {'yes' if res.portable else 'no'}")
     acc.req("Stays portable", f"It must be movable, not on a foundation, and not stay at one location more than {lim} "
-            "consecutive months (the clock starts when it arrives; moving it away and back does not reset it).",
-            PERP_PORTABLE)
+            "consecutive months (the clock starts when it arrives; moving it away and back does not reset it). It is "
+            f"also not portable as a seasonal source: at one location {seas['min_years_at_location']}+ years and run "
+            f"{seas['min_months_operating_per_year']}+ months each year.", PERP_PORTABLE)
     if not subject:
         res.summary = ("Not subject to the Portable Engine ATCM"
                        + (f" ({_n(bhp)} bhp < {_n(min_bhp)} bhp)" if diesel and bhp < min_bhp else
-                          " (not a diesel engine)" if not diesel else " (it propels a vehicle or is a two-engine "
-                          "vehicle's auxiliary engine)") + ". A district permit may still be required.")
+                          " (not a diesel engine)" if not diesel else f" ({special_entry})" if special_entry else
+                          " (it propels a vehicle or is a two-engine vehicle's auxiliary engine)")
+                       + ". A district permit may still be required.")
         res.next_step = "Ask the air district where it will run whether it needs a permit."
         return acc.finish(res)
     if res.portable is False:
-        res.summary = (f"Not portable ({'on a foundation' if foundation else f'more than {lim} months at one location'}"
-                       "): PERP does not cover it; it needs the district's stationary-source permit.")
-        res.next_step = f"Apply for a permit from the air district where it sits, or move it before {lim} months run out."
+        why = ("on a foundation" if foundation else "a seasonal source" if seasonal
+               else f"more than {lim} months at one location")
+        res.summary = f"Not portable ({why}): PERP does not cover it; it needs the district's stationary-source permit."
+        res.next_step = (f"Apply for a permit from the air district where it sits"
+                         + (" (a seasonal source is a stationary source)." if seasonal and not foundation else
+                            "." if foundation else f", or move it before {lim} months run out."))
         return acc.finish(res)
     # eligibility for a new registration
     if tier:
@@ -2339,9 +2650,10 @@ def portable_engine_requirements(engine_bhp, engine_tier=None, fuel="diesel", pr
         acc.math.append(f"ATCM fleet: {_n(fleet)} bhp vs <= {_n(small)} bhp -> {res.atcm_fleet_size}")
         acc.req("Portable engine fleet", f"{res.atcm_fleet_size.capitalize()} fleet: "
                 + ("follow the tier phase-out schedule (each engine's date is on its registration certificate)."
-                   if res.atcm_fleet_size == "small" else "follow the tier phase-out schedule or the fleet average "
-                   "option.") + f" Every company registering after {P(PERP_FLEET, 'new_registrants_after')} is a "
-                "small fleet.", PERP_FLEET)
+                   if res.atcm_fleet_size == "small" else "follow the tier phase-out schedule, or the fleet average "
+                   f"option only if you opted into it by {P(PERP_FLEET, 'fleet_average_opt_in_deadline')}.")
+                + f" Every company registering after {P(PERP_FLEET, 'new_registrants_after')} is a small fleet.",
+                PERP_FLEET)
     # low use
     acc.use(PERP_LOW_USE)
     lu = P(PERP_LOW_USE, "max_hours_per_calendar_year")
@@ -2464,7 +2776,8 @@ def _tool_docs() -> dict:
             f"registration expiration date, the {P(CTC_WINDOW, 'early_test_window_days')}-day test window, the fee), the "
             f"{P(IDLE_TRUCK, 'max_consecutive_idle_minutes')}-minute idling limit for diesel over "
             f"{P(IDLE_TRUCK, 'min_gvwr_lbs_exclusive'):,} lb, and Advanced Clean Fleets status (government fleets "
-            "only). Accepts '33,000 lb', 'R99', 'CNG'."),
+            "only). Also handles pickups, dedicated snow-removal vehicles, two-engine cranes and motor homes, and a VIN "
+            "for trucks registered outside California. Accepts '33,000 lb', 'R99', 'CNG'."),
         "dust": (
             "Construction dust rules for one site. air_district: 'South Coast' / 'SCAQMD' / 'AQMD', 'Coachella "
             "Valley', 'San Joaquin Valley' / 'Valley Air', 'Bay Area' / 'BAAQMD', or the county ('Fresno', 'County of "
@@ -2476,7 +2789,9 @@ def _tool_docs() -> dict:
             f"non-residential / {P(SJV_DCP, 'residential_disturbed_acres_min')} residential, "
             f"{_usd(P(SJV_FEE, 'filing_fee_usd'))} fee, 48-hour notices, track-out devices) and Bay Area Rule 6-6 "
             f"(sites over {P(BA_LARGE, 'site_area_acres_exclusive')} acre) with the CEQA dust measures. Other "
-            "districts: says so. Returns dated plans and notices, math, a next step and citations."),
+            "districts: says so. Give site_acres (the whole site) as well as disturbed_acres in the San Joaquin Valley: "
+            "its 48-hour notice uses the site's area. Returns dated plans and notices, math, a next step and "
+            "citations."),
         "perp": (
             "One portable engine (generator, compressor, pump, light tower, welder, crusher): the Portable Engine ATCM "
             f"({P(PERP_ATCM, 'min_bhp')}+ bhp diesel), whether it is still portable "
@@ -2507,8 +2822,9 @@ def register(mcp) -> None:
         vehicles: Annotated[Optional[list[OffRoadVehicle]], Field(description=(
             "The machines, e.g. [{'name': 'CAT 320 #14', 'hp': 158, 'engine_tier': 'Tier 2'}, {'hp': 60, "
             "'engine_tier': 'T4f'}]"))] = None,
-        operating_counties: Annotated[Optional[list[str]], Field(description=(
-            "Every county the fleet works in (for the captive attainment area test)"))] = None,
+        operating_counties: Annotated[Optional[Union[list[str], str]], Field(description=(
+            "Every county the fleet works in (for the captive attainment area test), e.g. ['Humboldt', 'Lake'] or "
+            "'Humboldt, Lake'"))] = None,
         uses_optional_500hp_schedule: Annotated[Optional[bool], Field(description=(
             f"Fleets of {_n(P(ORD_OPT_500, 'max_fleet_hp'))} hp or less: you elected the 13 CCR 2449(e)(16) optional "
             "schedule"))] = None,
@@ -2527,7 +2843,8 @@ def register(mcp) -> None:
     def _offroad_contracting_requirements(
         role: Annotated[str, Field(description=(
             "prime_contractor (you hold the contract with the owner or awarding authority; 'GC'), "
-            "public_works_awarding_body ('city', 'school district') or subcontractor ('sub')"))] = "prime_contractor",
+            "public_works_awarding_body ('city', 'school district'), subcontractor ('sub') or private_owner "
+            "('owner', 'developer')"))] = "prime_contractor",
         offroad_vehicles_on_project: Annotated[Optional[bool], Field(description=(
             f"Will off-road diesel vehicles of {_n(P(ORD_APPLIES, 'min_engine_max_hp'))} hp+ operate on the "
             "project?"))] = True,
@@ -2536,8 +2853,9 @@ def register(mcp) -> None:
         emergency_operations: Annotated[bool, Field(description=(
             "The project is emergency operations (not routine maintenance or construction)"))] = False,
         first_vehicle_operates_on: Annotated[iso, Field(description="ISO date the first machine operates")] = None,
-        expected_operating_days: Annotated[Optional[int], Field(ge=0, description=(
-            "Calendar days machines will operate on the project"))] = None,
+        expected_operating_days: Annotated[Optional[int], Field(ge=0, le=36600, description=(
+            "Calendar days from the first day a machine operates on the project to the last, weekends included"))]
+        = None,
         contract_date: Annotated[iso, Field(description="ISO date you will sign or renew a contract with a fleet")]
         = None,
         project_completion_date: Annotated[iso, Field(description="ISO date the project is completed")] = None,
@@ -2561,18 +2879,19 @@ def register(mcp) -> None:
         fuel: Annotated[str, Field(description=(
             "diesel (default), renewable diesel / R99 / biodiesel, dual_fuel, natural_gas (CNG/LNG), propane, "
             "gasoline or zero_emission"))] = "diesel",
-        ca_registered: Annotated[bool, Field(description="Registered with the California DMV")] = True,
+        ca_registered: Annotated[Optional[bool], Field(description="Registered with the California DMV")] = True,
         registration_expires: Annotated[iso, Field(description="ISO DMV registration expiration date")] = None,
         annual_ca_miles: Annotated[num, Field(description="Miles driven in California per year")] = None,
         powers_stationary_equipment: Annotated[bool, Field(description=(
             "The engine or PTO powers equipment used only while parked (drill rig, concrete pump)"))] = False,
-        annual_pto_hours: Annotated[Optional[float], Field(**nn, description="Engine/PTO hours a year")] = None,
-        operating_counties: Annotated[Optional[list[str]], Field(description=(
+        annual_pto_hours: Annotated[num, Field(description="Engine/PTO hours a year")] = None,
+        operating_counties: Annotated[Optional[Union[list[str], str]], Field(description=(
             "Every county the truck operates in (NOx exempt area test)"))] = None,
         has_pm_filter: Annotated[Optional[bool], Field(description="Has a diesel particulate filter")] = None,
         obd_equipped: Annotated[Optional[bool], Field(description="Has on-board diagnostics (OBD)")] = None,
         vehicle_use: Annotated[str, Field(description=(
-            "truck (default), motor_home, agricultural, emergency or military_tactical"))] = "truck",
+            "truck (default), pickup, motor_home, agricultural, emergency, military_tactical, snow_removal (dedicated "
+            "snow-removal vehicle) or two_engine_crane (two-engine crane, drill rig or workover rig)"))] = "truck",
         owner_type: Annotated[str, Field(description="private (default), state_or_local_government or federal")]
         = "private",
         vehicle_model_year: Annotated[Optional[int], Field(ge=1900, le=2100, description=(
@@ -2581,12 +2900,15 @@ def register(mcp) -> None:
         new_vehicle: Annotated[bool, Field(description="Bought new (first retail sale)")] = False,
         leased: Annotated[bool, Field(description="The truck is leased")] = False,
         selling: Annotated[bool, Field(description="You are selling it")] = False,
+        vin: Annotated[Optional[str], Field(description=(
+            "VIN, or just its last digit: sets the Clean Truck Check deadlines of a truck registered outside "
+            "California or exempt from DMV registration"))] = None,
         as_of: Annotated[iso, Field(description="ISO date; default today in California")] = None,
     ) -> TruckResult:
         return truck_compliance(gvwr_lbs, engine_model_year, fuel, ca_registered, registration_expires,
                                 annual_ca_miles, powers_stationary_equipment, annual_pto_hours, operating_counties,
                                 has_pm_filter, obd_equipped, vehicle_use, owner_type, vehicle_model_year, acquired_on,
-                                new_vehicle, leased, selling, as_of)
+                                new_vehicle, leased, selling, vin, as_of)
 
     @mcp.tool(name="dust_control_requirements", annotations=ro, description=docs["dust"])
     def _dust_control_requirements(
@@ -2595,9 +2917,9 @@ def register(mcp) -> None:
             "'Fresno', 'County of Orange', 'LA'"))],
         disturbed_acres: Annotated[num, Field(description=(
             "Disturbed surface area: acres (2.5) or text ('2.5 acres', '8,000 sq ft')"))] = None,
-        daily_import_export_cy: Annotated[Optional[float], Field(**nn, description=(
-            "Cubic yards a day hauled onto or off the site"))] = None,
-        daily_earthmoving_cy: Annotated[Optional[float], Field(**nn, description=(
+        daily_import_export_cy: Annotated[num, Field(description=(
+            "Cubic yards a day hauled onto or off the site, e.g. 120 or '120 cy'"))] = None,
+        daily_earthmoving_cy: Annotated[num, Field(description=(
             "Peak cubic yards a day moved, deposited or relocated on site"))] = None,
         earthmoving_days_at_that_volume: Annotated[Optional[int], Field(ge=0, le=366, description=(
             "How many days (in a year) the site will move that peak volume"))] = None,
@@ -2622,13 +2944,21 @@ def register(mcp) -> None:
         existing_building_sqft: Annotated[Optional[float], Field(**nn, description=(
             "Existing building area, sq ft (remodel/addition exemption)"))] = None,
         added_building_sqft: Annotated[Optional[float], Field(**nn, description="Area being added, sq ft")] = None,
+        site_acres: Annotated[num, Field(description=(
+            "Total construction site area (San Joaquin Valley 48-hour notice and rural track-out tests use it)"))]
+        = None,
+        paved_interior_roads: Annotated[Optional[bool], Field(description=(
+            "San Joaquin Valley: the site has paved interior roads (Rule 8041 track-out device)"))] = None,
+        site_elevation_ft: Annotated[num, Field(description=(
+            "Site elevation in feet (San Joaquin Valley dust rules do not apply at 3,000 ft or higher)"))] = None,
         as_of: Annotated[iso, Field(description="ISO date; default today in California")] = None,
     ) -> DustResult:
         return dust_control_requirements(air_district, disturbed_acres, daily_import_export_cy, daily_earthmoving_cy,
                                          earthmoving_days_at_that_volume, project_type, earthmoving_start,
                                          coachella_valley, vehicle_trips_per_day, three_axle_trips_per_day, urban_area,
                                          demolition, near_sensitive_receptors, wind_gust_mph, average_wind_mph,
-                                         single_family_addition, existing_building_sqft, added_building_sqft, as_of)
+                                         single_family_addition, existing_building_sqft, added_building_sqft,
+                                         site_acres, paved_interior_roads, site_elevation_ft, as_of)
 
     @mcp.tool(name="portable_engine_requirements", annotations=ro, description=docs["perp"])
     def _portable_engine_requirements(
@@ -2655,10 +2985,19 @@ def register(mcp) -> None:
         engines_to_register: Annotated[int, Field(ge=0, description="Engines or pile drivers to register")] = 0,
         equipment_units_to_register: Annotated[int, Field(ge=0, description="Equipment units to register")] = 0,
         renewal: Annotated[bool, Field(description="The registration is a renewal")] = False,
+        years_at_same_location: Annotated[Optional[float], Field(ge=0, le=100, description=(
+            "Years it has come back to the same location (seasonal-source test)"))] = None,
+        months_operated_per_year: Annotated[Optional[float], Field(ge=0, le=12, description=(
+            "Months a year it runs at that location (seasonal-source test)"))] = None,
+        special_category: Annotated[Optional[str], Field(description=(
+            "Engines outside the Portable Engine ATCM: agricultural_source, emergency_only (used only to relieve a "
+            "threat to public health and safety in an emergency), hazardous_location_tier3, military_tactical or "
+            "harbor_craft"))] = None,
         as_of: Annotated[iso, Field(description="ISO date; default today in California")] = None,
     ) -> PortableEngineResult:
         return portable_engine_requirements(engine_bhp, engine_tier, fuel, propels_vehicle,
                                             auxiliary_engine_on_two_engine_vehicle, months_at_location, on_foundation,
                                             perp_registered, registration_expires, fleet_total_bhp, annual_hours,
                                             project_registered_bhp_on_site, extreme_ozone_district, project_start,
-                                            engines_to_register, equipment_units_to_register, renewal, as_of)
+                                            engines_to_register, equipment_units_to_register, renewal,
+                                            years_at_same_location, months_operated_per_year, special_category, as_of)

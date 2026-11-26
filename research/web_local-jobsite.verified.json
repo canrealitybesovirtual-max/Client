@@ -679,7 +679,8 @@
      "traffic control plan"
     ],
     "apply_via": "https://aca.accela.com/SANDIEGO",
-    "exemptions": "none"
+    "exemptions": "none",
+    "approved_row_permit_with_application": "where applicable (IB 177 section II)"
    },
    "applies_to": "Contractors, utilities and owners working in or occupying the City of San Diego public right-of-way",
    "citation": "SDMC 129.0702 (per IB 177); City of San Diego DSD Traffic Control Permit page",
@@ -687,7 +688,7 @@
    "verbatim_quote": "Traffic Control Permits are required for: All public improvement projects, construction projects or other work encroaching into the public right of way, including the sidewalks, parking spaces, medians, alleys and streets.",
    "effective": "current as published on 2026-11-25",
    "read_from_primary_text": true,
-   "notes": "IB 177 (May 2026) cites SDMC 129.0702 as the authority. The code text itself was not readable (docs.sandiego.gov blocked).",
+   "notes": "IB 177 (May 2026) cites SDMC 129.0702 as the authority. The code text itself was not readable (docs.sandiego.gov blocked). [Review 2026-11-25: IB 177 (May 2026) section II, re-fetched from https://www.sandiego.gov/development-services/forms-bulletins/information-bulletin/177 (the dsdib177.pdf link now redirects there), reads 'Complete a Traffic Control Plan/Permit Form DS-269, provide an approved Right-of-Way Permit (where applicable) and submit a traffic control plan.' Added parameter approved_row_permit_with_application.]",
    "verification": {
     "status": "confirmed",
     "checked_against": "DSD Traffic Control Permit page https://www.sandiego.gov/development-services/permits/traffic-control-permit (re-fetched 2026-11-25) ('Traffic Control Permits are required for'; 'Apply for a Permit' steps 3 and 5, Accela link, DS-345); Information Bulletin 177 (May 2026) web edition https://www.sandiego.gov/development-services/forms-bulletins/information-bulletin/177 (the dsdib177.pdf URL in source_location now redirects there; re-fetched 2026-11-25) section I (SDMC §129.0702)",

@@ -653,7 +653,13 @@
     "labor_code_version_applies_to_violations_through": "2024-12-31",
     "labor_code_complaint_deadline_years_for_those_violations": 1,
     "governing_law_after_cutover": "Fair Employment and Housing Act, Gov. Code 12945.8 (Civil Rights Department); text not read",
-    "min_employees_basis": "25 or more under Labor Code 230.1 (violations through 2024-12-31, per the manual and the June 2026 DLSE list); the threshold under Gov. Code 12945.8 was not read"
+    "min_employees_basis": "25 or more under Labor Code 230.1 (violations through 2024-12-31, per the manual and the June 2026 DLSE list); the threshold under Gov. Code 12945.8 was not read",
+    "related_any_size_230c": {
+     "protection": "time off to obtain or try to obtain any relief (for example a restraining order) for victims of domestic violence, sexual assault, stalking or a qualifying crime",
+     "size_threshold_stated": null,
+     "labor_code_version_applies_to_violations_through": "2024-12-31",
+     "governing_law_after_cutover": "Fair Employment and Housing Act, Gov. Code 12945.8 (not read)"
+    }
    },
    "applies_to": "California employers with 25 or more employees (Labor Code 230.1 threshold, violations through 2024-12-31). From 2025-01-01 the protection is under FEHA, Gov. Code 12945.8 (threshold not read)",
    "citation": "Labor Code 230.1 (through 2024-12-31); Gov. Code 12945.8 (from 2025-01-01); DLSE Enforcement Manual §17.1.4",
@@ -661,11 +667,11 @@
    "verbatim_quote": "Protects an employee who is a victim of domestic violence, sexual assault, and/or stalking and works for an employer with 25 or more employees who takes time off to seek medical attention, to obtain services from a domestic violence program or psychological counseling, or to participate in safety planning.",
    "effective": "",
    "read_from_primary_text": false,
-   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The Civil Rights Department pages on victim leave could not be read either (calcivilrights.ca.gov is blocked). Verification 2026-11-25: the DLSE list 'Laws that Prohibit Retaliation and Discrimination' (https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm, dated June 2026) says the Labor Code text described in the manual applies only to violations on or before the cutover date shown in the parameters. From that date the protection is under the Fair Employment and Housing Act, Gov. Code 12945.8, and questions go to the Civil Rights Department. Gov. Code 12945.8 and the CRD pages could not be read (leginfo.legislature.ca.gov and calcivilrights.ca.gov are blocked), so the current thresholds, notice, certification and complaint-filing rules are unverified. Do not route these claims to the Labor Commissioner or apply the Labor Code one-year deadline to violations after the cutover date.",
+   "notes": "Source is the DLSE Enforcement Policies and Interpretations Manual; the cited pages carry revision dates from December 2020. The current statute text on leginfo.legislature.ca.gov could not be read (bot protection), so a later amendment or renumbering cannot be ruled out. The Civil Rights Department pages on victim leave could not be read either (calcivilrights.ca.gov is blocked). Verification 2026-11-25: the DLSE list 'Laws that Prohibit Retaliation and Discrimination' (https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm, dated June 2026) says the Labor Code text described in the manual applies only to violations on or before the cutover date shown in the parameters. From that date the protection is under the Fair Employment and Housing Act, Gov. Code 12945.8, and questions go to the Civil Rights Department. Gov. Code 12945.8 and the CRD pages could not be read (leginfo.legislature.ca.gov and calcivilrights.ca.gov are blocked), so the current thresholds, notice, certification and complaint-filing rules are unverified. Do not route these claims to the Labor Commissioner or apply the Labor Code one-year deadline to violations after the cutover date. DLSE June 2026 list, Labor Code 230(c) entry: 'Prohibits an employer from retaliating against an employee who is (1) a victim of domestic violence, sexual assault, or stalking, (2) a victim of a crime that caused physical injury, or that caused mental injury and a threat of physical injury, or (3) a person whose immediate family member is deceased as the direct result of a crime (regardless of whether any person is an arrested, prosecuted, or convicted for committing the crime), for taking time off from work to obtain or try to obtain any relief, including relief to help ensure their health, safety, or welfare, or that of their child or children, if the employee gave the employer reasonable notice or provided sufficient certification within a reasonable time of an unscheduled absence.' That entry states no employer size, so a tool must not treat a victim's request as unprotected just because the employer has fewer than 25 employees.",
    "verification": {
     "status": "unverifiable",
     "checked_against": "DLSE Enforcement Policies and Interpretations Manual https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf §17.1.4, Labor Code 230.1 (p. 17-4, December 2020); DLSE 'Laws that Prohibit Retaliation and Discrimination' https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm (dated June 2026) (230.1: 'Prohibits an employer with 25 or more employees...'; violations through 2024-12-31; then FEHA Gov. Code 12945.8); Gov. Code 12945.8 not read",
-    "correction": "Under Labor Code 230.1 the 25-employee threshold and the listed purposes are confirmed by both the manual and DIR's June 2026 list. That list says the Labor Code version covers only violations through 2024-12-31 and the leave is now in FEHA, Gov. Code 12945.8, whose text (threshold, purposes, filing deadline) could not be read. complaint_deadline_years set to null, with the old rule kept as dated parameters. Added min_employees_basis. Citation, applies_to, plain_english and notes updated. read_from_primary_text set to false."
+    "correction": "Under Labor Code 230.1 the 25-employee threshold and the listed purposes are confirmed by both the manual and DIR's June 2026 list. That list says the Labor Code version covers only violations through 2024-12-31 and the leave is now in FEHA, Gov. Code 12945.8, whose text (threshold, purposes, filing deadline) could not be read. complaint_deadline_years set to null, with the old rule kept as dated parameters. Added min_employees_basis. Citation, applies_to, plain_english and notes updated. read_from_primary_text set to false. Adversarial review 2026-11-25 (sources re-fetched that day): added related_any_size_230c from the DLSE June 2026 list (230(c), no size stated). Status stays unverifiable: the current FEHA text was not read."
    }
   },
   {
@@ -2306,6 +2312,41 @@
    }
   },
   {
+   "id": "hr-cobra-qualifying-event-loss-of-coverage",
+   "title": "A COBRA qualifying event must cause a loss of plan coverage; quits, layoffs, strikes and lockouts count",
+   "plain_english": "An event (death, termination other than for gross misconduct, reduction of hours, divorce or legal separation, Medicare entitlement, a child losing dependent status, or a retiree-employer bankruptcy) is a COBRA qualifying event only if it makes the employee, spouse or child lose coverage under the plan's terms. It does not matter whether the worker quit or was let go; a layoff, strike or lockout that ends coverage is a qualifying event.",
+   "category": "requirement",
+   "parameters": {
+    "events": [
+     "death of a covered employee",
+     "termination (other than for gross misconduct) or reduction of hours",
+     "divorce or legal separation",
+     "covered employee becomes entitled to Medicare",
+     "dependent child ceases to be a dependent under the plan",
+     "bankruptcy of the employer a covered employee retired from"
+    ],
+    "must_cause_loss_of_coverage": true,
+    "lose_coverage_means": "cease to be covered under the same terms and conditions as immediately before the event",
+    "voluntary_or_involuntary_termination_irrelevant": true,
+    "strike_or_lockout": "a termination or reduction of hours (qualifying event if it causes a loss of coverage)",
+    "layoff": "qualifying event if it causes a loss of coverage",
+    "medicare_entitlement_means": "enrolled in Part A or Part B (eligibility alone is not entitlement)"
+   },
+   "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
+   "citation": "26 CFR 54.4980B-4 Q&A-1(b)-(c), Q&A-2; 54.4980B-7 Q&A-3",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-4 Q&A-1(b)-(c) and Q&A-2 (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-24: https://www.ecfr.gov/api/versioner/v1/full/2026-11-24/title-26.xml?section=54.4980B-4)",
+   "verbatim_quote": "An event satisfies this paragraph (c) if, under the terms of the group health plan, the event causes the covered employee, or the spouse or a dependent child of the covered employee, to lose coverage under the plan.",
+   "effective": "",
+   "read_from_primary_text": true,
+   "notes": "Q&A-2: 'Thus, it does not matter whether the employee voluntarily terminated or was discharged.' 'For example, a strike or a lockout is a termination or reduction of hours that constitutes a qualifying event if the strike or lockout results in a loss of coverage' as described in paragraph (c) of Q&A-1. Similarly, a layoff that results in such a loss of coverage is a qualifying event. The Medicare wording is from 54.4980B-7 Q&A-3 (entitled on the effective date of enrollment in Part A or B; 'merely being eligible to enroll in Medicare does not constitute being entitled to Medicare benefits').",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "26 CFR 54.4980B-4 and 54.4980B-7, eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-24/title-26.xml (version current as of 2026-11-24)",
+    "correction": "",
+    "note": "Added during the 2026-11-25 adversarial review; every quoted phrase was string-matched against the fetched regulation text."
+   }
+  },
+  {
    "id": "hr-cobra-employer-notice-to-administrator-30-days",
    "title": "Notify the plan administrator of a COBRA qualifying event within 30 days",
    "plain_english": "When an employee covered by the health plan is terminated, has hours cut, dies or becomes entitled to Medicare, notify the plan administrator within 30 days.",
@@ -2391,19 +2432,25 @@
    "category": "deadline",
    "parameters": {
     "min_election_days": 60,
-    "clock_starts": "later of loss of coverage date or date election notice is provided"
+    "clock_starts": "later of loss of coverage date or date election notice is provided",
+    "beneficiary_notice_days_divorce_or_dependent_loss": 60,
+    "beneficiary_notice_clock": "later of the qualifying event date or the date the qualified beneficiary would lose coverage",
+    "beneficiary_notice_events": [
+     "divorce or legal separation",
+     "dependent child ceasing to be a dependent under the plan"
+    ]
    },
    "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
-   "citation": "IRC 4980B(f)(5); 26 CFR 54.4980B-6 Q&A-1",
-   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-6 Q&A-1(a) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-6)",
+   "citation": "IRC 4980B(f)(5); 26 CFR 54.4980B-6 Q&A-1, Q&A-2",
+   "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-6 Q&A-1(a), Q&A-2(a) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-6)",
    "verbatim_quote": "The election period must not end before the date that is 60 days after the later of",
    "effective": "",
    "read_from_primary_text": true,
-   "notes": "",
+   "notes": "Q&A-2(a) of the same section: the covered employee or qualified beneficiary must notify the plan administrator of a divorce, legal separation or a child's loss of dependent status; 'The group health plan is not required to offer the qualified beneficiary an opportunity to elect COBRA continuation coverage if the notice is not provided to the plan administrator within 60 days after the later of' (1) the date of the qualifying event or (2) the date the qualified beneficiary would lose coverage.",
    "verification": {
-    "status": "confirmed",
-    "checked_against": "26 CFR 54.4980B-6 Q&A-1(a), eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-26.xml?section=54.4980B-6 (version current as of 2026-11-23)",
-    "correction": ""
+    "status": "corrected",
+    "checked_against": "26 CFR 54.4980B-6 Q&A-1(a), eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-26.xml?section=54.4980B-6 (version current as of 2026-11-23); eCFR versioner API version 2026-11-24 (re-read 2026-11-25)",
+    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added the beneficiary's 60-day notice duty for divorce, legal separation and loss of dependent status (Q&A-2(a)), which the tool had reported as not in the rulebook. The 60-day election rule is unchanged."
    }
   },
   {
@@ -2415,19 +2462,25 @@
     "termination_or_hours_reduction_months": 18,
     "with_disability_extension_months": 29,
     "other_events_or_second_qualifying_event_months": 36,
-    "measured_from": "date of qualifying event (or loss of coverage if plan so provides)"
+    "measured_from": "date of qualifying event (or loss of coverage if plan so provides)",
+    "disability_extension_requires": [
+     "qualifying event is a termination or reduction of hours",
+     "a qualified beneficiary is determined by the Social Security Administration (title II or XVI) to have been disabled at any time during the first 60 days of COBRA coverage",
+     "a qualified beneficiary notifies the plan administrator within 60 days after the determination is issued and before the original 18 months end"
+    ],
+    "loss_of_coverage_measurement_requires_plan_terms": true
    },
    "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
-   "citation": "IRC 4980B(f)(2)(B); 26 CFR 54.4980B-7 Q&A-4",
+   "citation": "IRC 4980B(f)(2)(B); 26 CFR 54.4980B-7 Q&A-4, Q&A-5",
    "source_location": "https://www.ecfr.gov/current/title-26/section-54.4980B-7 Q&A-4(a)-(c), Q&A-6(b) (text read 2026-11-25 through the eCFR versioner API, version as of 2026-11-20: https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-26.xml?section=54.4980B-7)",
    "verbatim_quote": "In the case of a qualifying event that is a termination of employment or reduction of hours of employment, the maximum coverage period ends 18 months after the qualifying event if there is no disability extension, and 29 months after the qualifying event if there is a disability extension.",
    "effective": "",
    "read_from_primary_text": true,
-   "notes": "",
+   "notes": "Q&A-5(c)-(d): disabled 'to have been disabled at any time during the first 60 days of COBRA continuation coverage.' and notice 'provides notice to the plan administrator of the disability determination on a date that is both within 60 days after the date the determination is issued and before the end of the original 18-month maximum coverage period that applies to the qualifying event.' Q&A-4(b)(1): 'The end of the maximum coverage period is measured from the date of the qualifying event even if the qualifying event does not result in a loss of coverage under the plan until a later date.' Measuring from the loss of coverage is allowed only if the plan provides for it (both the 30-day employer notice and the maximum period run from the loss).",
    "verification": {
-    "status": "confirmed",
+    "status": "corrected",
     "checked_against": "26 CFR 54.4980B-7 Q&A-4(a)-(c), Q&A-6(b), eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-26.xml?section=54.4980B-7 (version current as of 2026-11-23)",
-    "correction": ""
+    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added disability_extension_requires (Q&A-5(b)-(d)) and loss_of_coverage_measurement_requires_plan_terms (Q&A-4(b)). The 18/29/36-month values are unchanged."
    }
   },
   {
@@ -2437,7 +2490,8 @@
    "category": "money_amount",
    "parameters": {
     "max_percent_of_applicable_premium": 102,
-    "disability_extension_max_percent": 150
+    "disability_extension_max_percent": 150,
+    "disability_150_percent_only_if": "the coverage covers the disabled qualified beneficiary and would not be required without the disability extension"
    },
    "applies_to": "Employers with group health plans that normally employed 20 or more employees in the prior calendar year",
    "citation": "IRC 4980B(f)(2)(C); 26 CFR 54.4980B-8 Q&A-1",
@@ -2445,11 +2499,11 @@
    "verbatim_quote": "For any period of COBRA continuation coverage, a group health plan can require the payment of an amount that does not exceed 102 percent of the applicable premium for that period.",
    "effective": "",
    "read_from_primary_text": true,
-   "notes": "",
+   "notes": "Q&A-1(b): 'A group health plan is permitted to require the payment of an amount that does not exceed 150 percent of the applicable premium for any period of COBRA continuation coverage covering a disabled qualified beneficiary' (for example, whether single or family coverage) if the coverage would not be required to be made available in the absence of a disability extension.",
    "verification": {
-    "status": "confirmed",
+    "status": "corrected",
     "checked_against": "26 CFR 54.4980B-8 Q&A-1(a)-(b), eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-26.xml?section=54.4980B-8 (version current as of 2026-11-23)",
-    "correction": ""
+    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added disability_150_percent_only_if from Q&A-1(b); 102% and 150% are unchanged."
    }
   },
   {
@@ -2659,7 +2713,7 @@
   {
    "id": "hr-local-mw-san-diego-2026",
    "title": "City of San Diego minimum wage: $17.75/hour (2026)",
-   "plain_english": "For hours worked inside San Diego city limits in 2026, pay at least $17.75 an hour. This applies to any employee who works 2 or more hours in a week in the city, including crews from out-of-town companies. Small businesses are not exempt, and tips do not count toward the minimum. It does not apply to work inside a federal enclave such as a military base, where the City ordinance does not reach.",
+   "plain_english": "For hours worked inside San Diego city limits in 2026, pay at least $17.75 an hour. The rate covers any employee who works at least 2 hours inside the city in one or more calendar weeks of the year, including crews from out-of-town companies, for every hour they work inside the city. Small businesses are not exempt, and tips do not count toward the minimum. It does not apply to work inside a federal enclave such as a military base, where the City ordinance does not reach.",
    "category": "money_amount",
    "parameters": {
     "jurisdiction": "City of San Diego",
@@ -2689,25 +2743,145 @@
      "public-agency employees",
      "independent contractors",
      "persons not entitled to the California minimum wage"
-    ]
+    ],
+    "coverage_test": "employee performs at least 2 hours of work within the City in one or more calendar weeks of the year (OLSE FAQ 7); then every hour worked within the City is owed the City rate",
+    "coverage_is_not_a_per_week_test": true,
+    "communities_within_city_by_council_district": {
+     "1": [
+      "Carmel Valley",
+      "Del Mar Mesa",
+      "La Jolla",
+      "Pacific Highlands Ranch",
+      "Torrey Hills",
+      "Torrey Pines",
+      "University City"
+     ],
+     "2": [
+      "Bay Ho",
+      "Bay Park",
+      "Morena",
+      "Midway",
+      "North Bay",
+      "Mission Bay",
+      "Mission Beach",
+      "Ocean Beach",
+      "Pacific Beach",
+      "Point Loma"
+     ],
+     "3": [
+      "Balboa Park",
+      "Bankers Hill",
+      "Park West",
+      "Downtown",
+      "Golden Hill",
+      "Hillcrest",
+      "Little Italy",
+      "Middletown",
+      "Mission Hills",
+      "Normal Heights",
+      "North Park",
+      "Old Town",
+      "South Park",
+      "University Heights"
+     ],
+     "4": [
+      "Alta Vista",
+      "Broadway Heights",
+      "Chollas View",
+      "Emerald Hills",
+      "Encanto",
+      "Greater Skyline Hills",
+      "Jamacha",
+      "Lincoln Park",
+      "Lomita Village",
+      "North Bay Terrace",
+      "Oak Park",
+      "O'Farrell",
+      "Paradise Hills",
+      "Redwood Village",
+      "Rolando Park",
+      "South Bay Terrace",
+      "Valencia Park",
+      "Webster"
+     ],
+     "5": [
+      "Black Mountain Ranch",
+      "Carmel Mountain Ranch",
+      "Rancho Bernardo",
+      "Rancho Encantada",
+      "Stonebridge",
+      "Rancho Peñasquitos",
+      "Sabre Springs",
+      "San Pasqual",
+      "Scripps Ranch",
+      "Miramar Ranch North",
+      "Torrey Highlands"
+     ],
+     "6": [
+      "Clairemont Mesa",
+      "Kearny Mesa",
+      "Mira Mesa",
+      "Rancho Peñasquitos",
+      "Sorrento Valley"
+     ],
+     "7": [
+      "Allied Gardens",
+      "Del Cerro",
+      "Grantville",
+      "Linda Vista",
+      "Mission Valley",
+      "San Carlos",
+      "Serra Mesa",
+      "Tierrasanta"
+     ],
+     "8": [
+      "Barrio Logan",
+      "Egger Highlands",
+      "Grant Hill",
+      "Logan Heights",
+      "Memorial",
+      "Nestor",
+      "Ocean View Hills",
+      "Otay Mesa East",
+      "Otay Mesa West",
+      "San Ysidro",
+      "Sherman Heights",
+      "Stockton",
+      "Tijuana River Valley"
+     ],
+     "9": [
+      "Alvarado Estates",
+      "City Heights",
+      "College Area",
+      "College View Estates",
+      "El Cerrito",
+      "Kensington",
+      "Mountain View",
+      "Mt. Hope",
+      "Rolando",
+      "Southcrest",
+      "Talmadge"
+     ]
+    },
+    "communities_source": "OLSE 'City of San Diego Communities by Council District' https://www.sandiego.gov/sites/default/files/tr_communities_by_council_district.pdf; confirm a specific address on the OLSE interactive geographic boundaries map"
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code Chapter 3, Article 9, Division 1 (Earned Sick Leave and Minimum Wage Ordinance)",
-   "source_location": "https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 3, updated January 2026); https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Minimum Wage table); https://www.sandiego.gov/sites/default/files/2026-09/minimum-wage-rates_historical_09.2026.pdf",
+   "source_location": "https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 3, updated January 2026); https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Minimum Wage table); https://www.sandiego.gov/sites/default/files/2026-09/minimum-wage-rates_historical_09.2026.pdf; communities list: https://www.sandiego.gov/sites/default/files/tr_communities_by_council_district.pdf",
    "verbatim_quote": "As of January 1, 2026, the minimum wage is $17.75 per hour.",
    "effective": "2026-01-01",
    "read_from_primary_text": true,
-   "notes": "Coverage per the OLSE page: 'It is applicable to employees who perform at least two (2) hours of work in one or more calendar weeks of the year within the geographic boundaries of San Diego.' The rate history is from the OLSE historical rates PDF (September 2026).",
+   "notes": "Coverage per the OLSE page: 'It is applicable to employees who perform at least two (2) hours of work in one or more calendar weeks of the year within the geographic boundaries of San Diego.' The rate history is from the OLSE historical rates PDF (September 2026). Coverage (OLSE FAQ 7, January 2026): 'Employees who perform at least two hours of work within the geographic boundaries of the City in one or more calendar weeks of the year and who are entitled to be paid minimum wage under California law are entitled to the benefits of the Ordinance.' The OLSE page says the same: 'It is applicable to employees who perform at least two (2) hours of work in one or more calendar weeks of the year within the geographic boundaries of San Diego.' The 2027 notice words it as 'two (2) or more hours in any work week'. None of these makes coverage a week-by-week test, and the ordinance text (docs.sandiego.gov) could not be fetched, so a tool must not drop the City rate just because this week's in-city hours are under 2.",
    "verification": {
     "status": "corrected",
-    "checked_against": "OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 3, 4, 7, 8, 23, 24; OLSE Earned Sick Leave and Minimum Wage page https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (coverage and Minimum Wage table); OLSE minimum wage historical rates https://www.sandiego.gov/sites/default/files/2026-09/minimum-wage-rates_historical_09.2026.pdf",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. Added not_covered to the parameters and a federal-enclave sentence to plain_english. $17.75 (2026-01-01), the 2-hour coverage test, no small-business exemption, no tip credit and the whole rate history (10.50 to 18.35) are confirmed."
+    "checked_against": "OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 3, 4, 7, 8, 23, 24; OLSE Earned Sick Leave and Minimum Wage page https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (coverage and Minimum Wage table); OLSE minimum wage historical rates https://www.sandiego.gov/sites/default/files/2026-09/minimum-wage-rates_historical_09.2026.pdf; OLSE communities by council district PDF (fetched 2026-11-25)",
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. Added not_covered to the parameters and a federal-enclave sentence to plain_english. $17.75 (2026-01-01), the 2-hour coverage test, no small-business exemption, no tip credit and the whole rate history (10.50 to 18.35) are confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): the coverage test was stated as '2 or more hours in a week', which a tool read as a weekly on/off switch. OLSE FAQ 7 and the OLSE page say 'at least two hours ... in one or more calendar weeks of the year'. Added coverage_test and coverage_is_not_a_per_week_test; plain_english and applies_to reworded. The 2-hour figure and all rates are unchanged. Added communities_within_city_by_council_district from the OLSE communities PDF (geography only; a work address still needs the OLSE boundaries map)."
    }
   },
   {
    "id": "hr-local-mw-san-diego-2027",
    "title": "City of San Diego minimum wage: $18.35/hour from January 1, 2027",
-   "plain_english": "From January 1, 2027, pay at least $18.35 an hour for hours worked inside San Diego city limits by anyone who works 2 or more hours in a week in the city.",
+   "plain_english": "From January 1, 2027, pay at least $18.35 an hour for every hour worked inside San Diego city limits by anyone who works at least 2 hours inside the city in one or more calendar weeks of the year.",
    "category": "money_amount",
    "parameters": {
     "jurisdiction": "City of San Diego",
@@ -2723,19 +2897,21 @@
      "public-agency employees",
      "independent contractors",
      "persons not entitled to the California minimum wage"
-    ]
+    ],
+    "coverage_test": "employee performs at least 2 hours of work within the City in one or more calendar weeks of the year (OLSE FAQ 7); then every hour worked within the City is owed the City rate",
+    "coverage_is_not_a_per_week_test": true
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code Chapter 3, Article 9, Division 1",
-   "source_location": "https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (Official Notice, English section, published September 2026); state 2027 rate: https://www.dir.ca.gov/DIRNews/2026/2026-66.html",
+   "source_location": "https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (Official Notice, English section, published September 2026); state 2027 rate: https://www.dir.ca.gov/DIRNews/2026/2026-66.html; coverage test: https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 7)",
    "verbatim_quote": "Beginning January 1, 2027, employees who perform at least two (2) hours of work in one work week within the geographic boundaries of the City of San Diego must be paid wages of not less than $18.35 per hour for all hours worked within the City's geographic boundaries.",
    "effective": "2027-01-01",
    "read_from_primary_text": true,
-   "notes": "Employers must post this notice. The $18.35 rate is also in the OLSE page table and the historical rates PDF.",
+   "notes": "Employers must post this notice. The $18.35 rate is also in the OLSE page table and the historical rates PDF. Coverage (OLSE FAQ 7, January 2026): 'Employees who perform at least two hours of work within the geographic boundaries of the City in one or more calendar weeks of the year and who are entitled to be paid minimum wage under California law are entitled to the benefits of the Ordinance.' The OLSE page says the same: 'It is applicable to employees who perform at least two (2) hours of work in one or more calendar weeks of the year within the geographic boundaries of San Diego.' The 2027 notice words it as 'two (2) or more hours in any work week'. None of these makes coverage a week-by-week test, and the ordinance text (docs.sandiego.gov) could not be fetched, so a tool must not drop the City rate just because this week's in-city hours are under 2.",
    "verification": {
     "status": "corrected",
-    "checked_against": "OLSE 2027 minimum wage notice https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (English section); OLSE Earned Sick Leave and Minimum Wage page https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Minimum Wage table); OLSE minimum wage historical rates https://www.sandiego.gov/sites/default/files/2026-09/minimum-wage-rates_historical_09.2026.pdf; OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 23, 24; DIR News Release 2026-66 https://www.dir.ca.gov/DIRNews/2026/2026-66.html (dated Aug. 13, 2026)",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. Added not_covered. source_location now also names News Release 2026-66 for state_rate_2027_usd ($17.40). $18.35 from 2027-01-01, the 2-hour test, adult and minor coverage and no tip credit are confirmed."
+    "checked_against": "OLSE 2027 minimum wage notice https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (English section); OLSE Earned Sick Leave and Minimum Wage page https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Minimum Wage table); OLSE minimum wage historical rates https://www.sandiego.gov/sites/default/files/2026-09/minimum-wage-rates_historical_09.2026.pdf; OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 23, 24; DIR News Release 2026-66 https://www.dir.ca.gov/DIRNews/2026/2026-66.html (dated Aug. 13, 2026); OLSE communities by council district PDF (fetched 2026-11-25)",
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. Added not_covered. source_location now also names News Release 2026-66 for state_rate_2027_usd ($17.40). $18.35 from 2027-01-01, the 2-hour test, adult and minor coverage and no tip credit are confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): the coverage test was stated as '2 or more hours in a week', which a tool read as a weekly on/off switch. OLSE FAQ 7 and the OLSE page say 'at least two hours ... in one or more calendar weeks of the year'. Added coverage_test and coverage_is_not_a_per_week_test; plain_english and applies_to reworded. The 2-hour figure and all rates are unchanged."
    }
   },
   {
@@ -2757,7 +2933,7 @@
     "pay_rate_when_used": "employee's regular rate at time of use",
     "state_law_preemption_guidance": "follow state law where more generous (e.g., reinstate balance if rehired within 1 year; payment by next regular payday)"
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1 (§39.0105); OLSE SB 616 notice (Dec. 2023)",
    "source_location": "https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Earned Sick Leave section); https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQs 9-18); https://www.sandiego.gov/sites/default/files/2023-12/sb-616-olse-notice.pdf",
    "verbatim_quote": "Employees must accrue no less than one (1) hour of earned sick leave for every thirty (30) hours worked within the geographic boundaries of the City; employers may cap the total accrual of sick leave at eighty (80) hours.",
@@ -2767,7 +2943,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "OLSE Earned Sick Leave and Minimum Wage page https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Earned Sick Leave); OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 8, 9, 12-15, 18, 23, 24; OLSE SB 616 notice https://www.sandiego.gov/sites/default/files/2023-12/sb-616-olse-notice.pdf (December 2023)",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. 1 hour per 30, 80-hour accrual cap, 40-hour use cap, 40-hour front-load with no proration, carryover, day-one accrual, regular-rate pay and the SB 616 guidance are all confirmed."
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. 1 hour per 30, 80-hour accrual cap, 40-hour use cap, 40-hour front-load with no proration, carryover, day-one accrual, regular-rate pay and the SB 616 guidance are all confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): applies_to reworded to the OLSE FAQ 7 coverage test ('in one or more calendar weeks of the year'); no value changed."
    }
   },
   {
@@ -2779,7 +2955,7 @@
     "accrual_begins": "start date",
     "use_may_be_limited_until_day": 91
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1; OLSE FAQ 9",
    "source_location": "https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 9)",
    "verbatim_quote": "Employers may limit use of accrued earned sick leave until the employee’s 91st day of employment with the employer.",
@@ -2789,7 +2965,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQ 9; OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 8, 23, 24",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The 91st-day rule is confirmed."
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The 91st-day rule is confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): applies_to reworded to the OLSE FAQ 7 coverage test ('in one or more calendar weeks of the year'); no value changed."
    }
   },
   {
@@ -2802,7 +2978,7 @@
     "unforeseeable": "as soon as practicable",
     "authority": "SDMC 39.0106(b)"
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code §39.0106(b); OLSE SB 616 notice (Dec. 2023)",
    "source_location": "https://www.sandiego.gov/sites/default/files/2023-12/sb-616-olse-notice.pdf (table row for Labor Code 246(m) / SDMC 39.0106(b))",
    "verbatim_quote": "Section 39.0106(b): Employers may require advance notice of the need to use paid sick leave, not to exceed 7 days.",
@@ -2812,7 +2988,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "OLSE SB 616 notice https://www.sandiego.gov/sites/default/files/2023-12/sb-616-olse-notice.pdf (December 2023) (Labor Code 246(m) / SDMC 39.0106(b) row); OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 8, 23, 24",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The 7-day maximum is confirmed."
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The 7-day maximum is confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): applies_to reworded to the OLSE FAQ 7 coverage test ('in one or more calendar weeks of the year'); no value changed."
    }
   },
   {
@@ -2839,7 +3015,7 @@
      "child or parent of spouse or domestic partner"
     ]
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code §39.0106(a)",
    "source_location": "https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Safe Time section)",
    "verbatim_quote": "Safe Time means necessary time away from work due to domestic violence, sexual assault, or stalking.",
@@ -2849,7 +3025,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "OLSE Earned Sick Leave and Minimum Wage page https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Safe Time); OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 8, 23, 24",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The purposes and family-member list are confirmed."
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The purposes and family-member list are confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): applies_to reworded to the OLSE FAQ 7 coverage test ('in one or more calendar weeks of the year'); no value changed."
    }
   },
   {
@@ -2877,7 +3053,7 @@
      "Tagalog"
     ]
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1",
    "source_location": "https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Notice and Posting section)",
    "verbatim_quote": "Employers must post in a conspicuous place at any workplace or job site where any employee works, the notices published each year by the City.",
@@ -2887,7 +3063,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "OLSE Earned Sick Leave and Minimum Wage page https://www.sandiego.gov/olse/minimum-wage/earned-sick-leave (Notice and Posting); OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQ 6; OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 8, 23, 24",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The posting, hire-notice contents, electronic-delivery option and five languages are confirmed."
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The posting, hire-notice contents, electronic-delivery option and five languages are confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): applies_to reworded to the OLSE FAQ 7 coverage test ('in one or more calendar weeks of the year'); no value changed."
    }
   },
   {
@@ -2906,7 +3082,7 @@
     "provide_to_employees": "on a regular basis",
     "enforcement_access": true
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code §39.0109; OLSE FAQ 19",
    "source_location": "https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (FAQ 19)",
    "verbatim_quote": "All employers must maintain contemporaneous written or electronic records documenting employees’ wages paid and accrual and use of earned sick leave. These records must be retained for at least three (3) years.",
@@ -2916,7 +3092,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQ 19; OLSE SB 616 notice https://www.sandiego.gov/sites/default/files/2023-12/sb-616-olse-notice.pdf (December 2023) (Section 39.0109); OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 8, 23, 24",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The 3-year retention, the contents and the access duties are confirmed."
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The 3-year retention, the contents and the access duties are confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): applies_to reworded to the OLSE FAQ 7 coverage test ('in one or more calendar weeks of the year'); no value changed."
    }
   },
   {
@@ -2935,7 +3111,7 @@
     "private_right_of_action": true,
     "retaliation_prohibited": true
    },
-   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours in a week within the City of San Diego. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
+   "applies_to": "Employers of any size, for employees entitled to the California minimum wage who work at least 2 hours within the City of San Diego in one or more calendar weeks of the year. The Ordinance does not cover work inside a federal enclave such as a military base, public-agency employees, or independent contractors (OLSE FAQs 7, 8, 23, 24)",
    "citation": "San Diego Municipal Code Ch. 3, Art. 9, Div. 1",
    "source_location": "https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (Official Notice, English section)",
    "verbatim_quote": "The City is entitled to all legal and equitable relief to remedy any violation of the Ordinance, including the ability to award penalties of up to $1,000 per violation, back wages, liquidated damages, reinstatement and other injunctive relief.",
@@ -2945,7 +3121,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "OLSE 2027 minimum wage notice https://www.sandiego.gov/sites/default/files/2026-09/2027-minimum-wage-notice-5-languages-sept-2026.pdf (English section); OLSE ordinance FAQs https://www.sandiego.gov/sites/default/files/mwo-faqs.pdf (updated January 2026) FAQs 7, 23, 24",
-    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The $1,000 per violation and the other remedies are confirmed."
+    "correction": "applies_to narrowed to match OLSE FAQs 7, 8, 23 and 24 (mwo-faqs.pdf, January 2026). The Ordinance covers only employees entitled to the California minimum wage (so exempt salaried staff are outside it). It does not apply to work inside a federal enclave such as a military base, which matters for San Diego construction, or to public-agency employees, and it excludes independent contractors. The $1,000 per violation and the other remedies are confirmed. Adversarial review 2026-11-25 (sources re-fetched that day): applies_to reworded to the OLSE FAQ 7 coverage test ('in one or more calendar weeks of the year'); no value changed."
    }
   },
   {
@@ -2980,7 +3156,7 @@
   {
    "id": "hr-sd-traffic-control-worker-wage",
    "title": "San Diego traffic control (flagger) wage under City permits: $76.87/hour total ($49.20 base + $27.67 benefits)",
-   "plain_english": "Flaggers and other traffic control workers on a City of San Diego traffic control permit must be paid at least the County prevailing wage for Laborer Group 1. From October 9, 2026 to June 30, 2027 that is $49.20 base plus $27.67 in benefits per hour, $101.47 for overtime and Saturdays, and $126.07 for Sundays and holidays. The rate in effect when the permit is issued applies for the life of the permit.",
+   "plain_english": "Flaggers and other traffic control workers on a City of San Diego traffic control permit must be paid at least the County prevailing wage for Laborer Group 1. For permits issued from October 9, 2026 to June 30, 2027 that is $49.20 base plus $27.67 in benefits per hour ($76.87), $101.47 for overtime and Saturdays, and $126.07 for Sundays and holidays. The rate in effect when the permit is issued, including its predetermined increase, applies for the life of the permit: from July 1, 2027 those permits owe $3.66 more per hour ($80.53 total), split between wages and benefits, and no further adjustments. Benefits not paid into plans must be paid as cash.",
    "category": "money_amount",
    "parameters": {
     "jurisdiction": "City of San Diego",
@@ -2996,7 +3172,15 @@
     "predetermined_increase": {
      "effective": "2027-07-01",
      "usd_per_hour": 3.66,
-     "allocation": "wages and/or fringes"
+     "allocation": "wages and/or fringes",
+     "applies_to_permits_issued": {
+      "start": "2026-10-09",
+      "end": "2027-06-30"
+     },
+     "applies_from_work_date": "2027-07-01",
+     "derived_total_hourly_usd": 80.53,
+     "min_basic_hourly_usd_after_increase": 49.2,
+     "max_employer_payments_usd_after_increase": 31.33
     },
     "rate_locked_at": "date the City issues the traffic control permit, for the permit's duration",
     "basis": "DIR prevailing wage, Laborer: Building Construction Group 1, San Diego County",
@@ -3030,7 +3214,10 @@
       "employer_payments": 27.67,
       "total": 76.87
      }
-    ]
+    ],
+    "no_further_adjustments_for_permits_issued_in_period": true,
+    "rate_updates": "rates follow the DIR Laborer Group 1 determination: new DIR rates take effect 10 days after issue, typically issued each February and August; a permit issued later may carry a different rate",
+    "employer_payments_may_be_paid_as_cash": true
    },
    "applies_to": "Employers performing traffic control work under a City of San Diego traffic control permit (SDMC 129.0742)",
    "citation": "San Diego Municipal Code Chapter 3, Article 10, Division 1 (Traffic Control Worker Minimum Wage Ordinance), as amended by O-21876",
@@ -3038,11 +3225,11 @@
    "verbatim_quote": "The applicable wage rate, including any predetermined increase, is determined as of the date the City issues a traffic control permit and remains in effect for the duration of the permit.",
    "effective": "2026-10-09",
    "read_from_primary_text": true,
-   "notes": "The rates come from the OLSE page and the November 2026 notice. The holiday list on the OLSE page includes Labor Day, but the historical-rates PDF omits it; the parameters follow the OLSE page. The notice says: 'Effective July 1, 2027, there will be an increase of $3.66 to be allocated to wages and/or fringes.' The ordinance took effect October 18, 2023.",
+   "notes": "The rates come from the OLSE page and the November 2026 notice. The holiday list on the OLSE page includes Labor Day, but the historical-rates PDF omits it; the parameters follow the OLSE page. The notice says: 'Effective July 1, 2027, there will be an increase of $3.66 to be allocated to wages and/or fringes.' The ordinance took effect October 18, 2023. Notice (Rev. 11/3/26): 'Effective July 1, 2027, there will be an increase of $3.66 to be allocated to wages and/or fringes. No further wage adjustments will apply to permits issued during this timeframe.' Historical-rates PDF (revised November 2026): 'Wage rates are effective until the DIR issues new rates, which take effect ten (10) days after the issue date. New rates are typically issued each February and August.' and 'Employer Payments may be provided as direct compensation to the employee (added to the hourly wage) or as contributions to qualifying programs or benefit plans for employees and their dependents.' Derived, not printed: 76.87 + 3.66 = 80.53. Because the $3.66 is an increase 'allocated to wages and/or fringes', the basic rate after it is at least $49.20 and the employer payments at most 27.67 + 3.66 = $31.33; the exact split is not published. The OLSE has not published a rate table for permits issued after 2027-06-30.",
    "verification": {
-    "status": "confirmed",
+    "status": "corrected",
     "checked_against": "OLSE TCW notice https://www.sandiego.gov/sites/default/files/2026-11/traffic-control-worker-ordinance-notice.pdf (Rev. 11/3/26); OLSE Traffic Control Worker page https://www.sandiego.gov/olse/minimum-wage/traffic-control-worker (rate table and holidays); OLSE TCW historical rates https://www.sandiego.gov/sites/default/files/2025-06/traffic-control-worker-wage-rates-historical.pdf (revised November 2026)",
-    "correction": "No parameter, citation or scope change. All rates match: 49.20 + 27.67 = 76.87; OT/Sat 101.47; Sun/holiday 126.07; prior periods 69.68 and 73.31; the $3.66 increase on 2027-07-01; the rate locked at permit issuance; the Laborer Group 1 basis. The holiday-list difference (Labor Day) between the page and the PDF is disclosed in the notes."
+    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): the predetermined increase was described only by its date, and the tool read it as a rate for permits issued from 2027-07-01. The notice says the locked rate includes 'any predetermined increase' and that 'No further wage adjustments will apply to permits issued during this timeframe', so permits issued 2026-10-09 to 2027-06-30 owe the $3.66 from 2027-07-01. Added applies_to_permits_issued, applies_from_work_date, the derived 80.53 total and its split bounds, no_further_adjustments_for_permits_issued_in_period, rate_updates and employer_payments_may_be_paid_as_cash; plain_english rewritten. Every published rate is unchanged."
    }
   },
   {
@@ -3245,6 +3432,7 @@
    "hr-political-activity-protected: notes page dates made exact (p. 26-2 is August 2017)",
    "hr-no-blacklisting-truthful-reference: notes page date December 2020 -> August 2017 (manual p. 26-2)"
   ],
-  "rulebook_note": "Not rebuilt by this verifier. The rulebook was already stale before this file was written (scripts/build_rulebook.py --check reported 188 added osha2- rules from another verified pack). This file adds 111 rules to the next build: confirmed and corrected rules count as verified; the unverifiable ones are carried with status 'unverifiable'."
+  "rulebook_note": "Not rebuilt by this verifier. The rulebook was already stale before this file was written (scripts/build_rulebook.py --check reported 188 added osha2- rules from another verified pack). This file adds 111 rules to the next build: confirmed and corrected rules count as verified; the unverifiable ones are carried with status 'unverifiable'.",
+  "adversarial_review": "2026-11-25 legal-accuracy review of tradecomply/hr_compliance.py against sources re-fetched that day (sandiego.gov OLSE pages and PDFs, dir.ca.gov DLSE list of retaliation laws, eCFR versioner API version 2026-11-24 for 26 CFR 54.4980B-2/-4/-6/-7/-8, 54.4980H-1/-2/-4, 301.6056-1, 301.6011-2, 301.7503-1 and 29 CFR 2590.606-1/-2/-4, 825.104/.110/.300). docs.sandiego.gov (ordinance text), irs.gov, govinfo.gov, calcivilrights.ca.gov and leginfo.legislature.ca.gov were not reachable or are bot-protected and were not read. Changes: San Diego minimum wage coverage test reworded to OLSE FAQ 7 ('in one or more calendar weeks of the year') on the two rate rules and the seven ordinance rules sharing that applies_to; OLSE communities list added; traffic control predetermined increase tied to permits issued 2026-10-09..2027-06-30 per the Rev. 11/3/26 notice; COBRA beneficiary 60-day notice (54.4980B-6 Q&A-2), disability-extension conditions (54.4980B-7 Q&A-5) and the 150% condition (54.4980B-8 Q&A-1(b)) added; crime victim leave gains the DLSE list's any-size 230(c) entry (still unverifiable); new rule hr-cobra-qualifying-event-loss-of-coverage (54.4980B-4). No published rate, threshold or date was changed."
  }
 }

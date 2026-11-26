@@ -5,16 +5,18 @@ research/web_federal-works.verified.json (rule ids "fed-...").
                                  federal rules apply and which do not at this value (the threshold math for each):
                                  Davis-Bacon, certified payroll, CWHSSA overtime, Miller Act or 2 CFR 200.326 bonds with
                                  dollar amounts, SAM / E-Verify, subcontracting plan and self-performance, Buy
-                                 American / BABA / FHWA Buy America, DBE (with the 2025-2026 pause), prompt payment,
-                                 required clauses, California dual coverage, dated key steps and one concrete next step
+                                 American / BABA / FHWA and FTA Buy America, DBE (with the 2025-2026 pause), prompt
+                                 payment, required clauses, California dual coverage, dated key steps and one concrete
+                                 next step
   davis_bacon_vs_ca_prevailing   the SAM.gov wage determination and the DIR determination for one classification
                                  (+ what you pay) -> the cash floor and total package to pay, overtime minimums and the
                                  shortfall
   federal_overtime_exposure      a timesheet -> CWHSSA overtime owed and liquidated damages per worker per day, plus the
                                  California Labor Code 1813 penalty on dual-coverage jobs
-  buy_america_check              one product or material -> does it meet BABA (2 CFR 184), FAR Buy American (52.225-9)
-                                 or FHWA Buy America (23 CFR 635.410), with the domestic-content math and the
-                                 waiver / exception test
+  buy_america_check              one product or material -> does it meet BABA (2 CFR 184), FAR Buy American (52.225-9),
+                                 FHWA Buy America (23 CFR 635.410) or FTA Buy America (49 CFR 661.5), with the
+                                 domestic-content math and the waiver / exception test (FAA airport terms are not in
+                                 the rulebook, so FAA is refused rather than tested as BABA)
 
 Every legal number, date and threshold is read from the rulebook with core.rule(id).param(key) at call time, and every
 rule a result relies on is cited through core.Result.cite(), so `verified` is True only when all of them are verified.
@@ -23,8 +25,12 @@ subcontracting plan, self-performance clause, anti-lobbying certification) are p
 current and prior values the rulebook carries. The one unverifiable pack rule (EO 14026 minimum wage status) is shown
 only when include_unverified is true and then makes the result verified=False.
 
+State agencies (Caltrans, DGS, DWR, ...) procure under their own rules (2 CFR 200.317), so the 2 CFR 200.326 bond
+minimums are applied only to local agencies' contracts.
+
 California rules from other packs used here: 8 CCR 16001(b) dual coverage (in this pack), the LC 1815 8/40 overtime
-rule, the LC 1813 penalty, LC 1771.4 eCPR uploads and B&P 7108.5 prompt payment.
+rule, the LC 1813 penalty, LC 1771.4 eCPR uploads, and B&P 7108.5 prompt payment (PCC 10262 instead when the prime
+contract is a California state agency's, e.g. Caltrans).
 
 Not legal values (so not in the rulebook): the spellings that map a user's words onto a funding source, agency, work
 type or product category, and the 14-day "due soon" display window.
@@ -92,6 +98,9 @@ BABA, BABA_IRON, BABA_MFG, BABA_CM, BABA_EXCL, BABA_WAIVER, BABA_STAFFORD = (
     "fed-baba-waivers-25pct-comment-periods", "fed-baba-stafford-act-exemption")
 DOM_PREF, FAR_BA, TELECOM = ("fed-domestic-preference-200-322", "fed-far-buy-american-construction-65pct",
                              "fed-telecom-889-grant-prohibition")
+FTA_BA = "fed-fta-buy-america-all-us-components"
+# 2 CFR 200.317: a State agency procures under its own rules (no 2 CFR 200.326 bond minimums)
+STATE_PROC = "fed-state-procurement-own-policies-200-317"
 # Federal-aid highway (23 CFR 635, former 633)
 FHWA_STEEL, FHWA_MFG, FHWA_ALT, FHWA_30, FHWA_SUBS, FHWA_1273 = (
     "fed-fhwa-buy-america-steel-minimal-use", "fed-fhwa-buy-america-manufactured-products",
@@ -113,6 +122,7 @@ CA_HIGHER, CA_BASIC, CA_REPORT = ("fed-ca-dual-coverage-pay-higher", "fed-ca-dua
 # California rules from other packs
 ECPR, BP7108, PW_OT, PEN_1813 = ("ecpr-monthly-submission", "bp-7108-5-pay-subs-7-days",
                                  "pw-overtime-8-40-time-and-half", "penalty-1813-overtime")
+PCC_10262 = "state-contract-pay-subs-7-days"
 
 RULE_IDS = (DBA, DBA_PAY, DBA_POST, DBA_CONFORM, DBA_OPLAW, DBA_RECORDS, DBA_DOCS, DBA_CPR, DBA_WH347, DBA_SOC,
             DBA_APPR, DBA_APPR_RATIO, DBA_FLOW, SF1413, DBA_ELIG, DBA_DEBAR, DBA_MATERIAL, DBA_DEMO, DBA_WORK,
@@ -120,10 +130,11 @@ RULE_IDS = (DBA, DBA_PAY, DBA_POST, DBA_CONFORM, DBA_OPLAW, DBA_RECORDS, DBA_DOC
             COPE_7, COPE_2000, CWH_OT, CWH_LD, CWH_FAR, CWH_FLOW, CWH_SAFETY, MILLER, MILLER_ALT, BONDS_NTP, BID_GUAR,
             BOND_WAIVER, BOND_COPY, SURETY, ASSIST_BOND, FAR_THRESH, NOT_ADJUSTED, SUBK_PLAN, SELF_PERF, EV_PRIME,
             EV_ENROLL, EV_SUB, SAM_REG, SAM_ANNUAL, UEI, SAM_EXCL, PP_SUBS, PP_INTEREST, PP_RETAINAGE, GOV_RET, BABA,
-            BABA_IRON, BABA_MFG, BABA_CM, BABA_EXCL, BABA_WAIVER, BABA_STAFFORD, DOM_PREF, FAR_BA, TELECOM, FHWA_STEEL,
+            BABA_IRON, BABA_MFG, BABA_CM, BABA_EXCL, BABA_WAIVER, BABA_STAFFORD, DOM_PREF, FAR_BA, TELECOM, FTA_BA,
+            STATE_PROC, FHWA_STEEL,
             FHWA_MFG, FHWA_ALT, FHWA_30, FHWA_SUBS, FHWA_1273, DBE_PAY, DBE_RET, DBE_ASSURE, DBE_GOALS, DBE_REEVAL,
             DBE_GFE, DBE_TERM, DBE_COUNT, DBE_BIDDERS, APPX_II, BYRD, EO14026, EO13706, CA_HIGHER, CA_BASIC, CA_REPORT,
-            ECPR, BP7108, PW_OT, PEN_1813)
+            ECPR, BP7108, PW_OT, PEN_1813, PCC_10262)
 
 # Pack rules no tool computes with, and why. Every other "fed-" rule is in RULE_IDS.
 NOT_USED = {
@@ -174,6 +185,7 @@ NOT_USED = {
 }
 
 DUE_SOON_DAYS = 14          # display window for key dates, not a legal number
+MAX_INPUT = 1e12            # sanity limit on any dollar, rate or hour input (a typo guard, not a legal number)
 
 FundingSource = Literal["direct_federal", "federal_aid_highway", "federal_transit", "federal_airport",
                         "federal_grant", "none"]
@@ -211,6 +223,12 @@ def _usd(x: float) -> str:
 
 def _n(x: float) -> str:
     return f"{round(x, 4):g}"
+
+
+def _pct(part: float, whole: float) -> float:
+    """part / whole as a percent, rounded to 9 places so binary float noise cannot flip a threshold test:
+    5,500 / 10,000 is exactly 55%, not 55.00000000000001% (which would pass a "more than 55%" test)."""
+    return round(part / whole * 100, 9)
 
 
 def _iso_param(rule_id: str, key: str) -> date:
@@ -276,7 +294,31 @@ def _number(value, field: str, *, allow_none: bool = False, positive: bool = Fal
         raise ValueError(f"{field} must be a number like 480000 or $480,000, got {value!r}") from None
     if not math.isfinite(x) or x < 0 or (positive and x == 0):
         raise ValueError(f"{field} must be a finite number {'above' if positive else 'of at least'} 0, got {value!r}")
+    if x > MAX_INPUT:
+        raise ValueError(f"{field} = {value!r} is not a realistic figure (over {MAX_INPUT:,.0f}); check the amount")
     return x
+
+
+_TRUE, _FALSE = ("true", "t", "yes", "y", "1"), ("false", "f", "no", "n", "0")
+
+
+def _flag(value, field: str, *, allow_none: bool = False) -> Optional[bool]:
+    """True/False from a bool or the words a form sends ('false', 'No', '0'); None stays None when allowed.
+    bool('false') is True in Python, so a string is never passed through bool()."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        if allow_none:
+            return None
+        raise ValueError(f"{field} must be true or false")
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    t = _words(value)
+    if t in _TRUE:
+        return True
+    if t in _FALSE:
+        return False
+    raise ValueError(f"{field} must be true or false, got {value!r}")
 
 
 def _on(today: date, rule_id: str, now_key: str, prior_key: str, eff_key: str) -> tuple[float, Optional[str]]:
@@ -313,11 +355,20 @@ _FUNDING_ALIASES = {
 _AMBIGUOUS_FUNDING = ("federal", "federally funded", "federal funds", "federal money", "fed", "federal funding",
                       "federal project", "yes")
 # Agencies that make a contract direct federal (matched as whole words, checked before California bodies).
+# Bare "army" and "federal" are not on the list: 'Salvation Army' and 'Federal Express' are not federal agencies.
 _FEDERAL_AGENCY_WORDS = ("usace", "army corps", "corps of engineers", "gsa", "general services administration",
                          "veterans affairs", "va", "navy", "navfac", "national park service", "nps", "air force",
-                         "usaf", "army", "marine corps", "usmc", "department of defense", "dod",
-                         "bureau of reclamation", "usbr", "forest service", "usfs", "homeland security", "dhs",
-                         "cbp", "coast guard", "uscg", "department of energy", "federal", "united states")
+                         "usaf", "us army", "u s army", "department of the army", "army reserve", "marine corps",
+                         "usmc", "department of defense", "dod", "bureau of reclamation", "usbr", "forest service",
+                         "usfs", "homeland security", "dhs", "cbp", "coast guard", "uscg", "department of energy",
+                         "united states", "naval", "department of the interior", "bureau of land management", "blm",
+                         "nasa", "federal government", "federal aviation administration",
+                         "federal highway administration", "federal transit administration", "federal lands",
+                         "federal emergency management agency", "federal bureau of prisons", "bureau of prisons",
+                         "federal agency")
+_STRONG_FEDERAL_WORDS = ("usace", "army corps", "corps of engineers", "gsa", "general services administration",
+                         "navfac", "naval", "united states", "us army", "us navy", "u s army", "u s navy",
+                         "federal government", "federal agency")
 _CA_PUBLIC_WORDS = ("caltrans", "california", "state of ca", "city", "county", "town", "school", "schools",
                     "unified", "usd", "district", "college", "university", "uc", "csu", "cal state", "port", "metro",
                     "transit", "authority", "jpa", "water", "sanitation", "housing authority", "commission",
@@ -337,6 +388,11 @@ _CA_CITIES = {
     "ontario": "Ontario", "elk grove": "Elk Grove", "corona": "Corona", "berkeley": "Berkeley",
     "santa rosa": "Santa Rosa", "vista": "Vista", "national city": "National City",
 }
+# California state agencies, whose contracts fall under the State Contract Act (PCC 10262 prompt payment). UC and
+# CSU are left out: they contract under their own Public Contract Code parts.
+_CA_STATE_AGENCY_WORDS = ("caltrans", "california department of transportation", "state of california", "state of ca",
+                          "dgs", "department of general services", "dwr", "department of water resources",
+                          "california department", "calvet", "cal fire")
 AgencyKind = Literal["federal_agency", "california_public_agency", "other", "not_given"]
 
 
@@ -361,6 +417,11 @@ def normalize_funding(value) -> str:
             return key
     if _has(t, "grant", "loan"):
         return "federal_grant"
+    if classify_agency(value)[0] == "california_public_agency":
+        raise ValueError(f"funding_source {value!r} names an agency, not where the money comes from. Put the agency "
+                         "in awarding_agency and give the money: federal_aid_highway (FHWA), federal_transit (FTA), "
+                         "federal_airport (FAA), federal_grant (HUD, EPA, FEMA, ...) or none (state or local money "
+                         "only).")
     raise ValueError(f"Unknown funding_source {value!r}. Use one of: {allowed} (aliases such as FHWA, FTA, FAA, "
                      "USACE, GSA, VA, HUD, CDBG, EPA SRF and FEMA are understood).")
 
@@ -374,7 +435,13 @@ def classify_agency(value) -> tuple[AgencyKind, Optional[str]]:
         return "not_given", None
     t = re.sub(r"(?: (?:ca|calif|california))+$", "", t).strip() or t
     t = re.sub(r"^the ", "", t)
-    if _has(t, *_FEDERAL_AGENCY_WORDS) or t.startswith("us "):
+    federal = _has(t, *_FEDERAL_AGENCY_WORDS) or t.startswith(("us ", "u s "))
+    # 'California Department of Veterans Affairs' (CalVet) is a state agency even though 'veterans affairs' is a
+    # federal name; only an unmistakably federal word ('United States', 'USACE', 'GSA', ...) beats 'California'.
+    if federal and _has(t, "california", "calvet", "caltrans", "state of ca") and not (
+            _has(t, *_STRONG_FEDERAL_WORDS) or t.startswith(("us ", "u s "))):
+        federal = False
+    if federal:
         return "federal_agency", raw
     bare = re.sub(r"^(?:city|town) of ", "", t)
     bare = re.sub(r" city$", "", bare) if bare not in ("national city",) else bare
@@ -383,6 +450,12 @@ def classify_agency(value) -> tuple[AgencyKind, Optional[str]]:
     if _has(t, *_CA_PUBLIC_WORDS):
         return "california_public_agency", raw
     return "other", raw
+
+
+def _is_state_agency(name) -> bool:
+    """'Caltrans District 11', 'State of California DGS' -> True; 'City of San Diego', 'UC San Diego' -> False."""
+    t = _words(name)
+    return bool(t) and classify_agency(name)[0] == "california_public_agency" and _has(t, *_CA_STATE_AGENCY_WORDS)
 
 
 WorkType = Literal["construction", "alteration", "repair", "painting_decorating", "demolition", "installation",
@@ -549,7 +622,7 @@ def _sec_davis_bacon(ctx: _Ctx, j: _Job) -> Optional[bool]:
         if j.work == "demolition":
             why += f" Demolition is covered when: {'; '.join(P(DBA_DEMO, 'covered_when'))}."
             ids.append(DBA_DEMO)
-    elif j.dbra is False:
+    elif j.fund == "federal_grant" and j.dbra is False:
         applies, why = False, ("You said the funding program is not a Davis-Bacon Related Act, so the federal wage "
                                "rules do not attach (confirm this in writing with the agency).")
     elif j.work == "demolition":
@@ -595,8 +668,9 @@ def _sec_davis_bacon(ctx: _Ctx, j: _Job) -> Optional[bool]:
     ctx.req("Payroll", "Weekly certified payroll and Statement of Compliance", applies,
             (f"Required for every week covered work is done; the Copeland Act weekly statement applies to contracts "
              f"over {_usd(P(COPE_2000, 'exempt_contract_value_usd_at_or_below'))}."),
-            ("Each week, submit a certified payroll (Optional Form WH-347 or any format with the same data; show "
-             "only an identifying number such as the last 4 digits of the SSN) signed with the Statement of "
+            ("Each week, submit a certified payroll (Optional Form WH-347 or any format with the same data; "
+             f"identify workers by an {P(DBA_WH347, 'worker_identifier')}, never the full SSN or home address) "
+             "signed with the Statement of "
              f"Compliance, within {P(COPE_7, 'days_after_regular_payment_date')} days after the regular payday, to "
              "the agency (on federally assisted jobs, to the city, county, Caltrans or other agency that holds the "
              "records). " + ("You must collect and submit every subcontractor's payrolls."
@@ -648,9 +722,18 @@ def _sec_overtime(ctx: _Ctx, j: _Job) -> None:
         applies = v > thr
         why = (f"{_usd(v)} {'>' if applies else 'is not over'} {_usd(thr)} (the DOL figure for federally assisted "
                "contracts).")
-        ids = [CWH_OT, CWH_LD, CWH_FLOW, OT_BASE] + ([CWH_SAFETY] if applies else [])
+        if applies and j.fund == "federal_grant" and j.dbra is not True and P(CWH_OT, "clause_inserted_in_addition_"
+                                                                                     "to_dba_clauses"):
+            # 29 CFR 5.5(b): the CWHSSA clauses go into assisted contracts "subject to the overtime provisions" of
+            # CWHSSA, "in addition to" the Davis-Bacon clauses, so a grant's coverage follows its Davis-Bacon status.
+            applies = None
+            why += (" On grant money the CWHSSA clause goes in alongside the Davis-Bacon clauses (29 CFR 5.5(b)), so "
+                    + ("confirm with the agency whether this contract carries it even though the program is not a "
+                       "Davis-Bacon Related Act." if j.dbra is False else
+                       "it follows the Davis-Bacon answer above; plan as covered until the agency says otherwise."))
+        ids = [CWH_OT, CWH_LD, CWH_FLOW, OT_BASE] + ([CWH_SAFETY] if applies is not False else [])
     what = ""
-    if applies:
+    if applies is not False:
         what = (f"Pay {_n(mult)}x the basic rate (never below the wage determination basic rate; fringes stay at "
                 f"straight time) for every hour over {wk} in a workweek, for every laborer and mechanic including "
                 f"guards and watchpersons. A violation costs the unpaid overtime plus {_usd(ld)} per worker per "
@@ -658,8 +741,9 @@ def _sec_overtime(ctx: _Ctx, j: _Job) -> None:
                 "federal_overtime_exposure to check a timesheet.")
         if j.fund != "direct_federal":
             what += (" No laborer or mechanic may work in unsanitary, hazardous or dangerous conditions "
-                     "(40 U.S.C. 3704).")
-    ctx.req("Overtime", f"CWHSSA weekly overtime (over {wk} hours)", applies, why, what, ids if applies else ids[:1])
+                     f"({P(CWH_SAFETY, 'statute')}).")
+    ctx.req("Overtime", f"CWHSSA weekly overtime (over {wk} hours)", applies, why, what,
+            ids if applies is not False else ids[:1])
 
 
 def _sec_california(ctx: _Ctx, j: _Job) -> Optional[bool]:
@@ -774,16 +858,22 @@ def _sec_bonds(ctx: _Ctx, j: _Job) -> BondPlan:
                     f"{_usd(v)} is not more than {_usd(lo)}: no Miller Act bond or payment protection is required.",
                     "", [MILLER_ALT])
         return BondPlan(regime="none")
-    # federally assisted: 2 CFR 200.326 federal minimum
-    far_sat, hist = _on(ctx.today, FAR_THRESH, "simplified_acquisition_threshold_usd",
-                        "simplified_acquisition_threshold_prior_usd", "effective")
-    if j.sat is not None and j.sat > far_sat:
-        raise ValueError(f"recipient_sat_usd ({_usd(j.sat)}) cannot exceed the FAR simplified acquisition threshold "
-                         f"({_usd(far_sat)} on {ctx.today}): 2 CFR 200.1 caps an agency's own threshold at the FAR "
-                         "figure")
-    sat = far_sat if j.sat is None else j.sat
-    sat_src = (f"the agency's own threshold (at most the FAR {_usd(far_sat)})" if j.sat is not None else
-               f"the FAR figure ({hist}); the agency may set a lower one")
+    # federally assisted: 2 CFR 200.326 federal minimum, over the simplified acquisition threshold, except on a
+    # State agency's own contract: 2 CFR 200.317 has the State follow its own procurement policies.
+    if _is_state_agency(j.agency) and P(STATE_PROC, "state_follows_own_procurement_policies"):
+        if j.is_prime:
+            ctx.req("Bonds", "Federal minimum bonding for assisted construction", False,
+                    (f"{j.agency} is a California state agency: under 2 CFR 200.317 a State procures under its own "
+                     f"policies, so the 2 CFR 200.326 federal minimum ({_n(P(ASSIST_BOND, 'bid_guarantee_pct'))}% "
+                     f"bid guarantee, {_n(P(ASSIST_BOND, 'performance_bond_pct'))}% performance and "
+                     f"{_n(P(ASSIST_BOND, 'payment_bond_pct'))}% payment bonds) does not govern this contract."),
+                    "The bid documents and California state contract law set the bid security and bonds; follow "
+                    "them.", [STATE_PROC, ASSIST_BOND])
+        else:
+            ctx.use(STATE_PROC)
+        return BondPlan(regime="none", notes=["State agency contract: bonds follow the bid documents and California "
+                                              "law, not 2 CFR 200.326 (2 CFR 200.317)."])
+    sat, sat_src = j.sat_eff, j.sat_src
     ids = [ASSIST_BOND, FAR_THRESH]
     if v > sat:
         bg = bid * P(ASSIST_BOND, "bid_guarantee_pct") / 100
@@ -843,15 +933,23 @@ def _sec_registration(ctx: _Ctx, j: _Job) -> None:
                 ctx.date("Enroll in E-Verify as a federal contractor", j.award + timedelta(days=enroll), EV_ENROLL)
         else:
             mine = j.mine
-            applies = None if mine is None else mine > sub_thr
-            why = (f"Applies to your subcontract when it is over {_usd(sub_thr)} and the prime contract has FAR "
-                   "52.222-54." if mine is None else
-                   f"Your subcontract {_usd(mine)} {'>' if applies else 'is not over'} {_usd(sub_thr)} (if the prime "
-                   "contract has FAR 52.222-54).")
+            if v <= thr or (j.pop is not None and j.pop < days_min):
+                # the prime contract itself is outside FAR 22.1803, so there is no clause to flow down
+                applies = False
+                why = ("The prime contract does not carry FAR 52.222-54 ("
+                       + (f"{_usd(v)} is not over {_usd(thr)}" if v <= thr else
+                          f"performance period {j.pop} days is under {days_min} days")
+                       + "), so there is nothing to flow down to you.")
+            else:
+                applies = None if mine is None else mine > sub_thr
+                why = (f"The prime contract ({_usd(v)} > {_usd(thr)}) carries FAR 52.222-54; it reaches your "
+                       f"subcontract when that is over {_usd(sub_thr)}." if mine is None else
+                       f"Prime contract {_usd(v)} > {_usd(thr)}; your subcontract {_usd(mine)} "
+                       f"{'>' if applies else 'is not over'} {_usd(sub_thr)}.")
             ctx.req("Hiring", "E-Verify flow-down", applies, why,
                     (f"Enroll within {enroll} days after your subcontract award and verify new hires within "
                      f"{hire_days} business days.") if applies is not False else "",
-                    [EV_SUB, EV_ENROLL] if applies is not False else [EV_SUB])
+                    [EV_PRIME, EV_SUB, EV_ENROLL] if applies is not False else [EV_PRIME, EV_SUB])
         return
     # federally assisted
     ctx.req("Registration", "SAM.gov registration", False,
@@ -894,8 +992,11 @@ def _sec_subcontracting(ctx: _Ctx, j: _Job, dba: Optional[bool]) -> None:
             applies, why, what = False, "FAR 52.236-1 applies to fixed-price construction contracts.", ""
         else:
             applies = v > thr
-            why = f"Fixed-price construction {_usd(v)} {'>' if applies else 'is not over'} {_usd(thr)} ({hist})."
-            what = ""
+            why = (f"Fixed-price construction {_usd(v)} {'>' if applies else 'is not over'} {_usd(thr)} ({hist}); "
+                   f"the clause is not used on contracts under {P(SELF_PERF, 'excluded_programs')}.")
+            what = ("Not required at this value, but FAR 36.501(b) lets the contracting officer include it anyway: "
+                    "if the contract has FAR 52.236-1, perform at least the percentage it states with your own forces."
+                    if not applies and P(SELF_PERF, "may_insert_at_or_below_threshold", False) else "")
             if applies:
                 amt = v * pct / 100
                 ctx.line(f"Self-performance at the ordinary {_n(pct)}% floor", amt, "usd",
@@ -940,16 +1041,18 @@ def _sec_subcontracting(ctx: _Ctx, j: _Job, dba: Optional[bool]) -> None:
 def _sec_domestic(ctx: _Ctx, j: _Job) -> None:
     v = j.value
     if j.fund == "direct_federal":
-        year = ctx.today.year
-        pct, band = _far_pct(year)
         fe = P(FAR_BA, "iron_steel_foreign_content_pct_less_than")
+        bands = "; ".join(f"over {_n(pct)}% for items delivered {_band_text(key)}"
+                          for key, pct in P(FAR_BA, "domestic_component_pct_greater_than_by_delivery_year").items())
         ctx.req("Domestic content", "Buy American - construction materials (FAR 52.225-9)", True,
                 "Direct federal construction contract.",
-                (f"Use only domestic construction material: manufactured material needs U.S. components over "
-                 f"{_n(pct)}% of component cost (items delivered {band}); iron or steel material needs foreign iron "
-                 f"and steel under {_n(fe)}% of component cost. Ask before award for exceptions (domestic more than "
-                 f"{_n(P(FAR_BA, 'unreasonable_cost_differential_pct'))}% costlier, or unavailable). Check items with "
-                 "buy_america_check."), [FAR_BA])
+                (f"Use only domestic construction material: manufactured material needs U.S. components {bands} "
+                 f"(by the year each item is delivered); iron or steel material needs foreign iron and steel under "
+                 f"{_n(fe)}% of component cost. Ask before award for exceptions (domestic more than "
+                 f"{_n(P(FAR_BA, 'unreasonable_cost_differential_pct'))}% costlier, or unavailable). If the contract "
+                 "has the Trade Agreements version instead (FAR 52.225-11), designated-country construction "
+                 "material is also allowed; check which clause it has. Check items with buy_america_check."),
+                [FAR_BA])
         return
     if j.fund == "federal_aid_highway":
         pct, floor = P(FHWA_STEEL, "minimal_use_pct_of_contract"), P(FHWA_STEEL, "minimal_use_floor_usd")
@@ -975,6 +1078,19 @@ def _sec_domestic(ctx: _Ctx, j: _Job) -> None:
                 ("Steel and iron permanently incorporated must be made in the U.S., coatings included; foreign "
                  f"steel/iron is allowed only up to {_usd(allow)} delivered cost on this contract (track it "
                  f"cumulatively). {mfg} Check items with buy_america_check."), [FHWA_STEEL, FHWA_MFG])
+    elif j.fund == "federal_transit":
+        cost_pct = P(FTA_BA, "price_differential_cost_increase_pct_more_than")
+        ctx.req("Domestic content", "FTA Buy America (49 CFR 661.5)", True, "FTA-assisted project.",
+                ("Iron, steel and manufactured products used in the project must be produced in the U.S. Steel and "
+                 f"iron construction materials: {P(FTA_BA, 'steel_iron_standard')}. A manufactured product: all "
+                 "manufacturing in the U.S. AND all of its components of U.S. origin (a component counts if it is "
+                 "manufactured in the U.S., wherever its subcomponents come from), which is stricter than the "
+                 f"BABA {_n(P(BABA_MFG, 'domestic_component_cost_pct_greater_than'))}% test: a product that only "
+                 f"meets BABA does not meet FTA. Rolling stock has its own rule ({P(FTA_BA, 'rolling_stock')}, not "
+                 "in the rulebook). Only FTA can waive it (public interest, non-availability, or the domestic item raising "
+                 f"the cost by more than {_n(cost_pct)}%). For construction materials (lumber, glass, drywall, "
+                 "plastics, non-ferrous metals) follow the contract's Buy America provisions. Check items with "
+                 "buy_america_check program fta_buy_america."), [FTA_BA, BABA_MFG])
     else:
         if j.stafford:
             ctx.req("Domestic content", "Build America, Buy America (BABA)", False,
@@ -985,6 +1101,14 @@ def _sec_domestic(ctx: _Ctx, j: _Job) -> None:
             why = ("Federally assisted infrastructure project." if infra else
                    "Not infrastructure (you said so)." if infra is False else
                    f"Applies if the project is infrastructure (for example {examples}); give infrastructure_project.")
+            if j.fund == "federal_airport" and infra is not False:
+                # 2 CFR 184.2(a) (rule notes): part 184 yields to an agency's pre-November 15, 2021 Buy America
+                # preference that meets or exceeds BABA; FAA's own terms are not in the rulebook.
+                infra = None
+                why = ("FAA airport grant: FAA's own Buy American terms, which are not in the rulebook, may replace or "
+                       "add to BABA (2 CFR 184.2(a) leaves an agency's pre-November 15, 2021 Buy America preference "
+                       "in place of BABA where it meets or exceeds it). The BABA tests below are for reference; "
+                       "the contract's Buy American provisions control.")
             what = ""
             if infra is not False:
                 what = (f"Every iron and steel product, manufactured product and construction material incorporated "
@@ -996,9 +1120,9 @@ def _sec_domestic(ctx: _Ctx, j: _Job) -> None:
                         "agency can waive it, on the awarding agency's written request (over "
                         f"{_n(P(BABA_WAIVER, 'unreasonable_cost_project_increase_pct_greater_than'))}% project cost "
                         "increase, non-availability, or public interest). Check items with buy_america_check.")
-                if j.fund in ("federal_transit", "federal_airport"):
-                    what += (" FTA and FAA program-specific domestic content rules are not in the rulebook; follow the "
-                             "contract's Buy America provisions as well.")
+                if j.fund == "federal_airport":
+                    what += (" Get FAA's Buy American requirements for this project from the airport sponsor before "
+                             "you buy; a product that meets BABA may not meet them.")
             ctx.req("Domestic content", "Build America, Buy America (BABA)", infra, why, what,
                     [BABA, BABA_IRON, BABA_MFG, BABA_EXCL, BABA_WAIVER] if infra is not False else [BABA])
     names = ", ".join(P(TELECOM, "prohibited_manufacturers"))
@@ -1065,38 +1189,64 @@ def _sec_payments(ctx: _Ctx, j: _Job) -> None:
                  "unsatisfactory. You may retain from subs only if the subcontract says so, and may not bill retained "
                  "amounts until the sub is entitled to them."), [GOV_RET, PP_RETAINAGE])
         return
-    days = P(BP7108, "deadline_days")
+    # B&P 7108.5 covers public works "except where Section 10262 of the Public Contract Code applies": a prime
+    # contractor on a state agency's contract (Caltrans, DGS, DWR, ...) pays its subs under PCC 10262 instead.
+    if j.is_prime and _is_state_agency(j.agency):
+        days, state_id = P(PCC_10262, "deadline_days_after_progress_payment"), PCC_10262
+        law, ca_terms = "California PCC 10262 (state agency contract)", (
+            f"Pay each sub its share within {days} days after you receive each progress payment (PCC 10262, which "
+            "displaces B&P 7108.5 on state agency contracts); an underpaid sub notifies the "
+            + " and the ".join(P(PCC_10262, "sub_must_notify_of_underpayment")) + " in writing")
+    else:
+        days, state_id = P(BP7108, "deadline_days"), BP7108
+        law, ca_terms = "California B&P 7108.5", (
+            f"Pay each sub its share within {days} days after you receive each progress payment (B&P 7108.5, "
+            "unless otherwise agreed in writing)")
     if j.fund in USDOT:
         ctx.req("Payments", f"Pay subcontractors within {days} days of being paid", True,
-                "California B&P 7108.5 (stricter) and the federal DBE prompt-payment rule (all subs, all tiers).",
-                (f"Pay each sub its share within {days} days after you receive each progress payment (B&P 7108.5, "
-                 "unless otherwise agreed in writing); the federal outer limit is "
+                f"{law} and the federal DBE prompt-payment rule (all subs, all tiers); the state deadline is the "
+                "stricter one.",
+                (f"{ca_terms}; the federal outer limit is "
                  f"{P(DBE_PAY, 'days_after_receipt_of_payment')} days. Return a sub's retainage within "
                  f"{P(DBE_RET, 'retainage_return_days_after_sub_work_completed')} days after its work is "
                  "satisfactorily completed (or under the agency's chosen retainage method); California retention "
-                 "rules also apply (see public_works_readiness)."), [BP7108, DBE_PAY, DBE_RET])
+                 "rules also apply (see public_works_readiness)."), [state_id, DBE_PAY, DBE_RET])
     else:
-        ctx.req("Payments", f"Pay subcontractors within {days} days of being paid", True, "California B&P 7108.5.",
-                (f"Pay each sub its share within {days} days after you receive each progress payment, unless "
-                 "otherwise agreed in writing."), [BP7108])
+        ctx.req("Payments", f"Pay subcontractors within {days} days of being paid", True, f"{law}.",
+                f"{ca_terms}.", [state_id])
 
 
 def _sec_clauses(ctx: _Ctx, j: _Job, include_unverified: bool, dba: Optional[bool]) -> None:
     v = j.value
     if j.fund in ASSISTED:
-        t = P(APPX_II, "clauses_by_threshold_usd")
+        t = dict(P(APPX_II, "clauses_by_threshold_usd"))
+        # Appendix II(A) defines its threshold as "the inflation adjusted amount determined by the [FAR] Councils",
+        # i.e. the FAR SAT in effect on as_of; an agency's own lower SAT (which drives 2 CFR 200.326 bonding) does
+        # not move it.
+        far_sat, far_hist = _on(ctx.today, FAR_THRESH, "simplified_acquisition_threshold_usd",
+                                "simplified_acquisition_threshold_prior_usd", "effective")
+        t["breach_remedies_over"] = far_sat
         names = {"termination_for_cause_and_convenience_over": "termination for cause and convenience",
                  "breach_remedies_over": "remedies for breach",
                  "clean_air_and_clean_water_over": "Clean Air Act and Clean Water Act compliance",
                  "byrd_anti_lobbying_certification_over": "anti-lobbying certification (each tier to the tier above)"}
         has = [f"{names[k]} (over {_usd(t[k])})" for k in names if v > t[k]]
         not_yet = [f"{names[k]} (over {_usd(t[k])})" for k in names if v <= t[k]]
-        ctx.req("Contract clauses", "Required federal grant clauses (2 CFR 200 Appendix II)", True,
-                f"Prime contract {_usd(v)}.",
-                ("Your contract must carry: " + ("; ".join(has) if has else "none of the dollar-threshold clauses")
+        why = (f"Prime contract {_usd(v)}; remedies for breach are measured against the FAR simplified acquisition "
+               f"threshold ({far_hist}), which Appendix II(A) names, even if the agency uses a lower one for "
+               "bonding.")
+        lobby = t["byrd_anti_lobbying_certification_over"]
+        if not j.is_prime:
+            why += (f" The anti-lobbying certification goes tier by tier on each bid or award over {_usd(lobby)}: "
+                    + ("give your subcontract amount to settle yours." if j.mine is None else
+                       f"your {_usd(j.mine)} subcontract {'is over' if j.mine > lobby else 'is not over'} "
+                       f"{_usd(lobby)}, so you {'must' if j.mine > lobby else 'need not'} certify to the prime."))
+        ctx.req("Contract clauses", "Required federal grant clauses (2 CFR 200 Appendix II)", True, why,
+                (("Your contract" if j.is_prime else "The prime contract") + " must carry: "
+                 + ("; ".join(has) if has else "none of the dollar-threshold clauses")
                  + ". Not required at this value: " + ("; ".join(not_yet) if not_yet else "none") +
                  ". Equal opportunity, debarment, recovered materials, telecom and domestic-preference clauses apply "
-                 "without a dollar threshold (with the limits in their own rules)."), [APPX_II, BYRD])
+                 "without a dollar threshold (with the limits in their own rules)."), [APPX_II, BYRD, FAR_THRESH])
     elif j.fund == "direct_federal":
         thr, hist = _on(ctx.today, BYRD, "far_direct_federal_threshold_usd", "far_direct_federal_prior_threshold_usd",
                         "far_threshold_change_effective")
@@ -1113,8 +1263,9 @@ def _sec_clauses(ctx: _Ctx, j: _Job, include_unverified: bool, dba: Optional[boo
                     (f"Each covered worker earns at least {acc['earned']} hour of paid sick leave per "
                      f"{acc['per_hours_worked']} hours worked on the contract (you may cap accrual at {cap} hours a "
                      f"year, or front-load {P(EO13706, 'frontload_option_hours')}); tell workers their balance in "
-                     "writing each pay period (or each month, if shorter). California paid sick leave applies too; "
-                     "leave required by law cannot be credited toward Davis-Bacon fringes."),
+                     "writing each pay period (or each month, if shorter). California paid sick leave is a separate "
+                     "state law; check whether it also reaches this site. Leave that a law requires cannot be "
+                     "credited toward Davis-Bacon fringes."),
                     [EO13706, FRINGE_NO_CREDIT])
         if include_unverified:
             ctx.req("Wages", "Federal contractor minimum wage (EO 14026 / EO 13658)", None,
@@ -1123,8 +1274,8 @@ def _sec_clauses(ctx: _Ctx, j: _Job, include_unverified: bool, dba: Optional[boo
                      "but 29 CFR part 23 and FAR 52.222-55 were still printed in the CFR on "
                      f"{P(EO14026, 'cfr_29_part_23_still_codified_as_of')}. The primary text could not be read."),
                     ("No federal contractor minimum wage is computed. If your contract includes FAR 52.222-55, ask "
-                     "the contracting officer in writing whether it is enforced; Davis-Bacon and California minimum "
-                     "wages still apply."), [EO14026])
+                     "the contracting officer in writing whether it is enforced; the Davis-Bacon wage determination "
+                     "rates still apply."), [EO14026])
     if j.fund == "federal_aid_highway":
         removed = _iso_param(FHWA_1273, "subpart_a_removed_effective")
         if ctx.today >= removed:
@@ -1137,6 +1288,29 @@ def _sec_clauses(ctx: _Ctx, j: _Job, include_unverified: bool, dba: Optional[boo
             what = "Physically attach FHWA-1273 to every subcontract (incorporation by reference was not allowed)."
         ctx.req("Contract clauses", "Form FHWA-1273", None if ctx.today >= removed else True, why, what,
                 [FHWA_1273, DBA_OPLAW])
+
+
+def _assisted_sat(today: date, recipient_sat: Optional[float]) -> tuple[float, str]:
+    """The simplified acquisition threshold an assisted contract is measured against (2 CFR 200.1): the agency's
+    own figure if it set one, never above the FAR 2.101 figure in effect on `today` -> (threshold, where it came
+    from)."""
+    far_sat, hist = _on(today, FAR_THRESH, "simplified_acquisition_threshold_usd",
+                        "simplified_acquisition_threshold_prior_usd", "effective")
+    if recipient_sat is not None and recipient_sat > far_sat:
+        raise ValueError(f"recipient_sat_usd ({_usd(recipient_sat)}) cannot exceed the FAR simplified acquisition "
+                         f"threshold ({_usd(far_sat)} on {today}): 2 CFR 200.1 caps an agency's own threshold at the "
+                         "FAR figure")
+    if recipient_sat is not None:
+        return recipient_sat, f"the agency's own simplified acquisition threshold (at most the FAR {_usd(far_sat)})"
+    return far_sat, f"the FAR simplified acquisition threshold ({hist}); the agency may set a lower one"
+
+
+def _band_text(key) -> str:
+    """A delivery-year band key of the FAR 52.225-9 rule: '2024-2028' -> 'in 2024-2028', '2029+' -> 'from 2029'."""
+    m = re.fullmatch(r"(\d{4})(?:-(\d{4})|\+)", str(key).strip())
+    if not m:
+        raise KeyError(f"rule {FAR_BA}: cannot read delivery-year band {key!r}")
+    return f"in {m.group(1)}-{m.group(2)}" if m.group(2) else f"from {m.group(1)}"
 
 
 def _far_pct(year: int) -> tuple[float, str]:
@@ -1165,7 +1339,13 @@ def federal_project_requirements(prime_contract_value_usd, funding_source, award
                                  include_unverified=True) -> FederalRequirementsResult:
     """Which federal rules a California construction contract triggers, with the threshold math for each."""
     today = _today(as_of)
-    value = _number(prime_contract_value_usd, "prime_contract_value_usd")
+    is_prime, include_unverified = _flag(is_prime, "is_prime"), _flag(include_unverified, "include_unverified")
+    is_small_business, fixed_price = _flag(is_small_business, "is_small_business"), _flag(fixed_price, "fixed_price")
+    design_build = _flag(design_build, "design_build")
+    stafford_act_disaster_funds = _flag(stafford_act_disaster_funds, "stafford_act_disaster_funds")
+    davis_bacon_related_act = _flag(davis_bacon_related_act, "davis_bacon_related_act", allow_none=True)
+    infrastructure_project = _flag(infrastructure_project, "infrastructure_project", allow_none=True)
+    value = _number(prime_contract_value_usd, "prime_contract_value_usd", positive=True)
     mine = _number(your_contract_value_usd, "your_contract_value_usd", allow_none=True)
     if is_prime and mine is not None and abs(mine - value) > 0.005:
         raise ValueError("is_prime is true, so your contract IS the prime contract: leave your_contract_value_usd "
@@ -1206,8 +1386,29 @@ def federal_project_requirements(prime_contract_value_usd, funding_source, award
                                            positive=True),
              specialty=_number(specialty_items_usd, "specialty_items_usd", allow_none=True),
              bid_open=bid_open, award=award, obligation=_opt_date(fhwa_obligation_date, "fhwa_obligation_date"))
+    j.sat_eff, j.sat_src = _assisted_sat(today, j.sat) if fund in ASSISTED else (None, None)
     ctx = _Ctx(today)
+    if j.sat is not None and fund not in ASSISTED:
+        ctx.notes.append("recipient_sat_usd was ignored: it only applies to federally assisted contracts let by a "
+                         "state or local agency.")
+    elif j.sat is not None and _is_state_agency(agency):
+        ctx.notes.append("recipient_sat_usd was ignored for bonding: a California state agency follows its own "
+                         "procurement rules (2 CFR 200.317), and Appendix II(A) uses the FAR figure.")
+    if j.stafford and fund in ("direct_federal", "federal_aid_highway", "federal_transit"):
+        ctx.notes.append("stafford_act_disaster_funds was ignored: it is a BABA (2 CFR part 184) exemption, and this "
+                         "funding source has its own domestic-content rule.")
+        j.stafford = False
+    if j.infra is not None and fund in ("direct_federal", "federal_aid_highway", "federal_transit"):
+        ctx.notes.append("infrastructure_project was ignored: it only decides BABA on grant and airport money; this "
+                         "funding source has its own domestic-content rule.")
     role = "prime" if j.is_prime else "subcontractor"
+    if davis_bacon_related_act is not None and fund not in ("federal_grant", "none"):
+        ctx.notes.append(
+            "davis_bacon_related_act was ignored: it only settles coverage for federal_grant money. "
+            + ("A federal agency's own construction contract is covered by the Davis-Bacon Act itself."
+               if fund == "direct_federal" else
+               "Federal-aid highway, transit and airport money is covered as Davis-Bacon Related Act money."))
+        j.dbra = None
 
     if fund == "none":
         dba = _sec_davis_bacon(ctx, j)
@@ -1702,18 +1903,18 @@ def _why(e: Exception) -> str:
 
 
 def _ld_rate(today: date, ctx: _Ctx) -> float:
+    """The CWHSSA liquidated damages amount in effect on `today` (29 CFR 5.8: it changes each January 15)."""
     eff = _iso_param(CWH_LD, "effective")
     if today >= eff:
         return P(CWH_LD, "liquidated_damages_usd_per_worker_per_day")
-    hist = {int(y): amt for y, amt in P(CWH_LD, "history_usd").items()}
-    years = [y for y in hist if y < eff.year and y <= today.year]
-    if not years:
-        raise ValueError(f"as_of {today} is before the earliest CWHSSA liquidated damages amount in the rulebook "
-                         f"({min(hist)})")
-    y = max(years)
-    ctx.notes.append(f"as_of is before {eff}: priced at the {y} amount ({_usd(hist[y])}); the exact change dates of "
-                     "earlier amounts are not in the rulebook.")
-    return hist[y]
+    hist = sorted((date.fromisoformat(k), amt) for k, amt in P(CWH_LD, "history_by_effective_date_usd").items())
+    past = [(d, amt) for d, amt in hist if d <= today]
+    if past:
+        d, amt = past[-1]
+        ctx.notes.append(f"as_of {today} is before {eff}: priced at the {_usd(amt)} amount in effect from {d}.")
+        return amt
+    raise ValueError(f"as_of {today} is before the earliest CWHSSA liquidated damages amount in the rulebook (in "
+                     f"effect from {hist[0][0]})")
 
 
 def federal_overtime_exposure(timesheet, basic_rate_usd=None, prime_contract_value_usd=None, funding_source=None,
@@ -1721,6 +1922,8 @@ def federal_overtime_exposure(timesheet, basic_rate_usd=None, prime_contract_val
                               workweek_starts_on="monday", as_of=None) -> OvertimeExposureResult:
     """CWHSSA overtime owed and liquidated damages from a timesheet, plus LC 1813 on California dual-coverage jobs."""
     today = _today(as_of)
+    california_public_works = _flag(california_public_works, "california_public_works", allow_none=True)
+    straight_time_paid_for_all_hours = _flag(straight_time_paid_for_all_hours, "straight_time_paid_for_all_hours")
     entries = parse_timesheet(timesheet)
     base = _number(basic_rate_usd, "basic_rate_usd", allow_none=True, positive=True)
     value = _number(prime_contract_value_usd, "prime_contract_value_usd", allow_none=True)
@@ -1815,6 +2018,10 @@ def federal_overtime_exposure(timesheet, basic_rate_usd=None, prime_contract_val
         thr = P(CWH_OT, "contract_value_greater_than_usd")
         applies = value > thr
         reason = f"Federally assisted: {_usd(value)} {'>' if applies else 'is not over'} {_usd(thr)}."
+        if applies and fund == "federal_grant" and P(CWH_OT, "clause_inserted_in_addition_to_dba_clauses"):
+            applies = None
+            reason += (" On grant money the CWHSSA clause goes in alongside the Davis-Bacon clauses (29 CFR 5.5(b)); "
+                       "computed as if it applies, so confirm the program is a Davis-Bacon Related Act.")
         ctx.use(CWH_OT)
     rate = _ld_rate(today, ctx)
     ld_amount = 0.0 if applies is False else ld_days * rate
@@ -1839,7 +2046,7 @@ def federal_overtime_exposure(timesheet, basic_rate_usd=None, prime_contract_val
                     " (no pay at all for those hours)"), OT_BASE, *([PW_OT] if ca else []))
     total = None if base is None else _money(back_wages + ld_amount + lc_amount)
     notes = list(ctx.notes)
-    notes.append("Hours already paid at time-and-a-half or more (for example California daily overtime) are counted "
+    notes.append(f"Hours already paid at {_n(mult)}x or more (for example California daily overtime) are counted "
                  "against the federal weekly overtime; a liquidated-damages day is a calendar day on which the worker "
                  f"worked hours beyond the {_n(limit)}th in the workweek that were not paid as overtime.")
     if base is None and owed_hours:
@@ -1877,14 +2084,16 @@ def federal_overtime_exposure(timesheet, basic_rate_usd=None, prime_contract_val
 
 
 # ---------------------------------------------------------------- tool 4: Buy America
-Program = Literal["baba", "far_buy_american", "fhwa_buy_america"]
+Program = Literal["baba", "far_buy_american", "fhwa_buy_america", "fta_buy_america"]
 PROGRAM_LABELS = {"baba": "Build America, Buy America (2 CFR part 184; federally assisted infrastructure)",
                   "far_buy_american": "FAR Buy American - construction materials (52.225-9; direct federal)",
-                  "fhwa_buy_america": "FHWA Buy America (23 CFR 635.410; federal-aid highway)"}
+                  "fhwa_buy_america": "FHWA Buy America (23 CFR 635.410; federal-aid highway)",
+                  "fta_buy_america": "FTA Buy America (49 CFR 661.5; FTA-assisted transit)"}
 _PROGRAM_ALIASES = {
     "baba": ("baba", "build america buy america", "build america", "bil", "iija", "2 cfr 184", "grant",
-             "federal grant", "federal_grant", "fta", "federal transit", "federal_transit", "faa", "aip",
-             "federal_airport", "epa", "srf", "hud", "cdbg", "federally assisted"),
+             "federal grant", "federal_grant", "epa", "srf", "hud", "cdbg", "federally assisted"),
+    "fta_buy_america": ("fta", "fta buy america", "federal transit", "federal_transit", "transit", "49 cfr 661",
+                        "49 cfr 661 5", "federal transit administration"),
     "far_buy_american": ("far", "far buy american", "buy american", "buy american act", "52 225 9", "far 52 225 9",
                          "direct federal", "direct_federal", "usace", "army corps", "gsa", "va", "navy", "navfac"),
     "fhwa_buy_america": ("fhwa", "fhwa buy america", "federal aid highway", "federal_aid_highway", "federal aid",
@@ -1929,6 +2138,13 @@ def normalize_program(value) -> str:
     for key, names in _PROGRAM_ALIASES.items():
         if t in names:
             return key
+    if t in ("faa", "aip", "faa aip", "federal airport", "airport", "airport improvement program",
+             "federal aviation administration"):
+        raise ValueError("FAA airport grant projects carry FAA's own Buy American terms, which are not in the "
+                         "rulebook (2 CFR 184.2(a) leaves an agency's pre-November 15, 2021 Buy America preference in "
+                         "place of BABA where it meets or exceeds it), so this tool cannot say whether an item "
+                         "complies. Get the project's Buy American requirements from the airport sponsor; use "
+                         "program='baba' only to see the BABA test.")
     raise ValueError(f"Unknown program {value!r}. Use one of: {', '.join(PROGRAM_LABELS)}")
 
 
@@ -1953,7 +2169,7 @@ def _classify_item(item_type, item_name) -> tuple[str, Optional[str]]:
 
 class Component(BaseModel):
     name: str = Field(min_length=1)
-    cost_usd: Annotated[float, BeforeValidator(_clean_num)] = Field(ge=0, allow_inf_nan=False)
+    cost_usd: Annotated[float, BeforeValidator(_clean_num)] = Field(ge=0, le=MAX_INPUT, allow_inf_nan=False)
     domestic: bool = Field(description="Mined, produced or manufactured in the U.S.")
     iron_steel: bool = Field(False, description="Iron or steel component (mill products, castings, forgings)")
 
@@ -1992,7 +2208,18 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
     today = _today(as_of)
     prog = normalize_program(program)
     kind, material = _classify_item(item_type, item_name)
-    comps = [c if isinstance(c, Component) else Component.model_validate(c) for c in (components or [])]
+    manufactured_in_us = _flag(manufactured_in_us, "manufactured_in_us", allow_none=True)
+    all_manufacturing_in_us = _flag(all_manufacturing_in_us, "all_manufacturing_in_us", allow_none=True)
+    cots, critical_item = _flag(cots, "cots"), _flag(critical_item, "critical_item")
+    stafford_act_disaster_funds = _flag(stafford_act_disaster_funds, "stafford_act_disaster_funds")
+    if components is not None and not isinstance(components, list):
+        raise ValueError("components must be a list of {name, cost_usd, domestic, iron_steel}")
+    comps = []
+    for i, c in enumerate(components or [], start=1):
+        try:
+            comps.append(c if isinstance(c, Component) else Component.model_validate(c))
+        except Exception as e:
+            raise ValueError(f"component {i}: {_why(e)}") from None
     dom = _number(domestic_component_cost_usd, "domestic_component_cost_usd", allow_none=True)
     tot = _number(total_component_cost_usd, "total_component_cost_usd", allow_none=True)
     fis = _number(foreign_iron_steel_component_cost_usd, "foreign_iron_steel_component_cost_usd", allow_none=True)
@@ -2002,7 +2229,7 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
         tot = sum(c.cost_usd for c in comps)
         dom = sum(c.cost_usd for c in comps if c.domestic)
         fis = sum(c.cost_usd for c in comps if c.iron_steel and not c.domestic)
-        iron_share = (sum(c.cost_usd for c in comps if c.iron_steel) / tot * 100) if tot else None
+        iron_share = _pct(sum(c.cost_usd for c in comps if c.iron_steel), tot) if tot else None
     else:
         iron_share = None
     if tot is not None and tot == 0:
@@ -2023,7 +2250,7 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
     ctx = _Ctx(today)
     missing: list[str] = []
     applies, complies, test = True, None, ""
-    dom_pct = None if dom is None or tot is None else dom / tot * 100
+    dom_pct = None if dom is None or tot is None else _pct(dom, tot)
     out = dict(domestic_content_pct=None if dom_pct is None else round(dom_pct, 2))
     exception, exc_test = None, None
 
@@ -2085,7 +2312,7 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
             ctx.use(BABA)
             if c_dom is not None:
                 cut = P(BABA_WAIVER, "unreasonable_cost_project_increase_pct_greater_than")
-                inc = (c_dom - c_for) / c_for * 100
+                inc = _pct(c_dom - c_for, c_for)
                 exception = inc > cut
                 exc_test = (f"Overall project cost with U.S. items {_usd(c_dom)} vs {_usd(c_for)}: +{round(inc, 2):g}% "
                             f"{'>' if exception else '<='} {_n(cut)}% -> "
@@ -2093,6 +2320,49 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
                                f"posted at least {P(BABA_WAIVER, 'public_comment_days_min')} days for comment)"
                                if exception else "no unreasonable-cost waiver"))
                 ctx.line("Project cost increase from U.S. items", inc, "percent", exc_test, BABA_WAIVER)
+    elif prog == "fta_buy_america":
+        ctx.use(FTA_BA)
+        if kind == "iron_steel":
+            test = f"Steel and iron: {P(FTA_BA, 'steel_iron_standard')}."
+            complies = need(all_manufacturing_in_us, "all_manufacturing_in_us (every steel/iron manufacturing "
+                                                     "process in the U.S.?)")
+            ctx.notes.append(f"FTA's steel and iron rule covers {P(FTA_BA, 'steel_iron_scope')}; steel or iron that "
+                             "is a component of a manufactured product is tested with that product instead.")
+        elif kind == "manufactured_product":
+            req_pct = P(FTA_BA, "manufactured_product_us_origin_components_pct_required")
+            test = ("Manufactured product: all manufacturing processes in the U.S. and all components of U.S. "
+                    f"origin (a component is U.S. origin if {P(FTA_BA, 'component_us_origin_if')}).")
+            made = need(manufactured_in_us, "manufactured_in_us (all manufacturing processes in the U.S.?)")
+            if dom_pct is None:
+                missing.append("components (or domestic_component_cost_usd and total_component_cost_usd)")
+                ok = None
+            else:
+                ok = dom_pct >= req_pct
+                foreign = tot - dom
+                ctx.line("U.S.-origin component share", dom_pct, "percent",
+                         f"{_usd(dom)} U.S. / {_usd(tot)} all components = {round(dom_pct, 2):g}% "
+                         + ("-> every component is U.S. origin" if ok else
+                            f"-> {_usd(foreign)} of components are not U.S. origin (FTA requires all)"), FTA_BA)
+            complies = False if (made is False or ok is False) else (None if made is None or ok is None else True)
+            baba_pct = P(BABA_MFG, "domestic_component_cost_pct_greater_than")
+            if ok is False and dom_pct > baba_pct:
+                ctx.notes.append(f"This item would pass the BABA {_n(baba_pct)}% test, but FTA requires every "
+                                 "component to be of U.S. origin.")
+                ctx.use(BABA_MFG)
+        else:
+            test = ("49 CFR 661.5 covers iron, steel and manufactured products; the rulebook does not say how FTA "
+                    "treats this material, so follow the contract's Buy America provisions.")
+        ctx.notes.append(f"Rolling stock (buses, railcars) has its own rule ({P(FTA_BA, 'rolling_stock')}), which is "
+                         "not in the rulebook and is not tested here.")
+        if c_dom is not None:
+            mult = P(FTA_BA, "price_differential_waiver_if_lowest_foreign_bid_times")
+            exception = c_for * mult < c_dom - 1e-9
+            inc = _pct(c_dom - c_for, c_for)
+            exc_test = (f"Lowest foreign bid {_usd(c_for)} x {_n(mult)} = {_usd(c_for * mult)} "
+                        f"{'<' if exception else '>='} lowest domestic bid {_usd(c_dom)} (+{round(inc, 2):g}%) -> "
+                        + ("FTA can grant a price-differential waiver (the agency asks FTA)" if exception else
+                           "no price-differential waiver"))
+            ctx.line("Price differential (FTA)", inc, "percent", exc_test, FTA_BA)
     elif prog == "far_buy_american":
         ctx.use(FAR_BA)
         if kind == "excluded_material":
@@ -2111,7 +2381,7 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
                                "total_component_cost_usd)")
                 ok = None
             else:
-                share = fis / tot * 100
+                share = _pct(fis, tot)
                 ok = share < lim
                 out["foreign_iron_steel_pct"] = round(share, 2)
                 ctx.line("Foreign iron/steel share", share, "percent",
@@ -2122,6 +2392,11 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
             pct, band = _far_pct(delivered.year)
             out["required_pct_greater_than"] = pct
             made = need(manufactured_in_us, "manufactured_in_us")
+            if iron_share:
+                ctx.notes.append(f"Iron and steel are {round(iron_share, 2):g}% of this item's component cost. FAR "
+                                 "52.225-9 tests material that is wholly or predominantly iron or steel by its foreign "
+                                 "iron and steel content instead; if this item is, run the check again with item_type "
+                                 "iron_steel.")
             if cots:
                 test = ("COTS construction material: the domestic content test is waived; it must be manufactured "
                         "in the U.S.")
@@ -2133,7 +2408,7 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
                 complies = False if (made is False or ok is False) else (None if made is None or ok is None else True)
         if c_dom is not None:
             diff = P(FAR_BA, "unreasonable_cost_differential_pct")
-            over = (c_dom - c_for) / c_for * 100
+            over = _pct(c_dom - c_for, c_for)
             if critical_item:
                 exception = None
                 exc_test = (f"Domestic costs {round(over, 2):g}% more. For a critical item the {_n(diff)}% "
@@ -2183,7 +2458,7 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
                 missing.append("all_manufacturing_in_us (melting through coating in the U.S.?)")
             if c_dom is not None:
                 alt = P(FHWA_ALT, "award_to_foreign_if_lowest_domestic_exceeds_lowest_foreign_by_pct_more_than")
-                over = (c_dom - c_for) / c_for * 100
+                over = _pct(c_dom - c_for, c_for)
                 exception = over > alt
                 exc_test = (f"Alternate bids: lowest domestic {_usd(c_dom)} vs lowest foreign {_usd(c_for)}: "
                             f"+{round(over, 2):g}% {'>' if exception else '<='} {_n(alt)}% -> the contract goes to the "
@@ -2244,6 +2519,7 @@ def buy_america_check(program, item_type, item_name=None, components=None, domes
                 "compliant manufactured product), and do not order this one without the agency's written direction.")
     else:
         route = {"baba": "ask the awarding agency to request a waiver from the federal agency",
+                 "fta_buy_america": "ask the transit agency to request an FTA waiver",
                  "far_buy_american": "ask the contracting officer for an exception"}[prog]
         step = (f"It does not meet the test. Source a compliant item, or {route}"
                 + (" (the cost test above supports it)" if exception else "") + ".")
@@ -2283,12 +2559,13 @@ def _tool_docs() -> dict[str, str]:
             f"{_usd(sat)} simplified acquisition threshold, SAM.gov and exclusions, E-Verify over "
             f"{_usd(P(EV_PRIME, 'contract_value_greater_than_usd'))}, subcontracting plan over {_usd(plan)} "
             f"(other-than-small), self-performance, FHWA {_n(P(FHWA_30, 'min_self_perform_pct'))}% own forces, Buy "
-            "American / BABA / FHWA Buy America, "
+            "American / BABA / FHWA and FTA Buy America, "
             "the USDOT DBE program (goals paused since "
             f"{P(DBE_GOALS, 'effective')} pending re-evaluation), prompt payment, required clauses, federal paid "
             "sick leave, and California dual coverage (pay the higher of the federal and DIR rates, two payroll "
-            "filings). Also the bond amounts, dated key steps (wage determination 10-day rule, E-Verify enrollment, "
-            f"SF 1413, DBE deadlines), line items, a summary and one concrete next step. Thresholds the "
+            "filings). Also the bond amounts, dated key steps (wage determination "
+            f"{P(WD_BID, 'days_before_bid_opening')}-day rule, E-Verify enrollment, SF 1413, DBE deadlines), line "
+            "items, a summary and one concrete next step. Thresholds the "
             f"{P(FAR_THRESH, 'effective')} FAR inflation rule changed are picked by as_of. Set "
             "include_unverified=false to drop the unverified EO 14026 minimum-wage status item."),
         "wages": (
@@ -2316,8 +2593,10 @@ def _tool_docs() -> dict[str, str]:
             "items, notes and a next step."),
         "buy_america": (
             "Domestic-content check for ONE product or material. program: baba (2 CFR 184, federally assisted "
-            "infrastructure), far_buy_american (FAR 52.225-9, a federal agency's own contract) or fhwa_buy_america "
-            "(23 CFR 635.410, federal-aid highway). item_type: iron_steel, manufactured_product, "
+            "infrastructure), far_buy_american (FAR 52.225-9, a federal agency's own contract), fhwa_buy_america "
+            "(23 CFR 635.410, federal-aid highway) or fta_buy_america (49 CFR 661.5, FTA transit: every component of "
+            "a manufactured product of U.S. origin). FAA airport projects are refused: FAA's own terms are not in the "
+            "rulebook. item_type: iron_steel, manufactured_product, "
             "construction_material (lumber, drywall, glass, plastics/PVC, aluminum/copper, fiber optic, engineered "
             "wood) or excluded_material (cement, aggregates). Give the component costs (each domestic or not, iron/"
             "steel or not) or the domestic and total cost. Tests: BABA manufactured products over "
@@ -2330,7 +2609,8 @@ def _tool_docs() -> dict[str, str]:
             f"{_n(P(BABA_WAIVER, 'unreasonable_cost_project_increase_pct_greater_than'))}% project cost, FAR "
             f"{_n(P(FAR_BA, 'unreasonable_cost_differential_pct'))}% price, FHWA "
             f"{_n(P(FHWA_ALT, 'award_to_foreign_if_lowest_domestic_exceeds_lowest_foreign_by_pct_more_than'))}% "
-            "alternate bid). Returns complies true/false/null with what is missing, the math and a next step."),
+            "alternate bid, FTA lowest foreign bid x "
+            f"{_n(P(FTA_BA, 'price_differential_waiver_if_lowest_foreign_bid_times'))} vs lowest domestic). Returns complies true/false/null with what is missing, the math and a next step."),
     }
 
 
@@ -2456,7 +2736,8 @@ def register(mcp) -> None:
     @mcp.tool(name="buy_america_check", annotations=ro, description=docs["buy_america"])
     def _buy_america_check(
         program: Annotated[str, Field(description=(
-            "baba, far_buy_american or fhwa_buy_america (aliases: BABA, FAR, Buy American, FHWA, Caltrans federal-aid)"))],
+            "baba, far_buy_american, fhwa_buy_america or fta_buy_america (aliases: BABA, FAR, Buy American, FHWA, "
+            "Caltrans federal-aid, FTA)"))],
         item_type: Annotated[str, Field(description=(
             "iron_steel, manufactured_product, construction_material or excluded_material (or a material name: "
             "lumber, drywall, glass, PVC, aluminum, cement, aggregate)"))],
@@ -2480,7 +2761,7 @@ def register(mcp) -> None:
         fhwa_obligation_date: Annotated[Optional[str], Field(description="FHWA: date federal funds were obligated")] = None,
         cost_if_domestic_usd: Annotated[OptMoney, Field(description=(
             "Waiver/exception test: BABA overall project cost with U.S. items; FAR domestic material price; FHWA "
-            "lowest domestic-steel total bid"))] = None,
+            "lowest domestic-steel total bid; FTA lowest bid offering the U.S. item"))] = None,
         cost_if_foreign_usd: Annotated[OptMoney, Field(description="The same figure with foreign items")] = None,
         stafford_act_disaster_funds: Annotated[bool, Field(description="BABA: FEMA Stafford Act money (exempt)")] = False,
         as_of: Annotated[Optional[str], Field(description="ISO date; default today in California")] = None,
