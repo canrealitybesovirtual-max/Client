@@ -341,6 +341,10 @@ dialog .dialog-body { padding: 1rem 1.2rem; overflow: auto; max-height: calc(100
 .int-connect[open] > summary { border-bottom: 1px solid #bcd3f1; margin-bottom: .6rem; }
 .int-connect-body { padding-bottom: .6rem; }
 .int-connect-body .form-grid { margin-top: .5rem; }
+.cal-links > p { margin-top: .75rem; }
+/* deep links (?integration=...) and the category jump links scroll below the sticky top bar, not under it */
+.int-section, .int-card, #int-assistant { scroll-margin-top: 4.5rem; }
+#int-assistant > form { margin-bottom: 1rem; }
 .int-links { margin: .75rem 0 0; }
 .int-sources li, .int-dev li { overflow-wrap: anywhere; }
 

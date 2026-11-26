@@ -592,6 +592,17 @@ async def call_tool(name: str, request: Request, p: Principal = Depends(anyone))
         names = {s["name"] for s in await tool_specs(platform, refresh=True)}
         if name not in names:
             raise HTTPException(404, f"No tool named {name!r} on this server")
+    if p.via == "key":
+        # The key's own rate limit and the company's limit cover tool calls here as on /mcp (the same counters),
+        # so a key limited to N calls a minute can't run unlimited calls through this route instead.
+        limits = [(platform.mcp_key_limiter, f"key|{p.key_id}", p.rate_limit),
+                  (platform.mcp_tenant_limiter, f"tenant|{p.tenant_id}", None)]
+        wait = max(lim.retry_after(k, cap) for lim, k, cap in limits)
+        if wait:
+            raise HTTPException(429, f"Too many tool calls for this API key. Retry in {wait} s.",
+                                headers={"Retry-After": str(wait)})
+        for lim, k, _cap in limits:
+            lim.hit(k)
     if p.via == "key" and not governance.scope_allows(p.scopes, name, await governance.tool_index(platform)):
         raise HTTPException(403, f"This API key is not allowed to use the tool {name!r}. An owner or office user "
                                  "can change the key's tools in Settings > AI assistant (MCP) > API keys.")

@@ -13,7 +13,7 @@
   {
    "id": "builtin",
    "label": "Built in",
-   "description": "TradeComply connects to it directly: click Connect, then sign in, paste a key or upload a file."
+   "description": "TradeComply connects to it directly: open the panel on its card (Connect, Set up alerts, Get your calendar link or Upload a schedule), then sign in, paste a link or key, or upload a file."
   },
   {
    "id": "ai_assistant",
@@ -40,7 +40,7 @@
   {
    "id": "scheduling",
    "label": "Scheduling",
-   "description": "CPM schedules you can import, so deadlines line up with the work."
+   "description": "Project schedules (Microsoft Project, Primavera P6) you can import, so deadlines line up with the work."
   },
   {
    "id": "documents_esign",
@@ -97,8 +97,9 @@
    "integration": "ai_assistant",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Salesforce runs MCP servers that let an AI assistant read (and, where an admin allows it, change) a Salesforce org's records as the person who signed in, with that person's object, field and sharing permissions. Two standard servers are confirmed: platform/sobject-reads (read-only, includes getUserInfo) and platform/sobject-all (read, create, update and delete, plus prompt templates). Admins can also build custom servers from Apex actions, Flows and Named Queries.",
+   "summary": "Salesforce runs MCP servers that let an AI assistant read (and, where an admin allows it, change) a Salesforce org's records as the person who signed in, with that person's object, field and sharing permissions. Two standard servers are confirmed: one that only reads records, and one that can also create, update and delete them. Admins can also build custom servers from Apex actions, Flows and Named Queries.",
    "details": [
+    "The two standard servers are platform/sobject-reads (read-only, includes getUserInfo) and platform/sobject-all (read, create, update and delete, plus prompt templates).",
     "The servers run no AI model themselves, and every tool call counts against the org's daily API request quota."
    ],
    "tradecomply_role": "Add Salesforce's hosted MCP server and TradeComply's MCP server to the same AI assistant. The assistant pulls subcontractor Accounts or bid Opportunities from Salesforce and runs TradeComply's California checks on them. TradeComply never holds your Salesforce sign-in.",
@@ -1409,8 +1410,10 @@
    "integration": "ai_assistant",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Atlassian's hosted MCP server (formerly the Atlassian Remote MCP Server) connects AI assistants to an Atlassian Cloud site: Jira, Confluence, Jira Service Management, Bitbucket Cloud, Compass, Loom and platform data. Tools come in permission groups such as read_jira, write_jira, search_jira, read_confluence and write_confluence (delete_jira and manage_jira are off by default). Access follows each user's existing permissions, and every tool call writes an audit-log event.",
-   "details": [],
+   "summary": "Atlassian's hosted MCP server (formerly the Atlassian Remote MCP Server) connects AI assistants to an Atlassian Cloud site: Jira, Confluence, Jira Service Management, Bitbucket Cloud, Compass, Loom and platform data. Tools come in permission groups for reading, writing and searching Jira and Confluence; deleting and managing Jira are off by default. Access follows each user's existing permissions, and every tool call writes an audit-log event.",
+   "details": [
+    "Permission groups include read_jira, write_jira, search_jira, read_confluence and write_confluence; delete_jira and manage_jira are off by default."
+   ],
    "tradecomply_role": "For offices that track work in Jira or Confluence: add Rovo and TradeComply to the same AI assistant to turn TradeComply deadlines and sub problems into Jira issues, or publish safety programs to Confluence. Most California GC and sub offices are not on Jira, so TradeComply has no built-in Jira connector.",
    "builtin": null,
    "uses": [
@@ -1831,14 +1834,15 @@
   },
   {
    "id": "microsoft-project",
-   "name": "Microsoft Project (MSPDI XML schedule import)",
+   "name": "Microsoft Project (XML schedule import)",
    "vendor": "Microsoft",
    "category": "scheduling",
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Microsoft Project desktop is the CPM scheduling tool many California GCs use for baseline and look-ahead schedules. It saves schedules in Microsoft's Project XML Data Interchange format (MSPDI) through File > Save As > XML Format (*.xml), defined by the Project XML Data Interchange Schema (mspdi_pj12.xsd).",
+   "summary": "Microsoft Project desktop is the scheduling program many California GCs use for baseline and look-ahead schedules. It can save a schedule as an XML file (File > Save As > XML Format (*.xml)) that TradeComply can read.",
    "details": [
+    "Project is a CPM (critical path method) scheduler. Its XML file uses Microsoft's Project XML Data Interchange format (MSPDI), defined by the Project XML Data Interchange Schema (mspdi_pj12.xsd).",
     "Key Task fields in Microsoft's schema reference: UID (required, the permanent ID), ID (the row position), Name, Start, Finish, ActualStart, ActualFinish, CalendarUID (points to a Calendar in the Project's Calendars element) and PredecessorLink (PredecessorUID, Type FF/FS/SF/SS, LinkLag, LagFormat)."
    ],
    "tradecomply_role": "Export your schedule as XML and upload it to TradeComply's schedule import, so lien, notice and Cal/OSHA permit deadlines line up with the dates in your schedule. It is a file you upload; TradeComply never connects to Microsoft.",
@@ -2033,8 +2037,9 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Primavera P6 is the CPM scheduler required on many public-works, utility and large commercial jobs. P6 exports two formats: XER (Oracle's proprietary, tab-delimited format covering project, resource and role data) and P6 XML, defined by Oracle's p6apibo.xsd schema.",
+   "summary": "Primavera P6 is Oracle's scheduling program, required on many public-works, utility and large commercial jobs. It can export a schedule as an XER file or a P6 XML file, and TradeComply can read either one.",
    "details": [
+    "P6 is a CPM (critical path method) scheduler. XER is Oracle's proprietary, tab-delimited format covering project, resource and role data; P6 XML is defined by Oracle's p6apibo.xsd schema.",
     "XER TASK table fields per Oracle's XER Import/Export Data Map Guide: task_code (Activity ID), task_name (Activity Name), target_start_date (Planned Start), act_start_date (Actual Start), act_end_date (Actual Finish), clndr_id (Calendar, joins to the CALENDAR table) and early_start_date. P6 XML Activity elements include Id, Name, PlannedStartDate, StartDate, FinishDate, ActualStartDate, ActualFinishDate and CalendarObjectId."
    ],
    "tradecomply_role": "Export the schedule from P6 as XER or P6 XML and upload it to TradeComply's schedule import, so public-works lien and stop-payment deadlines, apprentice and prevailing-wage checks and Cal/OSHA permit checks line up with your activities. TradeComply never connects to Oracle.",
@@ -2237,8 +2242,10 @@
    "integration": "ai_assistant",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Box hosts an MCP server so AI assistants (Claude, ChatGPT, Microsoft Copilot Studio, GitHub Copilot, Mistral Le Chat and others) can search, read, upload and organize Box content and run Box AI over it, under each user's existing Box permissions. Tools include search_files_keyword, ai_qa_single_file, ai_qa_multi_file, ai_qa_hub, upload_file, create_folder, get_folder_details and list_folder_content_by_folder_id; some (upload_file_version, set_file_metadata and others) are off until an admin turns them on.",
-   "details": [],
+   "summary": "Box stores and shares company files in the cloud. Box hosts an MCP server so AI assistants (Claude, ChatGPT, Microsoft Copilot Studio, GitHub Copilot, Mistral Le Chat and others) can search, read, upload and organize Box content and run Box AI over it, under each user's existing Box permissions. Some tools stay off until an admin turns them on.",
+   "details": [
+    "Tools include search_files_keyword, ai_qa_single_file, ai_qa_multi_file, ai_qa_hub, upload_file, create_folder, get_folder_details and list_folder_content_by_folder_id; some (upload_file_version, set_file_metadata and others) are off until an admin turns them on."
+   ],
    "tradecomply_role": "Connect Box's MCP server and TradeComply's in the same AI assistant: read license numbers and insurance dates out of the paperwork in Box, check them with TradeComply, and file TradeComply's contracts and safety programs back into the job folder. A direct 'Save to Box' button in TradeComply is possible with Box's API but is not built yet.",
    "builtin": null,
    "uses": [
@@ -2505,7 +2512,7 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Docusign is the e-signature service many contractors and owners already use. Software can send documents through it for signature, follow their progress and hear when they are signed. Docusign also hosts an MCP server (GA 2026-09-30) that lets AI assistants prepare, send, track and manage agreements.",
+   "summary": "Docusign is the e-signature service many contractors and owners already use. Software can send documents through it for signature, follow their progress and hear when they are signed. Docusign also hosts an MCP server (generally available since September 30, 2026) that lets AI assistants prepare, send, track and manage agreements.",
    "details": [
     "Its eSignature REST API v2.1 creates and sends envelopes (documents, recipients and signature tabs), tracks status and pushes status changes through Docusign Connect webhooks."
    ],
@@ -3319,7 +3326,7 @@
      "splunk",
      "splunk_hec"
     ],
-    "what_it_does": "Sends a copy of your TradeComply activity log (who ran which check, when, with what result) to your company's Splunk. Your Splunk admin gives you the HEC address and token to paste here."
+    "what_it_does": "Sends a copy of your TradeComply activity log (who ran which check, when, with what result) to your company's Splunk. Your Splunk admin gives you the HTTP Event Collector (HEC) address and token to paste here."
    },
    "uses": [
     {
@@ -3917,8 +3924,10 @@
    "integration": "ai_assistant",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "CrowdStrike's falcon-mcp connects AI agents to the Falcon platform: detections, hosts, threat intel, NGSIEM queries, Spotlight vulnerabilities, Identity Protection, Cloud Security, Fusion SOAR, read-only RTR triage, policies, firewall, quarantine and Zero Trust Assessment. It can be narrowed with --modules, --read-only and tool filters. CrowdStrike says new work now ships in its hosted CrowdStrike MCP.",
-   "details": [],
+   "summary": "CrowdStrike's falcon-mcp connects AI assistants to the CrowdStrike Falcon security platform, so your IT or security team can ask about detections, computers, vulnerabilities, threat intel and other Falcon data. It can be limited to read-only use. CrowdStrike says new work now ships in its hosted CrowdStrike MCP.",
+   "details": [
+    "falcon-mcp covers detections, hosts, threat intel, NGSIEM queries, Spotlight vulnerabilities, Identity Protection, Cloud Security, Fusion SOAR, read-only RTR triage, policies, firewall, quarantine and Zero Trust Assessment. It can be narrowed with --modules, --read-only and tool filters."
+   ],
    "tradecomply_role": "For contractors already on CrowdStrike: check the security of the office and jobsite-trailer computers that handle payroll and federal paperwork, alongside TradeComply's labor and contract checks. Falcon data is outside TradeComply's compliance domain, so there is no built-in connector.",
    "builtin": null,
    "uses": [
@@ -4092,8 +4101,10 @@
    "integration": "ai_assistant",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Prisma AIRS exposes Palo Alto Networks' AI runtime security as MCP tools: pan_inline_scan (scan a prompt and/or response and get allow or block), pan_batch_scan (1 to 25 requests) and pan_get_scan_results. Detections cover prompt injection, sensitive data (DLP), URL categorization, toxic content and malicious code.",
-   "details": [],
+   "summary": "Prisma AIRS lets an AI assistant send a prompt or an answer to Palo Alto Networks' AI runtime security service and get back allow or block. Detections cover prompt injection, sensitive data (DLP), URL categorization, toxic content and malicious code.",
+   "details": [
+    "The MCP tools are pan_inline_scan (scan a prompt and/or response and get allow or block), pan_batch_scan (1 to 25 requests) and pan_get_scan_results."
+   ],
    "tradecomply_role": "For a GC already licensed for Prisma AIRS: have your AI assistant scan outside documents (pasted COIs, emailed license claims) before feeding them to TradeComply checks, and scan payroll exports for sensitive data before they leave the company.",
    "builtin": null,
    "uses": [
@@ -4725,8 +4736,10 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Slack is team messaging. Incoming webhooks post a message to one channel when you send an HTTPS POST to the webhook's secret URL. Slack also hosts an MCP server (GA since 2026-02-17) that lets AI assistants search messages and files, send and schedule messages, read channels and threads, and work with canvases and Lists, under each user's permissions.",
-   "details": [],
+   "summary": "Slack is team chat. An incoming webhook is a private link that posts messages into one Slack channel: paste one into TradeComply and its alerts show up there. Slack also runs an MCP server (generally available since February 17, 2026) that lets AI assistants search messages and files, send and schedule messages, read channels and threads, and work with canvases and Lists, with each person's own Slack permissions.",
+   "details": [
+    "How an incoming webhook works: software sends an HTTPS POST to the webhook's secret URL and Slack posts the message to the one channel the webhook was made for."
+   ],
    "tradecomply_role": "Built in: paste a Slack incoming-webhook link into TradeComply and it posts alerts to that channel: deadline reminders, and license problems found when you import from Procore. Or use Slack's MCP server next to TradeComply's in your AI assistant.",
    "builtin": {
     "panel": "webhooks",
@@ -4942,8 +4955,10 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "The Teams Workflows app (built on Power Automate) gives you a webhook URL through the 'When a Teams webhook request is received' trigger or templates such as 'Send webhook alerts to a channel'. Posting JSON to it makes the workflow post a message or Adaptive Card to a channel (private channels included) or chat. It replaces the Office 365 connector incoming webhooks, which Microsoft retired in May 2026.",
-   "details": [],
+   "summary": "In Microsoft Teams, the Workflows app (built on Power Automate) can make a private link that posts messages into a channel (private channels included) or a chat. Paste that link into TradeComply and its alerts show up in Teams. This replaces the Office 365 connector incoming webhooks, which Microsoft retired in May 2026.",
+   "details": [
+    "Teams gives you the link through the 'When a Teams webhook request is received' trigger or templates such as 'Send webhook alerts to a channel'. Posting JSON to it makes the workflow post a message or Adaptive Card."
+   ],
    "tradecomply_role": "Built in: create the workflow in Teams, paste its link into TradeComply, and TradeComply posts its alerts (deadline reminders, and license problems found when you import from Procore) with a button back to TradeComply.",
    "builtin": {
     "panel": "webhooks",
@@ -5092,14 +5107,16 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Send TradeComply alerts to any HTTPS endpoint your developer or automation tool runs. Every message follows the open Standard Webhooks specification: a JSON body {type, timestamp, data} with webhook-id, webhook-timestamp and webhook-signature headers, signed with HMAC-SHA256 using a secret TradeComply shows you once, so the receiver can prove the message came from TradeComply.",
-   "details": [],
-   "tradecomply_role": "Built in: for teams with their own systems (an ERP, a data warehouse, an automation tool such as Workato). Failed deliveries are retried on a schedule, and the delivery log shows what was sent.",
+   "summary": "Send TradeComply alerts to any web address (HTTPS) your developer or automation tool runs. Each message is signed with a secret TradeComply shows you once, so the receiving system can prove the message came from TradeComply.",
+   "details": [
+    "Every message follows the open Standard Webhooks specification: a JSON body {type, timestamp, data} with webhook-id, webhook-timestamp and webhook-signature headers, signed with HMAC-SHA256."
+   ],
+   "tradecomply_role": "Built in: for teams with their own systems (an ERP, a data warehouse, an automation tool such as Workato). Failed deliveries are retried on a schedule, and the delivery log (in TradeComply's API for now, not on this page) shows what was sent.",
    "builtin": {
     "panel": "webhooks",
     "webhook_kind": "generic",
     "providers": [],
-    "what_it_does": "Posts each chosen TradeComply event to your HTTPS endpoint, signed per Standard Webhooks. Retries for about three days with backoff; a 410 Gone answer turns the webhook off."
+    "what_it_does": "Sends each TradeComply alert you choose to your system's HTTPS address, signed the Standard Webhooks way so your system can check it came from TradeComply. If your system doesn't answer, TradeComply keeps retrying for about three days; if it answers that the address is gone (HTTP 410), the webhook is turned off."
    },
    "uses": [
     {
@@ -5734,8 +5751,10 @@
    "integration": "ai_assistant",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "AWS hosts a managed AWS MCP Server that makes authenticated calls to AWS APIs in your own AWS account (aws___call_aws, aws___run_script, documentation search, presigned S3 URLs and more), using IAM SigV4 signing through AWS's local proxy. AWS Labs' open-source awslabs/mcp suite runs single-service servers locally, and the AWS Knowledge MCP server searches AWS documentation with no account needed.",
-   "details": [],
+   "summary": "AWS hosts a managed AWS MCP Server that lets an AI assistant make signed-in calls to AWS in your own AWS account. AWS Labs' open-source awslabs/mcp suite runs single-service servers locally, and the AWS Knowledge MCP server searches AWS documentation with no account needed.",
+   "details": [
+    "The managed server's tools include aws___call_aws, aws___run_script, documentation search and presigned S3 URLs; calls are signed with IAM SigV4 through AWS's local proxy."
+   ],
    "tradecomply_role": "For contractors with federal or DoD work whose files live in AWS: check how drawings and records are stored, next to TradeComply's federal labor and contracting checks. TradeComply does not cover CMMC or DFARS cybersecurity rules; AWS's tools give infrastructure facts only.",
    "builtin": null,
    "uses": [

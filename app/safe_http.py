@@ -14,7 +14,8 @@ from tenants (webhook URLs) or from vendor responses (redirects, pagination link
   changes between the check and the connection (DNS rebinding) can't reach an internal address. TLS still verifies
   the certificate against the hostname.
 - Redirects are followed by hand (at most max_redirects), each target checked the same way; Authorization and Cookie
-  headers are dropped when a redirect leaves the original origin. follow_redirects=False returns the 3xx as is.
+  headers are dropped when a redirect leaves the original origin, and a 307/308 that would re-send a request body to
+  another origin is refused (UnsafeURLError). follow_redirects=False returns the 3xx as is.
 - Environment proxies (HTTPS_PROXY etc.) are ignored: a proxy would resolve the host itself, past these checks.
 - Timeouts (connect, read, and a total deadline per attempt) and a response size cap (Content-Length and the
   decoded bytes actually read).
@@ -339,6 +340,11 @@ class SafeHTTP:
             if not body:
                 headers.pop("content-type", None)
             if (target.scheme, target.host, target.port) != origin:
+                if body:
+                    # A 307/308 keeps the method and body; a body often carries credentials (an OAuth form with a
+                    # token or client secret, a signed payload), so it is never re-sent to another site.
+                    raise UnsafeURLError(f"Redirect refused: {origin[1]} redirected a request with a body to "
+                                         f"another site ({target.host})")
                 for h in ("authorization", "cookie", "proxy-authorization"):
                     headers.pop(h, None)
                 auth = None

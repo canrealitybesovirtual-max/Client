@@ -644,3 +644,63 @@ def test_reconnecting_after_a_key_change_replaces_unreadable_credentials(owner, 
     q = start_oauth(owner, vendor)
     assert result_of(callback(owner, f"code=good-code&state={q['state']}"))["result"] == "connected"
     assert inst.secrets()["oauth"]["access_token"] == "at-2"
+
+
+def test_token_revocation_never_follows_a_redirect(owner, platform):
+    """Security review: the RFC 7009 revocation form carries the token (and with client_auth="body" the client
+    secret); a 307/308 from the revocation endpoint must not re-send it anywhere else."""
+    from dataclasses import replace
+    platform.env = dict(OAUTH_ENV)
+    cls = type("RevokingOAuth", (ExampleOAuthConnector,), {
+        "oauth": replace(ExampleOAuthConnector.oauth, revoke_url="https://login.example.com/oauth/revoke",
+                         client_auth="body")})
+    seen = []
+
+    def vendor(request):
+        seen.append(request)
+        if request.url.host == "login.example.com":
+            return httpx.Response(307, headers={"location": "https://collector.example.net/steal"})
+        return httpx.Response(200)
+    mock_http(platform, vendor)
+    inst = cls(registry.ConnectorContext(platform, owner.tenant_id))
+    inst.save(status="connected", secrets={"oauth": {"access_token": "at-secret", "refresh_token": "rt-secret"}})
+    inst.revoke()
+    assert [r.url.host for r in seen] == ["login.example.com"]
+    assert "rt-secret" in seen[0].content.decode() and "csecret-456" in seen[0].content.decode()
+
+
+def test_ids_of_one_company_are_not_found_by_another(app, owner, platform):
+    """Security review sweep: every integration route that takes an id (webhook, calendar link, SMS recipient,
+    project for a schedule upload, Docusign envelope) answers another company 404 and changes nothing."""
+    mock_http(platform, lambda request: httpx.Response(200, text="ok"))
+    hook = make_hook(owner, kind="slack", url=SLACK_URL)
+    link = owner.post("/api/integrations/calendar_feed/links").json()
+    rec = owner.post("/api/integrations/twilio_sms/recipients", json={"phone": "(415) 555-0100", "name": "Sam",
+                                                                       "consent": True, "send_confirmation": False})
+    assert rec.status_code == 201, rec.text
+    rid = rec.json()["recipient"]["id"]
+    pid = owner.post("/api/projects", json={"name": "A job"}).json()["id"]
+    with TestClient(app) as other:
+        signup(other, email="b@two.test", company="Two")
+        for method, path in (("get", f"/api/integrations/webhooks/{hook['id']}"),
+                             ("patch", f"/api/integrations/webhooks/{hook['id']}"),
+                             ("delete", f"/api/integrations/webhooks/{hook['id']}"),
+                             ("post", f"/api/integrations/webhooks/{hook['id']}/test"),
+                             ("post", f"/api/integrations/webhooks/{hook['id']}/rotate-secret"),
+                             ("delete", f"/api/integrations/calendar_feed/links/{link['id']}"),
+                             ("delete", f"/api/integrations/twilio_sms/recipients/{rid}"),
+                             ("get", "/api/integrations/docusign/envelopes/0aa1b2c3-d4e5-f6a7-b8c9-d0e1f2a3b4c5"
+                                     "?refresh=false"),
+                             ("get", f"/api/integrations/docusign/projects/{pid}/envelopes")):
+            kw = {"json": {"enabled": False}} if method == "patch" else {}
+            r = getattr(other, method)(path, **kw)
+            assert r.status_code == 404, (method, path, r.status_code, r.text)
+        r = other.post(f"/api/integrations/schedule_import/projects/{pid}/upload",
+                       files={"file": ("s.xml", b"<Project xmlns='http://schemas.microsoft.com/project'/>")})
+        assert r.status_code == 404
+        assert other.get("/api/integrations/webhooks").json() == []
+        assert other.get("/api/integrations/calendar_feed/links").json()["links"] == []
+        assert other.get("/api/integrations/twilio_sms/recipients").json()["recipients"] == []
+    assert owner.get(f"/api/integrations/webhooks/{hook['id']}").json()["enabled"] is True
+    assert owner.get("/api/integrations/calendar_feed/links").json()["active"] == 1
+    assert [r["status"] for r in owner.get("/api/integrations/twilio_sms/recipients").json()["recipients"]] == ["active"]

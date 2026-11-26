@@ -854,3 +854,23 @@ def test_duplicate_json_keys_cannot_smuggle_a_tool_past_the_scope(owner, app):
         assert "result" in sse_json(bot.post("/mcp", headers=h, content=fine.encode()).text)
     assert [(x["tool"], x["status"]) for x in mcp_rows(app, owner.tenant_id)] == [
         ("verify_contractor_license", "ok"), ("lookup_safety_standard", "denied")]
+
+
+def test_rest_tool_calls_count_against_the_keys_rate_limit(owner, app):
+    """Security review: POST /api/tools/{name} with an API key used to skip the key's (and the company's) rate limit
+    that /mcp enforces. Both routes now share the same counters."""
+    slow = new_key(owner, name="slow", rate_limit_per_min=2)
+    with TestClient(app) as bot:
+        codes = [bot.post("/api/tools/verify_contractor_license", json={"license_number": "123456"},
+                          headers=bearer(slow)).status_code for _ in range(3)]
+        assert codes == [200, 200, 429]
+        r = bot.post("/api/tools/verify_contractor_license", json={"license_number": "123456"}, headers=bearer(slow))
+        assert r.status_code == 429 and int(r.headers["retry-after"]) >= 1
+        h = mcp_session(bot, bearer(slow))
+        assert lic(bot, h, rid=40).status_code == 429                  # the same budget as /mcp
+        other = new_key(owner, name="other")
+        app.state.platform.mcp_tenant_limiter.limit = 2                # the company total (2 used) applies too
+        r = bot.post("/api/tools/verify_contractor_license", json={"license_number": "123456"}, headers=bearer(other))
+        assert r.status_code == 429
+    # a signed-in person in the web app is not counted against API key budgets
+    assert owner.post("/api/tools/verify_contractor_license", json={"license_number": "123456"}).status_code == 200

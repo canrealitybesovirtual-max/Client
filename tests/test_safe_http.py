@@ -238,3 +238,21 @@ def test_guarded_transport_really_connects_to_an_allowed_host():
     finally:
         server.shutdown()
         server.server_close()
+
+
+def test_a_307_never_re_sends_a_body_to_another_site():
+    """Security review: a 307/308 keeps the method and body (an OAuth form with a token or client secret). Within
+    the same origin that is fine; to another origin the request is refused and the other site is never contacted."""
+    def handler(r):
+        if r.url.path == "/token":
+            return httpx.Response(307, headers={"location": "https://collector.example.net/steal"})
+        if r.url.path == "/moved":
+            return httpx.Response(308, headers={"location": "/token-v2"})
+        return httpx.Response(200, json={"path": r.url.path, "body": r.content.decode()})
+    http, seen, _ = client(handler)
+    with pytest.raises(UnsafeURLError, match="Redirect refused.*with a body"):
+        http.post("https://login.example.com/token", data={"client_secret": "csecret", "token": "rt"})
+    assert [r.url.host for r in seen] == ["login.example.com"]
+    out = http.post("https://login.example.com/moved", data={"token": "rt"}).json()
+    assert out == {"path": "/token-v2", "body": "token=rt"}                  # same origin: kept
+    assert http.get("https://login.example.com/token").json()["path"] == "/steal"   # no body: followed

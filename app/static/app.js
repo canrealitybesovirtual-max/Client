@@ -1989,8 +1989,14 @@
       const attrs = { name: f.name, id, maxlength: f.max_length || null, placeholder: isSaved ? 'Saved' : (f.placeholder || null), autocomplete: 'off', spellcheck: 'false' };
       if (f.type === 'select') el = select(f.name, [['', 'Choose…'], ...(f.options || []).map((o) => [o.value, o.label])], val, { id });
       else if (f.type === 'textarea') el = h('textarea', { ...attrs, value: val });
-      else el = h('input', { ...attrs, value: val, type: f.secret || f.type === 'password' ? 'password' : ({ url: 'url', email: 'email', number: 'number' }[f.type] || 'text') });
-      form.append(field(f.label, el, { hint: hint || undefined, required: f.required && !isSaved, wide: f.type === 'textarea' }));
+      else {
+        // A YYYY-MM-DD text field gets the browser's date picker (its value is the same YYYY-MM-DD text).
+        const isDate = f.type === 'text' && f.pattern === '\\d{4}-\\d{2}-\\d{2}';
+        el = h('input', { ...attrs, value: val, type: f.secret || f.type === 'password' ? 'password' : isDate ? 'date' : ({ url: 'url', email: 'email', number: 'number' }[f.type] || 'text') });
+      }
+      // Long choices ("A week before and the day before") would be cut off in half a narrow card.
+      const wide = f.type === 'textarea' || (f.type === 'select' && (f.options || []).some((o) => String(o.label).length > 22));
+      form.append(field(f.label, el, { hint: hint || undefined, required: f.required && !isSaved, wide }));
     }
     return form;
   }
@@ -2120,13 +2126,21 @@
         c.external_account ? h('span', { class: 'small' }, `Account: ${c.external_account}`) : null,
         c.updated ? h('span', { class: 'small muted' }, `Updated ${fmtDateTime(c.updated)}`) : null)];
       if (c.last_error && c.status !== 'connected' && !settingsOnly) parts.push(msgBox('error', c.last_error));
+      // Developer-level caveats go last, after the action, so the office sees what to click first.
+      const unconfirmed = p.unconfirmed && p.unconfirmed.length ? [h('p', { class: 'small' }, `Not yet confirmed in the official documentation (${p.unconfirmed.length}):`), h('ul', { class: 'bullets small' }, p.unconfirmed.map((u) => h('li', {}, u)))] : null;
       if (!p.operator_configured) {
         // Nothing the customer fills in here can work until the server has the vendor app's keys, so no form.
-        parts.push(h('div', { class: 'banner warn' }, h('p', {}, h('strong', {}, `${p.display_name} can't be connected yet. `), 'This TradeComply server doesn\'t have the app keys it needs for it. Whoever runs your TradeComply server has to add them; then come back here to connect.')),
-          p.missing_env && p.missing_env.length ? more('Details for whoever runs the server', h('p', { class: 'small' }, 'Missing server settings: ', p.missing_env.map((n, k) => [k ? ', ' : '', h('code', {}, n)]))) : null);
+        const local = state.me && state.me.tenant && state.me.tenant.plan === 'local';
+        parts.push(h('div', { class: 'banner warn' }, h('p', {}, h('strong', {}, `${p.display_name} isn't turned on yet. `),
+          local ? `This copy of TradeComply needs ${p.display_name}'s app keys before it can connect. Your IT person can add them (see the details below); then come back here to connect.`
+            : `This TradeComply server needs ${p.display_name}'s app keys before it can connect. Contact TradeComply (or your IT person, if your company runs its own TradeComply server) to have it turned on; then come back here to connect.`)),
+          (p.missing_env && p.missing_env.length) || unconfirmed ? more('Details for whoever runs the server',
+            p.missing_env && p.missing_env.length ? h('p', { class: 'small' }, 'Missing server settings: ', p.missing_env.map((n, k) => [k ? ', ' : '', h('code', {}, n)])) : null, unconfirmed) : null,
+          out);
+        fill(wrap, ...parts);
+        return;
       }
-      if (p.unconfirmed && p.unconfirmed.length) parts.push(more(`Not yet confirmed in the vendor's documentation (${p.unconfirmed.length})`, h('ul', { class: 'bullets small' }, p.unconfirmed.map((u) => h('li', {}, u)))));
-      if (!p.operator_configured) { parts.push(out); fill(wrap, ...parts); return; }
+      const techNotes = unconfirmed ? more(`For your IT person: details not yet confirmed (${p.unconfirmed.length})`, unconfirmed) : null;
       if (!can.write()) {
         parts.push(h('p', { class: 'small muted' }, `Ask the owner or office staff to connect ${p.display_name}.`));
         fill(wrap, ...parts);
@@ -2143,7 +2157,7 @@
           if (onChange) onChange();
         }) }, 'Save settings');
         buttons.append(save);
-        fill(wrap, ...parts, form, buttons, out);
+        fill(wrap, ...parts, form, buttons, out, techNotes);
         return;
       }
       if (p.auth === 'oauth2') {
@@ -2186,7 +2200,12 @@
       const live = ['connected', 'error'].includes(c.status);
       if (live && !extra && NEXT_STEPS[p.provider]) extra = NEXT_STEPS[p.provider]();
       if (!live) extra = null;
-      parts.push(schema.length ? (live ? more('Settings', form) : form) : null, buttons, out, extra);
+      let settings = form;
+      if (live) {
+        settings = more('Settings', form);
+        if (c.status === 'error') settings.open = true;      // the fix (a new token, a new link) is usually in here
+      }
+      parts.push(schema.length ? settings : null, buttons, out, extra, techNotes);
       fill(wrap, ...parts);
     };
     let extra = null;
@@ -2284,7 +2303,7 @@
           h('ul', { class: 'clean stack small' }, rows), h('div', { class: 'row' }, add, replace)]
         : [h('p', { class: 'row' }, h('span', { class: 'pill gray' }, 'No link yet'), h('span', {}, 'Make a link, then add it to your calendar app.')), h('div', { class: 'row' }, make)]);
     };
-    const el = h('div', {}, box, out,
+    const el = h('div', { class: 'cal-links' }, box, out,
       h('p', { class: 'small muted' }, 'In Google Calendar, Outlook or Apple Calendar, add a calendar from a URL (Outlook calls it subscribing from the web) and paste the link. Each calendar app decides how often it checks for changes, often every few hours and sometimes longer.'),
       h('p', { class: 'small' }, h('a', { href: '/api/integrations/calendar_feed/calendar.ics', download: 'tradecomply.ics' }, 'Download today\'s deadlines once (.ics file)'), ' (a one-time copy that won\'t update).'));
     return { el, draw };
@@ -2376,7 +2395,7 @@
     else if (panel === 'calendar_feed') {
       if (p && (p.connection || {}).status === 'connected') pill('green', 'On'); else pill('gray', 'No link yet');
     } else if (!p) pill('gray', intState.providersError ? 'Status unavailable' : 'Not available yet');
-    else if (!p.operator_configured) pill('amber', 'Not available yet');
+    else if (!p.operator_configured) pill('amber', 'Not turned on yet');
     else { const [cls, text] = CONN_TEXT[(p.connection || {}).status] || CONN_TEXT.disconnected; pill(cls, text); }
   }
   function connectSlot(e) {
@@ -2513,7 +2532,7 @@
     if (result === 'connected') top.push(msgBox('info', `${focusEntry ? focusEntry.name.split(' (')[0] : 'The integration'} is connected.`));
     else if (result === 'error') top.push(msgBox('error', `Couldn't connect ${focusEntry ? focusEntry.name.split(' (')[0] : 'the integration'}: `, query.get('message') || 'sign-in was not completed.'));
     if (can.write() && intState.loadErrors.length) top.push(msgBox('warn', `Some built-in connections failed to load on this server: ${intState.loadErrors.join(', ')}. The server log has the details.`));
-    if (intState.providersError) top.push(msgBox('warn', `Connection status is unavailable right now (${intState.providersError}). You can still browse the catalog.`));
+    if (intState.providersError) top.push(msgBox('warn', `Connection status is unavailable right now: ${String(intState.providersError).replace(/\.?$/, '.')} You can still browse the catalog.`));
 
     // filters
     const search = h('input', { type: 'search', id: 'int-q', value: filters.q, placeholder: 'e.g. e-signature, text alerts, Procore, schedule', autocomplete: 'off' });

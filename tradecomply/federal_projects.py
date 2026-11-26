@@ -2553,6 +2553,7 @@ CMMC_POAM, CMMC_SCORING, CMMC_AFFIRM, CMMC_SUBS = ("cmmc-poam-80pct-180-day-clos
 CMMC_SCOPE_L1, CMMC_CLOUD = "cmmc-level1-scope-fci-assets", "cmmc-cloud-fedramp-moderate"
 CMMC_7021, CMMC_CURRENT, CMMC_AWARD, CMMC_7025 = ("cmmc-dfars-7021-contractor-duties", "cmmc-current-status-definition",
                                                   "cmmc-award-eligibility-sprs", "cmmc-dfars-7025-notice-uids")
+CMMC_STATUS_DATE = "cmmc-status-date-definition"
 DFARS_7012, DFARS_INCIDENT, DFARS_MEDIA, DFARS_7012_FLOW, CDI_DEF = (
     "cmmc-dfars-7012-nist-800-171-safeguarding", "cmmc-dfars-7012-incident-72-hours", "cmmc-dfars-7012-media-90-days",
     "cmmc-dfars-7012-flowdown", "cmmc-cdi-definition")
@@ -2565,7 +2566,8 @@ KASPERSKY, SEC889, SEC889_REPS, BYTEDANCE, SAM_REPS = (
 
 CMMC_RULE_IDS = (CMMC_SCOPE, CMMC_PHASES, CMMC_PRESCRIBE, CMMC_L1, CMMC_L2, CMMC_REV3, CMMC_L3, CMMC_L1_SELF,
                  CMMC_L2_SELF, CMMC_L2_C3PAO, CMMC_POAM, CMMC_SCORING, CMMC_AFFIRM, CMMC_SUBS, CMMC_SCOPE_L1,
-                 CMMC_CLOUD, CMMC_7021, CMMC_CURRENT, CMMC_AWARD, CMMC_7025, DFARS_7012, DFARS_INCIDENT, DFARS_MEDIA,
+                 CMMC_CLOUD, CMMC_7021, CMMC_CURRENT, CMMC_STATUS_DATE, CMMC_AWARD, CMMC_7025, DFARS_7012,
+                 DFARS_INCIDENT, DFARS_MEDIA,
                  DFARS_7012_FLOW, CDI_DEF, DFARS_7019, DFARS_7020, FCI_DEF, CUI_DEF, FAR_21, NON_DOD, KASPERSKY,
                  SEC889, SEC889_REPS, BYTEDANCE, SAM_REPS)
 RULE_IDS = RULE_IDS + CMMC_RULE_IDS
@@ -2741,31 +2743,50 @@ def _level_rule(level: str) -> list[str]:
 
 
 def _status_dates(ctx: _Ctx, status: str, status_date: date, last_aff: Optional[date], award: date) -> bool:
-    """Adds the renewal and affirmation dates of a CMMC status you hold; True if it is still current on `award`
-    (DFARS 204.7501 'Current') without a renewal."""
+    """Adds the closeout, renewal and affirmation dates of a CMMC status you hold; True if it is still current on
+    `award` (DFARS 204.7501 'Current') without a renewal. `status_date` is the CMMC Status Date (32 CFR 170.4): a
+    Final that follows a Conditional keeps the Conditional's date, so its 3-year renewal counts from that date."""
     level = status.split(" ", 1)[1]
     cond = status.startswith("Conditional")
+    rule = {LEVELS[0]: CMMC_L1_SELF, LEVELS[1]: CMMC_L2_SELF, LEVELS[2]: CMMC_L2_C3PAO, LEVELS[3]: CMMC_L3}[level]
     if cond:
         days = P(CMMC_CURRENT, "conditional_level_2_max_days" if level != LEVELS[3] else "conditional_level_3_max_days")
         expires = status_date + timedelta(days=days)
-        ctx.date(f"POA&M closeout assessment posted for your {status} ({days} days from the {status_date} status "
-                 "date) or the Conditional status expires", expires, CMMC_POAM, CMMC_CURRENT)
+        ctx.date(f"POA&M closeout assessment posted, with a new affirmation, for your {status} ({days} days from the "
+                 f"{status_date} CMMC Status Date) or the Conditional status expires", expires, CMMC_POAM,
+                 CMMC_CURRENT, CMMC_AFFIRM)
+        # 32 CFR 170.4: the Final that follows the closeout keeps this date; 170.16(a)(1), 170.17(a)(1) and
+        # 170.18(a)(1) count the 3-year reassessment from the Conditional's CMMC Status Date.
+        yrs = P(CMMC_STATUS_DATE, "reassessment_years")
+        ctx.date(f"New {level} assessment posted within {yrs} years of the {status_date} CMMC Status Date (the Final "
+                 "status that follows the closeout keeps that date)", _add_years(status_date, yrs), rule,
+                 CMMC_STATUS_DATE)
     else:
         key = {LEVELS[0]: "final_level_1_max_years", LEVELS[1]: "final_level_2_max_years",
                LEVELS[2]: "final_level_2_max_years", LEVELS[3]: "final_level_3_max_years"}[level]
         yrs = P(CMMC_CURRENT, key)
         expires = _add_years(status_date, yrs)
-        rule = {LEVELS[0]: CMMC_L1_SELF, LEVELS[1]: CMMC_L2_SELF, LEVELS[2]: CMMC_L2_C3PAO, LEVELS[3]: CMMC_L3}[level]
-        ctx.date(f"New {level} assessment posted before your {status} ({status_date}) is {yrs} year"
-                 f"{'s' if yrs != 1 else ''} old", expires, rule, CMMC_CURRENT)
+        ctx.date(f"New {level} assessment posted before your {status} ({status_date} CMMC Status Date) is {yrs} year"
+                 f"{'s' if yrs != 1 else ''} old", expires, rule, CMMC_CURRENT,
+                 *([] if level == LEVELS[0] else [CMMC_STATUS_DATE]))
+        if level != LEVELS[0]:
+            ctx.notes.append(f"Renewal dates count from the CMMC Status Date in SPRS. If your {status} came from a "
+                             "POA&M closeout, that date is the earlier Conditional status date, not the closeout date "
+                             "(32 CFR 170.4: 'A new date is not set for a Final that follows a Conditional'); give "
+                             "that date as cmmc_status_date.")
     aff_from = last_aff or status_date
     aff_due = _add_years(aff_from, P(CMMC_CURRENT, "affirmation_max_years"))
     ctx.date("Affirming Official's annual affirmation in SPRS (from the "
-             + (f"last affirmation on {last_aff}" if last_aff else f"{status_date} status date; give "
-                "last_affirmation_date if you affirmed since") + ")", aff_due, CMMC_AFFIRM, CMMC_CURRENT)
-    if not cond and level == LEVELS[3]:
-        ctx.notes.append("Level 3 also needs its Final Level 2 (C3PAO) renewed and affirmed yearly (32 CFR 170.18(a), "
-                         "170.22(b)(4)); give that status separately to date it.")
+             + (f"last affirmation on {last_aff}" if last_aff else f"{status_date} CMMC Status Date; give "
+                "last_affirmation_date if you affirmed since")
+             + ("; once the POA&M is closed out, yearly affirmations follow the Final's CMMC Status Date, which stays "
+                f"{status_date}" if cond else "") + ")", aff_due, CMMC_AFFIRM, CMMC_CURRENT,
+             *([CMMC_STATUS_DATE] if cond else []))
+    if level == LEVELS[3]:
+        ctx.notes.append("A Level 3 (DIBCAC) status rests on a Final Level 2 (C3PAO) for the same scope: that Level 2 "
+                         f"(C3PAO) must also be reassessed every {P(CMMC_L3, 'level_2_c3pao_reassessment_years')} "
+                         "years and affirmed every year (32 CFR 170.18(a), 170.22(b)(4)); give that status in a "
+                         "separate call to date it.")
     return award <= expires and award <= aff_due
 
 
@@ -2894,8 +2915,11 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
         if applies is None:
             if phase == "before_phase_1":
                 why += (f" The award date {award} is before Phase 1 ({_iso_param(CMMC_PHASES, 'phase_1_start')}), "
-                        "when the current DFARS 252.204-7021 (NOV 2025) took effect: a CMMC status is required only "
-                        "if your contract includes a CMMC clause.")
+                        "when the current DFARS 252.204-7021 (NOV 2025) and the 252.204-7025 notice took effect: a "
+                        "CMMC requirement applies only if your contract includes a CMMC clause. The version in use "
+                        f"until {P(CMMC_7021, 'prior_version_in_effect_until')}, {P(CMMC_7021, 'prior_version')}, "
+                        f"required {P(CMMC_7021, 'prior_version_requirement')}.")
+                level_ids.append(CMMC_7021)
             else:
                 why += (f" Until {_iso_param(CMMC_PRESCRIBE, 'until')} the clause goes in only when the program office "
                         f"sets a level (DFARS 204.7504(a)(1)); plan as if it applies.")
@@ -2907,9 +2931,16 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
         what = ("No CMMC status is needed for this award; the "
                 + ("FAR 52.204-21 safeguards and " if info != "none" else "") + "supply-chain clauses below still "
                 "apply." if dod else "No CMMC. Follow the federal clauses below.")
+    elif phase == "before_phase_1":
+        what = (f"Check whether your {'contract' if prime else 'subcontract'} includes DFARS 252.204-7021 and which "
+                "version; meet the CMMC level it names. CMMC statuses, SPRS affirmations and CMMC UIDs started with "
+                f"Phase 1 on {_iso_param(CMMC_PHASES, 'phase_1_start')}.")
     elif prime:
-        what = (f"Hold a current {required} status in SPRS for every system that will handle {'CUI' if cui else 'FCI'} "
-                f"before award, and list the CMMC UIDs in your proposal.")
+        # DFARS 252.204-7025(b)(1)-(2) and 252.204-7021(d)(1)(i): the level is needed for every contractor system
+        # that will process, store or transmit FCI *or* CUI, with a current affirmation, before award.
+        what = (f"Before award, hold a current {required} status and a current affirmation in SPRS for every "
+                "system that will process, store or transmit FCI or CUI for this contract, and list the CMMC UIDs in "
+                "your proposal.")
     else:
         what = (f"Hold a current {required} status and an affirmation in SPRS before your subcontract is awarded; the "
                 "prime must check it (DFARS 252.204-7021(f)(2)).")
@@ -2956,11 +2987,14 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
                     "Never on a POA&M: " + "; ".join(P(CMMC_POAM, "level_2_never_on_poam")) + ".",
                     [CMMC_POAM, CMMC_SCORING])
         ctx.req("CMMC", "Annual affirmation by your Affirming Official", applies,
-                f"A senior official affirms continuing compliance in SPRS at each assessment, after a POA&M closeout "
-                f"and every {P(CMMC_AFFIRM, 'affirmation_interval_months')} months; an affirmation older than "
-                f"{P(CMMC_CURRENT, 'affirmation_max_years')} year makes the status not current.",
+                f"A senior official affirms continuing compliance in SPRS at each assessment"
+                + ("" if lvl == LEVELS[0] else ", after a POA&M closeout")       # 170.21(a)(1): no Level 1 POA&M
+                + f" and every {P(CMMC_AFFIRM, 'affirmation_interval_months')} months"
+                + (f", for the Final Level 2 (C3PAO) as well as the Level 3 status" if lvl == LEVELS[3] else "")
+                + f"; an affirmation older than {P(CMMC_CURRENT, 'affirmation_max_years')} year makes the status not "
+                "current.",
                 "Name the Affirming Official now and calendar the yearly affirmation.", [CMMC_AFFIRM, CMMC_CURRENT])
-        if prime:
+        if prime and phase != "before_phase_1":          # DFARS 252.204-7025(d) applies from Phase 1
             ctx.req("CMMC", "CMMC UIDs in the proposal; SPRS check before award", applies,
                     f"The contracting officer checks SPRS and cannot award, exercise an option or extend without a "
                     f"current status at the required level for every CMMC UID (each UID is "
@@ -2978,6 +3012,21 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
                 "(C3PAO) or Level 3. The clause flows to subcontracts that will involve FCI or CUI, COTS excluded.",
                 "Before awarding each such subcontract, confirm its current status and affirmation (DFARS "
                 "252.204-7021(f)(2)).", [CMMC_SUBS, CMMC_7021])
+    if dod and info != "none" and phase != "phase_4":
+        # 32 CFR 170.3(e)(1), (3), (4); DFARS 204.7503(c): option exercises can add a CMMC status later
+        p1, p3 = _iso_param(CMMC_PHASES, "phase_1_start"), _iso_param(CMMC_PHASES, "phase_3_start")
+        opt_why = ((f"Your award is before Phase 1 ({p1}): DoD may require Level 1 (Self) or Level 2 (Self) to "
+                    "exercise an option on a contract awarded before then. " if phase == "before_phase_1" else
+                    f"From Phase 3 ({p3}) DoD intends to require Level 2 (C3PAO) to exercise an option on applicable "
+                    "contracts awarded after Phase 1 began. ")
+                   + f"From Phase 4 ({phase4}) DoD will include CMMC requirements in option periods on contracts "
+                   "awarded before Phase 4. The contracting officer checks SPRS before exercising an option or "
+                   "extending the period of performance.")
+        ctx.req("CMMC", "CMMC at option exercise", None, opt_why,
+                "If the contract has option periods, ask " + ("the contracting officer" if prime else "your prime")
+                + " which CMMC level each option will require and have that status current before the option is "
+                "exercised.", [CMMC_PHASES, CMMC_AWARD])
+    if required and applies is not False:
         if cui:
             ctx.req("CMMC", "Cloud services holding CUI: FedRAMP Moderate or equivalent", applies,
                     "A cloud service that processes, stores or transmits CUI must be FedRAMP Authorized at Moderate "
@@ -3089,7 +3138,10 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
     for what, when in p_dates:
         if when > today and dod:
             ctx.date(what, when, CMMC_PHASES, kind="milestone")
-    if dod and applies is not False and required:
+    if dod and applies is not False and required and phase == "before_phase_1":
+        ctx.date("Award date: any CMMC level your contract named had to be met (before Phase 1)", award, CMMC_PHASES,
+                 CMMC_7021, kind="deadline" if award >= today else "milestone")
+    elif dod and applies is not False and required:
         ctx.date((f"Current {required} status and affirmation in SPRS, CMMC UIDs in the proposal" if prime else
                   f"Current {required} status and affirmation in SPRS before your subcontract award"),
                  award, CMMC_AWARD if prime else CMMC_7021, CMMC_CURRENT,
@@ -3115,7 +3167,15 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
                 "not_eligible": (f"{score} < {mn}: no Level 2 status (Conditional needs score / {top} >= "
                                  f"{_n(P(CMMC_POAM, 'min_score_ratio'))}); fix items before the assessment."),
             }[outcome])
-    meets = current = None
+            if dod:
+                # DFARS 252.204-7019(b) / 252.204-7020(a): the SPRS "summary level score" of a NIST SP 800-171 DoD
+                # Assessment is a separate assessment under the DoD Assessment Methodology, not a CMMC status.
+                ctx.use(CMMC_SCORING, DFARS_7019)
+                ctx.notes.append("sprs_score was read as a CMMC Level 2 assessment score under 32 CFR 170.24. A NIST "
+                                 "SP 800-171 DoD Assessment summary score posted in SPRS under DFARS 252.204-7019/-7020 "
+                                 f"comes from the separate {P(DFARS_7019, 'scored_under').split(' (')[0]}; it does not "
+                                 "give you a CMMC status, and this tool does not convert one score into the other.")
+    meets = current = clash = None
     if status and not status_date:
         ctx.notes.append("current_cmmc_status was given without cmmc_status_date, so its renewal and affirmation dates "
                          "were not computed.")
@@ -3133,6 +3193,24 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
             if not current:
                 ctx.notes.append(f"Your {status} will not be current on the {award} award date unless renewed (age "
                                  "limit or yearly affirmation, DFARS 204.7501 'Current').")
+        if score is not None and cui and level != LEVELS[0]:
+            # A Final Level 2 needs every requirement MET (170.16(a)(1), 170.17(a)(1)) and Level 3 needs the maximum
+            # Level 2 score (170.24(c)(3)); a Conditional Level 2 needs score / 110 >= 0.8 (170.21(a)(2)(i)).
+            top, mn = P(CMMC_L2, "max_score"), _min_conditional_score()
+            clash = None
+            if status.startswith("Final") and score < top:
+                clash = f"a {status} means every Level 2 requirement was MET ({top} of {top})"
+            elif level == LEVELS[3] and score < top:
+                clash = f"Level 3 rests on a Final Level 2 (C3PAO) with the maximum score of {top}"
+            elif status.startswith("Conditional") and score < mn:
+                clash = f"a {status} needs a Level 2 score of at least {mn}"
+            if clash:
+                current = None                  # the dates alone cannot show the status is still current
+                ctx.use(CMMC_CURRENT, CMMC_POAM)
+                ctx.notes.append(f"Your sprs_score {score} does not fit your status: {clash}. If the score is newer "
+                                 "than the status, your compliance has changed since the CMMC Status Date, and a "
+                                 f"status is current only with '{P(CMMC_CURRENT, 'condition')}' (DFARS 204.7501): "
+                                 "fix the gaps and reassess before you rely on it.")
     ctx.dates.sort(key=lambda d: d.due)
 
     # ------------------------------------------------ summary and next step
@@ -3170,15 +3248,36 @@ def cmmc_requirements(handles_cui, handles_fci_only, dod_contract, contract_awar
                 f"holding FCI, post the result in SPRS and have your Affirming Official affirm before {award}.")
     else:
         lv = plan if (minimum_only and plan) else required
-        step = ("Read the solicitation's DFARS 252.204-7025 paragraph (b)(1) for the level. " if minimum_only and prime
-                else "Ask the prime which CMMC level its contract requires. " if minimum_only else "")
-        step += (f"Plan for {lv}: write the system security plan, assess all {P(CMMC_L2, 'requirement_count')} NIST SP "
-                 f"800-171 Rev 2 requirements")
-        step += (" with an authorized C3PAO (book early)" if lv in (LEVELS[2], LEVELS[3]) else "")
-        step += (f", then the DCMA DIBCAC Level 3 assessment of the {P(CMMC_L3, 'requirement_count')} NIST SP 800-172 "
-                 "requirements" if lv == LEVELS[3] else "")
+        n2 = P(CMMC_L2, "requirement_count")
+        if minimum_only and phase == "before_phase_1":
+            # DFARS 252.204-7025 and the NOV 2025 clause did not exist before Phase 1 (eCFR version dates)
+            step = ("Check your contract for DFARS 252.204-7021 and the level it names. " if prime else
+                    "Ask the prime whether its contract includes a CMMC clause and which level it names. ")
+        elif minimum_only:
+            step = ("Read the solicitation's DFARS 252.204-7025 paragraph (b)(1) for the level. " if prime else
+                    "Ask the prime which CMMC level its contract requires. ")
+        else:
+            step = ""
+        if lv == LEVELS[3]:
+            # 170.18(a)(1): Final Level 2 (C3PAO) first; 170.24(c)(3): the maximum Level 2 score is required
+            step += (f"Plan for {lv}: write the system security plan, reach a Final Level 2 (C3PAO) with an authorized "
+                     f"C3PAO (book early) with all {n2} NIST SP 800-171 Rev 2 requirements MET, then the DCMA DIBCAC "
+                     f"Level 3 assessment of the {P(CMMC_L3, 'requirement_count')} NIST SP 800-172 requirements")
+        else:
+            step += (f"Plan for {lv}: write the system security plan, assess all {n2} NIST SP 800-171 Rev 2 "
+                     "requirements" + (" with an authorized C3PAO (book early)" if lv == LEVELS[2] else ""))
         step += (f", and keep a NIST SP 800-171 DoD Assessment no more than {P(DFARS_7019, 'max_age_years')} years old "
                  "in SPRS meanwhile.")
+    if clash:
+        step = f"Your sprs_score {score} conflicts with your {status}: resolve that first (see notes). " + step
+    elif status and status_date and meets and required and applies is not False:
+        if current is False:
+            step = f"Your {status} will not be current on {award} unless renewed (see key_dates). " + step
+        elif current and not minimum_only:
+            step = (f"Your {status} meets the {required} requirement and is current on {award}: keep it current with "
+                    "the renewal and affirmation dates in key_dates"
+                    + (f", and keep a NIST SP 800-171 DoD Assessment no more than {P(DFARS_7019, 'max_age_years')} "
+                       "years old in SPRS." if cui else "."))
     res = CmmcRequirementsResult(
         as_of=today.isoformat(), dod_contract=dod, your_role=role, subcontract_tier=tier, information=info,
         contract_award_date=award.isoformat(), cmmc_phase=phase,
@@ -3476,12 +3575,16 @@ def register(mcp) -> None:
             "CMMC level the solicitation or prime contract names (DFARS 252.204-7025(b)(1)): 'Level 1 (Self)', "
             "'Level 2 (Self)', 'Level 2 (C3PAO)', 'Level 3 (DIBCAC)', or 'none'. Leave empty if unknown"))] = None,
         sprs_score: Annotated[Optional[int], Field(le=top, description=(
-            f"Your Level 2 score (out of {top}; may be negative) to test Final / Conditional eligibility"))] = None,
+            f"Your CMMC Level 2 assessment score under 32 CFR 170.24 (out of {top}; may be negative) to test Final / "
+            "Conditional eligibility. A NIST SP 800-171 DoD Assessment score (DFARS 252.204-7019) is a different "
+            "assessment"))] = None,
         current_cmmc_status: Annotated[Optional[str], Field(description=(
             "A CMMC status you hold, e.g. 'Final Level 1 (Self)', 'Conditional Level 2 (Self)', 'Final Level 2 "
             "(C3PAO)'"))] = None,
         cmmc_status_date: Annotated[Optional[str], Field(description=(
-            "ISO date that status was posted in SPRS or eMASS (the CMMC Status Date)"))] = None,
+            "ISO CMMC Status Date shown in SPRS: the date the results were submitted to SPRS or eMASS. For a Final "
+            "status reached by closing out a POA&M, this is the earlier Conditional status date (32 CFR 170.4: no "
+            "new date is set), not the closeout date"))] = None,
         last_affirmation_date: Annotated[Optional[str], Field(description=(
             "ISO date of your Affirming Official's last affirmation in SPRS"))] = None,
         as_of: Annotated[Optional[str], Field(description="ISO date to evaluate as of; default today in California")] = None,

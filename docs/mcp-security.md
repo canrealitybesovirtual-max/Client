@@ -107,7 +107,8 @@ Each API key has a policy (`PATCH /api/keys/{id}`, or Settings > API keys > Edit
   (`GET /api/tools`, `POST /api/tools/{name}`, `GET /api/mcp/tool-hashes`, `/mcp`) and nothing else: no projects,
   subs, documents or imports.
 - **Rate limit.** Up to 600 tool calls a minute per key (the default), lower if set. All of a company's keys together
-  get 1,200 a minute.
+  get 1,200 a minute. The same counters cover `/mcp` and `POST /api/tools/{name}` (a 429 with Retry-After on either),
+  so a key can't get round its limit through the REST route.
 - **Expiry.** Optional (`expires_in_days` or `expires_at`, at most 5 years). An expired key gets 401 everywhere.
 
 The gate enforces the scope on every `tools/call` before the tool runs: a call outside it gets a JSON-RPC error

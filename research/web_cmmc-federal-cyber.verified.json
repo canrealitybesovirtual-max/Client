@@ -590,18 +590,22 @@
     "close_poam_to_final": true,
     "subs_affirm_before_subcontract_award": true,
     "check_subs_before_award": "current CMMC certificate or status at the level appropriate under 32 CFR 170.23",
-    "flowdown": "substance of the clause including (f) and excluding (e)(1), in subcontracts that will require processing, storing or transmitting FCI or CUI; commercial included; COTS excluded"
+    "flowdown": "substance of the clause including (f) and excluding (e)(1), in subcontracts that will require processing, storing or transmitting FCI or CUI; commercial included; COTS excluded",
+    "prior_version": "DFARS 252.204-7021 (JAN 2023)",
+    "prior_version_in_effect_until": "2025-11-09",
+    "prior_version_requirement": "a current (i.e. not older than 3 years) CMMC certificate at the CMMC level required by this contract",
+    "notice_provision_7025_first_in_effect": "2025-11-10"
    },
    "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
-   "citation": "DFARS 252.204-7021(d)-(f) (NOV 2025)",
-   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7021 (paragraphs (d)-(f)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "citation": "DFARS 252.204-7021(d)-(f) (NOV 2025); DFARS 252.204-7021(b) (JAN 2023), as in effect through 2025-11-09",
+   "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7021 (paragraphs (d)-(f)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API); https://www.ecfr.gov/api/versioner/v1/full/2025-11-09/title-48.xml?section=252.204-7021 (point-in-time text for 2025-11-09: the JAN 2023 clause) and the eCFR version history of 252.204-7025 (first version date 2025-11-10)",
    "verbatim_quote": "Only process, store, or transmit FCI or CUI on contractor information systems that have a CMMC status at the CMMC level required in paragraph (d)(1) of this clause, or higher;",
    "effective": "2025-11-10 (DFARS CMMC acquisition rule, 90 FR 43574-43577, Sept. 10, 2025; eCFR version date)",
    "read_from_primary_text": true,
-   "notes": "",
+   "notes": "Before 2025-11-10 the clause read (JAN 2023): '(b) Requirements. The Contractor shall have a current (i.e. not older than 3 years) CMMC certificate at the CMMC level required by this contract and maintain the CMMC certificate at the required level for the duration of the contract.' The NOV 2025 clause, the seven CMMC statuses, SPRS affirmations, CMMC UIDs and the 252.204-7025 notice apply only from 2025-11-10 (eCFR version dates).",
    "verification": {
     "status": "confirmed",
-    "checked_against": "eCFR 252.204-7021, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7021 (NOV 2025) (d)(1)-(5), (e)(1)-(3), (f)(1)-(2). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7021. 11 parameter, date and wording checks against the re-fetched text passed.",
+    "checked_against": "eCFR 252.204-7021, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7021 (NOV 2025) (d)(1)-(5), (e)(1)-(3), (f)(1)-(2). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7021. 11 parameter, date and wording checks against the re-fetched text passed. Adversarial review 2026-11-26: prior_version parameters string-matched in the eCFR point-in-time copy of 252.204-7021 for 2025-11-09 (clause date JAN 2023), and the 2025-11-10 version date of 252.204-7021 and 252.204-7025 read from the eCFR versioner 'versions' endpoint.",
     "correction": ""
    }
   },
@@ -638,6 +642,35 @@
    "verification": {
     "status": "confirmed",
     "checked_against": "eCFR 204.7501, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: DFARS 204.7501 'Current' (1)-(3) and 'CMMC status' (seven statuses), identical in 252.204-7021(a). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 204.7501. 14 parameter, date and wording checks against the re-fetched text passed.",
+    "correction": ""
+   }
+  },
+  {
+   "id": "cmmc-status-date-definition",
+   "title": "CMMC Status Date: the date results go into SPRS or eMASS; a Final status that follows a Conditional keeps the Conditional's date, so the 3-year reassessment counts from it",
+   "plain_english": "Your CMMC Status Date is the date your assessment results were submitted to SPRS (self-assessments) or to the CMMC instance of eMASS (C3PAO and DIBCAC assessments). If you first got a Conditional status and then closed out the POA&M, the Final status keeps the Conditional's date: no new date is set. The 3-year Level 2 reassessment, the 3-year Level 3 reassessment (counted from the Conditional Level 3 date when there was a POA&M), the 6-year evidence retention and the yearly affirmation after a Final status all run from that date, so use the Conditional date, not the closeout date, when you calendar them.",
+   "category": "definition",
+   "parameters": {
+    "is": "the date that the CMMC Status results are submitted to SPRS or the CMMC instantiation of eMASS, as appropriate",
+    "final_after_conditional_keeps_conditional_date": true,
+    "new_date_set_for_final_after_conditional": false,
+    "reassessment_years": 3,
+    "level_2_self_reassessment_from": "the CMMC Status Date associated with the Conditional Level 2 (Self)",
+    "level_2_c3pao_reassessment_from": "the CMMC Status Date associated with the Conditional Level 2 (C3PAO)",
+    "level_3_reassessment_from": "the CMMC Status Date associated with the Final Level 3 (DIBCAC) or, if there was a POA&M, the Conditional Level 3 (DIBCAC)",
+    "artifact_retention_years_from_status_date": 6,
+    "annual_affirmation_following": "a Final CMMC Status Date"
+   },
+   "applies_to": "Prime contractors and subcontractors at every tier on Department of Defense contracts (e.g., USACE, NAVFAC, Air Force, Army, DLA construction and facility work in California) that will process, store or transmit FCI or CUI on their own unclassified information systems",
+   "citation": "32 CFR 170.4(b) (CMMC Status Date); 32 CFR 170.16(a)(1), 170.17(a)(1), 170.18(a)(1); 32 CFR 170.15(c)(2), 170.16(c)(4), 170.17(c)(4), 170.18(c)(4); 32 CFR 170.22(a)(3)(iii)",
+   "source_location": "https://www.ecfr.gov/current/title-32/section-170.4 (CMMC Status Date); https://www.ecfr.gov/current/title-32/section-170.16 (paragraph (a)(1)); https://www.ecfr.gov/current/title-32/section-170.17 (paragraph (a)(1)); https://www.ecfr.gov/current/title-32/section-170.18 (paragraph (a)(1)); https://www.ecfr.gov/current/title-32/section-170.22 (paragraph (a)(3)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
+   "verbatim_quote": "CMMC Status Date means the date that the CMMC Status results are submitted to SPRS or the CMMC instantiation of eMASS, as appropriate. The date of the Conditional CMMC Status will remain as the CMMC Status Date after a successful POA&M closeout. A new date is not set for a Final that follows a Conditional.",
+   "effective": "2024-12-16 (32 CFR part 170 CMMC Program final rule, 89 FR 83214, Oct. 15, 2024; eCFR version date)",
+   "read_from_primary_text": true,
+   "notes": "170.16(a)(1): 'the OSA must conduct a Level 2 self-assessment every three years and submit the results in SPRS, within three years of the CMMC Status Date associated with the Conditional Level 2 (Self)'. 170.17(a)(1): 'the Level 2 certification assessment must be completed within three years of the CMMC Status Date associated with the Conditional Level 2 (C3PAO)'. 170.18(a)(1): 'within three years of the CMMC Status Date associated with the Final Level 3 (DIBCAC) or, if there was a POA&M, then within three years of the CMMC Status Date associated with the Conditional Level 3 (DIBCAC)'. Artifacts: 'retained ... for six (6) years from the CMMC Status Date' (170.15(c)(2), 170.16(c)(4), 170.17(c)(4), 170.18(c)(4)). Affirmation: 'Annually following a Final CMMC Status Date' (170.22(a)(3)(iii)). DFARS 204.7501 'Current' measures a Final status's age from 'the Final CMMC Status date', which under 170.4 is the Conditional's date when a Conditional came first.",
+   "verification": {
+    "status": "confirmed",
+    "checked_against": "Adversarial review 2026-11-26: eCFR 32 CFR part 170 full text (versioner API, current as of 2026-11-24; part 170 unchanged since its only version date 2024-12-16), fetched fresh 2026-11-26. verbatim_quote string-matched in 170.4(b); each quoted phrase in notes string-matched in 170.15-170.18 and 170.22.",
     "correction": ""
    }
   },
@@ -882,18 +915,22 @@
      "option exercise",
      "period of performance extension"
     ],
-    "prescribed_in": "all DoD solicitations except COTS-only (DFARS 204.7304(d))"
+    "prescribed_in": "all DoD solicitations except COTS-only (DFARS 204.7304(d))",
+    "scored_under": "NIST SP 800-171 DoD Assessment Methodology (the document 252.204-7019(b) links, Version 1.2.1, 6.24.2020 per its URL)",
+    "methodology_document_read": false,
+    "basic_assessment_confidence": "Low",
+    "same_as_cmmc_assessment": false
    },
    "applies_to": "DoD prime contractors and subcontractors whose information systems process, store or transmit covered defense information (CUI) for the contract",
-   "citation": "DFARS 252.204-7019(b)-(d) (NOV 2023); DFARS 204.7302(a)(2); DFARS 204.7303(b); DFARS 204.7304(d)",
+   "citation": "DFARS 252.204-7019(b)-(d) (NOV 2023); DFARS 204.7302(a)(2); DFARS 204.7303(b); DFARS 204.7304(d); DFARS 252.204-7020(a) (Basic Assessment)",
    "source_location": "https://www.ecfr.gov/current/title-48/section-252.204-7019; https://www.ecfr.gov/current/title-48/section-204.7302 (paragraph (a)(2)); https://www.ecfr.gov/current/title-48/section-204.7303 (paragraph (b)) (eCFR text current as of 2026-11-24, retrieved 2026-11-26 via the eCFR versioner API)",
    "verbatim_quote": "In order to be considered for award, if the Offeror is required to implement NIST SP 800-171, the Offeror shall have a current assessment (i.e., not more than 3 years old unless a lesser time is specified in the solicitation) (see 252.204-7020) for each covered contractor information system that is relevant to the offer, contract, task order, or delivery order.",
    "effective": "2023-11-17 (clause date NOV 2023; 88 FR 80466, Nov. 17, 2023; eCFR version date)",
    "read_from_primary_text": true,
-   "notes": "The DoD Assessment Methodology document (acq.osd.mil) could not be fetched; the clause names it.",
+   "notes": "The DoD Assessment Methodology document (acq.osd.mil) could not be fetched; the clause names it. 252.204-7020(a): a Basic Assessment is a self-assessment 'conducted in accordance with the NIST SP 800-171 DoD Assessment Methodology' that 'Results in a confidence level of “Low”'. It is a different assessment from a CMMC Level 2 self-assessment, which is scored under the CMMC Scoring Methodology of 32 CFR 170.24 and posted with a CMMC status, affirmation and CMMC UID (32 CFR 170.16; DFARS 204.7501). The DoD Assessment Methodology document itself was not read (www.acq.osd.mil was not fetched), so this pack states no point values from it.",
    "verification": {
     "status": "confirmed",
-    "checked_against": "eCFR 204.7302, 204.7303, 204.7304, 252.204-7019, 252.204-7020, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7019 (NOV 2023) (b), (c)(1)-(2), (d)(1)(i)(A)-(F), (d) 30-day posting; 252.204-7020(a) assessment definitions; DFARS 204.7302(a)(2), 204.7303(b), 204.7304(d). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7019. 14 parameter, date and wording checks against the re-fetched text passed.",
+    "checked_against": "eCFR 204.7302, 204.7303, 204.7304, 252.204-7019, 252.204-7020, re-fetched 2026-11-26 (eCFR versioner API, text current as of 2026-11-24). Also read: 252.204-7019 (NOV 2023) (b), (c)(1)-(2), (d)(1)(i)(A)-(F), (d) 30-day posting; 252.204-7020(a) assessment definitions; DFARS 204.7302(a)(2), 204.7303(b), 204.7304(d). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of 252.204-7019. 14 parameter, date and wording checks against the re-fetched text passed. Adversarial review 2026-11-26: 'NIST SP 800-171 DoD Assessment Methodology', the Version-1.2.1-6.24.2020 URL and the 'Low' confidence wording string-matched in fresh eCFR text of 252.204-7019(b) and 252.204-7020(a).",
     "correction": ""
    }
   },
@@ -1213,11 +1250,11 @@
  "refuted": [],
  "verification_meta": {
   "verified_on": "2026-11-26",
-  "method": "Independent re-verification of all 36 rules (every id starts with 'cmmc-'; none collides with tradecomply/data/rulebook.json or any other research pack). Sources were fetched fresh on 2026-11-26 into a new scratch folder with a separately written XML-to-text extractor; nothing was reused from the author's downloads. Sources: eCFR versioner API full-text XML current as of 2026-11-24 (titles 32 and 48 'up_to_date_as_of' 2026-11-24 per /api/versioner/v1/titles.json) for 32 CFR part 170 (all sections and appendix A), 32 CFR 2002.4, DFARS 204.7302-204.7304, subpart 204.75, 252.204-7008, -7012, -7019, -7020, -7021, -7025, FAR 2.101, 4.1901-4.1903, 4.2002, 4.2004, 4.2103, 4.2105, 4.2203, 52.204-7, -8, -21, -23, -24, -25, -26, -27 and 52.212-3; point-in-time copies of 252.204-7021, 252.204-7025 and 204.7504 for 2025-11-09 and 2025-11-10; and the eCFR version histories of 32 CFR part 170 and 48 CFR parts 52, 204 and 252 (latest version dates: 170.x 2024-12-16; 204.7501/204.7504/252.204-7021/-7025 2025-11-10; 252.204-7012 2024-05-30; 252.204-7019/-7020 2023-11-17; 52.204-21/-24/-25 2021-12-06; 52.204-23 2023-12-04; 52.204-27 2023-06-02; 52.204-8 2026-03-13). Each verbatim_quote was string-matched against the fresh text after collapsing whitespace and normalizing quotes and dashes, and checked to fall inside a section named in source_location. Every parameter value, list item, date, count and derived number (88 = lowest whole Level 2 score with score/110 >= 0.8; 20 for Level 3 of 24; phase dates) was then checked against the section text by an explicit needle or computation (349 checks plus 17 effective-date checks, all passing), and every title and plain_english sentence was read against the text. Statuses: confirmed = the official text states the rule and parameters. corrected = a parameter, scope, effective date or wording was fixed against the text, in place, with the change described in verification.correction. unverifiable = the primary text could not be read (none). refuted = contradicted by or absent from the source (none). Not reachable from this session (network proxy refusal or DNS failure; no bot protection was bypassed): www.acquisition.gov, www.federalregister.gov, dodcio.defense.gov, csrc.nist.gov, nvlpubs.nist.gov, www.govinfo.gov, sam.gov, dibnet.dod.mil, www.law.cornell.edu. Consequences: NIST SP 800-171 Rev 3 content, any DoD class deviation on the SP 800-171 revision for DFARS 252.204-7012, the Federal Register preambles (including how DoD reads the micro-purchase wording of 170.3(c)), DoD CIO guidance documents and the DIBNet report form are not stated in any rule. This file does not rebuild tradecomply/data/rulebook.json; scripts/build_rulebook.py must be re-run to pick up this pack.",
-  "in_scope_rules_checked": 36,
+  "method": "Independent re-verification of all 36 rules (every id starts with 'cmmc-'; none collides with tradecomply/data/rulebook.json or any other research pack). Sources were fetched fresh on 2026-11-26 into a new scratch folder with a separately written XML-to-text extractor; nothing was reused from the author's downloads. Sources: eCFR versioner API full-text XML current as of 2026-11-24 (titles 32 and 48 'up_to_date_as_of' 2026-11-24 per /api/versioner/v1/titles.json) for 32 CFR part 170 (all sections and appendix A), 32 CFR 2002.4, DFARS 204.7302-204.7304, subpart 204.75, 252.204-7008, -7012, -7019, -7020, -7021, -7025, FAR 2.101, 4.1901-4.1903, 4.2002, 4.2004, 4.2103, 4.2105, 4.2203, 52.204-7, -8, -21, -23, -24, -25, -26, -27 and 52.212-3; point-in-time copies of 252.204-7021, 252.204-7025 and 204.7504 for 2025-11-09 and 2025-11-10; and the eCFR version histories of 32 CFR part 170 and 48 CFR parts 52, 204 and 252 (latest version dates: 170.x 2024-12-16; 204.7501/204.7504/252.204-7021/-7025 2025-11-10; 252.204-7012 2024-05-30; 252.204-7019/-7020 2023-11-17; 52.204-21/-24/-25 2021-12-06; 52.204-23 2023-12-04; 52.204-27 2023-06-02; 52.204-8 2026-03-13). Each verbatim_quote was string-matched against the fresh text after collapsing whitespace and normalizing quotes and dashes, and checked to fall inside a section named in source_location. Every parameter value, list item, date, count and derived number (88 = lowest whole Level 2 score with score/110 >= 0.8; 20 for Level 3 of 24; phase dates) was then checked against the section text by an explicit needle or computation (349 checks plus 17 effective-date checks, all passing), and every title and plain_english sentence was read against the text. Statuses: confirmed = the official text states the rule and parameters. corrected = a parameter, scope, effective date or wording was fixed against the text, in place, with the change described in verification.correction. unverifiable = the primary text could not be read (none). refuted = contradicted by or absent from the source (none). Not reachable from this session (network proxy refusal or DNS failure; no bot protection was bypassed): www.acquisition.gov, www.federalregister.gov, dodcio.defense.gov, csrc.nist.gov, nvlpubs.nist.gov, www.govinfo.gov, sam.gov, dibnet.dod.mil, www.law.cornell.edu. Consequences: NIST SP 800-171 Rev 3 content, any DoD class deviation on the SP 800-171 revision for DFARS 252.204-7012, the Federal Register preambles (including how DoD reads the micro-purchase wording of 170.3(c)), DoD CIO guidance documents and the DIBNet report form are not stated in any rule. This file does not rebuild tradecomply/data/rulebook.json; scripts/build_rulebook.py must be re-run to pick up this pack. Adversarial review 2026-11-26 (second, adversarial pass on what the cmmc_requirements tool outputs): re-fetched 32 CFR part 170, DFARS 204.7302-204.7304, subpart 204.75 (source note 90 FR 43574, Sept. 10, 2025), 252.204-7012, -7019, -7020, -7021 (source note 90 FR 43575), -7025 (90 FR 43577), FAR 2.101, 4.1902-4.1903, 52.204-7, -8, -21, -23, -25, -27 from the eCFR versioner API (current as of 2026-11-24) plus point-in-time copies of 252.204-7021 for 2025-09-09, 2025-09-10, 2025-11-09 and 2025-11-10 (JAN 2023 clause through 2025-11-09, NOV 2025 clause from 2025-11-10) and the version histories (no change to any of these sections after the dates above). www.acquisition.gov and www.federalregister.gov were again outside this session's network allowlist (proxy refusal; not bot protection), so the Federal Register DATES sections were not read: the 2025-11-10 effective date rests on the eCFR version dates and point-in-time texts. Added rule cmmc-status-date-definition (32 CFR 170.4: a Final that follows a Conditional keeps the Conditional's CMMC Status Date); added the JAN 2023 prior version to cmmc-dfars-7021-contractor-duties and the DoD Assessment Methodology distinction to cmmc-dfars-7019-assessment-3-years. Gap noted, not added: FAR 52.204-28/-29/-30 (FASCSA orders) exist in eCFR part 52 and are not covered by this pack.",
+  "in_scope_rules_checked": 37,
   "out_of_scope_rules_unchanged": 0,
   "counts": {
-   "confirmed": 30,
+   "confirmed": 31,
    "corrected": 6
   }
  }

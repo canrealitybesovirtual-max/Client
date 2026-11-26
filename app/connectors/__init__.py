@@ -175,7 +175,9 @@ class ConfigField:
             except UnsafeURLError as e:
                 raise ConfigError(f"{label}: {e}", self.name) from None
         if self.pattern and not re.fullmatch(self.pattern, text):
-            raise ConfigError(f"{label}: not in the expected format", self.name)
+            # Say what is expected: the placeholder is the example the settings form shows.
+            like = f" (like {self.placeholder})" if self.placeholder and not self.secret else ""
+            raise ConfigError(f"{label}: not in the expected format{like}", self.name)
         return text
 
 
@@ -479,7 +481,9 @@ class Connector:
             return
         form = {"token": token, "token_type_hint": "refresh_token" if tok.get("refresh_token") else "access_token"}
         with self.ctx.http() as http:
-            http.post(self.oauth.revoke_url, data=form, headers=self._client_auth_headers(form), retries=0)
+            # no redirects: the form carries the token (and, with client_auth="body", the client secret)
+            http.post(self.oauth.revoke_url, data=form, headers=self._client_auth_headers(form), retries=0,
+                      follow_redirects=False)
 
     def handle_event(self, event: str, payload: dict) -> None:
         """Deliver one event this connector subscribes to. Raise PermanentError for a delivery that can never

@@ -338,6 +338,15 @@ class SplunkHECConnector(Connector):
         config, secret = super().clean_config(values, existing_config, existing_secrets)
         if config.get("hec_url"):
             config["hec_url"] = normalize_hec_url(config["hec_url"])
+        # The saved token goes to the saved URL. A new URL keeps it only when the token is entered again: otherwise
+        # anyone who may edit settings (an office user, an API key) could point the URL at a server of theirs and
+        # receive the company's HEC token with the next test or export, although the token is never shown to them.
+        old_url = (existing_config or {}).get("hec_url")
+        retyped = isinstance(values, dict) and str(values.get(TOKEN_FIELD) or "").strip()
+        if old_url and config.get("hec_url") != old_url and (existing_secrets or {}).get(TOKEN_FIELD) \
+                and not retyped:
+            raise ConfigError("HEC token: enter the token again when you change the HEC URL (the saved token is "
+                              "only ever sent to the URL it was saved with).", TOKEN_FIELD)
         return config, secret
 
     def _settings(self) -> tuple[str, str, str | None, dict]:

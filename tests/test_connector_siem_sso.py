@@ -1082,3 +1082,80 @@ def test_no_secret_code_or_token_reaches_the_log(owner, app, world, caplog):
         "203.0.113.9", "GET", f"/api/auth/sso/callback?code={code}&state={q['state']}", "1.1", 303), None)
     RedactTokens().filter(rec)
     assert code not in rec.getMessage() and q["state"] not in rec.getMessage()
+
+
+# ============================================================================ security review regressions
+def test_userinfo_cannot_vouch_for_a_different_email_than_the_id_token(owner, app, platform, world):
+    """The ID token says olivia@ without email_verified; UserInfo (same sub) says someone else's address is verified.
+    That flag must not verify olivia@."""
+    idp = world.add(FakeIdP(OKTA))
+    configure_sso(owner)
+    sub = "sub-" + hashlib.sha256(b"olivia@acme.com").hexdigest()[:12]
+    idp.userinfo_body = {"sub": sub, "email": "it-admin@acme.com", "email_verified": True}
+    c, r = sso_login(app, idp, "olivia@acme.com", email_verified=None)
+    assert "different email address" in error_of(r) and c.get("/api/me").status_code == 401
+    assert audit_rows(platform, owner.tenant_id, "sso.login")[0]["args"]["error"] == "userinfo_email"
+    idp.userinfo_body = {"sub": sub, "email": "Olivia@Acme.com", "email_verified": True}     # the same address
+    _, r = sso_login(app, idp, "olivia@acme.com", email_verified=None)
+    assert r.headers["location"] == "/#/dashboard"
+
+
+def test_issuer_is_matched_exactly_even_if_the_jwt_library_does_not(owner, app, world, monkeypatch):
+    """PyJWT 2.10.0 (CVE-2024-53861) accepted an iss that is a substring of the expected issuer. Simulate a library
+    that skips the iss check: TradeComply's own exact comparison still refuses the token."""
+    idp = world.add(FakeIdP(OKTA))
+    configure_sso(owner)
+    real = sso.jwt.decode
+    monkeypatch.setattr(sso.jwt, "decode", lambda token, **kw: real(token, **{**kw, "issuer": None}))
+    _, r = sso_login(app, idp, "olivia@acme.com", iss="https://acme.okta")
+    assert "different issuer" in error_of(r)
+
+
+def test_pyjwt_requirement_excludes_the_vulnerable_release():
+    import os
+    from packaging.requirements import Requirement
+    from packaging.version import Version
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "requirements.txt")
+    lines = [ln.split(" #")[0].strip() for ln in open(path, encoding="utf-8")]
+    req = next(Requirement(ln) for ln in lines if ln.lower().startswith("pyjwt"))
+    assert not req.specifier.contains("2.10.0") and req.specifier.contains("2.10.1")
+    assert Version(jwt.__version__) != Version("2.10.0")
+
+
+def test_changing_the_issuer_needs_the_client_secret_again(owner, world):
+    """Otherwise an edit of the issuer alone would send the saved client secret to another server's token endpoint
+    on the next sign-in."""
+    world.add(FakeIdP(OKTA))
+    world.add(FakeIdP("https://attacker-idp.example.com"))
+    configure_sso(owner)
+    body = {"client_id": CLIENT_ID, "allowed_domains": ["acme.com"]}
+    r = owner.put("/api/sso/config", json={**body, "issuer": "https://attacker-idp.example.com"})
+    assert r.status_code == 422 and "client secret" in r.json()["detail"]
+    assert owner.get("/api/sso/config").json()["issuer"] == OKTA
+    assert owner.put("/api/sso/config", json={**body, "issuer": OKTA + "/"}).status_code == 200   # same issuer
+    r = owner.put("/api/sso/config", json={**body, "issuer": "https://attacker-idp.example.com",
+                                           "client_secret": "a-new-secret-for-the-new-provider"})
+    assert r.status_code == 200 and r.json()["issuer"] == "https://attacker-idp.example.com"
+
+
+def test_changing_the_hec_url_needs_the_token_again(owner, platform, world):
+    """Otherwise anyone who may edit settings (office user, API key) could point the URL at their own server and
+    receive the saved HEC token with the next test, without ever seeing it."""
+    connect_splunk(owner)
+    posts = len(world.hec.posts)
+    evil = "https://collector.attacker.example.com"
+    for route, method in (("config", "put"), ("connect", "post")):
+        r = getattr(owner, method)(f"/api/integrations/splunk/{route}", json={"config": {"hec_url": evil}})
+        assert r.status_code == 422 and "HEC token" in r.json()["detail"], r.text
+        r = getattr(owner, method)(f"/api/integrations/splunk/{route}",
+                                   json={"config": {"hec_url": evil, "hec_token": ""}})
+        assert r.status_code == 422
+    assert len(world.hec.posts) == posts and not any(evil in s for s in map(str, (q.url for q in world.seen)))
+    assert platform.store.get_connection(owner.tenant_id, "splunk")["config"]["hec_url"] == HEC_URL
+    # the same URL, another index: no token needed; a new URL with the token typed again: fine
+    assert owner.put("/api/integrations/splunk/config", json={"config": {"index": "main"}}).status_code == 200
+    r = owner.put("/api/integrations/splunk/config", json={"config": {"hec_url": HEC_URL + "/services/collector"}})
+    assert r.status_code == 200                                         # normalizes to the same URL
+    r = owner.put("/api/integrations/splunk/config", json={"config": {"hec_url": "https://splunk.example.com:8088",
+                                                                      "hec_token": HEC_TOKEN}})
+    assert r.status_code == 200

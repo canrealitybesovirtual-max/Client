@@ -390,6 +390,10 @@ def validate_id_token(platform, id_token, *, meta: dict, client_id: str, nonce: 
         raise SSOError("not_yet_valid", "The ID token isn't valid yet (check the server clocks).") from None
     except jwt.PyJWTError:
         raise SSOError("bad_signature", "The ID token's signature or claims are not valid.") from None
+    # Exact issuer match again, independent of the JWT library: PyJWT 2.10.0 compared a str issuer by substring
+    # (CVE-2024-53861, GHSA-75c5-xw7c-p5pm), so "https://acme" passed for "https://acme.okta.com".
+    if claims.get("iss") not in ((issuer, "accounts.google.com") if issuer == GOOGLE_ISSUER else (issuer,)):
+        raise SSOError("bad_iss", "The ID token came from a different issuer.")
     aud = claims.get("aud")
     if isinstance(aud, list) and set(aud) != {client_id}:
         raise SSOError("bad_aud", "The ID token is also meant for other applications.")
@@ -461,6 +465,12 @@ def identity(platform, claims: dict, tokens: dict, meta: dict, allowed_domains: 
             ui = userinfo(platform, meta, token)
             if ui.get("sub") != claims.get("sub"):          # OIDC Core 5.3.2: the same End-User or nothing
                 raise SSOError("userinfo_sub", "The provider's profile answer is for a different person.")
+            # Its email_verified describes ITS email: never let it vouch for a different address in the ID token.
+            if isinstance(info.get("email"), str) and isinstance(ui.get("email"), str) and \
+                    info["email"].strip().lower() != ui["email"].strip().lower():
+                raise SSOError("userinfo_email", "The provider's profile answer has a different email address than "
+                                                 "the sign-in token. Ask your administrator to check the user's "
+                                                 "email in the identity provider.")
             for k in ("email", "email_verified", "xms_edov", "hd"):
                 if k in ui and (k not in info or (k == "email" and not isinstance(info.get(k), str))):
                     info[k] = ui[k]
@@ -675,7 +685,7 @@ def _clean_domains(values: list[str]) -> list[str]:
 @router.put("/api/sso/config")
 def put_config(body: SSOConfigIn, request: Request, p: Principal = Depends(owner_only)):
     """Save (and check) the SSO settings. The provider's discovery document and signing keys must load. A blank
-    client_secret keeps the saved one (unless the client ID changed). enforced=true needs a successful SSO sign-in
+    client_secret keeps the saved one (unless the client ID or the issuer changed). enforced=true needs a successful SSO sign-in
     with these settings first, and ends every non-owner session."""
     platform = platform_of(request)
     require_entitled(platform, p)
@@ -693,8 +703,12 @@ def put_config(body: SSOConfigIn, request: Request, p: Principal = Depends(owner
         raise HTTPException(422, "The client secret contains characters that can't be right.")
     domains = _clean_domains(body.allowed_domains)
     old = store.get_sso_config(tid)
-    if not secret and (not old or not old.get("has_secret") or old["client_id"] != client_id):
-        raise HTTPException(422, "Enter the client secret (it's needed for a new or changed client ID).")
+    # The saved secret is sent (HTTP Basic or form) to the token endpoint of whatever issuer is saved, so it is kept
+    # only for the same client ID AND the same issuer: otherwise anyone who can edit these settings could point them
+    # at a server of theirs and receive the company's client secret on the next sign-in.
+    if not secret and (not old or not old.get("has_secret") or old["client_id"] != client_id
+                       or old["issuer"].rstrip("/") != issuer.rstrip("/")):
+        raise HTTPException(422, "Enter the client secret (it's needed for a new or changed client ID or issuer).")
     try:                                     # the provider must answer before anything is saved
         try:
             meta = discover(platform, issuer, force=True)
