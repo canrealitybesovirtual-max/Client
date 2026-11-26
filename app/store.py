@@ -579,6 +579,78 @@ APP_TABLES = ("tenants", "users", "api_keys", "projects", "subs", "documents", "
               "outbound_events", "mcp_audit_log", "sso_configs", "calendar_tokens")
 assert sorted(MIGRATIONS) == sorted(PG_MIGRATIONS) and max(MIGRATIONS) == SCHEMA_VERSION
 
+# Account data rights (app/account.py: GET /api/tenant/export, DELETE /api/tenant). Every table in APP_TABLES is
+# either a company's own (deleted with it, child tables first) or shared by the whole server and holding nothing that
+# names a company. A new table must be added to one of the two, or importing this module fails.
+TENANT_DELETE_ORDER = ("outbound_events", "webhooks", "integration_connections", "mcp_audit_log", "calendar_tokens",
+                       "sso_configs", "field_logs", "documents", "subs", "projects", "api_keys", "audit", "users")
+SHARED_TABLES = {
+    "stripe_events": "ids and types of Stripe events already processed (no company id)",
+    "revoked_sessions": "random nonces of ended sessions and used one-time links, with an expiry (no company id)",
+    "app_secrets": "the server's own generated keys",
+    "schema_version": "the database schema version",
+}
+assert set(TENANT_DELETE_ORDER) | set(SHARED_TABLES) | {"tenants"} == set(APP_TABLES), "classify every new table"
+
+# What the company export may read: an explicit column list per table, so a secret column added later is never
+# exported by accident. tests/test_account.py checks that every column of every table is listed here or in
+# TENANT_EXPORT_OMITTED (with the reason), on both backends.
+TENANT_EXPORT: dict[str, tuple[str, ...]] = {
+    "tenants": ("id", "company_name", "cslb_license", "plan", "status", "trial_ends", "stripe_customer_id",
+                "stripe_subscription_id", "settings_json", "created"),
+    "users": ("id", "email", "name", "role", "must_change_password", "created", "last_login"),
+    "api_keys": ("id", "name", "prefix", "created_by", "created", "last_used", "revoked", "revoked_at", "scopes_json",
+                 "rate_limit_per_min", "expires_at"),
+    "projects": ("id", "name", "address", "city", "county", "owner_name", "lender_name", "public_or_private",
+                 "contract_price", "first_furnishing_date", "last_furnishing_date", "completion_date", "noc_date",
+                 "start_date", "status", "extra", "created", "updated"),
+    "subs": ("id", "name", "license_number", "scope", "required_class", "coi_expiry", "wc_required", "w9_on_file",
+             "dir_number", "email", "phone", "project_id", "created", "updated"),
+    "documents": ("id", "project_id", "kind", "title", "body_markdown", "source_tool", "verified", "created",
+                  "created_by"),
+    "field_logs": ("id", "project_id", "kind", "date", "topic", "attendees", "signatures", "notes", "client_uuid",
+                   "created_by", "created"),
+    "audit": ("id", "user", "tool", "args_json", "verified", "ok", "source", "created"),
+    "integration_connections": ("id", "provider", "status", "config_json", "external_account", "created", "updated",
+                                "last_error"),
+    "webhooks": ("id", "name", "kind", "events_json", "enabled", "created", "last_status", "last_sent"),
+    "outbound_events": ("id", "event", "payload_json", "target", "status", "attempts", "next_attempt", "created",
+                        "last_error", "dedupe_key"),
+    "mcp_audit_log": ("id", "api_key_id", "tool", "args_sha256", "status", "duration_ms", "ip", "created"),
+    "sso_configs": ("issuer", "client_id", "allowed_domains_json", "enforced", "created"),
+    "calendar_tokens": ("created", "revoked"),
+}
+_SAME_FOR_EVERY_ROW = "the company id: the same on every row, given once at the top of the file"
+TENANT_EXPORT_OMITTED: dict[str, dict[str, str]] = {
+    "tenants": {"stripe_event_created": "internal ordering counter for Stripe events"},
+    "users": {"tenant_id": _SAME_FOR_EVERY_ROW, "pw_hash": "password hash (a credential)",
+              "session_gen": "session counter (signs everyone out on a password change)"},
+    "api_keys": {"tenant_id": _SAME_FOR_EVERY_ROW, "key_hash": "hash of the API key (a credential)"},
+    "integration_connections": {"tenant_id": _SAME_FOR_EVERY_ROW,
+                                "secret_blob": "encrypted sign-in tokens and keys (credentials)"},
+    "webhooks": {"tenant_id": _SAME_FOR_EVERY_ROW, "url": "encrypted address (Slack and Teams addresses are secrets)",
+                 "signing_secret_blob": "encrypted signing secret (a credential)"},
+    "sso_configs": {"tenant_id": _SAME_FOR_EVERY_ROW, "secret_blob": "encrypted SSO client secret (a credential)"},
+    "calendar_tokens": {"tenant_id": _SAME_FOR_EVERY_ROW, "token_hash": "hash of the private calendar link (a "
+                                                                        "credential)"},
+    **{t: {"tenant_id": _SAME_FOR_EVERY_ROW} for t in ("projects", "subs", "documents", "field_logs", "audit",
+                                                        "outbound_events", "mcp_audit_log")},
+}
+# Stored JSON text exported as JSON values (column -> key in the export), 0/1 columns exported as booleans, and
+# "is there a secret" flags computed from omitted columns (flag -> column).
+EXPORT_JSON = {"tenants": {"settings_json": "settings"}, "api_keys": {"scopes_json": "scopes"},
+               "projects": {"extra": "extra"}, "field_logs": {"attendees": "attendees", "signatures": "signatures"},
+               "audit": {"args_json": "args"}, "integration_connections": {"config_json": "config"},
+               "webhooks": {"events_json": "events"}, "outbound_events": {"payload_json": "payload"},
+               "sso_configs": {"allowed_domains_json": "allowed_domains"}}
+EXPORT_BOOL = {"users": ("must_change_password",), "api_keys": ("revoked",), "subs": ("wc_required", "w9_on_file"),
+               "documents": ("verified",), "audit": ("verified", "ok"), "webhooks": ("enabled",),
+               "sso_configs": ("enforced",), "calendar_tokens": ("revoked",)}
+EXPORT_FLAGS = {"integration_connections": {"has_secret": "secret_blob"},
+                "webhooks": {"has_signing_secret": "signing_secret_blob"}, "sso_configs": {"has_secret": "secret_blob"}}
+EXPORT_PAGED = {t for t, cols in TENANT_EXPORT.items() if "id" in cols and t != "tenants"}   # paged by id
+assert set(TENANT_EXPORT) == set(TENANT_DELETE_ORDER) | {"tenants"}
+
 # Writable columns per tenant-owned table. Anything else in a payload is ignored.
 COLUMNS: dict[str, tuple[str, ...]] = {
     "projects": ("name", "address", "city", "county", "owner_name", "lender_name", "public_or_private",
@@ -1595,9 +1667,26 @@ class Store:
             con.execute("delete from revoked_sessions where nonce = ?", (str(nonce)[:200],))
 
     # ------------------------------------------------------------------ audit
+    def _tenant_alive(self, con, tenant_id: str | None) -> bool:
+        """For a write to a table with no foreign key to tenants (the activity log): is the company still there?
+        The company row is locked in a mode that waits for a deletion in progress (Postgres: FOR KEY SHARE, which
+        conflicts only with delete_tenant's FOR UPDATE, like a foreign key check; SQLite: the write lock), so a
+        request that was already running when its company was deleted can't leave a row behind afterwards. Must be
+        the first statement of the transaction. None (an anonymous call) is always alive."""
+        if tenant_id is None:
+            return True
+        if self.backend == "sqlite":
+            con.execute("begin immediate")
+            return con.execute("select 1 from tenants where id = ?", (tenant_id,)).fetchone() is not None
+        return con.execute("select 1 from tenants where id = ? for key share", (tenant_id,)).fetchone() is not None
+
     def audit(self, tenant_id: str | None, user: str | None, tool: str, args: dict | None, verified: bool | None,
               ok: bool = True, source: str = "api") -> None:
+        """One activity-log row. Nothing is written for a company that no longer exists (deleted while this
+        request was running)."""
         with self.connect() as con:
+            if not self._tenant_alive(con, tenant_id):
+                return
             con.execute('insert into audit (tenant_id, "user", tool, args_json, verified, ok, source, created) '
                         "values (?,?,?,?,?,?,?,?)",
                         (tenant_id, user, tool, json.dumps(args or {}, separators=(",", ":"), default=str)[:20000],
@@ -2054,7 +2143,17 @@ class Store:
         writes a request's rows with a single database round trip, after the response has been sent."""
         rows = [self._mcp_row(e) for e in entries]
         created = now_iso()
+        tenants = list(dict.fromkeys([r[0] for r in rows] + [a.get("tenant_id") for a in activity]))
         with self.connect() as con:
+            # One request is one company (or anonymous). A deleted company gets no rows: mcp_audit_log's foreign
+            # key would refuse them anyway, the activity log has none (see _tenant_alive).
+            if self.backend == "sqlite" and any(t is not None for t in tenants):
+                con.execute("begin immediate")
+            gone = {t for t in tenants if t is not None and con.execute(
+                "select 1 from tenants where id = ?" + ("" if self.backend == "sqlite" else " for key share"),
+                (t,)).fetchone() is None}
+            rows = [r for r in rows if r[0] not in gone]
+            activity = [a for a in activity if a.get("tenant_id") not in gone]
             for r in rows:
                 con.execute("insert into mcp_audit_log (tenant_id, api_key_id, tool, args_sha256, status, "
                             "duration_ms, ip, created) values (?,?,?,?,?,?,?,?)", (*r, created))
@@ -2270,3 +2369,70 @@ class Store:
                         changed += con.execute(f"update {table} set {col} = ? where {where} and {col} = ?",
                                                [new, *(row[k] for k in keys[table]), old]).rowcount
         return changed
+
+    # ================================================================== account data rights (app/account.py)
+    @staticmethod
+    def _check_tenant_id(tenant_id) -> str:
+        if not isinstance(tenant_id, str) or not tenant_id.strip() or len(tenant_id) > 100:
+            raise ValueError("a company (tenant) id is required")
+        return tenant_id
+
+    @staticmethod
+    def _export_row(table: str, row) -> dict:
+        d = dict(row)
+        for col, key in EXPORT_JSON.get(table, {}).items():
+            if col in d:
+                text = d.pop(col)
+                try:
+                    d[key] = json.loads(text) if isinstance(text, str) and text else None
+                except ValueError:
+                    d[key] = text           # not JSON after all: exported as the text it is
+        for col in (*EXPORT_BOOL.get(table, ()), *EXPORT_FLAGS.get(table, {})):
+            if d.get(col) is not None:
+                d[col] = bool(d[col])
+        return d
+
+    def export_rows(self, table: str, tenant_id: str, after_id: int = 0, limit: int = 500) -> list[dict]:
+        """One page of a company's rows for its data export: only the columns in TENANT_EXPORT (never a password or
+        key hash, a session counter or an encrypted secret), JSON text as JSON values and 0/1 flags as booleans.
+        Tables with an id come oldest first with id > after_id; the others (one SSO row, a few calendar links)
+        come whole. "tenants" is the company profile (one row)."""
+        self._check_tenant_id(tenant_id)
+        if table not in TENANT_EXPORT:
+            raise ValueError(f"bad table {table!r}")
+        cols = [f'"{c}"' for c in TENANT_EXPORT[table]]
+        cols += [f'case when "{src}" is null then 0 else 1 end as "{flag}"'
+                 for flag, src in EXPORT_FLAGS.get(table, {}).items()]
+        sql = f"select {', '.join(cols)} from {table} where {'id' if table == 'tenants' else 'tenant_id'} = ?"
+        params: list = [tenant_id]
+        if table in EXPORT_PAGED:
+            sql += " and id > ? order by id limit ?"
+            params += [int(after_id), _limit(limit, 5000)]
+        elif table == "calendar_tokens":
+            sql += " order by created, token_hash limit 10000"
+        with self.connect() as con:
+            return [self._export_row(table, r) for r in con.execute(sql, params).fetchall()]
+
+    def tenant_row_counts(self, tenant_id: str) -> dict[str, int]:
+        """How many rows each company table holds for this company ("tenants": 1 while the company exists)."""
+        self._check_tenant_id(tenant_id)
+        with self.connect() as con:
+            out = {t: con.execute(f"select count(*) from {t} where tenant_id = ?", (tenant_id,)).fetchone()[0]
+                   for t in TENANT_DELETE_ORDER}
+            out["tenants"] = con.execute("select count(*) from tenants where id = ?", (tenant_id,)).fetchone()[0]
+        return out
+
+    def delete_tenant(self, tenant_id: str) -> dict[str, int]:
+        """Delete a company and every row that belongs to it, in ONE transaction, on both backends: each table in
+        TENANT_DELETE_ORDER by tenant_id (child tables first, so nothing depends on ON DELETE CASCADE: the activity
+        log has no foreign key at all), then the company row. The company row is locked first, so on PostgreSQL a
+        write that references the company at the same moment waits and then fails its foreign key check instead of
+        leaving a stray row. Rows left by an earlier, interrupted deletion (the company row already gone) are removed
+        too. Returns the number of rows removed per table. Tables in SHARED_TABLES hold no company data."""
+        self._check_tenant_id(tenant_id)
+        with self.connect() as con:
+            self._read_for_update(con, "select id from tenants where id = ?", (tenant_id,))
+            removed = {t: con.execute(f"delete from {t} where tenant_id = ?", (tenant_id,)).rowcount
+                       for t in TENANT_DELETE_ORDER}
+            removed["tenants"] = con.execute("delete from tenants where id = ?", (tenant_id,)).rowcount
+        return removed

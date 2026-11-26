@@ -146,12 +146,13 @@
       ta.remove();
     }
   }
-  function download(filename, text, type = 'text/plain') {
-    const url = URL.createObjectURL(new Blob([text], { type }));
+  function saveBlob(filename, blob) {
+    const url = URL.createObjectURL(blob);
     const a = h('a', { href: url, download: filename });
     document.body.append(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
+  const download = (filename, text, type = 'text/plain') => saveBlob(filename, new Blob([text], { type }));
   function copyBox(text, label, code = false) {
     const pre = h('pre', { class: 'mono' + (code ? ' code' : ''), tabindex: code ? '0' : null }, text);
     return h('div', { class: 'copy-box' }, pre, h('button', { type: 'button', class: 'btn secondary small', 'aria-label': 'Copy ' + (label || ''), onclick: () => copyText(text) }, 'Copy'));
@@ -160,6 +161,15 @@
     if (!btn) return;
     if (on) { btn.dataset.label = btn.textContent; btn.disabled = true; btn.textContent = text || 'Working…'; } else { btn.disabled = false; if (btn.dataset.label) btn.textContent = btn.dataset.label; }
   }
+  // Per-browser conveniences only (a hidden checklist, the last job picked). Storage can be blocked or throw (private
+  // windows, strict settings, full disk), so every read and write is guarded and the page works without it.
+  const local = {
+    get(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { window.localStorage.setItem(k, v); return true; } catch (e) { return false; } },
+    del(k) { try { window.localStorage.removeItem(k); } catch (e) { /* storage unavailable */ } },
+  };
+  const reducedMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
+  const scrollBehavior = () => (reducedMotion() ? 'auto' : 'smooth');
 
   // ======================================================================== API
   class ApiError extends Error {
@@ -172,7 +182,7 @@
     if (d && typeof d === 'object' && d.message) return d.message;
     return status === 0 ? 'You appear to be offline.' : `Something went wrong (${status}).`;
   }
-  async function api(path, { method = 'GET', body, form, raw, contentType } = {}) {
+  async function api(path, { method = 'GET', body, form, raw, contentType, keepSession = false } = {}) {
     const opts = { method, headers: {}, credentials: 'same-origin' };
     if (method !== 'GET') opts.headers['X-CSRF-Token'] = cookie('tc_csrf');
     if (form) opts.body = form;
@@ -184,7 +194,8 @@
     const data = ct.includes('json') ? await res.json().catch(() => null) : await res.text();
     if (!res.ok) {
       const err = new ApiError(res.status, errMessage(data, res.status), data);
-      if (res.status === 401 && !path.startsWith('/api/auth/') && state.me) { state.me = null; go('login'); }
+      // keepSession: a 401 that means "wrong password" (closing the account) must not sign the person out
+      if (res.status === 401 && !keepSession && !path.startsWith('/api/auth/') && state.me) { state.me = null; go('login'); }
       if (res.status === 402 && state.me) { state.me.entitlement = { ...(state.me.entitlement || {}), ok: false, message: err.message }; renderBanner(); }
       throw err;
     }
@@ -192,7 +203,7 @@
   }
 
   // ======================================================================== state + router
-  const state = { me: null, config: null, tools: null, online: navigator.onLine, renderSeq: 0 };
+  const state = { me: null, config: null, tools: null, online: navigator.onLine, renderSeq: 0, gsAway: null };
   const can = {
     write: () => state.me && ['owner', 'office'].includes(state.me.user.role),
     owner: () => state.me && state.me.user.role === 'owner',
@@ -222,7 +233,7 @@
 
   const routes = {};
   const PUBLIC = new Set(['login', 'signup']);
-  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial' };
+  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial' };
 
   async function render() {
     const seq = ++state.renderSeq;
@@ -792,7 +803,7 @@
 
   // ======================================================================== tool results
   const MD_KEY = /markdown|(^|_)md$|^document$|^body$|_document$|^draft$|_text$|^letter$|^notice$/;
-  const SKIP_KEYS = new Set(['verified', 'citations', 'disclaimer']);
+  const SKIP_KEYS = new Set(['verified', 'citations', 'disclaimer', 'handoffs']);     // handoffs: handoffsLine()
   const HIDE_KEY = /^(rule_ids?|citation_ids|unverified_rule_ids|internal_\w+)$/;    // ids for machines; people get "Sources"
   const hiddenKey = (k, v) => HIDE_KEY.test(k) || (k === 'unverified' && Array.isArray(v));   // lists of unverified rule keys
   const HEADLINE_KEYS = new Set(['overall_risk', 'recommended_action', 'risk_level', 'rag']);     // shown as chips at the top
@@ -963,6 +974,9 @@
     const chips = riskChips(r);
     if (chips.length) card.append(h('div', { class: 'row' }, chips));
     if (r.recommended_action) card.append(h('p', { class: 'notice' }, h('strong', {}, 'What to do: '), prose(r.recommended_action)));
+    // the API adds "handoffs" next to the result; a tool may also return them inside it
+    const handoffs = handoffsLine(Array.isArray(out.handoffs) ? out.handoffs : (raw.handoffs || r.handoffs), { projectId });
+    if (handoffs) card.append(handoffs);
     card.append(renderObject(r, 0, mdKeys));
     for (const m of mds) card.append(h('div', { class: 'result-section' }, h('h4', {}, m.label), h('div', { class: 'md md-paper', html: md(m.value) }),
       mds.length > 1 ? saveFieldButton(m.key, `${m.label}`) : null));
@@ -1041,7 +1055,7 @@
       try {
         const out = await api(`/api/tools/${encodeURIComponent(spec.name)}`, { method: 'POST', body: values });
         result.replaceChildren(renderToolResult(spec, out, { projectId: filledFrom }));
-        result.firstChild.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        result.firstChild.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
         if (onResult) onResult(out);
       } catch (err) {
         result.replaceChildren();
@@ -1121,7 +1135,9 @@
   }
 
   // ======================================================================== auth views
-  routes.login = async () => {
+  let lastDeletion = null;   // messages from the DELETE /api/tenant receipt, shown once on the login page
+  routes.login = async ({ query } = {}) => {
+    const deleted = query && query.get('deleted') === '1';
     const err = h('div', { role: 'alert' });
     const btn = h('button', { type: 'submit', class: 'btn block' }, 'Log in');
     const form = h('form', { onsubmit: async (e) => {
@@ -1137,6 +1153,7 @@
     err, btn);
     return h('div', { class: 'auth-wrap' },
       h('div', { class: 'auth-hero' }, h('h1', {}, 'Log in to TradeComply'), h('p', {}, 'California construction compliance for your company')),
+      deleted ? h('div', { class: 'banner info', role: 'status' }, h('p', {}, 'Your company account was deleted and you are signed out.'), ...(lastDeletion || []).map((m) => h('p', { class: 'small' }, m))) : null,
       navigator.onLine ? null : h('div', { class: 'banner warn' }, h('p', {}, 'You are offline. Log in once with signal; after that the Field screen works offline.')),
       h('div', { class: 'card' }, form, h('p', { class: 'small muted' }, 'New here? ', h('a', { href: '#/signup' }, 'Start a 14-day free trial'))),
       mcpDemoNote());
@@ -1261,9 +1278,63 @@
   }
 
   // ======================================================================== dashboard
+  // "Getting started": up to four steps worked out from what the company has actually done (not from clicks on a
+  // tour). Done steps don't show. Finishing every step puts it away for the whole company; "Hide" puts it away for
+  // this person. Both are remembered in this browser at once and on the server (tenant settings), so the checklist
+  // doesn't come back on their next phone or laptop. Adding the license number isn't a step here: the license card
+  // right below already asks for it.
+  const gsKey = () => `tc.gettingStarted.${state.me.tenant.id}`;
+  const tipsKey = () => (state.me.user && state.me.user.id ? `hidden_tips_u${state.me.user.id}` : null);   // one key per person
+  const tenantSetting = (k) => (k ? (state.me.tenant.settings || {})[k] : undefined);
+  const hiddenTips = () => { const v = tenantSetting(tipsKey()); return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []; };
+  const tipHidden = (tip) => hiddenTips().includes(tip);
+  const gsAway = () => !can.write() || state.gsAway === state.me.tenant.id || !!local.get(gsKey())
+    || tenantSetting('getting_started') === 'done' || tipHidden('getting_started');
+  function saveTenantSetting(key, value) {
+    if (!key) return;
+    const tid = state.me.tenant.id;
+    api('/api/tenant', { method: 'PATCH', body: { settings: { [key]: value } } })
+      .then((t) => { if (state.me && state.me.tenant.id === tid) state.me.tenant = { ...state.me.tenant, ...t }; })
+      .catch(() => { /* offline or not allowed: this browser still remembers */ });
+  }
+  async function gettingStartedFacts() {
+    if (gsAway()) return null;
+    const soft = (path) => api(path).catch(() => null);       // a signal we can't read counts as "not done yet"
+    const [audit, links, hooks, ints] = await Promise.all([soft('/api/audit?limit=200'), soft('/api/integrations/calendar_feed/links'),
+      soft('/api/integrations/webhooks'), soft('/api/integrations')]);
+    return {
+      ranCheck: Array.isArray(audit) && audit.some((r) => r && r.ok !== false && /^[a-z][a-z0-9_]*$/.test(String(r.tool || ''))),   // tool names; "api_key.create" etc. are not checks
+      reminders: !!((links && (links.active === true || (links.links || []).length)) || (Array.isArray(hooks) && hooks.some((w) => w && w.enabled))
+        || (ints && (ints.providers || []).some((p) => p.provider === 'twilio_sms' && (p.connection || {}).status === 'connected'))),
+    };
+  }
+  function gettingStartedCard(d, facts, setupDone) {
+    if (!facts || gsAway()) return null;
+    const steps = [
+      { done: d.subs.length > 0, text: 'Add your subcontractors', href: '#/subs' },
+      { done: d.projects.length > 0, text: 'Add a project', href: '#/project/new' },
+      { done: facts.ranCheck, text: 'Run a check', href: '#/tools' },
+      { done: facts.reminders, text: 'Set up deadline reminders', href: '#/integrations?integration=calendar-feed' },
+    ];
+    const left = steps.filter((s) => !s.done);
+    if (!left.length) { local.set(gsKey(), 'done'); if (tenantSetting('getting_started') !== 'done') saveTenantSetting('getting_started', 'done'); return null; }
+    const card = h('section', { class: 'card gs no-print', 'aria-labelledby': 'gs-h' },
+      h('div', { class: 'gs-head' },
+        h('div', { class: 'gs-title' }, h('h2', { id: 'gs-h' }, 'Getting started'), h('span', { class: 'small muted' }, `${steps.length - left.length} of ${steps.length} done`)),
+        h('button', { type: 'button', class: 'btn ghost small', 'aria-label': 'Hide getting started', onclick: () => {
+          state.gsAway = state.me.tenant.id;          // stays hidden this session even if the browser blocks storage
+          local.set(gsKey(), 'hidden');
+          if (!tipHidden('getting_started')) saveTenantSetting(tipsKey(), [...hiddenTips(), 'getting_started']);
+          card.remove();
+          $('#main').focus({ preventScroll: true });
+        } }, 'Hide')),
+      h('ul', { class: 'gs-steps' }, left.map((s) => h('li', {}, h('a', { href: s.href }, s.text)))),
+      setupDone ? null : h('p', { class: 'small muted gs-more' }, 'Or go step by step: ', h('a', { href: '#/welcome' }, 'guided setup'), '.'));
+    return card;
+  }
   routes.dashboard = async () => {
     if (!entitled()) return subscribeCard(state.me.entitlement.message);
-    const d = await api('/api/dashboard');
+    const [d, facts] = await Promise.all([api('/api/dashboard'), gettingStartedFacts()]);
     const filter = { rag: null };
     const listSlot = h('div', {});
     const subSlot = h('div', {});
@@ -1283,7 +1354,7 @@
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Compliance today'), h('p', {}, `As of ${fmtDate(d.today)} (California time). Select a box to show only those items.`)),
         h('div', { class: 'row no-print' }, h('a', { class: 'btn secondary small', href: '/api/integrations/calendar_feed/calendar.ics', download: 'tradecomply.ics' }, 'Download calendar'),
           h('button', { type: 'button', class: 'btn ghost small', onclick: () => window.print() }, 'Print'))),
-      !setupDone && can.write() ? h('div', { class: 'banner info no-print' }, h('p', {}, 'Finish setup to see your full picture: license, subs, projects, safety, AI assistant.'), h('a', { class: 'btn small', href: '#/welcome' }, 'Continue setup')) : null,
+      gettingStartedCard(d, facts, setupDone),
       h('div', { class: 'tiles', role: 'group', 'aria-label': 'Filter by status' }, tiles),
       h('div', { class: 'grid grid-2' },
         h('section', { class: 'card', 'aria-labelledby': 'dl-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'dl-h' }, 'Deadlines and alerts'), h('span', { class: 'small muted' }, `${d.counts.red} act now · ${d.counts.amber} coming up`)), listSlot),
@@ -1319,14 +1390,18 @@
         { hint: 'Public = a city, county, state agency, school or other public owner.' }),
       field('Street address', input('address', { value: (p && p.address) || '', autocomplete: 'street-address' })),
       field('City', input('city', { value: (p && p.city) || '' })),
-      field('County', input('county', { value: (p && p.county) || '' })),
+      field('County', input('county', { value: (p && p.county) || '', list: 'ca-counties', autocomplete: 'off' })),
+      h('datalist', { id: 'ca-counties' }, CA_COUNTIES.map((c) => h('option', { value: c }))),
       field('Property owner', input('owner_name', { value: (p && p.owner_name) || '' })),
       field('Construction lender', input('lender_name', { value: (p && p.lender_name) || '' }), { hint: 'If there is a construction loan.' }),
-      field('Contract price ($)', input('contract_price', { type: 'number', min: '0', step: 'any', inputmode: 'decimal', value: p && p.contract_price != null ? String(p.contract_price) : '' })),
+      // B&P 7159.5(a)(1): the contract amount includes profit, labor and materials but not finance charges (2026 CSLB
+      // Law Book, PDF p. 410, https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf, read 2026-11-26)
+      field('Contract price ($)', input('contract_price', { type: 'number', min: '0', step: 'any', inputmode: 'decimal', value: p && p.contract_price != null ? String(p.contract_price) : '' }),
+        { hint: 'Your whole price for this job: labor, materials and profit. On a home improvement contract, leave out finance charges (B&P 7159.5).' }),
       h('h3', { class: 'wide form-section' }, 'Dates for the lien calendar', h('span', { class: 'hint' }, ' Leave blank what you don\'t know yet; add it later.')),
       field('Construction start date', dateIn('start_date')),
       field('First day you furnished labor or materials', dateIn('first_furnishing_date'), { hint: 'Starts the 20-day preliminary notice clock.' }),
-      field('Last day you furnished labor or materials', dateIn('last_furnishing_date')),
+      field('Last day you furnished labor or materials', dateIn('last_furnishing_date'), { hint: 'Your own last day of work or deliveries here, which can differ from the project\'s completion date.' }),
       field('Project completion date', dateIn('completion_date'), { hint: 'When the whole project was finished, if known.' }),
       field('Notice of completion recorded on', dateIn('noc_date'), { hint: 'Shortens lien deadlines if recorded on time.' }),
       field('Status', select('status', [['active', 'Active'], ['planned', 'Planned'], ['completed', 'Completed'], ['closed', 'Closed (stop tracking)']], (p && p.status) || 'active'))),
@@ -1499,11 +1574,275 @@
     drawList();
     const panel = current ? toolPanel(current) : h('div', { class: 'card tool-intro' }, h('h2', {}, 'Pick a check'),
       h('p', {}, `${data.count} checks, grouped by topic. Each result shows its official source, whether that source has been verified, and a disclaimer. Save any result to Documents or print it.`),
+      h('p', { class: 'small' }, 'When a result needs a licensed person (an engineer, an attorney, an asbestos consultant…), it says who, why and where to look.'),
       h('p', { class: 'muted small' }, 'Your AI assistant can run the same checks (Settings → AI assistant).'));
     return h('div', {},
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, current ? current.title : 'Tools'), h('p', {}, current ? current.module_label : 'Checks and calculators built on California rules')),
-        current ? h('a', { class: 'btn ghost small no-print', href: '#/tools' }, '← All tools') : null),
+        current ? h('a', { class: 'btn ghost small no-print', href: '#/tools' }, '← All tools')
+          : h('a', { class: 'btn secondary small no-print nav-narrow', href: '#/professionals' }, 'Find a professional')),     // phones: not in the bottom bar
       h('div', { class: 'tool-layout' + (current ? ' has-tool' : '') }, h('aside', { class: 'card tool-list', 'aria-label': 'Tool list' }, search, list), panel));
+  };
+
+  // ======================================================================== licensed professionals: handoffs + finder
+  // Some work California law reserves for a licensed or certified person (attorney, engineer, notary, asbestos
+  // consultant and others). A result that needs one carries "handoffs" ([{type_id, name, why, legal_basis, verified,
+  // find_url, county_filtered}]): the app says who, why and where to look, and links to the official public search.
+  // It never names, ranks or recommends a person or firm and never copies results out of those sites.
+  const OFFICIAL_NOTE = 'TradeComply links to official state lookups and doesn\'t recommend specific people.';
+  // California's 58 counties as DIR's public works apprenticeship search lists them (dir.ca.gov/databases/das/
+  // pwaddrstart.asp, read 2026-11-26). GET /api/professionals/types can send its own list; this is the fallback.
+  const CA_COUNTIES = ['Alameda', 'Alpine', 'Amador', 'Butte', 'Calaveras', 'Colusa', 'Contra Costa', 'Del Norte', 'El Dorado', 'Fresno',
+    'Glenn', 'Humboldt', 'Imperial', 'Inyo', 'Kern', 'Kings', 'Lake', 'Lassen', 'Los Angeles', 'Madera', 'Marin', 'Mariposa', 'Mendocino',
+    'Merced', 'Modoc', 'Mono', 'Monterey', 'Napa', 'Nevada', 'Orange', 'Placer', 'Plumas', 'Riverside', 'Sacramento', 'San Benito',
+    'San Bernardino', 'San Diego', 'San Francisco', 'San Joaquin', 'San Luis Obispo', 'San Mateo', 'Santa Barbara', 'Santa Clara',
+    'Santa Cruz', 'Shasta', 'Sierra', 'Siskiyou', 'Solano', 'Sonoma', 'Stanislaus', 'Sutter', 'Tehama', 'Trinity', 'Tulare', 'Tuolumne',
+    'Ventura', 'Yolo', 'Yuba'];
+  // Only plain https addresses become links (the official pages in tradecomply/data/professionals.json are all
+  // https): never javascript:, data: or http:, nor one with spaces, quotes, angle brackets or backslashes.
+  const linkUrl = (u) => (typeof u === 'string' && /^https:\/\/[a-z0-9.-]+(:\d{1,5})?([\/?#][^\s"'<>\\`]*)?$/i.test(u.trim()) ? u.trim() : null);
+  const hostOf = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  const typeIdOf = (t) => String((t && (t.type_id || t.id)) || '');
+  // "San Diego County", "san diego co." -> "San Diego"; anything that isn't one of the counties -> ''
+  function countyMatch(text, counties = CA_COUNTIES) {
+    const k = String(text || '').toLowerCase().replace(/\b(city and county of|county of|city and|county|co|california|ca)\b\.?/g, ' ')
+      .replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
+    return (k && counties.find((c) => c.toLowerCase() === k)) || '';
+  }
+  function finderHref(typeId, projectId) {
+    const q = new URLSearchParams();
+    if (typeId) q.set('type', typeId);
+    if (projectId) q.set('project', String(projectId));
+    return '#/professionals' + (q.toString() ? `?${q}` : '');
+  }
+  // The requirement in plain words ("Required by law if this applies"). The API's label may end with "(legal basis
+  // not yet verified)"; that is shown as the Unverified pill instead, so it isn't said twice.
+  const REQ_TEXT = { required: 'Required by law', conditional: 'Required by law if this applies', recommended: 'Suggested, not required by law', optional: 'Optional' };
+  const reqLabel = (x) => String(x.requirement_label || REQ_TEXT[x.requirement] || '').replace(/\s*\(legal basis not yet verified\)\s*$/i, '');
+  const unverifiedPill = () => h('span', { class: 'pill amber' }, 'Unverified',
+    h('span', { class: 'visually-hidden' }, ': the law behind this has not been checked against the official source yet'));
+  const str = (v) => (typeof v === 'string' && v.trim() ? v.trim() : '');
+  function officialLink(url, text) {
+    // "Find one near the job · cab.ca.gov ↗" on one line; on a phone the address drops to its own line without the dot.
+    // A screen reader hears "Find one near the job on cab.ca.gov (official site, opens in a new tab)".
+    return h('a', { class: 'btn secondary small ho-find', href: url, target: '_blank', rel: 'noopener noreferrer' }, text,
+      h('span', { class: 'ho-host' }, h('span', { class: 'ho-dot', 'aria-hidden': 'true' }, ' · '), h('span', { class: 'visually-hidden' }, ' on '), hostOf(url),
+        h('span', { 'aria-hidden': 'true' }, ' ↗')),
+      h('span', { class: 'visually-hidden' }, ' (official site, opens in a new tab)'));
+  }
+  const MAY_HAVE_MOVED = 'We couldn\'t open this page when we last checked it, so its address may have changed.';
+  // The closed line has to read in one glance, so it names at most two people ("Licensed architect, Licensed
+  // professional engineer and 6 more") and drops long explanations in brackets ("(civil or structural)"); short ones
+  // that are part of the name ("(CASp)") stay. Opening the line shows everyone in full.
+  const shortName = (n) => n.replace(/\s*\([^()]*\s[^()]*\)\s*$/, '') || n;
+  // "May need" only when every item says it applies in some cases or is only suggested; anything required, or
+  // anything that doesn't say, reads "Needs", so a required professional is never made to sound optional.
+  const SOFT_REQ = new Set(['conditional', 'recommended', 'optional']);
+  function handoffsSummary(items) {
+    const names = [...new Set(items.map((x) => shortName(x.name)))];
+    const may = items.every((x) => SOFT_REQ.has(x.req));
+    const lead = `${may ? 'May need' : 'Needs'} ${names.length === 1 ? 'a licensed or qualified person' : 'licensed or qualified people'}:`;
+    const shown = names.length <= 2 ? names.join(' and ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+    return [h('span', { class: 'ho-lead' }, lead), ' ', h('span', { class: 'ho-names' }, shown)];
+  }
+  // One collapsed line under a result: "Needs a licensed or qualified person: Notary public". Opening it shows, for
+  // each: why (the law), when, a link to the official search near the job, and how to check them. With three or more
+  // people each one is its own short row that opens on its own, so the open list isn't a wall of text.
+  function handoffsLine(list, { projectId = null } = {}) {
+    if (!Array.isArray(list)) return null;
+    const items = list.filter((x) => x && typeof x === 'object' && (x.name || x.type_id)).map((x) => ({
+      typeId: typeIdOf(x), name: String(x.name || humanize(x.type_id)), why: str(x.why), basis: str(x.legal_basis), verified: x.verified === true,
+      url: linkUrl(x.find_url), countyFiltered: x.county_filtered === true, requirement: reqLabel(x), req: str(x.requirement), when: str(x.when),
+      due: /^\d{4}-\d{2}-\d{2}$/.test(String(x.due_date || '')) ? x.due_date : null, label: str(x.find_label), owner: str(x.find_owner),
+      unchecked: x.find_link_checked === false, checkHow: str(x.check_how),
+      also: (Array.isArray(x.also) ? x.also : []).filter((a) => a && str(a.why)) }));
+    if (!items.length) return null;
+    const rows = items.length > 2;
+    const head = (x, tag) => h(tag, { class: 'ho-name' }, h('strong', {}, x.name), x.requirement ? [' ', h('span', { class: 'pill gray' }, x.requirement)] : null, x.verified ? null : [' ', unverifiedPill()]);
+    const body = (x) => [
+      x.why ? h('p', { class: 'ho-why' }, prose(x.why)) : null,
+      x.when || x.due ? h('p', { class: 'small' }, h('strong', {}, 'When: '), x.when, x.due ? `${x.when ? ' ' : ''}Key date: ${fmtDate(x.due)}.` : '') : null,
+      x.basis ? h('p', { class: 'small muted' }, 'The law: ', stripRuleIds(x.basis)) : null,
+      x.also.map((a) => h('p', { class: 'small' }, h('strong', {}, 'Also: '), prose(String(a.why)), a.legal_basis ? h('span', { class: 'muted' }, ` (${stripRuleIds(String(a.legal_basis))})`) : null,
+        a.verified === false ? [' ', unverifiedPill()] : null)),
+      h('div', { class: 'row ho-actions' }, x.url ? officialLink(x.url, 'Find one near the job') : h('span', { class: 'small muted' }, 'No official search page is linked for this one.'),
+        x.typeId ? h('a', { class: 'small', href: finderHref(x.typeId, projectId) }, 'How to find and check one') : null),
+      x.url ? h('p', { class: 'hint' }, x.label ? `${x.label}${x.owner ? `, run by ${x.owner}` : ''}. ` : x.owner ? `Run by ${x.owner}. ` : '',
+        x.countyFiltered ? 'Opens already filtered to the job\'s county.' : 'Opens the statewide search; look for the job\'s area there.',
+        x.unchecked ? ` ${MAY_HAVE_MOVED}` : '') : null,
+      x.checkHow ? h('p', { class: 'small' }, h('strong', {}, 'Check them: '), x.checkHow) : null];
+    return h('details', { class: 'handoffs' },
+      h('summary', {}, handoffsSummary(items)),
+      h('div', { class: 'ho-body' },
+        h('ul', { class: 'ho-list' + (rows ? ' ho-rows' : '') }, items.map((x) => h('li', { class: 'ho-item' },
+          rows ? h('details', { class: 'ho-more' }, h('summary', {}, head(x, 'span')), h('div', { class: 'ho-more-body' }, body(x))) : [head(x, 'p'), body(x)]))),
+        h('p', { class: 'small muted ho-note' }, OFFICIAL_NOTE)));
+  }
+  // Printed results keep the list: open every handoff line (and each person in it) for printing, then put them back.
+  const HO_DETAILS = 'details.handoffs, details.handoffs details.ho-more';
+  window.addEventListener('beforeprint', () => document.querySelectorAll(HO_DETAILS).forEach((d) => { if (!d.open) { d.open = true; d.dataset.printOpened = '1'; } }));
+  window.addEventListener('afterprint', () => document.querySelectorAll(HO_DETAILS).forEach((d) => { if (d.dataset.printOpened) { d.open = false; delete d.dataset.printOpened; } }));
+
+  // ---------- the "Find a professional" page (GET /api/professionals/types, GET /api/professionals/find)
+  const notOnServer = (e) => !!e && (e.status === 501 || e.status === 405 || (e.status === 404 && (!e.data || !e.data.detail || e.data.detail === 'Not Found')));
+  const isOffline = (e) => !!e && (e.status === 0 || !!(e.data && e.data.offline));
+  function finderProblem(e, retry) {
+    const again = retry ? h('button', { type: 'button', class: 'btn secondary small', onclick: retry }, 'Try again') : null;
+    if (isOffline(e)) return h('div', { class: 'banner warn' }, icon('cloud-off'), h('p', {}, 'You\'re offline. The official lookups need a connection; try again when you have signal.'), again);
+    if (notOnServer(e)) return h('div', { class: 'banner info' }, h('p', {}, 'The professional finder isn\'t turned on on this server yet. ', supportText('To have it turned on')));
+    return h('div', { class: 'banner error' }, h('p', {}, e && e.message ? e.message : 'Something went wrong.'), again);
+  }
+  function normTypes(r) {
+    const list = Array.isArray(r) ? r : (r && (r.types || r.items)) || [];
+    return list.filter((t) => t && typeof t === 'object').map((t) => ({ id: typeIdOf(t), name: String(t.name || t.label || humanize(typeIdOf(t))), desc: String(t.plain_description || t.description || '') }))
+      .filter((t) => t.id).sort((a, b) => a.name.localeCompare(b.name));
+  }
+  function normFound(r) {
+    const list = Array.isArray(r) ? r : r && Array.isArray(r.results) ? r.results : r && Array.isArray(r.professionals) ? r.professionals : r && typeof r === 'object' ? [r] : [];
+    return list.filter((x) => x && typeof x === 'object' && (x.name || x.type_id || x.id));
+  }
+  function foundLinks(x) {
+    const raw = [].concat(Array.isArray(x.find) ? x.find : [], Array.isArray(x.links) ? x.links : [], Array.isArray(x.directories) ? x.directories : []);
+    const out = raw.filter((f) => f && typeof f === 'object').map((f) => ({ label: String(f.label || f.name || 'Official search'), url: linkUrl(f.find_url || f.url),
+      owner: str(f.official_owner) || str(f.agency), countyFiltered: f.county_filtered === true, how: str(f.how_to_search),
+      unchecked: f.link_checked === false || (typeof f.status === 'string' && f.status.startsWith('blocked')),
+      checkedOn: f.link_checked === true && /^\d{4}-\d{2}-\d{2}$/.test(String(f.last_checked || '')) ? f.last_checked : null,
+      elsewhere: f.applies_here === false ? (str(f.only_for) || 'another area') : null }))
+      .filter((f) => f.url);
+    if (!out.length && linkUrl(x.find_url)) out.push({ label: 'Official search', url: linkUrl(x.find_url), owner: str(x.official_owner), countyFiltered: x.county_filtered === true });
+    return out;
+  }
+  // Situations from the registry: the law requires one / suggests one / doesn't require one. Collapsed.
+  function basisList(summary, list) {
+    const rows = (Array.isArray(list) ? list : []).filter((b) => b && str(b.situation));
+    if (!rows.length) return null;
+    return h('details', { class: 'more' }, h('summary', {}, `${summary} (${rows.length})`),
+      h('ul', { class: 'bullets small' }, rows.map((b) => {
+        const ok = typeof b.verified === 'boolean' ? b.verified : b.status === 'confirmed';
+        return h('li', {}, String(b.situation), str(b.legal_basis) ? h('span', { class: 'muted' }, ` (${stripRuleIds(b.legal_basis)})`) : null, ' ',
+          ok ? h('span', { class: 'pill green' }, 'verified') : h('span', { class: 'pill amber' }, 'unverified'));
+      })));
+  }
+  function foundEntry(x, county, k) {
+    const id = `pf-e-${k}`;
+    const links = foundLinks(x);
+    const bring = (Array.isArray(x.bring_or_ask) ? x.bring_or_ask : []).filter((s) => str(s));
+    const notes = (Array.isArray(x.notes) ? x.notes : []).filter((s) => str(s));
+    const others = (Array.isArray(x.other_possible_types) ? x.other_possible_types : []).filter((o) => o && typeIdOf(o));
+    const sources = Array.isArray(x.citations) && x.citations.length ? x.citations : null;
+    return h('article', { class: 'card pf-entry', 'aria-labelledby': id },
+      h('h2', { id }, String(x.name || humanize(typeIdOf(x))), x.verified === false ? [' ', unverifiedPill()] : null),
+      str(x.plain_description) ? h('p', {}, x.plain_description) : null,
+      str(x.why) ? h('p', {}, prose(x.why)) : null,
+      str(x.legal_basis) ? h('p', { class: 'small muted' }, 'The law: ', stripRuleIds(x.legal_basis)) : null,
+      h('h3', {}, 'Find one'),
+      links.length ? h('ul', { class: 'pf-links clean' }, links.map((l) => h('li', { class: 'pf-link' },
+        officialLink(l.url, l.label),
+        l.owner ? h('p', { class: 'small muted' }, `Run by ${l.owner}.`) : null,
+        l.elsewhere ? h('p', { class: 'hint' }, `This page covers ${l.elsewhere} only.`) : null,
+        // the API's own sentence says what the link opens (and whether it could be checked); otherwise ours
+        l.how ? h('p', { class: 'hint' }, l.how)
+          : [h('p', { class: 'hint' }, l.countyFiltered ? `Opens already filtered to ${county ? `${county} County` : 'the job\'s county'}.` : 'Opens the statewide search; look for the job\'s area there.'),
+            l.unchecked ? h('p', { class: 'hint' }, MAY_HAVE_MOVED) : null],
+        l.checkedOn ? h('p', { class: 'hint' }, `Link checked ${fmtDate(l.checkedOn)}.`) : null)))
+        : h('p', { class: 'muted' }, 'No official public search is listed for this one yet. Ask the state agency that issues this license or certificate.'),
+      str(x.verify_license_how) ? [h('h3', {}, 'How to check their license'), h('p', {}, x.verify_license_how)] : null,
+      notes.length ? h('ul', { class: 'bullets small muted' }, notes.map((n) => h('li', {}, prose(n)))) : null,
+      basisList('When the law requires one', x.when_required),
+      basisList('When it\'s suggested but not required', x.optional_when),
+      basisList('When you don\'t need one', x.not_required_when),
+      bring.length ? h('details', { class: 'more' }, h('summary', {}, 'What to bring and ask'), h('ul', { class: 'bullets small' }, bring.map((s) => h('li', {}, s)))) : null,
+      sources ? h('details', { class: 'more' }, h('summary', {}, `Sources (${sources.length})`), citationList(sources)) : null,
+      others.length ? h('p', { class: 'small' }, 'You might also mean: ', others.map((o, i) => [i ? ', ' : '', h('a', { href: finderHref(typeIdOf(o)) }, String(o.name || humanize(typeIdOf(o))))])) : null);
+  }
+  routes.professionals = async ({ query }) => {
+    const head = h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Find a licensed professional'),
+      h('p', {}, 'When a job needs a licensed or certified person, find one near the job and check their license on the official state lookups.')));
+    let typesRes;
+    try { typesRes = await api('/api/professionals/types'); } catch (e) {
+      return h('div', {}, head, finderProblem(e, () => render()), h('p', { class: 'small muted' }, OFFICIAL_NOTE));
+    }
+    const types = normTypes(typesRes);
+    const counties = typesRes && Array.isArray(typesRes.counties) && typesRes.counties.length && typesRes.counties.every((c) => typeof c === 'string') ? typesRes.counties : CA_COUNTIES;
+    if (!types.length) return h('div', {}, head, h('div', { class: 'card empty' }, h('p', {}, 'No kinds of professionals are listed on this server yet.')), h('p', { class: 'small muted' }, OFFICIAL_NOTE));
+    const projects = await api('/api/projects').catch(() => []);
+    const lastKey = `tc.finder.project.${state.me.tenant.id}`;
+    const active = projects.filter((p) => !['closed', 'completed'].includes(p.status));
+    let projectId = query.get('project') || local.get(lastKey) || (active.length === 1 ? String(active[0].id) : '');
+    if (!projects.some((p) => String(p.id) === projectId)) projectId = '';
+    const projectOf = (id) => projects.find((p) => String(p.id) === String(id)) || null;
+    const startCounty = countyMatch(query.get('county'), counties) || (projectId ? countyMatch(projectOf(projectId).county, counties) : '');
+    const wanted = query.get('type');
+    const typeSel = select('type', [['', 'Choose…'], ...types.map((t) => [t.id, t.name])], types.some((t) => t.id === wanted) ? wanted : '', { id: 'pf-type', 'aria-describedby': 'pf-type-h' });
+    const typeHint = h('span', { class: 'hint', id: 'pf-type-h' });
+    const showDesc = () => { const t = types.find((x) => x.id === typeSel.value); typeHint.textContent = t && t.desc ? firstSentence(t.desc) : ''; };
+    typeSel.addEventListener('change', showDesc);
+    showDesc();
+    const countySel = select('county', [['', 'Not sure (statewide)'], ...counties.map((c) => [c, c])], startCounty, { id: 'pf-county', 'aria-describedby': 'pf-county-h' });
+    const countyHint = h('span', { class: 'hint', id: 'pf-county-h' }, 'Where the work is. Some state sites open already filtered to it.');
+    const projHint = h('span', { class: 'hint', id: 'pf-project-h' }, 'Fills in the job\'s county.');
+    let projSel = null;
+    if (projects.length) {
+      projSel = select('project', [['', 'No project'], ...projects.map((p) => [String(p.id), p.name])], projectId, { id: 'pf-project', 'aria-describedby': 'pf-project-h' });
+      projSel.addEventListener('change', () => {
+        const p = projectOf(projSel.value);
+        if (p) local.set(lastKey, String(p.id)); else local.del(lastKey);
+        const c = p ? countyMatch(p.county, counties) : '';
+        if (c) countySel.value = c;
+        projHint.textContent = p && !c ? `“${p.name}” has no county we recognize. Pick the county below, or add it to the project.` : 'Fills in the job\'s county.';
+      });
+    }
+    const status = h('p', { class: 'visually-hidden', role: 'status' });
+    const out = h('div', { class: 'pf-results' });
+    const btn = h('button', { type: 'submit', class: 'btn' }, 'Show official lookups');
+    // The "doesn't recommend" note sits under the form until results show; then the results' own (fuller) note
+    // replaces it, so it isn't said twice on one screen.
+    const formNote = h('p', { class: 'small muted pf-note' }, OFFICIAL_NOTE);
+    // After a tap on the button (not when the page opens from a result), bring what came back into view if it
+    // landed below the fold or behind the phone's bottom bar.
+    const reveal = (asked) => { if (asked && out.firstElementChild && out.getBoundingClientRect().top > window.innerHeight - 160) out.firstElementChild.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); };
+    const run = async (asked = false) => {
+      fill(out);
+      formNote.hidden = false;
+      status.textContent = '';
+      if (!typeSel.value) { out.append(msgBox('error', 'Choose the kind of professional you need.')); typeSel.focus(); return; }
+      const t = types.find((x) => x.id === typeSel.value);
+      const q = new URLSearchParams({ type_id: typeSel.value });
+      if (countySel.value) q.set('county', countySel.value);
+      const qs = new URLSearchParams({ type: typeSel.value });
+      if (countySel.value) qs.set('county', countySel.value);
+      if (projSel && projSel.value) qs.set('project', projSel.value);
+      history.replaceState(null, '', `#/professionals?${qs}`);
+      busy(btn, true, 'Looking up…');
+      try {
+        const found = normFound(await api(`/api/professionals/find?${q}`));
+        if (!found.length) {
+          fill(out, h('div', { class: 'card empty' }, h('p', {}, `No official lookup is listed for ${t ? t.name.toLowerCase() : 'this'} yet. Ask the state agency that issues this license or certificate.`)));
+          status.textContent = 'No official lookups found.';
+        } else {
+          const checked = found.map((x) => x.checked_on).find((d) => /^\d{4}-\d{2}-\d{2}$/.test(String(d || '')));
+          fill(out, found.map((x, k) => foundEntry(x, countySel.value, k)),
+            h('p', { class: 'small muted' }, str(found[0].neutral_note) || `${OFFICIAL_NOTE} Choosing and hiring someone is up to you.`,
+              checked ? ` Directory list checked ${fmtDate(checked)}.` : ''));
+          formNote.hidden = true;
+          const n = found.reduce((s, x) => s + foundLinks(x).length, 0);
+          status.textContent = `Showing ${plural(n, 'official lookup')} for ${t ? t.name : 'this'}${countySel.value ? ` near ${countySel.value} County` : ''}.`;
+        }
+      } catch (e) {
+        fill(out, finderProblem(e, () => run(true)));
+        status.textContent = isOffline(e) ? 'You are offline.' : 'The lookup did not load.';
+      } finally { busy(btn, false); }
+      reveal(asked);
+    };
+    const form = h('form', { novalidate: true, onsubmit: (e) => { e.preventDefault(); run(true); } },
+      h('div', { class: 'form-grid' },
+        h('div', { class: 'field wide' }, h('label', { for: 'pf-type' }, 'What do you need?'), typeSel, typeHint),
+        projSel ? h('div', { class: 'field' }, h('label', { for: 'pf-project' }, 'Job (optional)'), projSel, projHint) : null,
+        h('div', { class: 'field' }, h('label', { for: 'pf-county' }, 'County of the job'), countySel, countyHint)),
+      h('div', { class: 'row' }, btn));
+    if (typeSel.value) setTimeout(run, 0);         // came from a result's "How to find and check one"
+    return h('div', {}, head,
+      h('section', { class: 'card', 'aria-label': 'What you need and where' }, form, formNote),
+      status, out);
   };
 
   // ======================================================================== documents
@@ -2611,8 +2950,8 @@
     catSel.addEventListener('change', apply);
     govBox.addEventListener('change', apply);
 
-    const jump = h('nav', { class: 'jump no-print', 'aria-label': 'Integration categories' }, sections.map((s) => h('a', { href: '#', class: 'pill gray', onclick: (ev) => { ev.preventDefault(); s.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, s.querySelector('h2').textContent)),
-      h('a', { href: '#', class: 'pill blue', onclick: (ev) => { ev.preventDefault(); $('#int-assistant').scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, 'AI assistant setup'));
+    const jump = h('nav', { class: 'jump no-print', 'aria-label': 'Integration categories' }, sections.map((s) => h('a', { href: '#', class: 'pill gray', onclick: (ev) => { ev.preventDefault(); s.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, s.querySelector('h2').textContent)),
+      h('a', { href: '#', class: 'pill blue', onclick: (ev) => { ev.preventDefault(); $('#int-assistant').scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, 'AI assistant setup'));
     const view = h('div', {},
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Integrations'), h('p', {}, 'Use TradeComply with Procore, Docusign, Slack, Teams, your calendar, your AI assistant and more.'))),
       top, explainer(cat), filterCard, jump, empty, sections, extraSection, assistantBuilder(cat),
@@ -2627,6 +2966,90 @@
   };
 
   // ======================================================================== settings
+  // Forget everything this browser holds for the signed-in company (the cached API copies and app state); after the
+  // company is deleted, also its checklist and finder choices and any field logs still waiting to sync.
+  async function signedOut({ forgetCompany = false } = {}) {
+    const tid = state.me && state.me.tenant && state.me.tenant.id;
+    if (forgetCompany && tid) {
+      local.del(`tc.gettingStarted.${tid}`);
+      local.del(`tc.finder.project.${tid}`);
+      try { for (const x of await Outbox.all()) await Outbox.del(x.client_uuid); } catch (e) { /* no offline store */ }
+    }
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage('clear-api-cache');
+    if (window.caches) caches.delete('tc-api-v1').catch(() => {});
+    state.me = null; state.tools = null; state.mcpPolicy = null; state.gsAway = null;
+    $('#nav').hidden = true; $('#company').textContent = '';
+  }
+  // Owner only: one-file export of the company's records (GET /api/tenant/export) and closing the account
+  // (DELETE /api/tenant). Until the server has those endpoints (404/405/501) the section says so instead of failing.
+  async function downloadCompanyData(btn, out) {
+    fill(out);
+    busy(btn, true, 'Preparing your file…');
+    try {
+      let res;
+      try { res = await fetch('/api/tenant/export', { credentials: 'same-origin', headers: { Accept: 'application/json' } }); } catch (e) {
+        throw new ApiError(0, 'You appear to be offline. Try again when you have signal.');
+      }
+      if (!res.ok) {
+        const data = (res.headers.get('content-type') || '').includes('json') ? await res.json().catch(() => null) : null;
+        throw new ApiError(res.status, errMessage(data, res.status), data);
+      }
+      const blob = await res.blob();
+      const m = (res.headers.get('content-disposition') || '').match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+      let name = '';
+      try { name = m ? decodeURIComponent(m[1]) : ''; } catch (e) { name = ''; }
+      const slug = String(state.me.tenant.company_name || 'company').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'company';
+      name = name.replace(/[^\w.-]+/g, '_').slice(0, 120) || `tradecomply-${slug}-${todayISO()}.json`;
+      saveBlob(name, blob);
+      fill(out, msgBox('info', `Your download has started: ${name}. It can include employee and customer details, so keep it somewhere safe.`));
+    } catch (e) {
+      if (notOnServer(e)) fill(out, msgBox('info', 'Downloading all company data isn\'t available on this server yet. ', supportText('For a copy of your data')));
+      else fill(out, msgBox(isOffline(e) ? 'warn' : 'error', e.message));
+    } finally { busy(btn, false); }
+  }
+  function companyDataSection() {
+    const tenant = state.me.tenant;
+    const company = String(tenant.company_name || '').trim();
+    const dlOut = h('div', { role: 'status' });
+    const dl = h('button', { type: 'button', class: 'btn secondary', onclick: () => downloadCompanyData(dl, dlOut) }, 'Download all company data');
+    const nameIn = input('confirm_company_name', { id: 'del-name', autocomplete: 'off', spellcheck: 'false' });
+    const pwIn = input('password', { id: 'del-pw', type: 'password', autocomplete: 'current-password' });
+    const err = h('div', { role: 'alert' });
+    const del = h('button', { type: 'submit', class: 'btn danger' }, 'Delete company account permanently');
+    const form = h('form', { novalidate: true, onsubmit: async (e) => {
+      e.preventDefault();
+      fill(err);
+      if (nameIn.value.trim() !== company) { err.append(msgBox('error', `Type the company name exactly as it appears: ${company}`)); nameIn.setAttribute('aria-invalid', 'true'); nameIn.focus(); return; }
+      nameIn.removeAttribute('aria-invalid');
+      if (!pwIn.value) { err.append(msgBox('error', 'Enter your password.')); pwIn.setAttribute('aria-invalid', 'true'); pwIn.focus(); return; }
+      pwIn.removeAttribute('aria-invalid');
+      busy(del, true, 'Deleting…');
+      try {
+        const receipt = await api('/api/tenant', { method: 'DELETE', body: { confirm_company_name: nameIn.value.trim(), password: pwIn.value }, keepSession: true });
+        // Billing and integration outcomes are only shown once, on the login page (the owner can't sign in to Billing now).
+        lastDeletion = [receipt && receipt.billing && receipt.billing.message, ...((receipt && receipt.integrations) || []).map((i) => i && i.message)].filter((m) => typeof m === 'string' && m);
+        await signedOut({ forgetCompany: true });
+        go('login?deleted=1');
+      } catch (ex) {
+        pwIn.value = '';
+        if (notOnServer(ex)) err.append(msgBox('info', 'Closing a company account isn\'t available on this server yet. ', supportText('To close your account')));
+        else err.append(msgBox(isOffline(ex) ? 'warn' : 'error', ex.message));
+        busy(del, false);
+      }
+    } },
+    h('p', {}, 'This permanently deletes your company account and the records in it: projects, subcontractors, documents, field logs, team members and their logins, API keys, connected integrations and settings. Everyone on your team is signed out. It can\'t be undone.'),
+    h('p', { class: 'small muted' }, 'Copies already outside TradeComply (files you downloaded or printed, calendars you subscribed, messages sent to Slack, Teams or by text) are not affected. Download your data first if you might need it.'),
+    tenant.has_billing_account ? h('p', { class: 'small' }, 'If you pay for TradeComply by card, TradeComply tries to cancel the subscription and tells you the result after the account is deleted.') : null,
+    h('div', { class: 'form-grid' },
+      field('Type your company name to confirm', nameIn, { hint: `Type it exactly: ${company}` }),
+      field('Your password', pwIn)),
+    err, h('div', { class: 'row' }, del));
+    return h('section', { class: 'card', id: 'company-data', 'aria-labelledby': 'cd-h' },
+      h('h2', { id: 'cd-h' }, 'Account and data'),
+      h('p', { class: 'muted' }, 'Download one file (JSON) with all your company\'s TradeComply records, for your own files or to move to another system.'),
+      h('div', { class: 'row' }, dl), dlOut,
+      h('details', { class: 'danger-zone' }, h('summary', {}, 'Delete company account'), h('div', { class: 'danger-body' }, form)));
+  }
   routes.settings = async ({ query }) => {
     if (query.get('integration')) {         // the OAuth callback lands on #/settings?integration=..&result=..
       location.replace(`#/integrations?${query.toString()}`);
@@ -2648,9 +3071,8 @@
     pwErr, h('button', { type: 'submit', class: 'btn secondary' }, 'Change password'));
     const logout = async () => {
       await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
-      if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage('clear-api-cache');
-      if (window.caches) caches.delete('tc-api-v1').catch(() => {});
-      state.me = null; state.tools = null; $('#nav').hidden = true; $('#company').textContent = ''; go('login');
+      signedOut();
+      go('login');
     };
     sections.push(h('section', { class: 'card', 'aria-labelledby': 'acct-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'acct-h' }, 'Your account'), h('button', { type: 'button', class: 'btn ghost', onclick: logout }, 'Log out')),
       h('dl', { class: 'kv' }, h('dt', {}, 'Email'), h('dd', {}, me.user.email || '—'), h('dt', {}, 'Role'), h('dd', {}, humanize(me.user.role))), pwForm));
@@ -2746,11 +3168,12 @@
           me.tenant.has_billing_account ? h('button', { type: 'button', class: 'btn secondary', onclick: (e) => billingPortal(e.currentTarget) }, 'Manage billing and invoices') : null));
       }
       sections.push(h('section', { class: 'card', id: 'billing' }, h('h2', {}, 'Billing'), items));
+      sections.push(companyDataSection());
     }
     // a long page on a phone: jump links to each section
     sections.forEach((sec, k) => { if (!sec.id) sec.id = `set-${k}`; });
     const jump = sections.length < 3 ? null : h('nav', { class: 'jump no-print', 'aria-label': 'Settings sections' }, sections.map((sec) => {
-      const t = sec.querySelector('h2'); return t ? h('a', { href: '#', class: 'pill gray', onclick: (e) => { e.preventDefault(); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }, t.textContent.replace(/ \(MCP\)$/, '')) : null;
+      const t = sec.querySelector('h2'); return t ? h('a', { href: '#', class: 'pill gray', onclick: (e) => { e.preventDefault(); sec.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, t.textContent.replace(/ \(MCP\)$/, '')) : null;
     }));
     return h('div', {}, h('div', { class: 'page-head' }, h('h1', {}, 'Settings')), jump, h('div', { class: 'stack' }, sections));
   };

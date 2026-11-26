@@ -17,11 +17,11 @@ from typing import Annotated, Any, Literal, Optional
 
 import anyio
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from fastmcp import Client
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError
 
-from tradecomply import integrations_guide, logic
+from tradecomply import integrations_guide, logic, professionals
 
 from . import dashboard
 from . import mcp_governance as governance
@@ -617,9 +617,12 @@ async def call_tool(name: str, request: Request, p: Principal = Depends(anyone))
         raise HTTPException(422, "Body must be a JSON object of tool arguments")
     # mcp_client_config without a URL points at the server the user is signed in to, never a built-in address
     url_token = integrations_guide.SERVER_MCP_URL.set(_mcp_url(request))
+    # who_must_sign given another tool's inputs runs that tool: the caller's key scope applies to it too
+    guard_token = professionals.RUN_GUARD.set(await _run_guard(platform, p))
     try:
         out = await run_tool(platform, name, args)
     finally:
+        professionals.RUN_GUARD.reset(guard_token)
         integrations_guide.SERVER_MCP_URL.reset(url_token)
     sc = out["structured"] if isinstance(out["structured"], dict) else {}
     verified = sc.get("verified") if isinstance(sc.get("verified"), bool) else None
@@ -627,7 +630,57 @@ async def call_tool(name: str, request: Request, p: Principal = Depends(anyone))
                                                                 ok=not out["is_error"], source="api"))
     if out["is_error"]:
         raise HTTPException(422, friendly_tool_error(out["text"]))
+    attach_handoffs(out, name, args)
     return out
+
+
+async def _run_guard(platform, p: Principal):
+    """Which tools this caller may run through who_must_sign: an API key's own scope; people signed in to the web
+    app may run every tool (professionals.py still runs only read-only ones)."""
+    if p.via != "key":
+        return lambda tool: True
+    index = await governance.tool_index(platform)
+    return lambda tool: governance.scope_allows(p.scopes, tool, index)
+
+
+def attach_handoffs(out: dict, name: str, args: dict) -> None:
+    """Add "handoffs" (the licensed or certified people this result needs, tradecomply/professionals.py) next to
+    the result when any apply. Additive only: no existing field changes (result_sig still covers `structured`
+    exactly), and a failure here is logged and the field left out, never the caller's error."""
+    try:
+        items = professionals.handoffs_for(name, out.get("structured"), args)
+    except Exception:
+        logger.exception("handoffs for %s could not be computed; result sent without them", name)
+        return
+    if items:
+        out["handoffs"] = items
+
+
+# ---------------------------------------------------------------------------- licensed professionals (finder)
+@router.get("/professionals/types")
+def professional_types(request: Request, p: Principal = Depends(anyone)):
+    """Every kind of licensed or certified professional and its official directories, plus the 58 county names:
+    the same JSON as the list_professional_types tool. The same for every user, so it may be cached."""
+    return JSONResponse(professionals.list_professional_types().model_dump(),
+                        headers={"Cache-Control": "private, max-age=300"})
+
+
+@router.get("/professionals/find")
+def find_professional(request: Request, p: Principal = Depends(anyone),
+                      type: Optional[str] = Query(None, max_length=80, description="Professional type id"),
+                      type_id: Optional[str] = Query(None, max_length=80, description="Same as type"),
+                      need: Optional[str] = Query(None, max_length=500, description="Or the need in plain words"),
+                      county: Optional[str] = Query(None, max_length=80),
+                      city: Optional[str] = Query(None, max_length=80),
+                      craft: Optional[str] = Query(None, max_length=80)):
+    """Who the professional is, when the law requires one, the official directories (county-filtered where the
+    official site supports it), how to check the license and what to bring: the same JSON as the
+    find_licensed_professional tool. TradeComply links to official searches only and recommends no one."""
+    try:
+        found = professionals.find_licensed_professional(type or type_id, county, city, need, craft)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return found.model_dump()
 
 
 def friendly_tool_error(text: str) -> str:

@@ -1,10 +1,11 @@
 /* TradeComply service worker: the app shell works offline; API calls go to the network first and fall back to
-   the last copy of the tool schemas, account, config, project list and integrations catalog so the field screen
-   and the Integrations page open without signal. */
-const SHELL_CACHE = 'tc-shell-v3';
+   the last copy of the tool schemas, account, config, project list, integrations catalog and the list of kinds of
+   licensed professionals, so the field screen, the Integrations page and the finder's form open without signal.
+   v4: guidance release (professional finder, getting started, account data). */
+const SHELL_CACHE = 'tc-shell-v4';
 const API_CACHE = 'tc-api-v1';
 const SHELL = ['/', '/static/app.js', '/static/styles.css', '/manifest.webmanifest', '/icon.svg'];
-const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog'];
+const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog', '/api/professionals/types'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -78,7 +79,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/') || url.pathname === '/api/calendar.ics'
-    || url.pathname === '/api/integrations/calendar_feed/calendar.ics') return;      // downloads: never a cached or JSON copy
+    || url.pathname === '/api/integrations/calendar_feed/calendar.ics' || url.pathname === '/api/tenant/export') return;      // downloads: never a cached or JSON copy
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstApi(request));
   } else if (request.mode === 'navigate') {

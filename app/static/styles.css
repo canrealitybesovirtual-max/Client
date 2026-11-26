@@ -358,6 +358,71 @@ dialog .dialog-body { padding: 1rem 1.2rem; overflow: auto; max-height: calc(100
 .scope-tools label, .scope-mode label, .field.check > label { display: flex; gap: .45rem; align-items: flex-start; overflow-wrap: anywhere; }
 .scope-tools input[type=checkbox], .scope-mode input, .field.check > label > input { flex: none; margin: .2rem 0 0; }
 
+/* ---------- guidance: licensed-professional handoffs, the finder, getting started, account data.
+   Short, collapsed by default and never in the way: no overlays, no animation beyond a chevron turn. */
+@media (max-width: 899px) { .nav .nav-wide { display: none; } }   /* phones: the finder is on Tools and in results */
+@media (min-width: 900px) { a.nav-narrow { display: none; } }   /* wide screens: the sidebar already has it */
+.handoffs { border: 1px solid #bcd3f1; background: #f7faff; border-radius: 10px; margin: .75rem 0; overflow-wrap: anywhere; }
+/* Chevrons are drawn with borders (empty content), so screen readers don't read a "›" as part of the line. */
+.handoffs > summary, .ho-more > summary, .danger-zone > summary { list-style: none; cursor: pointer; }
+.handoffs > summary::-webkit-details-marker, .ho-more > summary::-webkit-details-marker, .danger-zone > summary::-webkit-details-marker { display: none; }
+.handoffs > summary::after, .ho-more > summary::after, .danger-zone > summary::after { content: ""; position: absolute; right: .95rem; top: 50%; width: .5rem; height: .5rem; margin-top: -.3rem;
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(-45deg); transition: transform .15s; }
+.handoffs[open] > summary::after, .ho-more[open] > summary::after, .danger-zone[open] > summary::after { transform: rotate(45deg); }
+.handoffs > summary { display: block; position: relative; min-height: 44px; padding: .65rem 2.4rem .65rem .75rem; color: var(--navy); font-size: .93rem; border-radius: 10px; }
+.handoffs > summary:hover { background: var(--blue-soft); }
+.ho-lead { font-weight: 700; }
+.ho-names { color: var(--ink); }
+.ho-body { padding: .1rem .75rem .65rem; border-top: 1px solid #bcd3f1; }
+.ho-list { list-style: none; margin: 0; padding: 0; }
+.ho-item { padding: .65rem 0; border-top: 1px solid var(--line); }
+.ho-item:first-child { border-top: 0; }
+.ho-item p { margin: 0 0 .35rem; }
+.ho-item .hint { display: block; margin-top: .3rem; }
+.ho-rows .ho-item { padding: 0; }
+.ho-more > summary { display: block; position: relative; min-height: 44px; padding: .6rem 2rem .6rem 0; }
+.ho-more > summary::after { right: .4rem; color: var(--navy); }
+.ho-more > summary .ho-name { display: inline; }
+.ho-more-body { padding: 0 0 .65rem; }
+.ho-actions { gap: .4rem .9rem; }
+.btn.ho-find { min-height: 44px; }
+.ho-host { font-weight: 400; white-space: nowrap; }
+.ho-why { font-size: .95rem; }
+.ho-note { margin: .35rem 0 0; }
+.pf-note { margin: .75rem 0 0; }
+.pf-results > *, section.result { scroll-margin-top: 4.25rem; }   /* scrolled to: not under the sticky top bar */
+.pf-entry h2 { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.pf-entry h3 { margin-top: 1rem; }
+.pf-links { display: grid; gap: .6rem; margin: .5rem 0 .75rem; }
+.pf-link { border: 1px solid var(--line); border-radius: 10px; padding: .6rem .75rem; background: #fbfcfd; }
+.pf-link p { margin: .35rem 0 0; }
+.pf-link .hint { display: block; }
+.gs { padding: .75rem 1rem; border-color: #bcd3f1; }
+.gs-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .25rem .75rem; margin-bottom: .4rem; }
+.gs-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .6rem; }
+.gs-title h2 { margin: 0; font-size: 1.05rem; }
+.gs-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .4rem .5rem; }
+.gs-steps a { display: inline-flex; align-items: center; min-height: 44px; padding: .35rem .85rem; border-radius: 999px; border: 1px solid #bcd3f1; background: var(--blue-soft); color: var(--navy); font-weight: 600; font-size: .9rem; text-decoration: none; }
+.gs-steps a:hover { background: #d7e5f8; color: var(--navy); }
+.gs-more { margin: .5rem 0 0; }
+@media (max-width: 640px) {
+  /* phones: two short columns instead of a tall stack, so the checklist doesn't push the day's status off screen */
+  .gs-steps { display: grid; grid-template-columns: 1fr 1fr; }
+  .gs-steps li { display: flex; }
+  .gs-steps a { flex: 1; border-radius: 9px; line-height: 1.25; padding: .4rem .7rem; }
+  .ho-actions { flex-direction: column; align-items: stretch; }
+  .ho-find, .pf-link .ho-find { display: flex; width: 100%; text-align: center; flex-wrap: wrap; justify-content: center; }
+  .ho-find .ho-host { flex-basis: 100%; }
+  .ho-find .ho-dot { display: none; }
+}
+.danger-zone { border: 1px solid #f2b8b8; border-radius: 10px; padding: .1rem .8rem; margin-top: 1.25rem; }
+.danger-zone > summary { position: relative; color: var(--red); font-weight: 700; min-height: 44px; display: flex; align-items: center; padding-right: 2rem; }
+.danger-zone[open] > summary { border-bottom: 1px solid #f2b8b8; margin-bottom: .6rem; }
+.danger-body { padding-bottom: .6rem; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
 /* ---------- print */
 @media print {
   :root { background: #fff; }
@@ -375,5 +440,11 @@ dialog .dialog-body { padding: 1rem 1.2rem; overflow: auto; max-height: calc(100
   .tool-layout, .grid { display: block !important; }
   .print-head { display: block !important; border-bottom: 2px solid #000; padding-bottom: .4rem; margin-bottom: 1rem; font-size: .9rem; }
   details.more, details.snippet, .format-details, details.tool-more, details.advanced { display: none; }
+  /* who a printed result needs, with the official search address written out */
+  .handoffs { border: 1px solid #999; background: #fff; break-inside: avoid; }
+  .handoffs summary::after { content: none; }
+  .handoffs a.ho-find { display: inline !important; border: 0; padding: 0; min-height: 0; background: none; color: inherit; font-weight: 600; }
+  .handoffs a.ho-find::after { content: " (" attr(href) ")"; font-weight: 400; font-size: .8rem; overflow-wrap: anywhere; }
+  .gs, .danger-zone { display: none !important; }
 }
 .print-only { display: none; }

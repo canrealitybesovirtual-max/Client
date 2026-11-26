@@ -25,7 +25,7 @@ from starlette.staticfiles import StaticFiles
 
 from tradecomply import cslb
 
-from . import api, auth, billing, connectors, integrations_api, mcp_governance, sso
+from . import account, api, auth, billing, connectors, integrations_api, mcp_governance, sso
 from .connectors import alerts, calendar_feed, docusign, procore, schedule_import, splunk, twilio_sms
 from .config import Platform, Settings
 
@@ -187,6 +187,7 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(billing.router)
     app.include_router(api.router)
+    app.include_router(account.router)     # GET /api/tenant/export, DELETE /api/tenant (app/account.py)
     # Connector routers first: their fixed paths (/api/integrations/docusign/...) must win over the generic
     # /api/integrations/{provider}/... routes.
     for connector_router in (docusign.router, procore.router, alerts.router, twilio_sms.router,

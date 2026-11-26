@@ -27,6 +27,7 @@ MIN_LEN = 6
 # Files a customer or operator sees: code, web app, catalog, deploy config, docs, launchers.
 PRODUCT = re.compile(r"^(app/.*\.(py|js|html|css|webmanifest|svg)|server\.py|render\.yaml|requirements\.txt|README\.md|"
                      r"docs/.*\.md|scripts/.*\.py|tradecomply/integrations_guide\.py|tradecomply/data/integrations\.json|"
+                     r"tradecomply/data/professionals\.json|"
                      r"TradeComply-local\.(bat|command)|tradecomply-local\.sh)$")
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})")
 RESERVED_DOMAIN = re.compile(r"(^|\.)(example\.(com|org|net)|example|test|invalid|local|localhost)$", re.I)

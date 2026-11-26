@@ -886,11 +886,12 @@ def test_anonymous_audit_rows_are_trimmed(app):
     store = app.state.platform.store
     for i in range(30):
         store.audit(None, "anonymous (MCP)", "t", {"i": i}, None, source="mcp")
-    store.audit("t_keep", "x", "t", {}, None)
+    keep = store.create_tenant("Keep Co", None, None)["id"]        # a company's rows are never trimmed
+    store.audit(keep, "x", "t", {}, None)
     assert store.trim_anonymous_audit(10) == 20
     with store.connect() as con:
         assert con.execute("select count(*) from audit where tenant_id is null").fetchone()[0] == 10
-        assert con.execute("select count(*) from audit where tenant_id = 't_keep'").fetchone()[0] == 1
+        assert con.execute("select count(*) from audit where tenant_id = ?", (keep,)).fetchone()[0] == 1
 
 
 def test_api_docs_page_is_same_origin(client):

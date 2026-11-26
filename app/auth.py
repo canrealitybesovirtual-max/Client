@@ -173,6 +173,33 @@ class RateLimiter:
             if len(self._hits) > self.max_keys:
                 self._evict(keep=key)
 
+    def claim(self, key: str) -> int:
+        """retry_after() and hit() as one step: 0 means this attempt is counted now (before the slow work it
+        guards), anything else is the wait and nothing is counted. Use it where an `await` sits between the check
+        and the outcome, e.g. a password check: with retry_after() first and hit() only after a wrong password,
+        thirty requests sent at the same moment all pass the check before the first failure is counted. Undo a
+        claim with release() (or reset()) when the attempt turns out fine."""
+        now = time.monotonic()
+        with self._lock:
+            q = self._hits.get(key)
+            while q and q[0] <= now - self.window:
+                q.popleft()
+            if q and len(q) >= self.limit:
+                return int(q[len(q) - self.limit] + self.window - now) + 1
+            self._hits.setdefault(key, deque()).append(now)
+            if len(self._hits) > self.max_keys:
+                self._evict(keep=key)
+            return 0
+
+    def release(self, key: str) -> None:
+        """Take back one claim (the newest event) without clearing the key's other events."""
+        with self._lock:
+            q = self._hits.get(key)
+            if q:
+                q.pop()
+                if not q:
+                    del self._hits[key]
+
     def _evict(self, keep: str):
         cutoff = time.monotonic() - self.window
         for k in [k for k, q in self._hits.items() if not q or q[-1] <= cutoff]:
@@ -413,17 +440,22 @@ async def login(body: LoginIn, request: Request):
     platform = platform_of(request)
     email = body.email.strip().lower()
     key, ekey = f"{client_ip(request)}|{email}", f"email|{email}"
-    wait = max(platform.login_limiter.retry_after(key), platform.email_limiter.retry_after(ekey))
+    # Each attempt is counted before the password is checked (claim), and taken back if it was right: requests
+    # sent all at once can't each slip past the limit while the others are still being checked.
+    wait = platform.login_limiter.claim(key)
+    if not wait:
+        wait = platform.email_limiter.claim(ekey)
+        if wait:
+            platform.login_limiter.release(key)
     if wait:
         raise HTTPException(429, f"Too many failed attempts. Try again in {max(1, wait // 60)} minute(s).",
                             headers={"Retry-After": str(wait)})
     user = await anyio.to_thread.run_sync(platform.store.user_by_email, email)
     ok = await anyio.to_thread.run_sync(verify_password, body.password, user["pw_hash"] if user else _DUMMY_HASH)
     if not (user and ok):
-        platform.login_limiter.hit(key)
-        platform.email_limiter.hit(ekey)
         raise HTTPException(401, "Email or password is incorrect")
     platform.login_limiter.reset(key)
+    platform.email_limiter.release(ekey)
     # A company that requires single sign-on refuses password sign-in for everyone but owners (their break-glass
     # path, logged). Checked only after the password, so the answer says nothing about unknown emails.
     from . import sso       # local import: app.sso imports this module
@@ -457,13 +489,12 @@ async def change_password(body: PasswordIn, request: Request, p: Principal = Dep
         raise HTTPException(403, "Log in with your password to change it")
     platform = platform_of(request)
     key = f"pw|{p.user_id}"
-    wait = platform.login_limiter.retry_after(key)
+    wait = platform.login_limiter.claim(key)          # counted before the check: see login()
     if wait:
         raise HTTPException(429, f"Too many wrong passwords. Try again in {max(1, wait // 60)} minute(s).",
                             headers={"Retry-After": str(wait)})
     user = await anyio.to_thread.run_sync(platform.store.user_by_id, p.user_id)
     if not await anyio.to_thread.run_sync(verify_password, body.current_password, user["pw_hash"]):
-        platform.login_limiter.hit(key)
         raise HTTPException(403, "Current password is incorrect")
     platform.login_limiter.reset(key)
     pw_hash = await anyio.to_thread.run_sync(hash_password, body.new_password)

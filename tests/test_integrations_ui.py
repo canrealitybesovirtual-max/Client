@@ -40,7 +40,9 @@ def test_assets_wire_up_the_integrations_page(client):
     css = client.get("/static/styles.css").text
     assert ".int-card" in css and ".chip[aria-pressed=true]" in css and "input[type=url]" in css
     sw = client.get("/sw.js").text
-    assert "'/api/integrations/catalog'" in sw and "tc-shell-v3" in sw
+    # the integrations release bumped the shell cache to v3; later releases keep bumping it (never back below 3)
+    version = int(sw.split("const SHELL_CACHE = 'tc-shell-v", 1)[1].split("'", 1)[0])
+    assert "'/api/integrations/catalog'" in sw and version >= 3
 
 
 def test_app_js_never_puts_html_from_the_catalog_into_the_page():

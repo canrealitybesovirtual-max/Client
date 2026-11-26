@@ -1,0 +1,2918 @@
+{
+ "version": 1,
+ "checked": "2026-11-26",
+ "about": "When a TradeComply result needs a licensed or certified person: which tool output triggers it, who, why (the legal basis and the rulebook rules behind it), and when. Professional types and official directories come from tradecomply/data/professionals.json; extra_types adds the types that file does not have yet. TradeComply never recommends, ranks or picks a person or firm.",
+ "source": "The handoff map in docs/product.md section 4, re-checked on 2026-11-26 by running every entry's test against fresh tool output with a strict evaluator (a missing field is an error).",
+ "fields": {
+  "test": "Expression over `result` (the tool's structured output; dict keys read as attributes) and `args` (the tool's inputs). Evaluated by tradecomply/professionals.py with a restricted evaluator, never eval of arbitrary code.",
+  "requirement": "required | conditional (only if a fact the tool flags is true) | recommended | optional. Only required and conditional are legal requirements.",
+  "registry_type_id": "The professionals.json type that holds the directories (null: see extra_types).",
+  "rule_status": "Status of each rule id in the rulebook when the map was checked; the live status is read from tradecomply/data/rulebook.json.",
+  "rulebook_verified": "Every rule id was confirmed or corrected when the map was checked.",
+  "basis_complete": "False when part of the legal basis is not backed by a verified rulebook rule (marked 'not yet confirmed' in legal_basis_plain); such an entry is never shown as verified.",
+  "due_field": "Dotted path to an ISO date in the tool result that answers 'when'.",
+  "prefer_find": "The directory URL to show for this entry when its type lists several.",
+  "role_find": "The directory URL to show first for a role (default: the type's first link).",
+  "link_scopes": "Directory pages run by one city or district: label, and county/city when the page only serves that place (never shown as the link for a job elsewhere).",
+  "why / when_plain / legal_basis_plain": "Plain-English text shown to people (legal_basis_plain only where legal_basis has notes meant for developers).",
+  "conditional_if": "Optional test for a 'required' entry: when it holds for a result (the tool itself left a deciding fact open, e.g. its own status for the item is 'conditional'), or cannot be read, the item is shown as 'conditional' instead of 'required'."
+ },
+ "type_labels": {
+  "cslb_licensed_contractor": "CSLB-licensed contractor",
+  "asbestos_abatement_contractor": "Asbestos abatement contractor (C-22 or CSLB asbestos certification, registered with Cal/OSHA)",
+  "certified_asbestos_consultant": "Cal/OSHA-certified asbestos consultant or site surveillance technician",
+  "cslb_qualifier": "CSLB qualifying individual (RMO, RME or qualifying owner)",
+  "surety_bond_producer": "Admitted surety (bond company) or its licensed agent",
+  "insurance_broker": "Licensed insurer, agent or broker",
+  "attorney": "California attorney",
+  "home_improvement_salesperson": "Registered home improvement salesperson (CSLB HIS registration)",
+  "professional_engineer_civil": "Licensed professional engineer (civil or structural)",
+  "epa_rrp_certified_firm": "EPA lead-safe certified renovation firm and certified renovator",
+  "hers_rater": "Certified HERS rater",
+  "qsd_qsp": "Qualified SWPPP Developer (QSD) or Practitioner (QSP)",
+  "architect": "Licensed architect",
+  "special_inspector": "Special inspector approved by the building department",
+  "dsa_inspector_ior": "DSA-certified project inspector (inspector of record)",
+  "land_surveyor": "Licensed land surveyor",
+  "competent_person": "Competent person (someone you designate under Cal/OSHA rules)",
+  "apprenticeship_committee": "Apprenticeship committee (DIR-approved program)",
+  "dosh_licensed_crane_certifier": "Cal/OSHA-licensed crane certifier",
+  "certified_crane_operator": "Certified crane operator",
+  "dir_certified_electrician": "DIR-certified electrician",
+  "cdph_lead_professional": "CDPH-certified lead professional",
+  "casp": "Certified Access Specialist (CASp)",
+  "cpa": "Certified public accountant (CPA)",
+  "physician_or_plhcp": "Physician or other licensed health care professional (PLHCP)",
+  "state_fire_marshal_licensee": "Fire extinguisher service licensed or registered by the State Fire Marshal",
+  "utility_line_operator": "The operator of the high-voltage line (the utility that owns it)",
+  "certified_conveyance_mechanic": "Certified conveyance (elevator) mechanic and certified conveyance company",
+  "licensed_blaster": "Cal/OSHA-licensed blaster",
+  "air_district_dust_control_supervisor": "Air district-trained dust control person",
+  "traffic_control_supervisor_certified": "Traffic control crew trained by an ATSSA-certified (or equivalent) supervisor",
+  "c3pao": "Authorized CMMC third-party assessment organization (C3PAO)"
+ },
+ "role_find": {
+  "attorney": "https://www.calbar.ca.gov/Public/Need-Legal-Help/Certified-Lawyer-Referral-Services-Directory",
+  "asbestos_abatement_contractor": "https://www.dir.ca.gov/databases/doshacru/acrusearch.html",
+  "cslb_licensed_contractor": "https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/CheckLicense.aspx",
+  "home_improvement_salesperson": "https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/CheckLicense.aspx",
+  "epa_rrp_certified_firm": "https://cdxapps.epa.gov/ocspp-oppt-lead/firm-location-search",
+  "cdph_lead_professional": "https://www.cdph.ca.gov/Programs/CCDPHP/DEODC/CLPPB/Pages/find_lead_prof.aspx",
+  "certified_asbestos_consultant": "https://www.dir.ca.gov/databases/doshcaccsst/caccsst_query_1.html",
+  "surety_bond_producer": "https://www.insurance.ca.gov/01-consumers/120-company",
+  "insurance_broker": "https://www.insurance.ca.gov/license-status"
+ },
+ "link_scopes": {
+  "https://dbs.lacity.gov/services/plan-review-permitting": {
+   "county": "Los Angeles",
+   "city": "Los Angeles",
+   "label": "City of Los Angeles jobs only"
+  },
+  "https://www.ladbsservices2.lacity.org/LADBSRoster": {
+   "county": "Los Angeles",
+   "city": "Los Angeles",
+   "label": "City of Los Angeles jobs only"
+  },
+  "https://www.sandiego.gov/development-services/permits": {
+   "county": "San Diego",
+   "city": "San Diego",
+   "label": "City of San Diego jobs only"
+  },
+  "https://ww2.valleyair.org/compliance/training-schedule/": {
+   "label": "San Joaquin Valley Air District jobs only"
+  },
+  "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf": {
+   "label": "South Coast AQMD jobs only"
+  }
+ },
+ "extra_types": [
+  {
+   "id": "physician_or_plhcp",
+   "name": "Physician or other licensed health care professional (PLHCP)",
+   "plain_description": "A physician or other health care professional whose California license lets them do respirator medical evaluations and the medical exams some Cal/OSHA standards require. You choose the provider; TradeComply does not pick one.",
+   "triggers": [
+    "respirator medical evaluation",
+    "medical evaluation",
+    "plhcp",
+    "physician",
+    "fit test",
+    "medical surveillance",
+    "silica medical exam",
+    "wildfire smoke respirator"
+   ],
+   "when_required": [
+    {
+     "situation": "Before an employee is fit tested or first required to use a respirator, the employer must provide a medical evaluation, and must identify a physician or other licensed health care professional (PLHCP) to do it.",
+     "legal_basis": "8 CCR 5144(e)(1), (e)(2)(A)",
+     "source_url": "https://www.dir.ca.gov/title8/5144.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26"
+    },
+    {
+     "situation": "Employees required to use a respirator for silica 30 or more days a year must be offered medical surveillance at no cost, with every exam done by a PLHCP; the baseline exam is due within 30 days of assignment.",
+     "legal_basis": "8 CCR 1532.3(h)(1), (h)(2)",
+     "source_url": "https://www.dir.ca.gov/title8/1532_3.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "silica-medical-surveillance-30-days"
+     ]
+    },
+    {
+     "situation": "When the AQI for PM2.5 is over 500 (wildfire smoke), respirator use is required and respirators must be used under section 5144, which includes the medical evaluation.",
+     "legal_basis": "8 CCR 5141.1(f)(3)(B)",
+     "source_url": "https://www.dir.ca.gov/title8/5141_1.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "osha2-smoke-mandatory-respirators-over-500"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "DCA License Search (Department of Consumer Affairs, covers many state licensing boards)",
+     "url": "https://search.dca.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number",
+      "license type / board"
+     ],
+     "official_owner": "California Department of Consumer Affairs",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Which health care licenses DCA's search covers was not confirmed because the page could not be opened.",
+     "url_source": "web search result (also listed in tradecomply/data/professionals.json)"
+    }
+   ],
+   "verify_license_how": "Ask the provider for their California license type and number, and check it with the state licensing board that issued it (the DCA License Search covers many boards; it could not be opened when TradeComply last checked). Keep the written medical determination for each employee.",
+   "bring_or_ask": [
+    "Bring: the respirator types used, the tasks, how long and how often they are worn, and the medical questionnaire you use.",
+    "Ask: Will you give us a written recommendation on each employee's ability to use a respirator?"
+   ],
+   "never_say": [
+    "TradeComply chooses your clinic",
+    "This provider is approved by Cal/OSHA",
+    "We recommend this provider"
+   ],
+   "notes": [
+    "There is no Cal/OSHA list of approved PLHCPs; the employer chooses one."
+   ]
+  },
+  {
+   "id": "state_fire_marshal_licensee",
+   "name": "Fire extinguisher service licensed or registered by the State Fire Marshal",
+   "plain_description": "A fire extinguisher service company or technician licensed or registered by the California State Fire Marshal. Your own staff can do the monthly quick check; the yearly service must be done by a licensee.",
+   "triggers": [
+    "fire extinguisher",
+    "extinguisher service",
+    "state fire marshal",
+    "annual extinguisher service"
+   ],
+   "when_required": [
+    {
+     "situation": "Portable fire extinguishers on the jobsite must be inspected monthly and serviced at least once a year by a person licensed or registered by the State Fire Marshal.",
+     "legal_basis": "8 CCR 1922(a)(4)",
+     "source_url": "https://www.dir.ca.gov/title8/1922.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "osha2-fire-extinguisher-monthly-inspection-annual-service"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "State Fire Marshal fire extinguisher program",
+     "url": "https://osfm.fire.ca.gov/what-we-do/fire-engineering-and-investigations/fire-extinguisher-program",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "Office of the State Fire Marshal",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Whether the State Fire Marshal offers a public license lookup was not confirmed.",
+     "url_source": "web search result (docs/product.md section 5.3)"
+    }
+   ],
+   "verify_license_how": "Ask the service company for its State Fire Marshal license or registration number and keep the service record with your jobsite safety records.",
+   "bring_or_ask": [
+    "Bring: how many extinguishers, their types and where they are kept.",
+    "Ask: What is your State Fire Marshal license or registration number?"
+   ],
+   "never_say": [
+    "TradeComply services extinguishers",
+    "We recommend this provider"
+   ]
+  },
+  {
+   "id": "utility_line_operator",
+   "name": "The operator of the high-voltage line (the utility that owns it)",
+   "plain_description": "The company that owns or operates the high-voltage line near your work, usually the electric utility. You notify it; only its own qualified electrical workers (or qualified persons using approved procedures) are exempt from the clearance rules.",
+   "triggers": [
+    "overhead line",
+    "power line",
+    "high voltage",
+    "line clearance",
+    "utility",
+    "de-energize"
+   ],
+   "when_required": [
+    {
+     "situation": "Before any work, materials or equipment come within the required clearance of an energized high-voltage line, the person responsible for the work must promptly notify the line's operator and complete the required safety measures first.",
+     "legal_basis": "8 CCR 2948",
+     "source_url": "https://www.dir.ca.gov/title8/2948.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "osha2-elec-notify-line-operator"
+     ]
+    },
+    {
+     "situation": "The clearance rules do not apply to qualified electrical workers authorized by the line's owner, or to qualified persons using approved equipment and procedures; everyone else must keep the clearances.",
+     "legal_basis": "8 CCR 2949",
+     "source_url": "https://www.dir.ca.gov/title8/2949.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "osha2-elec-overhead-qualified-worker-exemption"
+     ]
+    }
+   ],
+   "find": [],
+   "verify_license_how": "There is no license to look up: contact the company that owns or operates the line and keep a written record of the notice and the safety measures agreed.",
+   "bring_or_ask": [
+    "Bring: the address, the equipment and its reach, the line voltage if known, and the dates.",
+    "Ask: Can the line be de-energized and grounded, or what other safety measures are required?"
+   ],
+   "never_say": [
+    "TradeComply notified the utility",
+    "We recommend this provider"
+   ],
+   "notes": [
+    "No directory: the line operator is the company that owns or runs the line."
+   ]
+  },
+  {
+   "id": "certified_conveyance_mechanic",
+   "name": "Certified conveyance (elevator) mechanic and certified conveyance company",
+   "plain_description": "Elevator and other conveyance work is done by a Certified Competent Conveyance Mechanic (CCCM) employed by a Certified Qualified Conveyance Company (CQCC). Cal/OSHA's Elevator Unit certifies both.",
+   "triggers": [
+    "elevator",
+    "conveyance",
+    "escalator",
+    "wheelchair lift",
+    "personnel hoist",
+    "cccm",
+    "cqcc"
+   ],
+   "when_required": [
+    {
+     "situation": "A conveyance mechanic must be certified (CCCM) and employed by a CQCC; a company that installs, alters, services or repairs conveyances must itself be certified (CQCC), which needs a current C-11 license.",
+     "legal_basis": "Labor Code 7311.2, 7311.4 (as cited by DOSH); 8 CCR 344.30(h)",
+     "source_url": "https://www.dir.ca.gov/dosh/ElevatorCertification.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "cert-elev-cccm-requirements-and-fee",
+      "cert-elev-cqcc-company-certification"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "Cal/OSHA Elevator Unit certification (what CCCM and CQCC certification require)",
+     "url": "https://www.dir.ca.gov/dosh/ElevatorCertification.html",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "California Department of Industrial Relations, Cal/OSHA Elevator Unit",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "An information page, not a search: no public list of certified mechanics or companies was found on it."
+    }
+   ],
+   "verify_license_how": "Ask the elevator company for its CQCC certificate and its C-11 license number (check the license on CSLB's Check a License), and ask each mechanic for their CCCM certificate or identification card.",
+   "bring_or_ask": [
+    "Bring: the conveyance type, the work (install, alteration, repair) and the building address.",
+    "Ask: May we see your CQCC certificate and each mechanic's CCCM card?"
+   ],
+   "never_say": [
+    "TradeComply certifies elevator companies",
+    "We recommend this provider"
+   ]
+  },
+  {
+   "id": "licensed_blaster",
+   "name": "Cal/OSHA-licensed blaster",
+   "plain_description": "A blaster holding a current California Blaster's License issued by Cal/OSHA. A licensed blaster must be physically on site to do or direct the blasting.",
+   "triggers": [
+    "blasting",
+    "explosives",
+    "blaster",
+    "blaster's license"
+   ],
+   "when_required": [
+    {
+     "situation": "No blasting may happen unless a blaster with a current, valid California Blaster's License from Cal/OSHA is physically on site to do or direct it; others may work under the licensed blaster's direct supervision.",
+     "legal_basis": "8 CCR 5238(a), (c)",
+     "source_url": "https://www.dir.ca.gov/title8/5238.html",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "cert-blaster-licensed-blaster-on-site",
+      "cert-blaster-license-qualifications-and-classes"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "Cal/OSHA Mining and Tunneling Unit (blaster licensing exams)",
+     "url": "https://www.dir.ca.gov/dosh/mining-and-tunneling-unit.html",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "California Department of Industrial Relations, Cal/OSHA Mining and Tunneling Unit",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "An information page about blaster licensing exams, not a search: no public list of licensed blasters was found on it."
+    }
+   ],
+   "verify_license_how": "Ask to see the blaster's current California Blaster's License and check that its class covers the blasting you plan. The blaster must show it to Cal/OSHA or the local authority on request (8 CCR 5238(e)).",
+   "bring_or_ask": [
+    "Bring: the blasting plan, the location and the dates.",
+    "Ask: Which license class do you hold, and when does it expire?"
+   ],
+   "never_say": [
+    "TradeComply licenses blasters",
+    "We recommend this provider"
+   ]
+  },
+  {
+   "id": "air_district_dust_control_supervisor",
+   "name": "Air district-trained dust control person",
+   "plain_description": "Someone on your team (or hired by the owner) who has completed the air district's dust control class. In the South Coast district a large operation names a dust control supervisor; in the San Joaquin Valley a key person completes the District's Dust Control Training Class.",
+   "triggers": [
+    "dust control supervisor",
+    "fugitive dust",
+    "dust control plan",
+    "rule 403",
+    "rule 8021",
+    "dust control class"
+   ],
+   "when_required": [
+    {
+     "situation": "A large operation in the South Coast district must identify a dust control supervisor, employed or hired by the owner or developer, who has completed the AQMD Fugitive Dust Control Class.",
+     "legal_basis": "SCAQMD Rule 403(e)(1)(E)",
+     "source_url": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "air-scaqmd403-dust-control-supervisor"
+     ]
+    },
+    {
+     "situation": "In the San Joaquin Valley, keep the approved Dust Control Plan on site, and at least one key person for the owner or operator, or whoever prepares the plan, must complete the District's Dust Control Training Class.",
+     "legal_basis": "SJVAPCD Rule 8021 sections 6.3.5, 6.3.6.8",
+     "source_url": "https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "air-sjv8021-plan-onsite-training"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "San Joaquin Valley Air District training schedule (Dust Control Training class)",
+     "url": "https://ww2.valleyair.org/compliance/training-schedule/",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "San Joaquin Valley Air Pollution Control District",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "Course announcement and registration information for the District's Dust Control Training class."
+    },
+    {
+     "label": "South Coast AQMD Rule 403 (names the AQMD Fugitive Dust Control Class)",
+     "url": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "South Coast Air Quality Management District",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "The rule text. A page for signing up for the class was not confirmed; ask the district."
+    }
+   ],
+   "verify_license_how": "There is no license: keep the class completion record for the person you name.",
+   "bring_or_ask": [
+    "Bring: the acreage disturbed, daily earthmoving volume and the project dates.",
+    "Ask (the district): When is the next dust control class?"
+   ],
+   "never_say": [
+    "TradeComply trains dust control supervisors",
+    "We recommend this provider"
+   ]
+  },
+  {
+   "id": "traffic_control_supervisor_certified",
+   "name": "Traffic control crew trained by an ATSSA-certified (or equivalent) supervisor",
+   "plain_description": "On a City of San Diego traffic control permit, every traffic control worker must be trained by a supervisor certified by the American Traffic Safety Services Association (ATSSA) or an equivalent.",
+   "triggers": [
+    "traffic control",
+    "flagger",
+    "flagging",
+    "atssa",
+    "right-of-way",
+    "lane closure"
+   ],
+   "when_required": [
+    {
+     "situation": "All traffic control workers under a City of San Diego traffic control permit must be trained by a supervisor certified by ATSSA (or equivalent), and the application must list every traffic control subcontractor with contact information.",
+     "legal_basis": "City of San Diego Form DS-269 (June 2026), Requirements item 2",
+     "source_url": "https://www.sandiego.gov/sites/default/files/ds269.pdf",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "local-sd-tcp-trained-traffic-control-workers"
+     ]
+    }
+   ],
+   "find": [],
+   "verify_license_how": "There is no state license to look up: ask the traffic control company for each worker's training record and the certifying supervisor's certification.",
+   "bring_or_ask": [
+    "Bring: the traffic control plan and the permit application.",
+    "Ask: Who trained your crew, and what certification does that supervisor hold?"
+   ],
+   "never_say": [
+    "TradeComply certifies traffic control",
+    "We recommend this provider"
+   ],
+   "notes": [
+    "ATSSA is a private association, not a government agency; TradeComply does not link to a training company."
+   ]
+  },
+  {
+   "id": "c3pao",
+   "name": "Authorized CMMC third-party assessment organization (C3PAO)",
+   "plain_description": "An organization authorized or accredited to do CMMC Level 2 certification assessments for Department of Defense contractors that handle controlled unclassified information.",
+   "triggers": [
+    "cmmc",
+    "c3pao",
+    "level 2 certification",
+    "cui",
+    "dod cybersecurity"
+   ],
+   "when_required": [
+    {
+     "situation": "When a DoD solicitation requires CMMC Level 2 (C3PAO), an authorized or accredited C3PAO must assess your systems, and the certification assessment is repeated every three years.",
+     "legal_basis": "32 CFR 170.17(a)-(c); 32 CFR 170.8(b)",
+     "source_url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-32?part=170&section=170.17",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "rule_ids": [
+      "cmmc-level2-c3pao-certification-3-years"
+     ],
+     "note": "Read through the official eCFR API."
+    },
+    {
+     "situation": "The CMMC Accreditation Body must keep an up-to-date list of authorized and accredited C3PAOs on a single publicly accessible website.",
+     "legal_basis": "32 CFR 170.8(b)(8)",
+     "source_url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-32?part=170&section=170.8",
+     "status": "confirmed",
+     "fetched": "2026-11-26",
+     "note": "Read through the official eCFR API. The regulation does not give the website's address."
+    }
+   ],
+   "find": [
+    {
+     "label": "CMMC Accreditation Body marketplace (list of authorized C3PAOs)",
+     "url": "https://cyberab.org/Catalog",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "organization type (C3PAO)"
+     ],
+     "official_owner": "The CMMC Accreditation Body (Cyber AB), which 32 CFR 170.8 requires to keep the public list",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "The Accreditation Body is a private organization recognized by DoD, not a government agency. That this address is its public list was not confirmed.",
+     "url_source": "web search result (docs/product.md section 5.3)"
+    }
+   ],
+   "verify_license_how": "Check that the organization appears as an authorized or accredited C3PAO on the Accreditation Body's public list before you sign, and ask for its authorization status in writing.",
+   "bring_or_ask": [
+    "Bring: the contract or solicitation's CMMC clause, your system security plan and the scope of systems that handle CUI.",
+    "Ask: Are you an authorized C3PAO today, and how far out are you booking assessments?"
+   ],
+   "never_say": [
+    "TradeComply certifies CMMC compliance",
+    "We recommend this provider"
+   ]
+  }
+ ],
+ "extra_types_sources_read": [
+  {
+   "url": "https://www.dir.ca.gov/title8/5144.html",
+   "what": "8 CCR 5144(e)(1), (e)(2)(A)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/1532_3.html",
+   "what": "8 CCR 1532.3(h)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/5141_1.html",
+   "what": "8 CCR 5141.1(f)(3)(B)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/1922.html",
+   "what": "8 CCR 1922(a)(4)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/2948.html",
+   "what": "8 CCR 2948",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/2949.html",
+   "what": "8 CCR 2949",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/5238.html",
+   "what": "8 CCR 5238",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/dosh/ElevatorCertification.html",
+   "what": "CCCM and CQCC requirements",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/dosh/mining-and-tunneling-unit.html",
+   "what": "Blaster licensing exams",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf",
+   "what": "SCAQMD Rule 403(e)(1)(E)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://ww2.valleyair.org/media/bhfgzedn/rule-8021.pdf",
+   "what": "SJVAPCD Rule 8021 6.3.5, 6.3.6.8",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://ww2.valleyair.org/compliance/training-schedule/",
+   "what": "Dust Control Training class",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.sandiego.gov/sites/default/files/ds269.pdf",
+   "what": "Form DS-269 Requirements item 2",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-32?part=170&section=170.17",
+   "what": "32 CFR 170.17",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-32?part=170&section=170.8",
+   "what": "32 CFR 170.8(b)(8)",
+   "fetched": "2026-11-26"
+  }
+ ],
+ "extra_types_blocked_hosts": [
+  {
+   "host": "search.dca.ca.gov, osfm.fire.ca.gov, cyberab.org",
+   "reason": "not allowed by this session's network policy; not bypassed"
+  }
+ ],
+ "handoffs": [
+  {
+   "id": "cfs-licensed-class",
+   "tool": "classification_for_scope",
+   "condition": "Every result: the work must be done by a CSLB licensee whose active license holds one of the classes in can_perform / can_perform_with_conditions. Test: licensed_humans[0] starts with 'A CSLB-licensed contractor' and trade_classes is not empty.",
+   "test": "len(result.trade_classes) > 0",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7117.6 (contracting outside the classes held is cause for discipline); 16 CCR 830",
+   "rule_ids": [
+    "work-only-in-classifications-held",
+    "classification-policy-no-work-outside-class",
+    "specialty-classification-list"
+   ],
+   "when": "Before bidding or signing the contract",
+   "rule_status": {
+    "work-only-in-classifications-held": "unchecked",
+    "classification-policy-no-work-outside-class": "unchecked",
+    "specialty-classification-list": "unchecked"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "The work must be done by a contractor whose active CSLB license includes one of the classifications listed for this scope.",
+   "when_plain": "Before you bid or sign the contract.",
+   "basis_complete": true
+  },
+  {
+   "id": "cfs-asbestos-contractor",
+   "tool": "classification_for_scope",
+   "condition": "Scope includes asbestos abatement. Test: 'C-22' in trade_classes (the duty starts at 100 sq ft of asbestos-containing material; asbestos_sq_ft below that is noted in options[code=='C-22'].basis).",
+   "test": "'C-22' in result.trade_classes",
+   "professional_type_id": "asbestos_abatement_contractor",
+   "requirement": "conditional",
+   "legal_basis": "B&P 7058.5 (C-22 or asbestos certification at 100 sq ft+); 16 CCR 833(b); Cal/OSHA registration",
+   "rule_ids": [
+    "asbestos-100-sqft-c22-or-certification",
+    "asbestos-gc-must-hold-c22-or-subcontract",
+    "asbestos-cert-dosh-registration-90-days"
+   ],
+   "when": "Before abatement starts (registration takes business days)",
+   "rule_status": {
+    "asbestos-100-sqft-c22-or-certification": "confirmed",
+    "asbestos-gc-must-hold-c22-or-subcontract": "unchecked",
+    "asbestos-cert-dosh-registration-90-days": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "This scope includes asbestos abatement. If the asbestos work is 100 sq ft or more, it needs a C-22 contractor (or a contractor with CSLB asbestos certification) registered with Cal/OSHA.",
+   "when_plain": "Before abatement starts; allow time for Cal/OSHA registration.",
+   "basis_complete": true
+  },
+  {
+   "id": "cfs-asbestos-consultant",
+   "tool": "classification_for_scope",
+   "condition": "Scope includes asbestos abatement and the owner hires an asbestos consultant or site surveillance technician. Test: 'C-22' in trade_classes and licensed_humans contains 'DOSH-certified (B&P 7180.5)'.",
+   "test": "'C-22' in result.trade_classes and any('DOSH-certified (B&P 7180.5)' in h for h in result.licensed_humans)",
+   "professional_type_id": "certified_asbestos_consultant",
+   "requirement": "conditional",
+   "legal_basis": "B&P 7180.5 (owner must use a DOSH-certified consultant if one is engaged; text read in the CSLB 2026 Law Book, PDF page 433, on 2026-11-26)",
+   "rule_ids": [
+    "owner-must-hire-certified-asbestos-consultant"
+   ],
+   "when": "When the owner engages survey or oversight services",
+   "rule_status": {
+    "owner-must-hire-certified-asbestos-consultant": "unchecked"
+   },
+   "registry_type_id": "asbestos_consultant",
+   "rulebook_verified": false,
+   "why": "If the owner hires someone to survey or oversee the asbestos work, that person must be certified by Cal/OSHA (DOSH) as an asbestos consultant or site surveillance technician.",
+   "when_plain": "When the owner hires survey or oversight services.",
+   "legal_basis_plain": "B&P 7180.5 (an owner who hires asbestos consulting must use a DOSH-certified consultant; read in the CSLB 2026 Law Book on 2026-11-26)",
+   "basis_complete": true
+  },
+  {
+   "id": "cfs-fire-protection",
+   "tool": "classification_for_scope",
+   "condition": "Scope includes fire sprinklers or suppression. Test: 'C-16' in trade_classes.",
+   "test": "'C-16' in result.trade_classes",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7026.12 (fire protection systems installed only by a C-16 contractor; owner-builder exception in 7026.12(b))",
+   "rule_ids": [
+    "fire-protection-system-installer"
+   ],
+   "when": "Before the fire protection subcontract is signed",
+   "rule_status": {
+    "fire-protection-system-installer": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": true,
+   "why": "Fire sprinkler and fire suppression systems (not electrical alarm systems) may be installed only by a C-16 fire protection contractor. The one exception is an owner-builder of their own owner-occupied single-family home, with plans approved and the installation inspected by the city or county.",
+   "when_plain": "Before you sign the fire protection subcontract.",
+   "basis_complete": true
+  },
+  {
+   "id": "cfs-haz-certification",
+   "tool": "classification_for_scope",
+   "condition": "Scope mentions hazardous substance removal, contaminated soil, remediation or an underground storage tank. Test: any note in notes contains 'HAZ certification'.",
+   "test": "any('HAZ certification' in n for n in result.notes)",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7058.7 (HAZ certification for hazardous substance removal and UST work)",
+   "rule_ids": [
+    "hazardous-substance-removal-certification",
+    "underground-storage-tank-haz-certification"
+   ],
+   "when": "Before bidding the hazardous-substance or tank work",
+   "rule_status": {
+    "hazardous-substance-removal-certification": "unchecked",
+    "underground-storage-tank-haz-certification": "unchecked"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "Hazardous substance removal and underground storage tank work need a contractor with CSLB hazardous substance (HAZ) certification.",
+   "when_plain": "Before you bid the hazardous substance or tank work.",
+   "basis_complete": true
+  },
+  {
+   "id": "clo-no-qualifier",
+   "tool": "company_license_obligations",
+   "condition": "The license has no qualifying individual on file. Test: input has_qualifier == false and license_status == 'active'; output actions[0] starts with 'No qualifier'.",
+   "test": "result.actions and result.actions[0].startswith('No qualifier')",
+   "professional_type_id": "cslb_qualifier",
+   "requirement": "required",
+   "legal_basis": "B&P 7068.2 (report the departure and replace the qualifier within 90 days or the license is suspended)",
+   "rule_ids": [
+    "qualifier-disassociation-notice-90-days",
+    "qualifier-replacement-90-days"
+   ],
+   "when": "Within 90 days of the qualifier leaving (exact dates in deadlines when a qualifier_left change is given)",
+   "rule_status": {
+    "qualifier-disassociation-notice-90-days": "confirmed",
+    "qualifier-replacement-90-days": "confirmed"
+   },
+   "registry_type_id": "cslb_qualifier",
+   "rulebook_verified": true,
+   "why": "Your license has no qualifying individual on file. The departure must be reported and a new qualifier named within 90 days, or the license is suspended.",
+   "when_plain": "Within 90 days of the qualifier leaving.",
+   "basis_complete": true
+  },
+  {
+   "id": "clo-surety",
+   "tool": "company_license_obligations",
+   "condition": "Active license: the contractor's bond (and qualifier or LLC worker bond when listed) must be on file. Test: any(b.required for b in bonds) and licensed_humans contains 'Admitted surety'.",
+   "test": "any(b['required'] for b in result.bonds)",
+   "professional_type_id": "surety_bond_producer",
+   "requirement": "required",
+   "legal_basis": "B&P 7071.6 / 7071.9 / 7071.4: bond from an admitted surety, or a cash deposit instead",
+   "rule_ids": [
+    "contractor-bond-25000",
+    "qualifier-bond-25000",
+    "bond-forms-surety-or-cash-only",
+    "llc-employee-worker-bond-100000"
+   ],
+   "when": "Keep on file at all times; order replacements about 4 weeks before cancellation",
+   "rule_status": {
+    "contractor-bond-25000": "confirmed",
+    "qualifier-bond-25000": "confirmed",
+    "bond-forms-surety-or-cash-only": "confirmed",
+    "llc-employee-worker-bond-100000": "confirmed"
+   },
+   "registry_type_id": "insurance_agent_broker",
+   "rulebook_verified": true,
+   "why": "Your license needs its contractor's bond (and any qualifier or LLC worker bond listed) on file with CSLB at all times, from an admitted surety company, or a cash deposit instead.",
+   "when_plain": "Keep the bond on file at all times; arrange a replacement before any bond is canceled.",
+   "basis_complete": true
+  },
+  {
+   "id": "clo-llc-insurer",
+   "tool": "company_license_obligations",
+   "condition": "Active LLC license: liability insurance with the B&P 7071.19 aggregate. Test: an insurance[] item named 'LLC liability insurance (aggregate limit)' has required == true.",
+   "test": "any(i['item'].startswith('LLC liability insurance') and i['required'] for i in result.insurance)",
+   "professional_type_id": "insurance_broker",
+   "requirement": "required",
+   "legal_basis": "B&P 7071.19 (policy from a licensed/admitted or surplus-line insurer). Who may sell it (Ins. Code 1631): NOT in the rulebook, unconfirmed",
+   "rule_ids": [
+    "llc-liability-insurance-aggregate",
+    "llc-insurance-policy-terms"
+   ],
+   "when": "Before licensing or reactivation, and at each renewal",
+   "rule_status": {
+    "llc-liability-insurance-aggregate": "confirmed",
+    "llc-insurance-policy-terms": "confirmed"
+   },
+   "registry_type_id": "insurance_agent_broker",
+   "rulebook_verified": false,
+   "why": "Your LLC license needs liability insurance with the limits the law sets, from a licensed, admitted or surplus-line insurer.",
+   "when_plain": "Before licensing or reactivation, and at each renewal.",
+   "legal_basis_plain": "B&P 7071.19 (policy from a licensed, admitted or surplus-line insurer). Who may sell it (Insurance Code 1631): not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "clo-wc-insurer",
+   "tool": "company_license_obligations",
+   "condition": "Workers' comp certificate required. Test: workers_comp.requirement == 'certificate_required'.",
+   "test": "result.workers_comp.requirement == 'certificate_required'",
+   "professional_type_id": "insurance_broker",
+   "requirement": "required",
+   "legal_basis": "Labor Code 3700; B&P 7125 (workers' comp with even one employee; certificate on file with CSLB)",
+   "rule_ids": [
+    "wc-required-even-one-employee",
+    "workers-comp-certificate-on-file-at-all-times"
+   ],
+   "when": "Before the first employee works; keep it current",
+   "rule_status": {
+    "wc-required-even-one-employee": "confirmed",
+    "workers-comp-certificate-on-file-at-all-times": "unchecked"
+   },
+   "registry_type_id": "insurance_agent_broker",
+   "rulebook_verified": false,
+   "why": "With even one employee, you need workers' compensation insurance from an insurer licensed to write it in California (or a Certification of Self-Insurance from the Director of Industrial Relations), and a current certificate on file with CSLB.",
+   "when_plain": "Before your first employee starts work; keep it current.",
+   "basis_complete": true
+  },
+  {
+   "id": "uce-attorney",
+   "tool": "unlicensed_contracting_exposure",
+   "condition": "Every result names a construction attorney (B&P 7031 disgorgement, criminal referral). Test: licensed_humans contains 'Construction attorney'. Required if a corporation or LLC must appear in court.",
+   "test": "any('attorney' in h.lower() for h in result.licensed_humans)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "corp-llc-need-attorney-in-court (unchecked): a corporation or LLC must hire an attorney outside small claims; B&P 6125 (only active State Bar licensees may practice law): NOT in the rulebook, unconfirmed (cited in research/market.md section 1.2 [L7])",
+   "rule_ids": [
+    "unlicensed-no-right-to-sue-disgorgement",
+    "corp-llc-need-attorney-in-court"
+   ],
+   "when": "Before recording a lien, suing or answering a claim on this job",
+   "rule_status": {
+    "unlicensed-no-right-to-sue-disgorgement": "confirmed",
+    "corp-llc-need-attorney-in-court": "unchecked"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "Unlicensed work can mean losing the right to be paid, having to return money already paid, and a criminal referral. A construction attorney can advise you.",
+   "when_plain": "Before you record a lien, sue or answer a claim on this job.",
+   "legal_basis_plain": "B&P 7031 (no right to sue; return of payments). CSLB guidance: a corporation or LLC must use an attorney to sue (outside small claims). B&P 6125 (only State Bar licensees may practice law): not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "bulk-unlicensed-sub",
+   "tool": "bulk_check_subcontractors",
+   "condition": "A sub could not be shown to hold an active license in the right class. Test: rows[i].risk in ('do_not_use', 'high'). Note: 'not in our data' is not a finding of unlicensed; confirm on CSLB.",
+   "test": "any(r['risk'] in ('do_not_use', 'high') for r in result.rows)",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7118 (contracting with an unlicensed contractor is cause for discipline)",
+   "rule_ids": [
+    "contracting-with-unlicensed-contractor"
+   ],
+   "when": "Before award or before the sub mobilizes",
+   "rule_status": {
+    "contracting-with-unlicensed-contractor": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": true,
+   "why": "At least one subcontractor could not be shown to hold an active CSLB license in the right classification. Hiring an unlicensed contractor is cause for discipline against your own license.",
+   "when_plain": "Before you award the work or the sub starts.",
+   "basis_complete": true
+  },
+  {
+   "id": "csc-unlicensed-sub",
+   "tool": "check_subcontractor_compliance",
+   "condition": "Same as above for one sub. Test: overall_risk in ('do_not_use', 'high').",
+   "test": "result.overall_risk in ('do_not_use', 'high')",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7118",
+   "rule_ids": [
+    "contracting-with-unlicensed-contractor"
+   ],
+   "when": "Before award",
+   "rule_status": {
+    "contracting-with-unlicensed-contractor": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": true,
+   "why": "This subcontractor could not be shown to hold an active CSLB license in the right classification. Hiring an unlicensed contractor is cause for discipline against your own license.",
+   "when_plain": "Before you award the work.",
+   "basis_complete": true
+  },
+  {
+   "id": "vcl-not-active",
+   "tool": "verify_contractor_license",
+   "condition": "The license is not active (or not found in a full data set). Test: found == true and status != 'active' (found == false on partial data is not proof of no license: use official_lookup_url).",
+   "test": "result.found and result.status != 'active'",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7118",
+   "rule_ids": [
+    "contracting-with-unlicensed-contractor"
+   ],
+   "when": "Before award or payment",
+   "rule_status": {
+    "contracting-with-unlicensed-contractor": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": true,
+   "why": "This license is not active. Use only a contractor with an active license. Hiring an unlicensed contractor is cause for discipline against your own license.",
+   "when_plain": "Before you award the work or make a payment.",
+   "basis_complete": true
+  },
+  {
+   "id": "vhic-attorney-terms",
+   "tool": "validate_home_improvement_contract",
+   "condition": "Every result: an attorney should write the terms the statute does not supply. Test: required_professionals contains 'California-licensed attorney: review the contract'.",
+   "test": "any(p.startswith('California-licensed attorney: review') for p in result.required_professionals)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "B&P 6125 (only active State Bar licensees may practice law): NOT in the rulebook, unconfirmed (cited in research/market.md section 1.2 [L7]). Not a legal requirement for the contractor; it is TradeComply's boundary (no custom legal drafting).",
+   "rule_ids": [],
+   "when": "Once, before the contract form is first used",
+   "rule_status": {},
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "TradeComply fills in the terms the home improvement law requires but does not write custom legal terms. Have a California attorney review the terms the law does not supply.",
+   "when_plain": "Once, before you first use this contract form.",
+   "legal_basis_plain": "TradeComply's own limit: writing custom legal terms is the practice of law (B&P 6125, not yet confirmed). Not a legal requirement for the contractor",
+   "basis_complete": false
+  },
+  {
+   "id": "vhic-arbitration",
+   "tool": "validate_home_improvement_contract",
+   "condition": "The contract has an arbitration clause. Test: required_professionals contains 'draft the arbitration provision'; a finding 'Arbitration clause (B&P 7191)' with status 'violation' raises urgency.",
+   "test": "any('arbitration provision' in p for p in result.required_professionals)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "B&P 7191 fixes the title, type and NOTICE; a noncompliant clause binds only the contractor",
+   "rule_ids": [
+    "residential-arbitration-clause-title-and-format",
+    "residential-arbitration-notice-and-initials",
+    "noncompliant-arbitration-clause-unenforceable"
+   ],
+   "when": "Before the contract is signed",
+   "rule_status": {
+    "residential-arbitration-clause-title-and-format": "confirmed",
+    "residential-arbitration-notice-and-initials": "confirmed",
+    "noncompliant-arbitration-clause-unenforceable": "confirmed"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": true,
+   "why": "The contract has an arbitration clause. The law sets its title, format and notice, and a clause that does not follow them binds only you, so have an attorney check it.",
+   "when_plain": "Before the contract is signed.",
+   "basis_complete": true
+  },
+  {
+   "id": "vhic-his",
+   "tool": "validate_home_improvement_contract",
+   "condition": "A salesperson sold the job but no HIS registration number is shown. Test: findings[item == 'Salesperson name and HIS registration number'].status == 'violation'.",
+   "test": "any(f['item'].startswith('Salesperson name and HIS') and f['status'] == 'violation' for f in result.findings)",
+   "professional_type_id": "home_improvement_salesperson",
+   "requirement": "required",
+   "legal_basis": "B&P 7152-7154 (HIS registration; employing an unregistered salesperson is cause for discipline; exemptions in 7152(d)-(e)); 7159(d)(2)",
+   "rule_ids": [
+    "hic-salesperson-name-registration",
+    "his-registration-required",
+    "employing-unregistered-his-discipline"
+   ],
+   "when": "Before the salesperson presents or signs any contract",
+   "rule_status": {
+    "hic-salesperson-name-registration": "corrected",
+    "his-registration-required": "unchecked",
+    "employing-unregistered-his-discipline": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "A salesperson sold this job but no Home Improvement Salesperson (HIS) registration number is shown. Salespeople must be registered with CSLB, and employing an unregistered one is cause for discipline. Officers, LLC managers or members, general partners and the qualifier listed on the license record do not need HIS registration.",
+   "when_plain": "Before the salesperson presents or signs any contract.",
+   "basis_complete": true,
+   "legal_basis_plain": "B&P 7152 and 7153 (HIS registration and its exemptions); 7154 (employing an unregistered salesperson); 7159(d)(2)"
+  },
+  {
+   "id": "ghic-attorney-placeholders",
+   "tool": "generate_home_improvement_contract",
+   "condition": "The draft has [[ATTORNEY: ...]] placeholders TradeComply will not fill. Test: any placeholder starts with '[[ATTORNEY:'.",
+   "test": "any(p.startswith('[[ATTORNEY:') for p in result.placeholders)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "B&P 6125 (only active State Bar licensees may practice law): NOT in the rulebook, unconfirmed (cited in research/market.md section 1.2 [L7]); B&P 7191 for the arbitration clause",
+   "rule_ids": [
+    "residential-arbitration-clause-title-and-format",
+    "noncompliant-arbitration-clause-unenforceable"
+   ],
+   "when": "Before the draft is used with any buyer",
+   "rule_status": {
+    "residential-arbitration-clause-title-and-format": "confirmed",
+    "noncompliant-arbitration-clause-unenforceable": "confirmed"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "The draft has [[ATTORNEY: ...]] placeholders that TradeComply will not fill. An attorney should write those parts.",
+   "when_plain": "Before you use the draft with any buyer.",
+   "legal_basis_plain": "TradeComply's own limit: writing custom legal terms is the practice of law (B&P 6125, not yet confirmed). Not a legal requirement for the contractor. B&P 7191 for the arbitration clause",
+   "basis_complete": false
+  },
+  {
+   "id": "lien-foreclosure",
+   "tool": "calculate_lien_deadline",
+   "condition": "Every result gives a foreclosure date: if the lien is recorded, a lawsuit to foreclose must be filed by then. Test: foreclosure_deadline_if_recorded_on_last_day is set. Required when the claimant is a corporation or LLC.",
+   "test": "result.foreclosure_deadline_if_recorded_on_last_day is not None",
+   "professional_type_id": "attorney",
+   "requirement": "conditional",
+   "legal_basis": "Civil Code 8460 (foreclose within 90 days of recording); corp-llc-need-attorney-in-court (unchecked): a corporation or LLC must hire an attorney outside small claims",
+   "rule_ids": [
+    "lien-foreclosure-90-days",
+    "corp-llc-need-attorney-in-court"
+   ],
+   "when": "Right after recording, well before the foreclosure deadline",
+   "rule_status": {
+    "lien-foreclosure-90-days": "unverifiable",
+    "corp-llc-need-attorney-in-court": "unchecked"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "If you record the lien, a lawsuit to foreclose it must be filed within 90 days. It cannot be filed in small claims court, so a corporation or LLC must use an attorney for it; a sole proprietor or partner may file it themselves, but an attorney is advisable.",
+   "when_plain": "Right after the lien is recorded, well before the foreclosure deadline.",
+   "legal_basis_plain": "Civil Code 8460 (foreclose within 90 days of recording; not yet confirmed). CSLB guidance: a lien cannot be foreclosed in small claims court, and a corporation or LLC must use an attorney to sue",
+   "basis_complete": false,
+   "due_field": "foreclosure_deadline_if_recorded_on_last_day"
+  },
+  {
+   "id": "spn-enforcement",
+   "tool": "stop_payment_notice_deadline",
+   "condition": "A stop payment notice is possible and the result gives a window to sue on it. Test: applicable == true and enforcement_suit_latest is set (licensed_professional names the attorney).",
+   "test": "result.applicable and result.enforcement_suit_latest is not None",
+   "professional_type_id": "attorney",
+   "requirement": "conditional",
+   "legal_basis": "Civil Code 8550 (suit timing); corp-llc-need-attorney-in-court (unchecked): a corporation or LLC must hire an attorney outside small claims",
+   "rule_ids": [
+    "spn-enforcement-timing",
+    "corp-llc-need-attorney-in-court"
+   ],
+   "when": "Before enforcement_suit_latest",
+   "rule_status": {
+    "spn-enforcement-timing": "unverifiable",
+    "corp-llc-need-attorney-in-court": "unchecked"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "A stop payment notice is possible here, and a lawsuit to enforce it has a deadline. A corporation or LLC must use an attorney to sue (outside small claims).",
+   "when_plain": "Before the last day to sue on the stop payment notice.",
+   "legal_basis_plain": "Civil Code 8550 (suit timing; not yet confirmed). CSLB guidance: a corporation or LLC must use an attorney to sue (outside small claims)",
+   "basis_complete": false,
+   "due_field": "enforcement_suit_latest"
+  },
+  {
+   "id": "ppc-collection",
+   "tool": "prompt_payment_check",
+   "condition": "Money is late and a late charge is owed. Test: total_late_charges_usd > 0. A demand letter can be sent without a lawyer; a collection suit by a corporation or LLC needs one.",
+   "test": "result.total_late_charges_usd > 0",
+   "professional_type_id": "attorney",
+   "requirement": "conditional",
+   "legal_basis": "B&P 7108.5 (2% per month plus attorney fees); corp-llc-need-attorney-in-court (unchecked): a corporation or LLC must hire an attorney outside small claims",
+   "rule_ids": [
+    "subcontractor-late-payment-penalty-2-percent-per-month",
+    "corp-llc-need-attorney-in-court"
+   ],
+   "when": "Before filing suit; attorney review of the demand letter is optional",
+   "rule_status": {
+    "subcontractor-late-payment-penalty-2-percent-per-month": "confirmed",
+    "corp-llc-need-attorney-in-court": "unchecked"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "A payment is late and the law adds a late charge of 2% a month. If you have to sue to collect, a corporation or LLC must use an attorney to sue (outside small claims).",
+   "when_plain": "Before you file suit. Having an attorney review a demand letter is optional.",
+   "legal_basis_plain": "B&P 7108.5 (2% per month, plus attorney fees). CSLB guidance: a corporation or LLC must use an attorney to sue (outside small claims)",
+   "basis_complete": false
+  },
+  {
+   "id": "retention-excess",
+   "tool": "retention_cap_check",
+   "condition": "Retention held is over the cap. Test: compliant == false. Enforcement action carries attorney fees.",
+   "test": "result.compliant is False",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "Civil Code 8811 (SB 61 5% cap); corp-llc-need-attorney-in-court (unchecked): a corporation or LLC must hire an attorney outside small claims",
+   "rule_ids": [
+    "private-retention-5pct-cap",
+    "corp-llc-need-attorney-in-court"
+   ],
+   "when": "Before suing to recover excess retention",
+   "rule_status": {
+    "private-retention-5pct-cap": "corrected",
+    "corp-llc-need-attorney-in-court": "unchecked"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "More retention is being held than the 5% limit allows. If you sue to recover it, a corporation or LLC must use an attorney to sue (outside small claims).",
+   "when_plain": "Before you sue to recover the excess retention.",
+   "legal_basis_plain": "Civil Code 8811 (SB 61 5% cap). CSLB guidance: a corporation or LLC must use an attorney to sue (outside small claims)",
+   "basis_complete": false
+  },
+  {
+   "id": "waiver-not-safe",
+   "tool": "select_lien_waiver",
+   "condition": "The waiver should not be signed yet or the form was altered. Test: safe_to_sign_now == false. No license is needed to sign a statutory waiver.",
+   "test": "result.safe_to_sign_now is False",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "Statutory waiver forms (Civ. 8132-8138)",
+   "rule_ids": [
+    "no-illegal-lien-waivers"
+   ],
+   "when": "Before signing",
+   "rule_status": {
+    "no-illegal-lien-waivers": "unchecked"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "This lien waiver should not be signed yet, or the form differs from the statutory form. An attorney can review it before you sign.",
+   "when_plain": "Before you sign.",
+   "legal_basis_plain": "Statutory lien waiver forms (Civil Code 8132-8138)",
+   "basis_complete": true
+  },
+  {
+   "id": "permit-retaining-wall-engineer",
+   "tool": "permit_required",
+   "condition": "Retaining wall over the exemption height, or with a surcharge or impounded flammable liquids. Test: licensed_professionals contains 'California-licensed civil or structural engineer'.",
+   "test": "any('civil or structural engineer' in p for p in result.licensed_professionals)",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "conditional",
+   "legal_basis": "Permit required (CRC R105.2 / CBC 105.2). Stamped engineering (B&P 6735): NOT in the rulebook, unconfirmed",
+   "rule_ids": [
+    "permit-required-exemptions-thresholds"
+   ],
+   "when": "Before plan check submission",
+   "rule_status": {
+    "permit-required-exemptions-thresholds": "corrected"
+   },
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": false,
+   "why": "This retaining wall is over the permit-exempt height or carries extra load, so it needs a permit, and the building department may require plans by a licensed civil or structural engineer.",
+   "when_plain": "Before you submit for plan check.",
+   "legal_basis_plain": "Permit required (CRC R105.2 / CBC 105.2). Stamped engineering (B&P 6735): not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "permit-lead-rrp",
+   "tool": "permit_required",
+   "condition": "Paid renovation of target housing built before 1978. Test: lead_rrp_applies == true (licensed_professionals contains 'EPA-certified renovator').",
+   "test": "result.lead_rrp_applies is True",
+   "professional_type_id": "epa_rrp_certified_firm",
+   "requirement": "required",
+   "legal_basis": "40 CFR 745.82 / 745.81 (EPA-certified firm with a certified renovator)",
+   "rule_ids": [
+    "rrp-applicability-pre-1978",
+    "rrp-minor-repair-6-20-sqft",
+    "rrp-firm-certification"
+   ],
+   "when": "Before disturbing painted surfaces",
+   "rule_status": {
+    "rrp-applicability-pre-1978": "confirmed",
+    "rrp-minor-repair-6-20-sqft": "confirmed",
+    "rrp-firm-certification": "unchecked"
+   },
+   "registry_type_id": "lead_professional",
+   "rulebook_verified": false,
+   "why": "This is paid renovation of housing built before 1978. The work needs an EPA lead-safe certified firm with a certified renovator.",
+   "when_plain": "Before anyone disturbs painted surfaces.",
+   "basis_complete": true
+  },
+  {
+   "id": "permit-demo-asbestos-consultant",
+   "tool": "permit_required",
+   "condition": "Demolition. Test: structure_type == 'demolition' and licensed_professionals contains 'Asbestos consultant'.",
+   "test": "any(p.startswith('Asbestos consultant') for p in result.licensed_professionals)",
+   "professional_type_id": "certified_asbestos_consultant",
+   "requirement": "conditional",
+   "legal_basis": "Air district notice needs an asbestos survey; whoever the owner hires to survey must be DOSH-certified",
+   "rule_ids": [
+    "air-district-demolition-notice-10-working-days",
+    "demolition-permit-requires-air-district-notice",
+    "owner-must-hire-certified-asbestos-consultant",
+    "asbestos-consultant-dosh-certification-required"
+   ],
+   "when": "Before demolition_notice_send_by",
+   "rule_status": {
+    "air-district-demolition-notice-10-working-days": "corrected",
+    "demolition-permit-requires-air-district-notice": "unchecked",
+    "owner-must-hire-certified-asbestos-consultant": "unchecked",
+    "asbestos-consultant-dosh-certification-required": "unchecked"
+   },
+   "registry_type_id": "asbestos_consultant",
+   "rulebook_verified": false,
+   "why": "Before demolition, get an asbestos survey for the air district notice (air districts commonly require one). If the owner pays someone to do the survey, that person must be certified by Cal/OSHA (DOSH) as an asbestos consultant.",
+   "when_plain": "Before the air district demolition notice is due.",
+   "basis_complete": true,
+   "due_field": "demolition_notice_send_by"
+  },
+  {
+   "id": "permit-demo-abatement",
+   "tool": "permit_required",
+   "condition": "Demolition where the survey finds 100 sq ft or more of asbestos-containing material. Test: licensed_professionals contains 'Asbestos abatement contractor'.",
+   "test": "any(p.startswith('Asbestos abatement contractor') for p in result.licensed_professionals)",
+   "professional_type_id": "asbestos_abatement_contractor",
+   "requirement": "conditional",
+   "legal_basis": "B&P 7058.5; 8 CCR 341.6",
+   "rule_ids": [
+    "asbestos-100-sqft-c22-or-certification",
+    "asbestos-dosh-registration-100sqft"
+   ],
+   "when": "Before abatement starts",
+   "rule_status": {
+    "asbestos-100-sqft-c22-or-certification": "confirmed",
+    "asbestos-dosh-registration-100sqft": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": true,
+   "why": "If the survey finds 100 sq ft or more of asbestos-containing material, removal needs a C-22 contractor (or a contractor with CSLB asbestos certification) registered with Cal/OSHA.",
+   "when_plain": "Before abatement starts.",
+   "basis_complete": true
+  },
+  {
+   "id": "permit-license-required",
+   "tool": "permit_required",
+   "condition": "The work needs a CSLB license (permit work at any price, or a job at or over the minor-work limit). Test: license_required == true and owner_builder is false.",
+   "test": "result.license_required is True",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7048 (permit work needs a licensee at any price)",
+   "rule_ids": [
+    "minor-work-exemption-requires-no-permit"
+   ],
+   "when": "Before the contract is signed",
+   "rule_status": {
+    "minor-work-exemption-requires-no-permit": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": true,
+   "why": "This work needs a CSLB-licensed contractor: work that needs a permit is never exempt as minor work, whatever the price.",
+   "when_plain": "Before the contract is signed.",
+   "basis_complete": true
+  },
+  {
+   "id": "permit-owner-builder-trades",
+   "tool": "permit_required",
+   "condition": "Owner-builder hiring trades (input owner_builder == true and owner_builder_work_by == 'licensed_contractors'). Test: owner_builder_warnings contains the B&P 7044(a)(2) warning tagged '[owner-builder-licensed-trades]'. Every owner-builder result also carries the construction consultant warning '[owner-builder-consultant-requires-license]'.",
+   "test": "any('[owner-builder-licensed-trades]' in w for w in result.owner_builder_warnings)",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7044(a)(2); B&P 7026.1(a)(2) construction consultants",
+   "rule_ids": [
+    "owner-builder-licensed-trades",
+    "owner-builder-consultant-requires-license"
+   ],
+   "when": "Before each trade contract",
+   "rule_status": {
+    "owner-builder-licensed-trades": "confirmed",
+    "owner-builder-consultant-requires-license": "unchecked"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "As an owner-builder, each trade you hire must be a licensed contractor, and anyone who bids or schedules the trades for you needs a license too.",
+   "when_plain": "Before each trade contract.",
+   "basis_complete": true
+  },
+  {
+   "id": "energy-hers",
+   "tool": "energy_compliance_triggers",
+   "condition": "HERS field verification is required. Test: hers_rater_needed == true (documents include a CF3R).",
+   "test": "result.hers_rater_needed is True",
+   "professional_type_id": "hers_rater",
+   "requirement": "required",
+   "legal_basis": "Title 24 Part 6 10-103(a)(5): CF3R by an independent certified HERS rater before final",
+   "rule_ids": [
+    "energy-cf3r-hers-verification",
+    "energy-hvac-changeout-hers"
+   ],
+   "when": "After the installer registers the CF2R, before final inspection",
+   "rule_status": {
+    "energy-cf3r-hers-verification": "unchecked",
+    "energy-hvac-changeout-hers": "unchecked"
+   },
+   "registry_type_id": "hers_rater",
+   "rulebook_verified": false,
+   "why": "This job needs HERS field verification: an independent certified HERS rater must check the work before final inspection.",
+   "when_plain": "After the installer registers the CF2R, before final inspection.",
+   "basis_complete": true
+  },
+  {
+   "id": "stormwater-qsd-qsp",
+   "tool": "calgreen_and_stormwater",
+   "condition": "The site needs Construction General Permit coverage and no erosivity waiver was shown to be possible. Test: construction_general_permit_required == true and erosivity_waiver_possible is not true.",
+   "test": "result.construction_general_permit_required is True and result.get('erosivity_waiver_possible') is not True",
+   "professional_type_id": "qsd_qsp",
+   "requirement": "required",
+   "legal_basis": "CGP Order WQ 2022-0057-DWQ: SWPPP by a QSD, implemented and inspected by a QSP",
+   "rule_ids": [
+    "stormwater-small-construction-1-acre-definition",
+    "cgp-noi-smarts-before-construction",
+    "cgp-swppp-by-qsd",
+    "cgp-qsp-implementation-inspections"
+   ],
+   "when": "QSD before the NOI is filed; QSP from the start of grading",
+   "rule_status": {
+    "stormwater-small-construction-1-acre-definition": "confirmed",
+    "cgp-noi-smarts-before-construction": "unchecked",
+    "cgp-swppp-by-qsd": "unchecked",
+    "cgp-qsp-implementation-inspections": "unchecked"
+   },
+   "registry_type_id": "qsd_qsp",
+   "rulebook_verified": false,
+   "why": "The site needs Construction General Permit coverage. The stormwater plan (SWPPP) must be written by a Qualified SWPPP Developer (QSD) and carried out and inspected by a Qualified SWPPP Practitioner (QSP). A site under 5 acres may instead qualify for a rainfall erosivity waiver.",
+   "when_plain": "QSD before the Notice of Intent is filed; QSP from the start of grading.",
+   "basis_complete": true
+  },
+  {
+   "id": "stormwater-qsd-qsp-waiver",
+   "tool": "calgreen_and_stormwater",
+   "condition": "The site is in the CGP size range but the tool found an erosivity waiver possible (under 5 acres, R under 5). Test: construction_general_permit_required == true and erosivity_waiver_possible == true. The QSD/QSP is required if the waiver is not filed or the schedule runs past it.",
+   "test": "result.construction_general_permit_required is True and result.get('erosivity_waiver_possible') is True",
+   "professional_type_id": "qsd_qsp",
+   "requirement": "conditional",
+   "legal_basis": "40 CFR 122.26(b)(15)(i)(A) (erosivity waiver); CGP Order WQ 2022-0057-DWQ: SWPPP by a QSD, implemented and inspected by a QSP",
+   "rule_ids": [
+    "stormwater-erosivity-waiver",
+    "cgp-swppp-by-qsd",
+    "cgp-qsp-implementation-inspections"
+   ],
+   "when": "Before work starts: file the waiver, or bring in a QSD",
+   "rule_status": {
+    "stormwater-erosivity-waiver": "confirmed",
+    "cgp-swppp-by-qsd": "unchecked",
+    "cgp-qsp-implementation-inspections": "unchecked"
+   },
+   "registry_type_id": "qsd_qsp",
+   "rulebook_verified": false,
+   "why": "This site may qualify for a rainfall erosivity waiver instead of full Construction General Permit coverage. If the waiver is not filed, or the work runs past the waiver period, the SWPPP must be written by a QSD and carried out and inspected by a QSP.",
+   "when_plain": "Before work starts: file the waiver, or have a QSD write the SWPPP.",
+   "basis_complete": true,
+   "legal_basis_plain": "40 CFR 122.26(b)(15)(i)(A) (erosivity waiver). Construction General Permit (Order WQ 2022-0057-DWQ): SWPPP by a QSD, carried out and inspected by a QSP"
+  },
+  {
+   "id": "adu-prime-license",
+   "tool": "adu_rules",
+   "condition": "Building the ADU under contract. Test: licensed_professionals contains an entry starting 'Prime contractor:'.",
+   "test": "any(p.startswith('Prime contractor:') for p in result.licensed_professionals)",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "B&P 7057; CSLB ADU fast facts (B, or C-47 for manufactured)",
+   "rule_ids": [
+    "adu-license-classification-b-or-c47"
+   ],
+   "when": "Before the contract is signed",
+   "rule_status": {
+    "adu-license-classification-b-or-c47": "unchecked"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "Building an ADU under contract needs a CSLB-licensed prime contractor (a B general building license, or C-47 for a manufactured unit).",
+   "when_plain": "Before the contract is signed.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-stamp-architect",
+   "tool": "project_setup_checklist",
+   "condition": "Building outside the conventional woodframe exemption (more than 4 units, more than 2 stories, mixed-use or nonresidential), new work or an addition. Test: an item titled 'Plans prepared and stamped by a licensed architect or engineer' that is not the interior-alteration variant. Either an architect or a civil/structural engineer satisfies it.",
+   "test": "any(i['title'].startswith('Plans prepared and stamped') and not i['why'].endswith('purely nonstructural interior alterations are exempt.') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "architect",
+   "requirement": "required",
+   "legal_basis": "B&P 5537(a)-(b) (exempt small woodframe buildings; a part that departs from conventional framing must be prepared and stamped by a licensed architect or registered engineer): text read in the appendix of CSLB's 2022 Law Book on 2026-11-26, later amendments not checked, NOT in the rulebook. B&P 5538 and 6737.1: not read, unconfirmed (module UNVERIFIED 'design-professional-stamp')",
+   "rule_ids": [],
+   "when": "Before plan check submission",
+   "rule_status": {},
+   "registry_type_id": "architect",
+   "rulebook_verified": false,
+   "why": "This building is outside the small woodframe exemption (more than 4 units, more than 2 stories, mixed-use or nonresidential), so the plans must be prepared and stamped by a licensed architect or a licensed engineer. Either one can do it: you need one, not both.",
+   "when_plain": "Before you submit for plan check.",
+   "legal_basis_plain": "B&P 5537(a)-(b) (read in the appendix of CSLB's 2022 Law Book on 2026-11-26; later amendments not checked; not yet in the verified rulebook). B&P 5538 and 6737.1: not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-stamp-professional_engineer_civil",
+   "tool": "project_setup_checklist",
+   "condition": "Building outside the conventional woodframe exemption (more than 4 units, more than 2 stories, mixed-use or nonresidential), new work or an addition. Test: an item titled 'Plans prepared and stamped by a licensed architect or engineer' that is not the interior-alteration variant. Either an architect or a civil/structural engineer satisfies it.",
+   "test": "any(i['title'].startswith('Plans prepared and stamped') and not i['why'].endswith('purely nonstructural interior alterations are exempt.') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "required",
+   "legal_basis": "B&P 5537(a)-(b) (exempt small woodframe buildings; a part that departs from conventional framing must be prepared and stamped by a licensed architect or registered engineer): text read in the appendix of CSLB's 2022 Law Book on 2026-11-26, later amendments not checked, NOT in the rulebook. B&P 5538 and 6737.1: not read, unconfirmed (module UNVERIFIED 'design-professional-stamp')",
+   "rule_ids": [],
+   "when": "Before plan check submission",
+   "rule_status": {},
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": false,
+   "why": "This building is outside the small woodframe exemption (more than 4 units, more than 2 stories, mixed-use or nonresidential), so the plans must be prepared and stamped by a licensed architect or a licensed engineer. Either one can do it: you need one, not both.",
+   "when_plain": "Before you submit for plan check.",
+   "legal_basis_plain": "B&P 5537(a)-(b) (read in the appendix of CSLB's 2022 Law Book on 2026-11-26; later amendments not checked; not yet in the verified rulebook). B&P 5538 and 6737.1: not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-stamp-interior-architect",
+   "tool": "project_setup_checklist",
+   "condition": "Alteration or tenant improvement of a building outside the woodframe exemption. Test: the 'Plans prepared and stamped' item ends with the nonstructural interior exemption. Required only if the work touches the structure (B&P 5538 exempts purely nonstructural interior work).",
+   "test": "any(i['title'].startswith('Plans prepared and stamped') and i['why'].endswith('purely nonstructural interior alterations are exempt.') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "architect",
+   "requirement": "conditional",
+   "legal_basis": "B&P 5537 (read in the appendix of CSLB's 2022 Law Book on 2026-11-26, NOT in the rulebook); B&P 5538 (nonstructural storefronts and interior alterations exempt) and 6737.1: not read, unconfirmed (module UNVERIFIED 'design-professional-stamp')",
+   "rule_ids": [],
+   "when": "Before plan check submission, if the work is structural",
+   "rule_status": {},
+   "registry_type_id": "architect",
+   "rulebook_verified": false,
+   "why": "This is an alteration of a building outside the small woodframe exemption. If the work changes or affects the structure, the plans must be prepared and stamped by a licensed architect or a licensed engineer; either one can do it. Purely nonstructural interior work is exempt.",
+   "when_plain": "Before you submit for plan check, if the work touches the structure.",
+   "legal_basis_plain": "B&P 5537 (read in the appendix of CSLB's 2022 Law Book on 2026-11-26; not yet in the verified rulebook). B&P 5538 (nonstructural interior work exempt) and 6737.1: not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-stamp-interior-professional_engineer_civil",
+   "tool": "project_setup_checklist",
+   "condition": "Alteration or tenant improvement of a building outside the woodframe exemption. Test: the 'Plans prepared and stamped' item ends with the nonstructural interior exemption. Required only if the work touches the structure (B&P 5538 exempts purely nonstructural interior work).",
+   "test": "any(i['title'].startswith('Plans prepared and stamped') and i['why'].endswith('purely nonstructural interior alterations are exempt.') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "conditional",
+   "legal_basis": "B&P 5537 (read in the appendix of CSLB's 2022 Law Book on 2026-11-26, NOT in the rulebook); B&P 5538 (nonstructural storefronts and interior alterations exempt) and 6737.1: not read, unconfirmed (module UNVERIFIED 'design-professional-stamp')",
+   "rule_ids": [],
+   "when": "Before plan check submission, if the work is structural",
+   "rule_status": {},
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": false,
+   "why": "This is an alteration of a building outside the small woodframe exemption. If the work changes or affects the structure, the plans must be prepared and stamped by a licensed architect or a licensed engineer; either one can do it. Purely nonstructural interior work is exempt.",
+   "when_plain": "Before you submit for plan check, if the work touches the structure.",
+   "legal_basis_plain": "B&P 5537 (read in the appendix of CSLB's 2022 Law Book on 2026-11-26; not yet in the verified rulebook). B&P 5538 (nonstructural interior work exempt) and 6737.1: not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-woodframe-engineer",
+   "tool": "project_setup_checklist",
+   "condition": "Conventional woodframe job the building official may still send to an engineer. Test: an item titled 'Plans: architect/engineer stamp not required for conventional woodframe'.",
+   "test": "any(i['title'].startswith('Plans: architect/engineer stamp not required') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "conditional",
+   "legal_basis": "B&P 5537(a)-(b): text read in the appendix of CSLB's 2022 Law Book on 2026-11-26, later amendments not checked, NOT in the rulebook. B&P 6737.1 exemption: NOT in the rulebook, unconfirmed",
+   "rule_ids": [],
+   "when": "If plan check asks for engineering",
+   "rule_status": {},
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": false,
+   "why": "B&P 5537 lets anyone prepare plans for a conventional woodframe home of this size, so the law does not require an architect or engineer for the whole plan set. Any part that departs from conventional woodframe framing (for example engineered beams, shear walls or foundations) must be prepared and stamped by a licensed engineer or architect, and the building official will require it.",
+   "when_plain": "Before plan check, for any part that is not conventional woodframe.",
+   "legal_basis_plain": "B&P 5537(a)-(b) (read in the appendix of CSLB's 2022 Law Book on 2026-11-26; not yet in the verified rulebook). B&P 6737.1: not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-special-inspector",
+   "tool": "project_setup_checklist",
+   "condition": "Structural work needing special inspections (new building or addition outside the woodframe exemption). Test: an item titled 'Statement of Special Inspections with the permit set' or 'Special inspector's final report'.",
+   "test": "any(i['title'].startswith('Statement of Special Inspections') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "special_inspector",
+   "requirement": "required",
+   "legal_basis": "CBC 1704.2.3, 1704.3 (statement by the registered design professional; owner hires the special inspector)",
+   "rule_ids": [
+    "special-inspection-statement-before-permit",
+    "special-inspection-reports-and-final-report"
+   ],
+   "when": "Statement before permit issuance; final report before occupancy",
+   "rule_status": {
+    "special-inspection-statement-before-permit": "unchecked",
+    "special-inspection-reports-and-final-report": "unchecked"
+   },
+   "registry_type_id": "special_inspector",
+   "rulebook_verified": false,
+   "why": "Structural work on this job needs special inspections: the design professional prepares a statement of special inspections, and the owner hires the special inspector.",
+   "when_plain": "Statement before the permit is issued; final report before occupancy.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-private-plan-check",
+   "tool": "project_setup_checklist",
+   "condition": "Optional: the city's review estimate exceeds the AB 253 limit. Test: an item titled 'Option: private plan check'.",
+   "test": "any(i['title'].startswith('Option: private plan check') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "optional",
+   "legal_basis": "Health & Safety Code 17960.3 (AB 253): licensed engineer or architect with a plans examiner certification",
+   "rule_ids": [
+    "private-plan-check-ab253"
+   ],
+   "when": "After the application is deemed complete",
+   "rule_status": {
+    "private-plan-check-ab253": "corrected"
+   },
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": true,
+   "why": "Optional: if the city's plan review will take longer than the AB 253 limit, you may use a private plan checker (a licensed engineer or architect with a plans examiner certification).",
+   "when_plain": "After the application is complete.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-accessibility-architect",
+   "tool": "project_setup_checklist",
+   "condition": "Nonresidential or public agency job: CBC 11B and path-of-travel upgrades. Test: an item titled 'Accessibility (CBC 11B) and path-of-travel upgrades'. Suggested: the accessibility code applies whoever prepares the plans; whether an architect or engineer is legally required is ps-stamp-architect.",
+   "test": "any(i['title'].startswith('Accessibility (CBC 11B)') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "architect",
+   "requirement": "recommended",
+   "legal_basis": "CBC 11B-202.4 Exception 8 (module UNVERIFIED 'accessibility-path-of-travel'): NOT in the rulebook, unconfirmed",
+   "rule_ids": [],
+   "when": "In the permit set",
+   "rule_status": {},
+   "registry_type_id": "architect",
+   "rulebook_verified": false,
+   "why": "Nonresidential and public agency jobs must meet the accessibility code (CBC 11B), including path-of-travel upgrades. Whoever prepares the permit plans, usually the architect, shows this work. The rules apply either way; no rule TradeComply has read requires an architect just for accessibility.",
+   "when_plain": "In the permit set.",
+   "legal_basis_plain": "CBC 11B-202.4 Exception 8 (path of travel): not yet confirmed. Whether the plans must come from an architect or engineer is a separate question (B&P 5537)",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-accessibility-casp",
+   "tool": "project_setup_checklist",
+   "condition": "Same item: a CASp inspection is voluntary but gives the owner legal protections. Test: as above.",
+   "test": "any(i['title'].startswith('Accessibility (CBC 11B)') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "casp",
+   "requirement": "recommended",
+   "legal_basis": "Civil Code 55.53 (CASp, as described by CCDA)",
+   "rule_ids": [
+    "ada-casp-definition-and-services"
+   ],
+   "when": "Before or after permit; owner decides",
+   "rule_status": {
+    "ada-casp-definition-and-services": "confirmed"
+   },
+   "registry_type_id": "casp",
+   "rulebook_verified": true,
+   "why": "A Certified Access Specialist (CASp) inspection is voluntary, but it can give the owner legal protections.",
+   "when_plain": "Before or after the permit; the owner decides.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-public-agency-dsa",
+   "tool": "project_setup_checklist",
+   "condition": "Public agency owner: plans may be approved by a state agency instead of the city. A public K-12 school or community college under the Field Act needs a DSA-certified inspector of record; the tool does not ask whether the job is a school. Test: input owner_type == 'public_agency' and an item titled 'Confirm who approves the plans'.",
+   "test": "any(i['title'].startswith('Confirm who approves the plans') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "dsa_inspector_ior",
+   "requirement": "conditional",
+   "legal_basis": "Education Code 17280 et seq. (Field Act): NOT in the rulebook (module UNVERIFIED 'public-agency-plan-approval'), unconfirmed",
+   "rule_ids": [],
+   "when": "Before construction starts",
+   "rule_status": {},
+   "registry_type_id": "dsa_project_inspector",
+   "rulebook_verified": false,
+   "why": "With a public agency owner, a state agency may approve the plans instead of the city. A public K-12 school or community college job under the Field Act needs a DSA-certified inspector of record (TradeComply did not ask whether this job is a school).",
+   "when_plain": "Before construction starts.",
+   "legal_basis_plain": "Education Code 17280 and following (Field Act): not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-asbestos-survey",
+   "tool": "project_setup_checklist",
+   "condition": "Existing building: find out whether disturbed materials contain asbestos. Test: an item titled 'Asbestos survey of every material you will disturb'. The DOSH-certified consultant is required when the owner pays someone to survey or sample (B&P 7180.5); NESHAP's inspection duty covers a 'facility' (not homes of 4 or fewer units).",
+   "test": "any(i['title'].startswith('Asbestos survey of every material') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "certified_asbestos_consultant",
+   "requirement": "conditional",
+   "legal_basis": "40 CFR 61.145(a), 61.141 (inspection before demolition or renovation of a NESHAP facility); Labor Code 6501.9 (good-faith check before asbestos-related work; text read in the appendix of CSLB's 2022 Law Book on 2026-11-26); B&P 7180, 7180.5 DOSH certification (text read in the CSLB 2026 Law Book on 2026-11-26; the rulebook rules are still unchecked)",
+   "rule_ids": [
+    "neshap-asbestos-inspection-before-demo",
+    "neshap-facility-excludes-4-or-fewer-units",
+    "asbestos-consultant-dosh-certification-required",
+    "owner-must-hire-certified-asbestos-consultant",
+    "asbestos-contractor-bulk-sampling-limit-12"
+   ],
+   "when": "Before the air district notice is due, or before start",
+   "rule_status": {
+    "neshap-asbestos-inspection-before-demo": "confirmed",
+    "neshap-facility-excludes-4-or-fewer-units": "confirmed",
+    "asbestos-consultant-dosh-certification-required": "unchecked",
+    "owner-must-hire-certified-asbestos-consultant": "unchecked",
+    "asbestos-contractor-bulk-sampling-limit-12": "confirmed"
+   },
+   "registry_type_id": "asbestos_consultant",
+   "rulebook_verified": false,
+   "why": "Before work on an existing building, find out whether the materials you will disturb contain asbestos. A thorough survey is required before demolition or renovation of a building federal NESHAP covers (it excludes homes with 4 or fewer units), and air districts commonly require one before demolition. If the owner pays someone to survey or sample, that person must be certified by Cal/OSHA (DOSH) as an asbestos consultant.",
+   "when_plain": "Before the air district notice is due, or before work starts.",
+   "legal_basis_plain": "40 CFR 61.145(a) and 61.141 (inspection before demolition or renovation of a building NESHAP covers); Labor Code 6501.9 (check for asbestos before the work; read in the appendix of CSLB's 2022 Law Book on 2026-11-26); B&P 7180, 7180.5 (DOSH certification; read in the CSLB 2026 Law Book on 2026-11-26, not yet confirmed in the rulebook)",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-asbestos-abatement",
+   "tool": "project_setup_checklist",
+   "condition": "Existing building: if asbestos work is 100 sq ft or more. Test: an item titled 'If asbestos work is 100+ sq ft'.",
+   "test": "any(i['title'].startswith('If asbestos work is') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "asbestos_abatement_contractor",
+   "requirement": "conditional",
+   "legal_basis": "B&P 7058.5, 7058.6; 8 CCR 341.6, 341.9",
+   "rule_ids": [
+    "asbestos-c22-or-certification-100sqft",
+    "asbestos-dosh-registration-100sqft",
+    "asbestos-job-notification"
+   ],
+   "when": "Before abatement starts",
+   "rule_status": {
+    "asbestos-c22-or-certification-100sqft": "unchecked",
+    "asbestos-dosh-registration-100sqft": "confirmed",
+    "asbestos-job-notification": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "If the asbestos work is 100 sq ft or more, it needs a C-22 contractor (or a contractor with CSLB asbestos certification) registered with Cal/OSHA. Cal/OSHA must also be notified of each asbestos job.",
+   "when_plain": "Before abatement starts.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-rrp",
+   "tool": "project_setup_checklist",
+   "condition": "Pre-1978 housing (required), or a pre-1978 building young children may use (conditional: only if it is a child-occupied facility). Test: an item titled 'Lead-safe renovation (EPA RRP)' or 'If children under 6 use the building'; conditional_if: only the second.",
+   "test": "any(i['title'].startswith(('Lead-safe renovation (EPA RRP)', 'If children under 6')) for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "epa_rrp_certified_firm",
+   "requirement": "required",
+   "legal_basis": "40 CFR 745.81-745.84",
+   "rule_ids": [
+    "rrp-applicability-pre-1978",
+    "rrp-firm-certification",
+    "rrp-renovate-right-pamphlet-60-days"
+   ],
+   "when": "Pamphlet no more than 60 days before work; firm certified before work",
+   "rule_status": {
+    "rrp-applicability-pre-1978": "confirmed",
+    "rrp-firm-certification": "unchecked",
+    "rrp-renovate-right-pamphlet-60-days": "confirmed"
+   },
+   "registry_type_id": "lead_professional",
+   "rulebook_verified": false,
+   "why": "Paid renovation of pre-1978 housing, or of a pre-1978 building that children under 6 use regularly (a child-occupied facility), needs an EPA lead-safe certified firm with a certified renovator, and the lead pamphlet goes to the owner first.",
+   "when_plain": "Firm certified before work starts; pamphlet no more than 60 days before work.",
+   "basis_complete": true,
+   "conditional_if": "not any(i['title'].startswith('Lead-safe renovation (EPA RRP)') for ph in result.phases for i in ph['items'])"
+  },
+  {
+   "id": "ps-stormwater",
+   "tool": "project_setup_checklist",
+   "condition": "1 acre or more disturbed. Test: an item titled 'Stormwater: Construction General Permit' (and 'Stormwater Notice of Termination' at closeout).",
+   "test": "any(i['title'].startswith('Stormwater: Construction General Permit') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "qsd_qsp",
+   "requirement": "required",
+   "legal_basis": "CGP Order WQ 2022-0057-DWQ",
+   "rule_ids": [
+    "cgp-swppp-by-qsd",
+    "cgp-qsp-implementation-inspections",
+    "cgp-notice-of-termination"
+   ],
+   "when": "Before grading; NOT at final stabilization",
+   "rule_status": {
+    "cgp-swppp-by-qsd": "unchecked",
+    "cgp-qsp-implementation-inspections": "unchecked",
+    "cgp-notice-of-termination": "unchecked"
+   },
+   "registry_type_id": "qsd_qsp",
+   "rulebook_verified": false,
+   "why": "Disturbing 1 acre or more needs Construction General Permit coverage, with a SWPPP by a QSD and site inspections by a QSP. A site under 5 acres may instead qualify for a rainfall erosivity waiver.",
+   "when_plain": "Before grading starts.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-excavation-engineer",
+   "tool": "project_setup_checklist",
+   "condition": "Excavation deeper than 20 ft. Test: an item titled 'Excavation protection for ...' whose requires_licensed_professional contains 'registered professional engineer'.",
+   "test": "any(i['title'].startswith('Excavation protection') and 'professional engineer' in (i['requires_licensed_professional'] or '') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1541.1 Appendix B note 3 ('Sloping or benching for excavations greater than 20 feet deep shall be designed by a registered professional engineer') and 1541.1(b)(4)/(c)(4): read on dir.ca.gov on 2026-11-26 but NOT in the rulebook yet (module UNVERIFIED 'excavation-engineer-over-20-ft'); protective system at 5 ft is confirmed",
+   "rule_ids": [
+    "excavation-protective-system-5-ft"
+   ],
+   "when": "Before excavation starts",
+   "rule_status": {
+    "excavation-protective-system-5-ft": "confirmed"
+   },
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": false,
+   "why": "Sloping or benching for an excavation deeper than 20 ft must be designed by a registered professional engineer.",
+   "when_plain": "Before excavation starts.",
+   "legal_basis_plain": "8 CCR 1541.1 Appendix B note 3 and 1541.1(b)(4), (c)(4) (read on dir.ca.gov on 2026-11-26; not yet in the verified rulebook). A protective system at 5 ft: 8 CCR 1541.1 (confirmed)",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-excavation-competent",
+   "tool": "project_setup_checklist",
+   "condition": "Trench 4 ft or deeper. Test: an item titled 'Excavation protection for ...'.",
+   "test": "any(i['title'].startswith('Excavation protection') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "competent_person",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1541(k) daily inspection by a competent person (8 CCR 1504 definition)",
+   "rule_ids": [
+    "excavation-daily-competent-person-inspection",
+    "competent-person-definition"
+   ],
+   "when": "Daily, before each shift",
+   "rule_status": {
+    "excavation-daily-competent-person-inspection": "unchecked",
+    "competent-person-definition": "unchecked"
+   },
+   "registry_type_id": "competent_person",
+   "rulebook_verified": false,
+   "why": "A competent person must inspect the excavation, the area around it and the protective system every day before work starts, as needed during the shift, and after every rainstorm or other event that increases the hazard.",
+   "when_plain": "Every day, before each shift.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-falsework-engineer",
+   "tool": "project_setup_checklist",
+   "condition": "New building or addition taller than the falsework limit, if falsework or shoring is used. Test: an item titled 'Falsework/shoring design by a California civil engineer'.",
+   "test": "any(i['title'].startswith('Falsework/shoring design') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "conditional",
+   "legal_basis": "8 CCR 1717(b)-(c)",
+   "rule_ids": [
+    "falsework-engineer-design"
+   ],
+   "when": "Before erecting falsework",
+   "rule_status": {
+    "falsework-engineer-design": "confirmed"
+   },
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": true,
+   "why": "If falsework or shoring is used: falsework or shoring more than 14 ft high, with spans over 16 ft, or with traffic through it must be designed by a California-registered civil engineer.",
+   "when_plain": "Before falsework goes up.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-silica-competent",
+   "tool": "project_setup_checklist",
+   "condition": "Every non-demolition-only job lists the silica plan. Test: an item titled 'Silica exposure control plan'.",
+   "test": "any(i['title'].startswith('Silica exposure control plan') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "competent_person",
+   "requirement": "conditional",
+   "legal_basis": "8 CCR 1532.3(g)(4) (only if silica tasks are done)",
+   "rule_ids": [
+    "silica-competent-person"
+   ],
+   "when": "Before silica tasks start",
+   "rule_status": {
+    "silica-competent-person": "unchecked"
+   },
+   "registry_type_id": "competent_person",
+   "rulebook_verified": false,
+   "why": "If your crew does silica tasks, you must name a competent person to make regular inspections and carry out the silica exposure control plan.",
+   "when_plain": "Before silica tasks start.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-hers-closeout",
+   "tool": "project_setup_checklist",
+   "condition": "Residential job: HERS-verified measures before final. Test: an item titled 'Title 24 energy documents before final' with requires_licensed_professional set.",
+   "test": "any(i['title'].startswith('Title 24 energy documents before final') for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "hers_rater",
+   "requirement": "conditional",
+   "legal_basis": "Title 24 Part 6 10-103(a)(5)",
+   "rule_ids": [
+    "energy-cf3r-hers-verification"
+   ],
+   "when": "Before final inspection",
+   "rule_status": {
+    "energy-cf3r-hers-verification": "unchecked"
+   },
+   "registry_type_id": "hers_rater",
+   "rulebook_verified": false,
+   "why": "Residential energy measures that need HERS verification must be checked by a HERS rater before final inspection.",
+   "when_plain": "Before final inspection.",
+   "basis_complete": true
+  },
+  {
+   "id": "ps-hic-attorney",
+   "tool": "project_setup_checklist",
+   "condition": "Home improvement contract: 'Have an attorney review your form once.' Test: an item in phase 'Contract' whose why contains 'Have an attorney review your form once'.",
+   "test": "any('Have an attorney review your form once' in i['why'] for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "B&P 6125 (only active State Bar licensees may practice law): NOT in the rulebook, unconfirmed (cited in research/market.md section 1.2 [L7])",
+   "rule_ids": [],
+   "when": "Once, before the form is first used",
+   "rule_status": {},
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "Have an attorney review your home improvement contract form once before you use it.",
+   "when_plain": "Once, before you first use the form.",
+   "legal_basis_plain": "TradeComply's own limit: writing custom legal terms is the practice of law (B&P 6125, not yet confirmed). Not a legal requirement for the contractor",
+   "basis_complete": false
+  },
+  {
+   "id": "ps-apprentices",
+   "tool": "project_setup_checklist",
+   "condition": "Public work with apprenticeship (contract at or over the threshold). Test: a 'Public works' phase item about DAS 140 / DAS 142, and the closeout item 'Apprentice hours statement'.",
+   "test": "any('DAS 14' in i['title'] for ph in result.phases for i in ph['items'])",
+   "professional_type_id": "apprenticeship_committee",
+   "requirement": "required",
+   "legal_basis": "Labor Code 1777.5 (as held in the rulebook)",
+   "rule_ids": [
+    "das140-contract-award-deadline",
+    "das142-dispatch-request-72-hours",
+    "apprentice-ratio-1-to-5",
+    "apprentice-hours-verified-statement-60-days"
+   ],
+   "when": "DAS 140 within the deadline after award; DAS 142 72 hours ahead",
+   "rule_status": {
+    "das140-contract-award-deadline": "confirmed",
+    "das142-dispatch-request-72-hours": "confirmed",
+    "apprentice-ratio-1-to-5": "confirmed",
+    "apprentice-hours-verified-statement-60-days": "confirmed"
+   },
+   "registry_type_id": "apprenticeship_committee",
+   "rulebook_verified": true,
+   "why": "This public work has apprenticeship duties: send the contract award information (DAS 140) to the apprenticeship committees and request apprentices (DAS 142) when you need them.",
+   "when_plain": "DAS 140 within the deadline after award; DAS 142 at least 72 hours ahead.",
+   "legal_basis_plain": "Labor Code 1777.5; 8 CCR 230, 230.1",
+   "basis_complete": true
+  },
+  {
+   "id": "gsp-respirator-plhcp",
+   "tool": "generate_safety_programs",
+   "condition": "Employees use respirators. Test: programs[key=='respiratory'].status == 'required' (named_people lists the PLHCP).",
+   "test": "any(p['key'] == 'respiratory' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "physician_or_plhcp",
+   "requirement": "required",
+   "legal_basis": "8 CCR 5144 written program and fit testing (confirmed); the medical-evaluation element is in the module's UNVERIFIED 'respirator_program_elements' (8 CCR 5144(c)(1)), unconfirmed",
+   "rule_ids": [
+    "respirator-program-annual-fit-test"
+   ],
+   "when": "Before fit testing and first respirator use",
+   "rule_status": {
+    "respirator-program-annual-fit-test": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": false,
+   "why": "Employees who use respirators need a medical evaluation by a physician or other licensed health care professional before fit testing or first use.",
+   "when_plain": "Before fit testing and first respirator use.",
+   "legal_basis_plain": "8 CCR 5144(e)(1), (e)(2)(A) (medical evaluation by a PLHCP; read on dir.ca.gov on 2026-11-26, not yet in the verified rulebook); 8 CCR 5144(c), (f)(2) (written program and fit testing, confirmed)",
+   "basis_complete": false,
+   "conditional_if": "not any(p['key'] == 'respiratory' and p['status'] == 'required' for p in result.programs)"
+  },
+  {
+   "id": "gsp-silica-plhcp",
+   "tool": "generate_safety_programs",
+   "condition": "Silica tasks with respirators 30 or more days a year. Test: programs[key=='silica'] present.",
+   "test": "any(p['key'] == 'silica' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "physician_or_plhcp",
+   "requirement": "conditional",
+   "legal_basis": "8 CCR 1532.3(h) medical surveillance",
+   "rule_ids": [
+    "silica-medical-surveillance-30-days"
+   ],
+   "when": "Baseline within 30 days of assignment",
+   "rule_status": {
+    "silica-medical-surveillance-30-days": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "Employees who must wear a respirator for silica 30 or more days a year must be offered medical exams, done by a physician or other licensed health care professional.",
+   "when_plain": "Baseline exam within 30 days of the assignment, unless the employee had a qualifying exam in the last 3 years.",
+   "legal_basis_plain": "8 CCR 1532.3(h) (medical surveillance)",
+   "basis_complete": true
+  },
+  {
+   "id": "gsp-silica-competent",
+   "tool": "generate_safety_programs",
+   "condition": "Silica tasks. Test: programs[key=='silica'] present.",
+   "test": "any(p['key'] == 'silica' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "competent_person",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1532.3(g)(4)",
+   "rule_ids": [
+    "silica-competent-person",
+    "competent-person-definition"
+   ],
+   "when": "Before silica tasks start",
+   "rule_status": {
+    "silica-competent-person": "unchecked",
+    "competent-person-definition": "unchecked"
+   },
+   "registry_type_id": "competent_person",
+   "rulebook_verified": false,
+   "why": "If your crew does silica tasks, you must name a competent person to make regular inspections and carry out the silica exposure control plan.",
+   "when_plain": "Before silica tasks start.",
+   "basis_complete": true,
+   "conditional_if": "not any(p['key'] == 'silica' and p['status'] == 'required' for p in result.programs)"
+  },
+  {
+   "id": "gsp-excavation-engineer",
+   "tool": "generate_safety_programs",
+   "condition": "Excavation deeper than 20 ft. Test: programs[key=='excavation'].named_people contains 'Registered professional engineer'.",
+   "test": "any(p['key'] == 'excavation' and any('professional engineer' in n for n in p['named_people']) for p in result.programs)",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1541.1 Appendix B note 3 (engineer design for sloping or benching over 20 ft): read on dir.ca.gov on 2026-11-26 but NOT in the rulebook yet (module UNVERIFIED 'excavation_over_20ft_engineer')",
+   "rule_ids": [
+    "excavation-protective-system-5-ft"
+   ],
+   "when": "Before excavation starts",
+   "rule_status": {
+    "excavation-protective-system-5-ft": "confirmed"
+   },
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": false,
+   "why": "Sloping or benching for an excavation deeper than 20 ft must be designed by a registered professional engineer.",
+   "when_plain": "Before excavation starts.",
+   "legal_basis_plain": "8 CCR 1541.1 Appendix B note 3 and 1541.1(b)(4), (c)(4) (read on dir.ca.gov on 2026-11-26; not yet in the verified rulebook)",
+   "basis_complete": false
+  },
+  {
+   "id": "gsp-excavation-competent",
+   "tool": "generate_safety_programs",
+   "condition": "Workers enter a trench. Test: programs[key=='excavation'] present.",
+   "test": "any(p['key'] == 'excavation' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "competent_person",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1541(k)",
+   "rule_ids": [
+    "excavation-daily-competent-person-inspection",
+    "competent-person-definition"
+   ],
+   "when": "Daily",
+   "rule_status": {
+    "excavation-daily-competent-person-inspection": "unchecked",
+    "competent-person-definition": "unchecked"
+   },
+   "registry_type_id": "competent_person",
+   "rulebook_verified": false,
+   "why": "When workers enter a trench, a competent person must inspect it every day before work starts and after every rainstorm or other event that increases the hazard.",
+   "when_plain": "Every day.",
+   "basis_complete": true,
+   "conditional_if": "not any(p['key'] == 'excavation' and p['status'] == 'required' for p in result.programs)"
+  },
+  {
+   "id": "gsp-crane-operator",
+   "tool": "generate_safety_programs",
+   "condition": "Crane use. Test: programs[key=='cranes'] present.",
+   "test": "any(p['key'] == 'cranes' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "certified_crane_operator",
+   "requirement": "required",
+   "legal_basis": "8 CCR 5006.2(a), (c), (d) operator certification (5-year certificate text read on dir.ca.gov on 2026-11-26; the rulebook rule is still unchecked)",
+   "rule_ids": [
+    "crane-operator-certification-5-years"
+   ],
+   "when": "Before the operator runs the crane",
+   "rule_status": {
+    "crane-operator-certification-5-years": "unchecked"
+   },
+   "registry_type_id": "crane_operator",
+   "rulebook_verified": false,
+   "why": "Each crane operator must be trained, certified for the crane type, and evaluated before operating.",
+   "when_plain": "Before the operator runs the crane.",
+   "legal_basis_plain": "8 CCR 5006.2(a), (c), (d) (operator certification; text read on dir.ca.gov on 2026-11-26)",
+   "basis_complete": false,
+   "conditional_if": "not any(p['key'] == 'cranes' and p['status'] == 'required' for p in result.programs)"
+  },
+  {
+   "id": "gsp-crane-certifier",
+   "tool": "generate_safety_programs",
+   "condition": "Crane use (over 3 tons). Test: programs[key=='cranes'] present.",
+   "test": "any(p['key'] == 'cranes' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "dosh_licensed_crane_certifier",
+   "requirement": "required",
+   "legal_basis": "8 CCR 5021(a) annual certification by a licensed certifier",
+   "rule_ids": [
+    "crane-annual-certification"
+   ],
+   "when": "Before use and every year",
+   "rule_status": {
+    "crane-annual-certification": "confirmed"
+   },
+   "registry_type_id": "crane_certifier",
+   "rulebook_verified": true,
+   "why": "Cranes in lifting service over 3 tons rated capacity need current annual certificates from a Cal/OSHA-licensed crane certifier.",
+   "when_plain": "Before first use, then every year.",
+   "basis_complete": true,
+   "conditional_if": "not any(p['key'] == 'cranes' and p['status'] == 'required' for p in result.programs)"
+  },
+  {
+   "id": "gsp-asbestos-contractor",
+   "tool": "generate_safety_programs",
+   "condition": "Asbestos or lead work. Test: programs[key=='lead_asbestos'] present (asbestos 100 sq ft+ needs a C-22 or certified contractor).",
+   "test": "any(p['key'] == 'lead_asbestos' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "asbestos_abatement_contractor",
+   "requirement": "conditional",
+   "legal_basis": "B&P 7058.5, 7058.6",
+   "rule_ids": [
+    "asbestos-cslb-certification-100sqft"
+   ],
+   "when": "Before asbestos work",
+   "rule_status": {
+    "asbestos-cslb-certification-100sqft": "unchecked"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "If the asbestos work is 100 sq ft or more, it needs a C-22 contractor (or a contractor with CSLB asbestos certification) registered with Cal/OSHA.",
+   "when_plain": "Before asbestos work starts.",
+   "basis_complete": true
+  },
+  {
+   "id": "gsp-asbestos-competent",
+   "tool": "generate_safety_programs",
+   "condition": "Asbestos work. Test: programs[key=='lead_asbestos'] present.",
+   "test": "any(p['key'] == 'lead_asbestos' and p['status'] != 'not_required' for p in result.programs)",
+   "professional_type_id": "competent_person",
+   "requirement": "conditional",
+   "legal_basis": "8 CCR 1529(o)",
+   "rule_ids": [
+    "asbestos-competent-person-inspections"
+   ],
+   "when": "Every asbestos worksite",
+   "rule_status": {
+    "asbestos-competent-person-inspections": "unchecked"
+   },
+   "registry_type_id": "competent_person",
+   "rulebook_verified": false,
+   "why": "Every asbestos worksite needs a competent person who inspects the work.",
+   "when_plain": "On every asbestos worksite.",
+   "basis_complete": true
+  },
+  {
+   "id": "gsp-fall-plan",
+   "tool": "generate_safety_programs",
+   "condition": "Conventional fall protection infeasible. Test: programs[key=='fall_protection_plan'].status == 'required'.",
+   "test": "any(p['key'] == 'fall_protection_plan' and p['status'] == 'required' for p in result.programs)",
+   "professional_type_id": "competent_person",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1671.1 (qualified person prepares, competent person supervises)",
+   "rule_ids": [
+    "fall-protection-plan",
+    "qualified-person-definition",
+    "competent-person-definition"
+   ],
+   "when": "Before that work",
+   "rule_status": {
+    "fall-protection-plan": "unchecked",
+    "qualified-person-definition": "unchecked",
+    "competent-person-definition": "unchecked"
+   },
+   "registry_type_id": "competent_person",
+   "rulebook_verified": false,
+   "why": "Where conventional fall protection is not feasible, a qualified person must prepare a written fall protection plan and a competent person must supervise it.",
+   "when_plain": "Before that work starts.",
+   "basis_complete": true
+  },
+  {
+   "id": "coc-falsework-engineer",
+   "tool": "check_cal_osha_permits",
+   "condition": "Falsework or shoring over 14 ft high, 16 ft span, or with traffic through it. Test: items[activity starts with 'Scaffold / falsework'].named_people contains 'California-registered civil engineer'.",
+   "test": "any(i['activity'].startswith('Scaffold / falsework') and any('civil engineer' in n for n in i['named_people']) for i in result['items'])",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1717(b)-(c)",
+   "rule_ids": [
+    "falsework-engineer-design",
+    "permit-scaffold-falsework-36ft"
+   ],
+   "when": "Before erecting falsework",
+   "rule_status": {
+    "falsework-engineer-design": "confirmed",
+    "permit-scaffold-falsework-36ft": "unchecked"
+   },
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": false,
+   "why": "Falsework or shoring more than 14 ft high, with spans over 16 ft, or with traffic through it must be designed by a California-registered civil engineer.",
+   "when_plain": "Before falsework goes up.",
+   "basis_complete": true
+  },
+  {
+   "id": "coc-tower-crane",
+   "tool": "check_cal_osha_permits",
+   "condition": "Tower crane erection, climbing or dismantling. Test: items[activity starts with 'Tower crane'].required == true.",
+   "test": "any(i['activity'].startswith('Tower crane') and i['required'] for i in result['items'])",
+   "professional_type_id": "dosh_licensed_crane_certifier",
+   "requirement": "required",
+   "legal_basis": "8 CCR 341(d)(1), 341.1, 341.3 (certifier or manufacturer's representative present)",
+   "rule_ids": [
+    "permit-tower-crane"
+   ],
+   "when": "During erection, climbing and dismantling; notices 24 hours ahead",
+   "rule_status": {
+    "permit-tower-crane": "unchecked"
+   },
+   "registry_type_id": "crane_certifier",
+   "rulebook_verified": false,
+   "why": "Erecting, climbing or dismantling a tower crane needs a Cal/OSHA permit, with a licensed crane certifier or the manufacturer's representative present.",
+   "when_plain": "During erection, climbing and dismantling; notify Cal/OSHA 24 hours ahead.",
+   "basis_complete": true
+  },
+  {
+   "id": "coc-asbestos-registration",
+   "tool": "check_cal_osha_permits",
+   "condition": "Asbestos work of 100 sq ft or more. Test: items[activity == 'Asbestos registration (Cal/OSHA)'].required == true.",
+   "test": "any(i['activity'] == 'Asbestos registration (Cal/OSHA)' and i['required'] for i in result['items'])",
+   "professional_type_id": "asbestos_abatement_contractor",
+   "requirement": "required",
+   "legal_basis": "8 CCR 341.6; B&P 7058.5",
+   "rule_ids": [
+    "asbestos-dosh-registration-100sqft",
+    "asbestos-cslb-certification-100sqft"
+   ],
+   "when": "Before the deadline shown",
+   "rule_status": {
+    "asbestos-dosh-registration-100sqft": "confirmed",
+    "asbestos-cslb-certification-100sqft": "unchecked"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": false,
+   "why": "Asbestos work of 100 sq ft or more needs a contractor registered with Cal/OSHA for asbestos work.",
+   "when_plain": "Before the registration deadline shown in the result.",
+   "basis_complete": true
+  },
+  {
+   "id": "ird-attorney",
+   "tool": "injury_reporting_deadlines",
+   "condition": "A death or serious injury. Test: input serious or fatality is true (notes contain 'involve your attorney').",
+   "test": "any('involve your attorney' in n for n in result.notes)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "No rule requires counsel; Cal/OSHA investigation likely",
+   "rule_ids": [],
+   "when": "Right after the 8-hour report",
+   "rule_status": {},
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "After a death or serious injury, a Cal/OSHA investigation is likely. No rule requires an attorney, but you may want one involved early.",
+   "when_plain": "Right after you make the 8-hour report.",
+   "basis_complete": false
+  },
+  {
+   "id": "pwr-coverage-attorney",
+   "tool": "public_works_readiness",
+   "condition": "The facts cannot settle whether the job is a public work. Test: coverage.public_work is null (checklist task 'Get a written coverage determination' has licensed_human set). DIR coverage determination is the official alternative.",
+   "test": "result.coverage.public_work is None",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "8 CCR 16001 coverage determination (DIR)",
+   "rule_ids": [
+    "pw-coverage-determination"
+   ],
+   "when": "Before bidding",
+   "rule_status": {
+    "pw-coverage-determination": "unchecked"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "The facts given can't settle whether this job is a public work. DIR can make a coverage determination, or an attorney can advise you.",
+   "when_plain": "Before you bid.",
+   "legal_basis_plain": "Labor Code 1773.5; 8 CCR 16001 (DIR coverage determination)",
+   "basis_complete": true
+  },
+  {
+   "id": "pwr-apprentices",
+   "tool": "public_works_readiness",
+   "condition": "Apprenticeship applies. Test: apprenticeship.applies == true (checklist tasks for DAS 140 and DAS 142).",
+   "test": "result.apprenticeship.applies is True",
+   "professional_type_id": "apprenticeship_committee",
+   "requirement": "required",
+   "legal_basis": "Labor Code 1777.5",
+   "rule_ids": [
+    "apprenticeship-threshold-30000",
+    "das140-contract-award-deadline",
+    "das142-dispatch-request-72-hours"
+   ],
+   "when": "apprenticeship.das140_due and das142_request_by",
+   "rule_status": {
+    "apprenticeship-threshold-30000": "confirmed",
+    "das140-contract-award-deadline": "confirmed",
+    "das142-dispatch-request-72-hours": "confirmed"
+   },
+   "registry_type_id": "apprenticeship_committee",
+   "rulebook_verified": true,
+   "why": "Apprenticeship requirements apply to this public work: contact the apprenticeship committees for the crafts you use.",
+   "when_plain": "Send DAS 140 and request apprentices (DAS 142) by the dates in the result.",
+   "basis_complete": true,
+   "due_field": "apprenticeship.das140_due"
+  },
+  {
+   "id": "pwr-sub-licenses",
+   "tool": "public_works_readiness",
+   "condition": "Subs entered on a job that needs DIR registration. Test: a checklist task with licensed_human starting 'each subcontractor must hold a CSLB license'.",
+   "test": "any((t['licensed_human'] or '').startswith('each subcontractor') for t in result.checklist)",
+   "professional_type_id": "cslb_licensed_contractor",
+   "requirement": "required",
+   "legal_basis": "Labor Code 1725.5 / 1771.1 registration proof before bid or subcontract",
+   "rule_ids": [
+    "registration-proof-before-bid-or-subcontract"
+   ],
+   "when": "Before the bid and before each subcontract",
+   "rule_status": {
+    "registration-proof-before-bid-or-subcontract": "confirmed"
+   },
+   "registry_type_id": "licensed_contractor",
+   "rulebook_verified": true,
+   "why": "Each subcontractor on this public work must hold a CSLB license and show current DIR registration before you list them in the bid or sign the subcontract.",
+   "when_plain": "Before the bid and before each subcontract.",
+   "basis_complete": true
+  },
+  {
+   "id": "aph-shortfall",
+   "tool": "apprentice_hours_required",
+   "condition": "Apprentice hours short of the 1:5 ratio. Test: shortfall_hours > 0.",
+   "test": "result.shortfall_hours > 0",
+   "professional_type_id": "apprenticeship_committee",
+   "requirement": "required",
+   "legal_basis": "Labor Code 1777.5(g)-(h)",
+   "rule_ids": [
+    "apprentice-ratio-1-to-5",
+    "das142-dispatch-request-72-hours"
+   ],
+   "when": "Request apprentices 72 hours ahead",
+   "rule_status": {
+    "apprentice-ratio-1-to-5": "confirmed",
+    "das142-dispatch-request-72-hours": "confirmed"
+   },
+   "registry_type_id": "apprenticeship_committee",
+   "rulebook_verified": true,
+   "why": "Apprentice hours are short of the ratio of 1 apprentice hour for every 5 journeyman hours. Request apprentices from the apprenticeship committee.",
+   "when_plain": "Request apprentices at least 72 hours before you need them.",
+   "basis_complete": true
+  },
+  {
+   "id": "pwp-cwpa-attorney",
+   "tool": "prevailing_wage_penalties",
+   "condition": "Penalties or unpaid wages computed. Test: notes contain 'have a public works attorney file it'. The contractor may file the review request itself.",
+   "test": "any('public works attorney' in n for n in result.notes)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "Labor Code 1742 review request within 60 days (as held in the rulebook)",
+   "rule_ids": [
+    "cwpa-request-review-60-days"
+   ],
+   "when": "Within 60 days of service of the assessment",
+   "rule_status": {
+    "cwpa-request-review-60-days": "confirmed"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": true,
+   "why": "Penalties or unpaid wages were computed. You may request a review of a Civil Wage and Penalty Assessment yourself; a public works attorney can help.",
+   "when_plain": "Within 60 days after the assessment is served.",
+   "legal_basis_plain": "Labor Code 1742 (review request within 60 days)",
+   "basis_complete": true
+  },
+  {
+   "id": "fpr-surety",
+   "tool": "federal_project_requirements",
+   "condition": "Federal bonds required. Test: bonds is set and bonds.performance_bond_usd or bonds.payment_bond_usd or bonds.payment_protection_usd > 0.",
+   "test": "result.bonds and ((result.bonds.performance_bond_usd or 0) > 0 or (result.bonds.payment_bond_usd or 0) > 0 or (result.bonds.payment_protection_usd or 0) > 0)",
+   "professional_type_id": "surety_bond_producer",
+   "requirement": "required",
+   "legal_basis": "Miller Act (over $150,000); FAR 52.228-15(d), FAR 28.202 (Treasury Circular 570 surety)",
+   "rule_ids": [
+    "fed-miller-bonds-over-150k",
+    "fed-surety-treasury-570"
+   ],
+   "when": "bonds.deadline",
+   "rule_status": {
+    "fed-miller-bonds-over-150k": "confirmed",
+    "fed-surety-treasury-570": "confirmed"
+   },
+   "registry_type_id": "insurance_agent_broker",
+   "rulebook_verified": true,
+   "why": "This federal contract needs performance and payment bonds from a surety company on the U.S. Treasury's approved list (Circular 570), or other acceptable security.",
+   "when_plain": "By the bond deadline shown in the result.",
+   "basis_complete": true
+  },
+  {
+   "id": "fpr-apprentice-program",
+   "tool": "federal_project_requirements",
+   "condition": "Davis-Bacon applies and you pay apprentice rates. Test: requirements[item == 'Apprentices'] applies.",
+   "test": "any(r['item'] == 'Apprentices' and r.get('applies') for r in result.requirements)",
+   "professional_type_id": "apprenticeship_committee",
+   "requirement": "conditional",
+   "legal_basis": "29 CFR 5.5 (apprentice rates only for registered apprentices)",
+   "rule_ids": [
+    "fed-dba-apprentice-registered-only"
+   ],
+   "when": "Before paying apprentice rates",
+   "rule_status": {
+    "fed-dba-apprentice-registered-only": "confirmed"
+   },
+   "registry_type_id": "apprenticeship_committee",
+   "rulebook_verified": true,
+   "why": "On Davis-Bacon work you may pay apprentice rates only to apprentices registered in an approved program.",
+   "when_plain": "Before you pay apprentice rates.",
+   "basis_complete": true
+  },
+  {
+   "id": "cmmc-c3pao",
+   "tool": "cmmc_requirements",
+   "condition": "The contract needs, or you should plan for, a third-party CMMC Level 2 certification. Test: required_cmmc_level == 'Level 2 (C3PAO)' or plan_for_cmmc_level == 'Level 2 (C3PAO)'.",
+   "test": "'Level 2 (C3PAO)' in (result.required_cmmc_level, result.plan_for_cmmc_level)",
+   "professional_type_id": "c3pao",
+   "requirement": "conditional",
+   "legal_basis": "32 CFR 170.17 (assessment by an authorized C3PAO every 3 years)",
+   "rule_ids": [
+    "cmmc-level2-c3pao-certification-3-years"
+   ],
+   "when": "Before award (book months ahead)",
+   "rule_status": {
+    "cmmc-level2-c3pao-certification-3-years": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "This contract needs, or you should plan for, a CMMC Level 2 certification assessment by an authorized third-party assessment organization (C3PAO), repeated every 3 years.",
+   "when_plain": "Before award; schedule it well ahead.",
+   "basis_complete": true
+  },
+  {
+   "id": "smoke-plhcp",
+   "tool": "wildfire_smoke_requirements",
+   "condition": "AQI over 500: respirators mandatory under the full 5144 program (medical evaluation). Test: respirators == 'mandatory'.",
+   "test": "result.respirators == 'mandatory'",
+   "professional_type_id": "physician_or_plhcp",
+   "requirement": "required",
+   "legal_basis": "8 CCR 5141.1(f)(3)(B)",
+   "rule_ids": [
+    "osha2-smoke-mandatory-respirators-over-500"
+   ],
+   "when": "Before respirators are required (plan ahead of smoke season)",
+   "rule_status": {
+    "osha2-smoke-mandatory-respirators-over-500": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "With the AQI for PM2.5 over 500, respirators are required under the full respiratory protection program, which includes a medical evaluation.",
+   "when_plain": "Before respirators are required; plan ahead of smoke season.",
+   "basis_complete": true
+  },
+  {
+   "id": "ohl-line-operator",
+   "tool": "overhead_line_clearance",
+   "condition": "Work would come inside the clearance, over the lines, or the voltage is unknown. Test: status in ('too_close', 'prohibited_over_lines', 'voltage_unknown', 'distance_not_given').",
+   "test": "result.status in ('too_close', 'prohibited_over_lines', 'voltage_unknown', 'distance_not_given')",
+   "professional_type_id": "utility_line_operator",
+   "requirement": "required",
+   "legal_basis": "8 CCR 2948 (notify the line operator); 2949 (only the line owner's qualified electrical workers are exempt)",
+   "rule_ids": [
+    "osha2-elec-notify-line-operator",
+    "osha2-elec-overhead-qualified-worker-exemption"
+   ],
+   "when": "Before any work closer than the clearance",
+   "rule_status": {
+    "osha2-elec-notify-line-operator": "confirmed",
+    "osha2-elec-overhead-qualified-worker-exemption": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "Work will come inside the required clearance of a high-voltage line (or the voltage or distance is unknown). Notify the line operator and complete the safety measures first.",
+   "when_plain": "Before any work closer than the clearance.",
+   "basis_complete": true
+  },
+  {
+   "id": "cs-competent",
+   "tool": "confined_space_classification",
+   "condition": "A confined space workers will enter. Test: confined_space == true.",
+   "test": "result.confined_space is True",
+   "professional_type_id": "competent_person",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1952 (as amended 2026-01-01): competent person identifies and classifies",
+   "rule_ids": [
+    "osha2-cs-competent-person-classifies-permit-spaces"
+   ],
+   "when": "Before entry",
+   "rule_status": {
+    "osha2-cs-competent-person-classifies-permit-spaces": "confirmed"
+   },
+   "registry_type_id": "competent_person",
+   "rulebook_verified": true,
+   "why": "Workers will enter a confined space: a competent person must identify and classify the space first.",
+   "when_plain": "Before anyone enters.",
+   "basis_complete": true
+  },
+  {
+   "id": "jhc-demo-engineer",
+   "tool": "jobsite_hazard_checklist",
+   "condition": "Demolition leaving walls over one story or 12 ft unbraced. Test: groups[key=='demolition'] present. Optional: brace the walls instead.",
+   "test": "any(g['key'] == 'demolition' for g in result.groups)",
+   "professional_type_id": "professional_engineer_civil",
+   "requirement": "optional",
+   "legal_basis": "8 CCR 1735(m)",
+   "rule_ids": [
+    "osha2-demo-freestanding-wall-12ft"
+   ],
+   "when": "Before leaving walls unbraced",
+   "rule_status": {
+    "osha2-demo-freestanding-wall-12ft": "confirmed"
+   },
+   "registry_type_id": "professional_engineer",
+   "rulebook_verified": true,
+   "why": "Optional: during demolition, a wall more than one story or 12 ft tall must be braced unless a California-registered civil engineer shows Cal/OSHA it can stand on its own.",
+   "when_plain": "Before leaving any tall wall unbraced.",
+   "basis_complete": true
+  },
+  {
+   "id": "jhc-extinguisher-service",
+   "tool": "jobsite_hazard_checklist",
+   "condition": "Fire protection applies. Test: groups[key=='fire_protection'] present.",
+   "test": "any(g['key'] == 'fire_protection' for g in result.groups)",
+   "professional_type_id": "state_fire_marshal_licensee",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1922(a)(4) (annual service by a State Fire Marshal licensee)",
+   "rule_ids": [
+    "osha2-fire-extinguisher-monthly-inspection-annual-service"
+   ],
+   "when": "Every year",
+   "rule_status": {
+    "osha2-fire-extinguisher-monthly-inspection-annual-service": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "Jobsite fire extinguishers must be serviced at least once a year by a person licensed or registered by the State Fire Marshal.",
+   "when_plain": "At least once a year.",
+   "basis_complete": true
+  },
+  {
+   "id": "cr-electrician",
+   "tool": "certifications_required",
+   "condition": "Electrical tasks. Test: requirements[trade=='electrical'].status != 'not_required'.",
+   "test": "any(r['trade'] == 'electrical' and r['status'] != 'not_required' for r in result.requirements)",
+   "professional_type_id": "dir_certified_electrician",
+   "requirement": "required",
+   "legal_basis": "Labor Code 108.2",
+   "rule_ids": [
+    "cert-elec-c10-workers-must-be-certified",
+    "cert-elec-five-certification-types"
+   ],
+   "when": "Before the worker starts",
+   "rule_status": {
+    "cert-elec-c10-workers-must-be-certified": "confirmed",
+    "cert-elec-five-certification-types": "confirmed"
+   },
+   "registry_type_id": "certified_electrician",
+   "rulebook_verified": true,
+   "why": "People doing electrical work for a C-10 contractor must be DIR-certified electricians (or registered apprentices or trainees).",
+   "when_plain": "Before the worker starts.",
+   "basis_complete": true,
+   "conditional_if": "not any(r['trade'] == 'electrical' and r['status'] == 'required' for r in result.requirements)"
+  },
+  {
+   "id": "cr-rrp",
+   "tool": "certifications_required",
+   "condition": "Paint-disturbing work in pre-1978 housing. Test: requirements[trade=='lead_rrp'] (credential 'EPA RRP firm certification' or 'EPA certified renovator assigned to the job').",
+   "test": "any(r['trade'] == 'lead_rrp' and r['status'] != 'not_required' for r in result.requirements)",
+   "professional_type_id": "epa_rrp_certified_firm",
+   "requirement": "required",
+   "legal_basis": "40 CFR 745.81, 745.89, 745.90",
+   "rule_ids": [
+    "rrp-firm-certification",
+    "cert-rrp-renovator-onsite-duties",
+    "cert-rrp-workers-trained-by-certified-renovator"
+   ],
+   "when": "Before work starts",
+   "rule_status": {
+    "rrp-firm-certification": "unchecked",
+    "cert-rrp-renovator-onsite-duties": "confirmed",
+    "cert-rrp-workers-trained-by-certified-renovator": "confirmed"
+   },
+   "registry_type_id": "lead_professional",
+   "rulebook_verified": false,
+   "why": "Paint-disturbing work in pre-1978 housing needs an EPA lead-safe certified firm, with a certified renovator directing the work.",
+   "when_plain": "Before work starts.",
+   "basis_complete": true,
+   "conditional_if": "not any(r['trade'] == 'lead_rrp' and r['status'] == 'required' for r in result.requirements)"
+  },
+  {
+   "id": "cr-dust-clearance",
+   "tool": "certifications_required",
+   "condition": "Dust clearance testing required by contract or law. Test: requirements[credential == 'Dust clearance sampling by a certified professional'].",
+   "test": "any(r['credential'].startswith('Dust clearance sampling') for r in result.requirements)",
+   "professional_type_id": "cdph_lead_professional",
+   "requirement": "conditional",
+   "legal_basis": "40 CFR 745.85(c) (certified inspector, risk assessor or dust sampling technician). That California certifies these through CDPH: NOT in the rulebook, unconfirmed",
+   "rule_ids": [
+    "cert-rrp-dust-clearance-action-levels-2026"
+   ],
+   "when": "After cleaning, before the area is reoccupied",
+   "rule_status": {
+    "cert-rrp-dust-clearance-action-levels-2026": "confirmed"
+   },
+   "registry_type_id": "lead_professional",
+   "rulebook_verified": false,
+   "why": "The contract or another law calls for dust clearance testing in place of EPA's cleaning verification. That testing must then be done by a certified inspector, risk assessor or dust sampling technician.",
+   "when_plain": "After cleaning, before people move back in.",
+   "legal_basis_plain": "40 CFR 745.85(c) (dust clearance testing in place of cleaning verification, when a contract or another law requires it). That California certifies these through CDPH: not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "cr-cdph-lead",
+   "tool": "certifications_required",
+   "condition": "Lead exposure at 50 ug/m3 or more. Test: requirements[trade=='lead_cdph'].status != 'not_required'.",
+   "test": "any(r['trade'] == 'lead_cdph' and r['status'] != 'not_required' for r in result.requirements)",
+   "professional_type_id": "cdph_lead_professional",
+   "requirement": "required",
+   "legal_basis": "8 CCR 1532.1(l)(3)",
+   "rule_ids": [
+    "cert-lead-cdph-certification-50-ugm3",
+    "cert-lead-supervisor-must-be-certified",
+    "cert-lead-training-by-cdph-accredited-provider"
+   ],
+   "when": "Before exposed work",
+   "rule_status": {
+    "cert-lead-cdph-certification-50-ugm3": "corrected",
+    "cert-lead-supervisor-must-be-certified": "confirmed",
+    "cert-lead-training-by-cdph-accredited-provider": "confirmed"
+   },
+   "registry_type_id": "lead_professional",
+   "rulebook_verified": true,
+   "why": "With lead exposure at 50 ug/m3 or more, each exposed worker and supervisor must hold a CDPH lead certificate.",
+   "when_plain": "Before the exposed work starts.",
+   "basis_complete": true,
+   "conditional_if": "not any(r['trade'] == 'lead_cdph' and r['status'] == 'required' for r in result.requirements)"
+  },
+  {
+   "id": "cr-crane",
+   "tool": "certifications_required",
+   "condition": "Crane tasks. Test: requirements[trade=='crane'].status != 'not_required'.",
+   "test": "any(r['trade'] == 'crane' and r['status'] != 'not_required' for r in result.requirements)",
+   "professional_type_id": "certified_crane_operator",
+   "requirement": "required",
+   "legal_basis": "8 CCR 5006.2",
+   "rule_ids": [
+    "cert-crane-certification-exam-components",
+    "cert-crane-operator-employer-evaluation"
+   ],
+   "when": "Before the lift",
+   "rule_status": {
+    "cert-crane-certification-exam-components": "corrected",
+    "cert-crane-operator-employer-evaluation": "confirmed"
+   },
+   "registry_type_id": "crane_operator",
+   "rulebook_verified": true,
+   "why": "Each crane operator must be trained, certified for the crane type, and evaluated before operating.",
+   "when_plain": "Before the lift.",
+   "basis_complete": true,
+   "conditional_if": "not any(r['trade'] == 'crane' and r['status'] == 'required' for r in result.requirements)"
+  },
+  {
+   "id": "cr-elevator",
+   "tool": "certifications_required",
+   "condition": "Conveyance work outside the private-home exclusion. Test: requirements[trade=='elevator'].status != 'not_required'.",
+   "test": "any(r['trade'] == 'elevator' and r['status'] != 'not_required' for r in result.requirements)",
+   "professional_type_id": "certified_conveyance_mechanic",
+   "requirement": "required",
+   "legal_basis": "Labor Code 7311.2, 7311.4; 8 CCR 344.30(h)",
+   "rule_ids": [
+    "cert-elev-cccm-requirements-and-fee",
+    "cert-elev-cqcc-company-certification",
+    "cert-elev-only-cccm-of-cqcc-may-work"
+   ],
+   "when": "Before conveyance work",
+   "rule_status": {
+    "cert-elev-cccm-requirements-and-fee": "confirmed",
+    "cert-elev-cqcc-company-certification": "confirmed",
+    "cert-elev-only-cccm-of-cqcc-may-work": "unverifiable"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": false,
+   "why": "Elevator and other conveyance work must be done by certified conveyance mechanics working for a certified conveyance company.",
+   "when_plain": "Before conveyance work starts.",
+   "basis_complete": true,
+   "conditional_if": "not any(r['trade'] == 'elevator' and r['status'] == 'required' for r in result.requirements)"
+  },
+  {
+   "id": "cr-blaster",
+   "tool": "certifications_required",
+   "condition": "Blasting. Test: requirements[trade=='blasting'].status == 'required'.",
+   "test": "any(r['trade'] == 'blasting' and r['status'] != 'not_required' for r in result.requirements)",
+   "professional_type_id": "licensed_blaster",
+   "requirement": "required",
+   "legal_basis": "8 CCR 5238, 344.20",
+   "rule_ids": [
+    "cert-blaster-licensed-blaster-on-site",
+    "cert-blaster-license-qualifications-and-classes"
+   ],
+   "when": "During all blasting",
+   "rule_status": {
+    "cert-blaster-licensed-blaster-on-site": "confirmed",
+    "cert-blaster-license-qualifications-and-classes": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "Blasting needs a Cal/OSHA-licensed blaster physically on site, doing or directing the blasting.",
+   "when_plain": "During all blasting.",
+   "basis_complete": true,
+   "conditional_if": "not any(r['trade'] == 'blasting' and r['status'] == 'required' for r in result.requirements)"
+  },
+  {
+   "id": "ccc-electrical",
+   "tool": "check_crew_certifications",
+   "condition": "A electrical worker is not cleared. Test: a worker with a trade starting 'electrical' has status in ('not_qualified', 'expired', 'renewal_overdue'); cleared_to_start == false.",
+   "test": "any(w['status'] in ('not_qualified', 'expired', 'renewal_overdue') and any(t.startswith('electrical') for t in w['trades']) for w in result.workers)",
+   "professional_type_id": "dir_certified_electrician",
+   "requirement": "required",
+   "legal_basis": "Same as certifications_required",
+   "rule_ids": [
+    "cert-elec-c10-workers-must-be-certified"
+   ],
+   "when": "Before mobilizing",
+   "rule_status": {
+    "cert-elec-c10-workers-must-be-certified": "confirmed"
+   },
+   "registry_type_id": "certified_electrician",
+   "rulebook_verified": true,
+   "why": "A worker doing electrical work is not cleared: they need DIR electrician certification (or apprentice or trainee registration).",
+   "when_plain": "Before they start on the job.",
+   "legal_basis_plain": "Labor Code 108.2",
+   "basis_complete": true
+  },
+  {
+   "id": "ccc-crane",
+   "tool": "check_crew_certifications",
+   "condition": "A crane worker is not cleared. Test: a worker with a trade starting 'crane' has status in ('not_qualified', 'expired', 'renewal_overdue'); cleared_to_start == false.",
+   "test": "any(w['status'] in ('not_qualified', 'expired', 'renewal_overdue') and any(t.startswith('crane') for t in w['trades']) for w in result.workers)",
+   "professional_type_id": "certified_crane_operator",
+   "requirement": "required",
+   "legal_basis": "Same as certifications_required",
+   "rule_ids": [
+    "cert-crane-certification-exam-components"
+   ],
+   "when": "Before mobilizing",
+   "rule_status": {
+    "cert-crane-certification-exam-components": "corrected"
+   },
+   "registry_type_id": "crane_operator",
+   "rulebook_verified": true,
+   "why": "A crane worker is not cleared: they need a current operator certification for the crane type.",
+   "when_plain": "Before they start on the job.",
+   "legal_basis_plain": "8 CCR 5006.2",
+   "basis_complete": true
+  },
+  {
+   "id": "ccc-lead",
+   "tool": "check_crew_certifications",
+   "condition": "A lead worker is not cleared. Test: a worker with a trade starting 'lead' has status in ('not_qualified', 'expired', 'renewal_overdue'); cleared_to_start == false.",
+   "test": "any(w['status'] in ('not_qualified', 'expired', 'renewal_overdue') and any(t.startswith('lead') for t in w['trades']) for w in result.workers)",
+   "professional_type_id": "cdph_lead_professional",
+   "requirement": "required",
+   "legal_basis": "Same as certifications_required",
+   "rule_ids": [
+    "cert-lead-cdph-certification-50-ugm3"
+   ],
+   "when": "Before mobilizing",
+   "rule_status": {
+    "cert-lead-cdph-certification-50-ugm3": "corrected"
+   },
+   "registry_type_id": "lead_professional",
+   "rulebook_verified": true,
+   "why": "A lead worker is not cleared: they need the CDPH lead certificate the exposure requires.",
+   "when_plain": "Before they start on the job.",
+   "legal_basis_plain": "8 CCR 1532.1(l)(3)",
+   "basis_complete": true
+  },
+  {
+   "id": "ccc-elevator",
+   "tool": "check_crew_certifications",
+   "condition": "A elevator worker is not cleared. Test: a worker with a trade starting 'elevator' has status in ('not_qualified', 'expired', 'renewal_overdue'); cleared_to_start == false.",
+   "test": "any(w['status'] in ('not_qualified', 'expired', 'renewal_overdue') and any(t.startswith('elevator') for t in w['trades']) for w in result.workers)",
+   "professional_type_id": "certified_conveyance_mechanic",
+   "requirement": "required",
+   "legal_basis": "Same as certifications_required",
+   "rule_ids": [
+    "cert-elev-cccm-requirements-and-fee"
+   ],
+   "when": "Before mobilizing",
+   "rule_status": {
+    "cert-elev-cccm-requirements-and-fee": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "A conveyance worker is not cleared: they need conveyance mechanic certification and must work for a certified conveyance company.",
+   "when_plain": "Before they start on the job.",
+   "legal_basis_plain": "Labor Code 7311.2, 7311.4; 8 CCR 344.30(h)",
+   "basis_complete": true
+  },
+  {
+   "id": "ccc-blasting",
+   "tool": "check_crew_certifications",
+   "condition": "Blasting on a crew with no licensed blaster. A worker without a blaster's license shows status 'ok_with_supervision' (others may work under a licensed blaster's direct supervision), so the trigger is the crew finding: crew_findings item 'Licensed blaster on site' with status 'problem'; cleared_to_start == false.",
+   "test": "any(f['item'] == 'Licensed blaster on site' and f['status'] == 'problem' for f in result.crew_findings)",
+   "professional_type_id": "licensed_blaster",
+   "requirement": "required",
+   "legal_basis": "8 CCR 5238, 344.20",
+   "rule_ids": [
+    "cert-blaster-licensed-blaster-on-site"
+   ],
+   "when": "Before any blasting",
+   "rule_status": {
+    "cert-blaster-licensed-blaster-on-site": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "This crew has blasting but no licensed blaster: a Cal/OSHA-licensed blaster must be on site.",
+   "when_plain": "Before any blasting.",
+   "basis_complete": true
+  },
+  {
+   "id": "at-architect",
+   "tool": "accessibility_triggers",
+   "condition": "Accessibility codes apply to the permit set. Test: next_step starts with 'Have the architect'. Suggested: no rule read requires an architect for accessibility work itself.",
+   "test": "result.next_step.startswith('Have the architect')",
+   "professional_type_id": "architect",
+   "requirement": "recommended",
+   "legal_basis": "Who must prepare the plans: B&P 5537 read in the appendix of CSLB's 2022 Law Book on 2026-11-26 (NOT in the rulebook); B&P 6737.1 not read, unconfirmed",
+   "rule_ids": [],
+   "when": "In the permit set",
+   "rule_status": {},
+   "registry_type_id": "architect",
+   "rulebook_verified": false,
+   "why": "Accessibility codes apply to this permit set. Whoever prepares the plans, usually the architect, shows the accessibility work. The rules apply either way; no rule TradeComply has read requires an architect just for accessibility.",
+   "when_plain": "In the permit set.",
+   "legal_basis_plain": "Who must prepare the plans: B&P 5537 (read in the appendix of CSLB's 2022 Law Book on 2026-11-26; not yet in the verified rulebook); B&P 6737.1: not yet confirmed. No rule read requires an architect for accessibility work itself",
+   "basis_complete": false
+  },
+  {
+   "id": "casp-lease",
+   "tool": "casp_lease_disclosure",
+   "condition": "Commercial lease: it must state whether the premises were CASp-inspected; the tenant may get a CASp inspection. Test: property_type is commercial (lease_clauses not empty).",
+   "test": "len(result.lease_clauses) > 0",
+   "professional_type_id": "casp",
+   "requirement": "optional",
+   "legal_basis": "Civil Code 1938 (as applied by the City of San Diego); Civil Code 55.53",
+   "rule_ids": [
+    "ada-civ-1938-casp-status-in-lease",
+    "ada-civ-1938e-casp-statement",
+    "ada-casp-definition-and-services"
+   ],
+   "when": "Before the lease is signed",
+   "rule_status": {
+    "ada-civ-1938-casp-status-in-lease": "confirmed",
+    "ada-civ-1938e-casp-statement": "corrected",
+    "ada-casp-definition-and-services": "confirmed"
+   },
+   "registry_type_id": "casp",
+   "rulebook_verified": true,
+   "why": "A commercial lease must state whether the premises were inspected by a Certified Access Specialist (CASp). Hiring a CASp is optional.",
+   "when_plain": "Before the lease is signed.",
+   "basis_complete": true
+  },
+  {
+   "id": "casp-lease-attorney",
+   "tool": "casp_lease_disclosure",
+   "condition": "Statutory lease wording. Test: next_step contains 'have your attorney confirm'.",
+   "test": "'attorney' in result.next_step",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "Civil Code 1938(e) text was not read in full",
+   "rule_ids": [
+    "ada-civ-1938e-casp-statement"
+   ],
+   "when": "Before the lease is signed",
+   "rule_status": {
+    "ada-civ-1938e-casp-statement": "corrected"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": true,
+   "why": "The lease needs statutory wording about CASp inspections; an attorney can confirm the exact wording.",
+   "when_plain": "Before the lease is signed.",
+   "legal_basis_plain": "Civil Code 1938(e) (full text not yet read)",
+   "basis_complete": false
+  },
+  {
+   "id": "dust-supervisor",
+   "tool": "dust_control_requirements",
+   "condition": "South Coast large operation. Test: large_operation == true and air_district is South Coast (requirements item 'Large operation: dust control supervisor').",
+   "test": "any(r['item'] == 'Large operation: dust control supervisor' for r in result.requirements)",
+   "professional_type_id": "air_district_dust_control_supervisor",
+   "requirement": "required",
+   "legal_basis": "SCAQMD Rule 403(e)(1)(E)",
+   "rule_ids": [
+    "air-scaqmd403-dust-control-supervisor"
+   ],
+   "when": "Before earthmoving",
+   "rule_status": {
+    "air-scaqmd403-dust-control-supervisor": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "A large operation in the South Coast air district must name a dust control supervisor who has completed the AQMD Fugitive Dust Control Class.",
+   "when_plain": "Before earthmoving starts.",
+   "basis_complete": true,
+   "prefer_find": "https://www.aqmd.gov/docs/default-source/rule-book/rule-iv/rule-403.pdf"
+  },
+  {
+   "id": "dust-sjv-trained",
+   "tool": "dust_control_requirements",
+   "condition": "San Joaquin Valley dust control plan. Test: plan_required == true and the district is San Joaquin Valley (requirements item 'Plan on site and training').",
+   "test": "any(r['item'] == 'Plan on site and training' for r in result.requirements)",
+   "professional_type_id": "air_district_dust_control_supervisor",
+   "requirement": "required",
+   "legal_basis": "SJVAPCD Rule 8021 6.3.5, 6.3.6.8",
+   "rule_ids": [
+    "air-sjv8021-plan-onsite-training"
+   ],
+   "when": "Before dust-generating work",
+   "rule_status": {
+    "air-sjv8021-plan-onsite-training": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "In the San Joaquin Valley, keep the approved dust control plan on site, and at least one key person must complete the District's Dust Control Training Class.",
+   "when_plain": "Before dust-generating work starts.",
+   "basis_complete": true,
+   "prefer_find": "https://ww2.valleyair.org/compliance/training-schedule/"
+  },
+  {
+   "id": "ljr-survey-monument",
+   "tool": "local_jobsite_requirements",
+   "condition": "San Diego: construction will disturb a survey monument. Test: triggers contains 'survey monument disturbed'.",
+   "test": "'survey monument disturbed' in result.triggers",
+   "professional_type_id": "land_surveyor",
+   "requirement": "conditional",
+   "legal_basis": "Rulebook confirms the 7-day notice and that the permittee pays to preserve and replace the monument; the licensed land surveyor duty in B&P 8771 (named by DSD) is NOT in the rulebook, unconfirmed",
+   "rule_ids": [
+    "local-sd-survey-monument-7-day-notice"
+   ],
+   "when": "Notice at least 7 days before work",
+   "rule_status": {
+    "local-sd-survey-monument-7-day-notice": "confirmed"
+   },
+   "registry_type_id": "land_surveyor",
+   "rulebook_verified": false,
+   "why": "If construction in San Diego will disturb a survey monument, notice is due at least 7 days ahead and the permittee pays to preserve and replace it; the city names a licensed land surveyor for that work.",
+   "when_plain": "Give notice at least 7 days before the work.",
+   "legal_basis_plain": "City of San Diego rule (7-day notice; permittee pays). The licensed land surveyor duty (B&P 8771): not yet confirmed",
+   "basis_complete": false
+  },
+  {
+   "id": "ljr-traffic-control",
+   "tool": "local_jobsite_requirements",
+   "condition": "San Diego right-of-way work with traffic control. Test: requirements item 'Trained traffic control crew'.",
+   "test": "any(r['item'] == 'Trained traffic control crew' for r in result.requirements)",
+   "professional_type_id": "traffic_control_supervisor_certified",
+   "requirement": "required",
+   "legal_basis": "City of San Diego permit rule: crew trained by an ATSSA-certified (or equivalent) supervisor",
+   "rule_ids": [
+    "local-sd-tcp-trained-traffic-control-workers"
+   ],
+   "when": "Before work in the street",
+   "rule_status": {
+    "local-sd-tcp-trained-traffic-control-workers": "confirmed"
+   },
+   "registry_type_id": null,
+   "rulebook_verified": true,
+   "why": "Everyone doing traffic control under a San Diego permit must be trained by a supervisor certified by ATSSA (or equivalent).",
+   "when_plain": "Before work in the street.",
+   "basis_complete": true
+  },
+  {
+   "id": "cal-cpa",
+   "tool": "compliance_calendar",
+   "condition": "Tax filings where the tool says to ask a CPA. Test: an item's who_files contains 'CPA' or notes contain 'ask your CPA'.",
+   "test": "any('CPA' in (i.get('who_files') or '') for i in result['items'])",
+   "professional_type_id": "cpa",
+   "requirement": "recommended",
+   "legal_basis": "No rule requires a CPA",
+   "rule_ids": [
+    "ftb-llc-annual-tax-800"
+   ],
+   "when": "Before each due date",
+   "rule_status": {
+    "ftb-llc-annual-tax-800": "unverifiable"
+   },
+   "registry_type_id": "cpa",
+   "rulebook_verified": false,
+   "why": "Some filings in this calendar suggest asking a CPA. No rule requires one.",
+   "when_plain": "Before each due date.",
+   "legal_basis_plain": "No rule requires a CPA",
+   "basis_complete": false
+  },
+  {
+   "id": "cal-broker",
+   "tool": "compliance_calendar",
+   "condition": "LLC insurance limit to confirm. Test: an item's notes contain 'insurance broker'.",
+   "test": "any('insurance broker' in json.dumps(i) for i in result['items'])",
+   "professional_type_id": "insurance_broker",
+   "requirement": "recommended",
+   "legal_basis": "B&P 7071.19",
+   "rule_ids": [
+    "llc-liability-insurance-aggregate"
+   ],
+   "when": "Before renewal",
+   "rule_status": {
+    "llc-liability-insurance-aggregate": "confirmed"
+   },
+   "registry_type_id": "insurance_agent_broker",
+   "rulebook_verified": true,
+   "why": "Confirm your LLC insurance limits with your insurance agent or broker.",
+   "when_plain": "Before renewal.",
+   "basis_complete": true
+  },
+  {
+   "id": "payroll-attorney",
+   "tool": "check_payroll",
+   "condition": "Every check_payroll result carries this note (it is not triggered by the input): before relying on an alternative workweek, an exemption or a back-wage settlement. Test: notes contain 'employment attorney'.",
+   "test": "any('employment attorney' in n for n in result.notes)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "No rule requires counsel",
+   "rule_ids": [],
+   "when": "Before relying on an exemption or settling back wages",
+   "rule_status": {},
+   "registry_type_id": "attorney",
+   "rulebook_verified": false,
+   "why": "Before relying on an alternative workweek, an exemption or a back-wage settlement, ask an employment attorney. No rule requires one.",
+   "when_plain": "Before you rely on an exemption or settle back wages.",
+   "basis_complete": false
+  },
+  {
+   "id": "fpd-attorney",
+   "tool": "final_paycheck_deadline",
+   "condition": "Withholding a disputed amount. Test: notes contain 'employment attorney'.",
+   "test": "any('employment attorney' in n for n in result.notes)",
+   "professional_type_id": "attorney",
+   "requirement": "recommended",
+   "legal_basis": "Labor Code 203 waiting time penalty (as held in the rulebook)",
+   "rule_ids": [
+    "waiting-time-penalty"
+   ],
+   "when": "Before withholding any amount",
+   "rule_status": {
+    "waiting-time-penalty": "confirmed"
+   },
+   "registry_type_id": "attorney",
+   "rulebook_verified": true,
+   "why": "Withholding a disputed amount from a final paycheck risks waiting time penalties; ask an employment attorney first.",
+   "when_plain": "Before you withhold any amount.",
+   "legal_basis_plain": "Labor Code 203 (waiting time penalty)",
+   "basis_complete": true
+  }
+ ]
+}

@@ -507,3 +507,88 @@ own address: the web app's (for `/api/tools/mcp_client_config`), else `APP_URL` 
 else the address the `/mcp` request came in on; over stdio with none of these the caller must pass it. The catalog
 file stores only `tradecomply.mcp_path` (`/mcp`), never a server address.
 
+## 12. Licensed professionals: handoffs and the finder
+
+Some results need a person California law reserves the work for (attorney, engineer or architect stamp, QSD/QSP,
+HERS rater, certified asbestos consultant, crane certifier and others). TradeComply says who, why (cited), when, and
+links to the official public directory to find and check one. It never recommends, ranks or picks a person or firm,
+never scrapes, and never works around a site's bot protection.
+
+| File | What it is |
+|---|---|
+| `tradecomply/data/professionals.json` | Registry of 24 professional types: plain description, `when_required` / `not_required_when` / `optional_when` (each `confirmed` from an official page read on the check date, or `unconfirmed`), `find` (official directory links: `status` `reachable` or `blocked:<reason>`, `url_pattern_with_county` only where a filtered URL was tested), `verify_license_how`, `bring_or_ask`, `never_say`, the 58 counties and DIR's county codes |
+| `tradecomply/data/handoffs.json` | Version 1, checked 2026-11-26. `handoffs`: 103 entries over 39 tools (`tool`, `test`, `professional_type_id`, `registry_type_id`, `requirement` = required / conditional / recommended / optional, `conditional_if`, `legal_basis`, `rule_ids`, plus plain `why`, `when_plain`, `legal_basis_plain`, `basis_complete`, `due_field`, `prefer_find`). `type_labels` (plain name per role), `role_find` (which link to show first for a role), `link_scopes` (pages that serve one city or district), `extra_types` (8 registry-shaped types professionals.json does not have yet, each fact from a page fetched 2026-11-26 and listed in `extra_types_sources_read`) |
+| `tradecomply/professionals.py` | MCP tools and the logic below; `register(mcp)` (module `professionals` in `server.py` MODULES) |
+| `tests/test_professionals.py` | Data honesty, the evaluator, counties, real scenarios, the API hook and routes, key scopes; both backends |
+
+**MCP tools** (all read-only, closed world):
+
+- `find_licensed_professional(county=None, professional_type=None, need=None, city=None, craft=None)`: a type id
+  (handoff ids such as `professional_engineer_civil` are accepted) or a need in plain words (matched on the
+  registry's `triggers`, names and descriptions; `other_possible_types` lists close runners-up). Returns
+  `when_required` (each basis with `status`, `verified` and `rule_ids`), `directories` (`url`, `search_page_url`,
+  `county_filtered`, `how_to_search`, `link_checked`, `status`, `only_for`, `applies_here`), `verify_license_how`,
+  `bring_or_ask`, `do_not_say`, `neutral_note`. `county` is optional (links are statewide without it) but must be one
+  of the 58 counties when given ("Fresno County" and "County of Fresno" are accepted; anything else is an error naming
+  the closest counties). The only county-filtered link is DIR's public works apprenticeship search, and it needs a
+  `craft` as well (DIR's results page redirects without one): `craft` takes a name or DIR code (`carpenter` -> 10).
+- `who_must_sign(tool_name, result=None, arguments=None, county=None, city=None)`: the result as an object or JSON
+  text, or the tool's arguments (the tool is then run in-process; only read-only tools, never itself). A result
+  passed in may hold at most `MAX_RESULT_NODES` (25,000) values at any depth and 2,000,000 characters as text;
+  the tests are walked on a worker thread, never on the server's event loop. Returns
+  `handoffs` (below), `ran_tool`, `mapped_conditions` and `could_not_check` (entries whose fields the result lacks).
+  When nothing fires, `note` says so and that this does not mean no licensed person is needed; relay it, never
+  "no professional needed".
+- `list_professional_types()`: every type with `also_called` ids, `directory_status` (`checked`, `unchecked` = the
+  official pages could not be opened from the research network, `none` = no public directory exists) and its links,
+  plus the counties.
+
+**Handoff item** (the UI contract): `type_id`, `name`, `why`, `legal_basis`, `verified`, `find_url`,
+`county_filtered` are always present; also `find_label`, `find_owner`, `find_link_checked`, `check_how`,
+`requirement`, `requirement_label` ("Required by law", "Required by law if this applies", "Suggested, not required by
+law", "Optional"; required and conditional add "(legal basis not yet verified)" when `verified` is false), `when`,
+`due_date` (an ISO date from the result, e.g. the lien foreclosure date), `rule_ids`, `role_id` (unique in a list),
+`handoff_id` and `also` (other reasons the same result needs the same person). One item per person, required first.
+`type_id` is the finder's id (pass it to `/api/professionals/find?type=`); `find_url` is `null` when no directory
+applies (a role you designate, a credential checked on the card, or a city page for a job elsewhere).
+
+**`verified`** is true only when the entry cites rule ids, every one is `confirmed` or `corrected` in
+`tradecomply/data/rulebook.json` (read live, so a rulebook rebuild changes it), and `basis_complete` is true (no part
+of the legal basis is marked not yet confirmed). A suggested professional can be verified (its cited rule is
+confirmed) while still not required by law: always show `requirement_label` with it.
+
+**The web app hook** (`app/api.py` `attach_handoffs`): after a successful `POST /api/tools/{name}`, the response gets
+`"handoffs": [...]` next to `structured` when any apply. Nothing else in the response changes (`result_sig` still
+signs `structured` exactly, so saved documents keep their provenance check), a result that needs nobody gets no
+field, and an exception is logged (`tradecomply.api`) with the field left out, never an error to the caller.
+`GET /api/professionals/types` and `GET /api/professionals/find?type=|type_id=|need=&county=&city=&craft=` return
+the same JSON as the tools (session or API key like other `/api` routes; 422 with the message for a bad county or
+type; keys with `rest_api: false` get 403 as on every non-tool route).
+
+**Conditions** (`test`) are Python-like expressions over `result` (the tool's structured output; dict keys read as
+attributes or items) and `args` (the tool's inputs). `compile_test` allows only comparisons, `and`/`or`/`not`,
+generator expressions, constants, field reads, `len`/`any`/`all` and the methods `startswith`, `endswith`, `lower`,
+`upper`, `strip`, `get`, `json.dumps`; names other than `result`, `args`, `json` and loop variables, dunder
+attributes, other calls and arithmetic are refused. A field the result lacks raises `MissingField`: the hook skips
+that entry, `who_must_sign` lists it in `could_not_check`, and the tests treat it as a failure.
+
+**`conditional_if`** (optional, `required` entries only) is a second test of the same kind. When it holds, or cannot
+be read, the item is shown as `conditional`: use it where the tool itself can leave the deciding fact open (for
+example `certifications_required` marks electrical, lead or RRP work `conditional` until the building and the
+employer's classes are known, and `project_setup_checklist` lists the EPA RRP child-occupied item for any pre-1978
+building). Never label a person "required by law" on facts the result does not show.
+
+**Key scopes.** When `who_must_sign` runs a tool from its arguments, the caller's API key scope applies to that tool
+too: on `/api/tools/who_must_sign` through `professionals.RUN_GUARD` (set by `call_tool`), on `/mcp` from the
+principal the MCP gate puts in the request scope (`tc_principal`, checked with `app.mcp_governance.scope_allows`).
+A key that may not run the tool gets an error telling it to pass the tool's result instead. Over stdio there is no
+key and every read-only tool may run.
+
+**Adding or changing a handoff.** Change the entry in `tradecomply/data/handoffs.json` (keep `version` and bump it
+when a field's meaning changes), with a `test` that reads only fields the tool really returns, a `why` and
+`when_plain` in plain English, a `legal_basis_plain` whenever `legal_basis` has notes meant for developers, and
+`basis_complete: false` when any part of the basis is not in the rulebook as confirmed. Add a real input that makes
+it fire to `CASES` in `tests/test_professionals.py`; `test_every_handoff_fires_on_a_real_tool_result` runs every
+entry against real tool output. A new professional type goes in `professionals.json` (preferred) or
+`extra_types`; every directory link must be an official page (`status` `reachable` only if it was opened, a county
+pattern only if a filtered URL was tested), and a host that refuses automated access is recorded, not bypassed.

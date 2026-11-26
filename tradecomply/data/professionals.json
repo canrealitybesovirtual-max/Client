@@ -1,0 +1,2252 @@
+{
+ "checked": "2026-11-26",
+ "about": "Who to call when a result needs a licensed or certified person: why the law needs them, and the official public directories for finding and checking one near the job. TradeComply never recommends, ranks or picks a person or firm; it links to the official search only.",
+ "status_meanings": {
+  "when_required.status": {
+   "confirmed": "Read on an official source fetched on the 'checked' date (URL in source_url).",
+   "unconfirmed": "Not read on an official source (blocked host or not found); say 'unconfirmed' and ask the agency or a professional."
+  },
+  "find.status": {
+   "reachable": "Opened on the 'fetched' date; the page answered and showed the search described. A reachable page is the official owner's own page.",
+   "blocked:<reason>": "Could not be opened from the research session; the URL is the best known address and may have moved. Do not present its search fields as confirmed (search_by_confirmed is false)."
+  },
+  "url_pattern_with_county": "null unless a URL with a county filter was opened and returned filtered results. Placeholders are explained in url_pattern_params.",
+  "rule_ids": "Matching rule ids in tradecomply/data/rulebook.json (their own verification status applies).",
+  "optional_when": "Situations where TradeComply or an official source suggests a professional but the cited law does not require one. Never present these as 'required by law'.",
+  "find.url_source": "Where the URL of a blocked page came from: 'linked from <official page>' when an official page fetched on the 'checked' date links to it, otherwise 'web search result' (weakest: may have moved or be wrong)."
+ },
+ "sources_read": [
+  {
+   "url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+   "what": "CSLB 2026 California Contractors License Law & Reference Book (same file as sources/2026_CSLB_Law_Book.pdf, SHA-256 7a71236a...ea198)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+   "what": "CSLB 2022 Law Book, used for its statute appendix (B&P 5537, 5537.2, 5641.4, 6737.3; Civil Code 8416; Labor Code 6501.8, 6501.9)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/",
+   "what": "Title 8 sections 230, 341.15, 1504, 1532.1, 1541.1 (and Appendix B), 5006.1, 5006.2, 5021; DOSH, DAS and ECU pages and searches",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/",
+   "what": "Official eCFR API: 29 CFR 1926.32, 1926.652, 1926.1427; 40 CFR 122.26, 745.81, 745.89",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://dbs.lacity.gov/",
+   "what": "LADBS permitting and licensing pages",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.sandiego.gov/development-services/permits",
+   "what": "City of San Diego DSD permits page",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/t8/230_1.html",
+   "what": "8 CCR 230.1(a): 1 apprentice hour per 5 journeyman hours; written dispatch request at least 72 hours (excluding Saturdays, Sundays and holidays) before apprentices are needed",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/DLSE/ECU/ECP_complaint.htm",
+   "what": "DLSE and CSLB enforce Labor Code 108.2; verification of certified electricians, trainees and registered apprentices",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2024/CCDA%20Guide%20to%20Accessible%20Parking%20Construction%20Industry.pdf",
+   "what": "California Commission on Disability Access guide (published on CSLB's site): what a CASp does; gives www.dgs.ca.gov/casp as the DSA CASp website",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-40?part=122&section=122.26",
+   "what": "40 CFR 122.26(c)(1): small construction activity must apply for an individual permit or general permit coverage",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/341_15.html",
+   "what": "8 CCR 341.15(a) and its Note: certification of asbestos consultants and site surveillance technicians (no size threshold in the section)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.dir.ca.gov/title8/1529.html",
+   "what": "8 CCR 1529(q)(1), (q)(4): asbestos consultant defined at 100 square feet or more; no employer may use an uncertified consultant",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-40?part=61&section=61.141",
+   "what": "40 CFR 61.141: a NESHAP 'facility' excludes residential buildings with four or fewer dwelling units; 61.145(a) inspection before demolition or renovation (official eCFR API)",
+   "fetched": "2026-11-26"
+  },
+  {
+   "url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-40?part=745&section=745.85",
+   "what": "40 CFR 745.85(c): optional dust clearance testing in place of cleaning verification when a contract or other law requires it (official eCFR API)",
+   "fetched": "2026-11-26"
+  }
+ ],
+ "blocked_hosts": [
+  {
+   "host": "apps.calbar.ca.gov, www.calbar.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "sos.ca.gov, www.sos.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.bpelsg.ca.gov, search.dca.ca.gov, dca.ca.gov, www.cba.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.cab.ca.gov, www.latc.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.waterboards.ca.gov, smarts.waterboards.ca.gov, www.casqa.org",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.energy.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.dgs.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.cdph.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.insurance.ca.gov, cdicloud.insurance.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.nccco.org",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.epa.gov, cdxapps.epa.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "maps.cdtfa.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "data.ca.gov, www.ladbsservices2.lacity.org",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "leginfo.legislature.ca.gov",
+   "reason": "Cloudflare bot challenge (HTTP 403); not bypassed. Re-checked 2026-11-26."
+  },
+  {
+   "host": "www.osha.gov",
+   "reason": "HTTP 403 'Request blocked' from its CDN on regulation pages (the home page answers); not bypassed (eCFR API used instead). Re-checked 2026-11-26."
+  },
+  {
+   "host": "www.ecfr.gov web pages",
+   "reason": "redirect to a bot check (unblock.federalregister.gov); the official eCFR API worked and was used"
+  },
+  {
+   "host": "selfhelp.courts.ca.gov, www.courts.ca.gov",
+   "reason": "not allowed by this session's network policy"
+  },
+  {
+   "host": "www.apps2.dgs.ca.gov, cdxocsppapps.epa.gov, interactive.web.insurance.ca.gov",
+   "reason": "not allowed by this session's network policy (candidate URLs named in docs/product.md)"
+  },
+  {
+   "host": "osfm.fire.ca.gov, www.fiscal.treasury.gov, cyberab.org, www.mbc.ca.gov",
+   "reason": "not allowed by this session's network policy (types not in this registry yet)"
+  }
+ ],
+ "types": [
+  {
+   "id": "attorney",
+   "name": "Attorney (lawyer)",
+   "plain_description": "A lawyer licensed by the State Bar of California. A corporation or LLC must have one to go to court (outside small claims), for example to foreclose a mechanics lien. A lawyer is also the person to ask for advice on contracts, claims and disputes.",
+   "triggers": [
+    "lawsuit",
+    "foreclose",
+    "foreclosure",
+    "sue",
+    "court",
+    "legal advice",
+    "contract review",
+    "stop payment notice",
+    "payment bond claim",
+    "demand letter",
+    "arbitration"
+   ],
+   "when_required": [
+    {
+     "situation": "Your company is a corporation or LLC and needs to file or answer a lawsuit in any court other than small claims (a lien foreclosure, payment bond, stop payment notice or contract suit).",
+     "legal_basis": "CSLB guidance: 'If you are a corporation or limited liability company, you cannot represent yourself in court other than small claims court and must obtain the services of an attorney.' (CSLB 2026 Law Book, Section III, printed p. 50; the court rule behind it is not cited there)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "corp-llc-need-attorney-in-court"
+     ]
+    },
+    {
+     "situation": "Someone outside your company gives you legal advice, chooses or writes legal terms for you, or represents you: only an active State Bar licensee may practice law in California. (A registered legal document assistant may prepare documents you choose yourself, at your direction, but may not give legal advice.)",
+     "legal_basis": "Business and Professions Code 6125 (unauthorized practice of law); 6400 and following (legal document assistants)",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "not_required_when": [
+    {
+     "situation": "Small claims court: both sides represent themselves and neither may be represented by an attorney. You cannot foreclose a mechanics lien in small claims. CSLB cites a limit of up to $12,500 (CCP 116.221), but that higher limit is for a claim brought by an individual; a corporation or LLC is held to the lower limit in CCP 116.220 ($5,000 in the text printed in CSLB's 2022 Law Book; the current amount was not read). Check the current limit with the court.",
+     "legal_basis": "CSLB 2026 Law Book, Section III, printed p. 48 (cites CCP 116.221); CCP 116.220(a)(1) and 116.221 as printed in the appendix of CSLB's 2022 Law Book",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "small-claims-no-attorneys"
+     ],
+     "note": "CCP 116.221 applies to 'an action brought by a natural person'; CCP 116.220(a)(1) sets the general limit (read in the 2022 Law Book appendix, https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf). Later amendments to the dollar amounts were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    },
+    {
+     "situation": "A partner or sole proprietor may represent themselves in court and is not required to have an attorney.",
+     "legal_basis": "CSLB 2026 Law Book, Section III, printed p. 50",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    }
+   ],
+   "find": [
+    {
+     "label": "State Bar Attorney Search (check any California lawyer)",
+     "url": "https://apps.calbar.ca.gov/attorney/LicenseeSearch/QuickSearch",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "State Bar number"
+     ],
+     "official_owner": "The State Bar of California",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search-result titles show quick-search pages (QuickSearch?FreeText=...) and profile pages (attorney/Licensee/Detail/<bar number>); none were opened, so no URL pattern is given. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "State Bar list of certified lawyer referral services, by region and county",
+     "url": "https://www.calbar.ca.gov/Public/Need-Legal-Help/Certified-Lawyer-Referral-Services-Directory",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "region",
+      "county"
+     ],
+     "official_owner": "The State Bar of California",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say the directory is organized by region and county, also lists all certified services alphabetically, and that the State Bar itself does not refer you to a lawyer. The site appears to be moving to new addresses (for example https://www.calbar.ca.gov/public/find-legal-professionals/find-lawyer-referral-service/find-los-angeles-lawyer-referral-service), and a PDF list of certified services dated July 2026 appears in search results. Only State Bar-certified referral services should be used; the certification requirement (B&P 6155) was seen only in secondary sources and is unconfirmed. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Ask the lawyer for their State Bar number in writing and look it up on the State Bar Attorney Search. Check the status it shows and any discipline it lists, and that the name matches the person you talk to. (The State Bar site could not be opened when TradeComply last checked, so what the page shows is not confirmed.)",
+   "bring_or_ask": [
+    "Bring: the contract, change orders and invoices, payment records, and any notices you sent or received (preliminary notices with proof of service, stop payment notices, lien claim and its recording date).",
+    "Bring: the project address, owner and general contractor names, and the completion or cessation date.",
+    "Bring: the deadline list from TradeComply's lien deadline calculator, and ask the lawyer to confirm or correct every date.",
+    "Ask: Do you regularly handle California construction payment, lien and bond cases?",
+    "Ask: How do you charge (hourly, flat fee or contingency), and what will this likely cost?",
+    "Ask: Is there any deadline we could miss while we decide, and who will calendar it?"
+   ],
+   "never_say": [
+    "TradeComply replaces your attorney",
+    "This is legal advice",
+    "You don't need a lawyer for this",
+    "We recommend this attorney / this firm",
+    "This is the best or top-rated lawyer",
+    "You will win / you are guaranteed to collect"
+   ],
+   "optional_when": [
+    {
+     "situation": "A recorded mechanics lien is enforced by a lawsuit to foreclose it, which must be filed within 90 days after the lien is recorded (the deadline printed in the notice every lien claim carries). It cannot be brought in small claims court. A lawyer is legally required for it only if your company is a corporation or LLC (see above); a sole proprietor or partner may file it themselves, but talking to a lawyer well before the deadline is advisable.",
+     "legal_basis": "Civil Code 8416(a)(8) (the notice: suit 'no later than 90 days after the date the mechanics lien is recorded'; the deadline itself is in Civil Code 8460, which was not read); CSLB 2026 Law Book, Section III, printed pp. 48 and 50 (no lien foreclosure in small claims; who must use a lawyer)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge. The small claims and self-representation statements were read in the CSLB 2026 Law Book (https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf) on 2026-11-26."
+    }
+   ]
+  },
+  {
+   "id": "notary_public",
+   "name": "Notary public",
+   "plain_description": "A person commissioned by the California Secretary of State to confirm who is signing a document and notarize the signature. A notary does not check whether the document is legally correct and is not your lawyer.",
+   "triggers": [
+    "notarized",
+    "notarize",
+    "notary",
+    "acknowledgment",
+    "acknowledged",
+    "accord"
+   ],
+   "when_required": [
+    {
+     "situation": "After your bonding company (surety) pays a claim on your CSLB bond, or someone holds an unpaid court judgment against you, you may settle by an agreement (an 'accord') instead of paying in full (or, for a judgment, filing a bond). If you settle by an accord, the copy you file with CSLB to avoid or lift a license suspension must be notarized.",
+     "legal_basis": "Business and Professions Code 7071.11(h); 7071.17(a), (b)(2), (b)(4), (c), (d)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "surety-accord-failure-suspension",
+      "unsatisfied-judgment-notice-90-days",
+      "unsatisfied-judgment-report-and-bond"
+     ]
+    },
+    {
+     "situation": "A document has to be recorded with the county recorder and the recorder requires the signature to be acknowledged before a notary (many documents affecting title).",
+     "legal_basis": "Government Code 27287",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "find": [
+    {
+     "label": "Secretary of State Notary Public Listing",
+     "url": "https://sos.ca.gov/notary/notary-public-listing/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "commission number",
+      "county"
+     ],
+     "official_owner": "California Secretary of State",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search fields come from a third-party description, not from the state's own page. Search excerpts of the page show only its data disclaimer. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "Secretary of State Notary Public section (information and handbook)",
+     "url": "https://www.sos.ca.gov/notary",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "California Secretary of State",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Look the notary up on the Secretary of State Notary Public Listing by name or commission number, and compare the name and commission number with the notary's seal.",
+   "bring_or_ask": [
+    "Bring: the complete document, and every signer in person with a current government photo ID.",
+    "Bring: the document unsigned unless the notary tells you otherwise.",
+    "Ask: What is your fee, and can you come to our office or jobsite?"
+   ],
+   "never_say": [
+    "The notary will check that your document is valid",
+    "A notary can give you legal advice",
+    "Notarizing makes the document legally binding",
+    "Lien waivers must be notarized",
+    "We recommend this notary"
+   ],
+   "not_required_when": [
+    {
+     "situation": "Recording a mechanics lien: a claim of lien that is signed and verified by the claimant and contains the required information must be accepted for recording and counts as recorded without an acknowledgment (the notary step), so the law does not require a notary for recording it. The claim also carries a proof of service affidavit; whether that may be signed as a declaration under penalty of perjury instead of before a notary is governed by Code of Civil Procedure 2015.5, which was not read, so ask the county recorder if unsure.",
+     "legal_basis": "Civil Code 8416(a), (a)(7), (b)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge.",
+     "rule_ids": [
+      "lien-claim-contents"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "professional_engineer",
+   "name": "Professional engineer (civil, structural, geotechnical, electrical, mechanical and others)",
+   "plain_description": "An engineer licensed by the Board for Professional Engineers, Land Surveyors, and Geologists (BPELSG). An engineer designs, stamps and signs work that California law or the Cal/OSHA safety orders say must come from an engineer, for example sloping or benching for an excavation deeper than 20 feet.",
+   "triggers": [
+    "registered professional engineer",
+    "engineer",
+    "stamped",
+    "shoring design",
+    "trench deeper than 20",
+    "excavation over 20 feet",
+    "tabulated data",
+    "structural calculations"
+   ],
+   "when_required": [
+    {
+     "situation": "Sloping or benching an excavation deeper than 20 feet: the design must come from a registered professional engineer.",
+     "legal_basis": "8 CCR 1541.1, Appendix B, note 3 ('Sloping or benching for excavations greater than 20 feet deep shall be designed by a registered professional engineer')",
+     "source_url": "https://www.dir.ca.gov/title8/1541_1b.html",
+     "status": "confirmed"
+    },
+    {
+     "situation": "Any sloping, benching, support, shield or other protective system that does not follow the standard options (the Appendix tables, the manufacturer's tabulated data or other tabulated data) must be approved, and for sloping and benching stamped and signed, by a registered professional engineer. A written copy naming the engineer must be kept at the jobsite while it is built.",
+     "legal_basis": "8 CCR 1541.1(b)(4) and (c)(4); federal equivalent 29 CFR 1926.652(b)(4) and (c)(4)",
+     "source_url": "https://www.dir.ca.gov/title8/1541_1.html",
+     "status": "confirmed",
+     "note": "Federal text read through the official eCFR API: https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-29?part=1926&section=1926.652"
+    },
+    {
+     "situation": "When shoring or shield material or equipment is damaged and the competent person cannot confirm it can still carry the loads safely, it must be taken out of service and evaluated and approved by a registered professional engineer before it is used again.",
+     "legal_basis": "8 CCR 1541.1(d)(3)",
+     "source_url": "https://www.dir.ca.gov/title8/1541_1.html",
+     "status": "confirmed"
+    },
+    {
+     "situation": "Anyone may prepare plans for certain small wood-frame buildings: wood-frame single-family homes and wood-frame buildings of up to four dwelling units (not clusters that add up to more than four units on a lot), of not more than two stories and basement; their wood-frame garages; and wood-frame agricultural and ranch buildings (unless the building official finds an undue risk). If any part of such a building departs from conventional wood-frame requirements, the building official must require that part's plans or calculations to be prepared by or under a licensed architect or registered engineer, stamped and signed. Either one may do it.",
+     "legal_basis": "Business and Professions Code 5537(a), (b)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    },
+    {
+     "situation": "Electrical or mechanical design: a licensed contractor may design electrical or mechanical systems for work it will install and supervise within its classification. That exemption does not cover designing work someone else will install; a contractor's engineering services beyond it must be done by or under the responsible charge of a registered electrical or mechanical engineer.",
+     "legal_basis": "Business and Professions Code 6737.3",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    },
+    {
+     "situation": "Design services beyond Section 5537 or the contractor's own license scope must be performed by or under a licensed architect or professional or civil engineer.",
+     "legal_basis": "Business and Professions Code 5537.2",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    },
+    {
+     "situation": "Where the building code requires special inspections, a statement of special inspections prepared by the registered design professional (the architect or engineer responsible for the design) is needed before the permit is issued.",
+     "legal_basis": "California Building Code (Title 24 Part 2) 1704.2.3 and 1704.3",
+     "source_url": null,
+     "status": "unconfirmed",
+     "rule_ids": [
+      "special-inspection-statement-before-permit"
+     ],
+     "note": "The building code text was not read; ask the building department what it requires."
+    }
+   ],
+   "find": [
+    {
+     "label": "BPELSG license lookup (engineers, land surveyors, geologists)",
+     "url": "https://www.bpelsg.ca.gov/consumers/lic_lookup.shtml",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number"
+     ],
+     "official_owner": "Board for Professional Engineers, Land Surveyors, and Geologists (BPELSG)",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Per search excerpts of this page: civil engineer licenses issued after 1982-01-01 and land surveyor licenses issued after 2000-05-20 are on DCA Search; older licenses are in PDF lists on the board's site, and the board suggests confirming status with its Enforcement Unit. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "DCA License Search (Department of Consumer Affairs, covers many state boards)",
+     "url": "https://search.dca.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number",
+      "license type / board",
+      "city",
+      "county (Advanced Search)"
+     ],
+     "official_owner": "California Department of Consumer Affairs",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "The BPELSG lookup page (seen only in search excerpts) says to use DCA Search, its Advanced Search or the results filters, to enter license numbers as numbers only without leading zeros, and that a business-name search returns nothing because the board licenses people, not businesses. A county filter exists in Advanced Search per those excerpts, but no URL pattern was verified. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Look the engineer up by name or license number on DCA License Search or the BPELSG lookup. Check that the status is current, that the license branch shown fits the work (ask the engineer to confirm this in writing), and that the stamp on the design shows the same name and license number.",
+   "bring_or_ask": [
+    "Bring: the site address, plans, soil or geotechnical report, planned excavation depth and length, nearby utilities, buildings and traffic loads, and the schedule.",
+    "Ask: Which branch of engineering is your license in, and does it cover this design?",
+    "Ask: Will you stamp and sign the design and give us a copy to keep at the jobsite?",
+    "Ask: How long will it take, and do you carry professional liability insurance?"
+   ],
+   "never_say": [
+    "TradeComply's numbers replace an engineer's design",
+    "This excavation is safe",
+    "No engineer is needed",
+    "We recommend this engineer / this firm",
+    "This is the best engineer"
+   ]
+  },
+  {
+   "id": "land_surveyor",
+   "name": "Licensed land surveyor",
+   "plain_description": "A surveyor licensed by BPELSG who locates property lines and corners, sets survey monuments and files records of survey.",
+   "triggers": [
+    "property line",
+    "boundary",
+    "survey monument",
+    "record of survey",
+    "setback dispute",
+    "corner"
+   ],
+   "when_required": [
+    {
+     "situation": "Locating or re-establishing property lines or corners, setting boundary monuments, or preparing a record of survey (for example before building near a setback or a neighbor's line).",
+     "legal_basis": "Business and Professions Code 8726 (practice of land surveying) and related Land Surveyors' Act sections",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "find": [
+    {
+     "label": "BPELSG license lookup (engineers, land surveyors, geologists)",
+     "url": "https://www.bpelsg.ca.gov/consumers/lic_lookup.shtml",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number"
+     ],
+     "official_owner": "Board for Professional Engineers, Land Surveyors, and Geologists (BPELSG)",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Per search excerpts of this page: civil engineer licenses issued after 1982-01-01 and land surveyor licenses issued after 2000-05-20 are on DCA Search; older licenses are in PDF lists on the board's site, and the board suggests confirming status with its Enforcement Unit. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "DCA License Search (Department of Consumer Affairs, covers many state boards)",
+     "url": "https://search.dca.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number",
+      "license type / board",
+      "city",
+      "county (Advanced Search)"
+     ],
+     "official_owner": "California Department of Consumer Affairs",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "The BPELSG lookup page (seen only in search excerpts) says to use DCA Search, its Advanced Search or the results filters, to enter license numbers as numbers only without leading zeros, and that a business-name search returns nothing because the board licenses people, not businesses. A county filter exists in Advanced Search per those excerpts, but no URL pattern was verified. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Look the surveyor up by name or license number on DCA License Search or the BPELSG lookup and check that the license is a land surveyor license with current status. If someone without a land surveyor license offers to survey, ask which license allows it and check that license record.",
+   "bring_or_ask": [
+    "Bring: the address and assessor's parcel number, any title report or prior surveys, and the plans.",
+    "Ask: Will you set or verify the corners we need and give us a written record?",
+    "Ask: Do you need to file a record of survey for this work, and how long will it take?"
+   ],
+   "never_say": [
+    "TradeComply can tell you where the property line is",
+    "We recommend this surveyor",
+    "No survey is needed"
+   ]
+  },
+  {
+   "id": "geologist",
+   "name": "Professional geologist or certified engineering geologist",
+   "plain_description": "A geologist licensed by BPELSG (professional geologist, certified engineering geologist or certified hydrogeologist). Ask for one when the building department asks for a geologic or engineering geology report, for example in a landslide or fault zone.",
+   "triggers": [
+    "geologic",
+    "geology report",
+    "fault zone",
+    "landslide",
+    "liquefaction",
+    "engineering geologist"
+   ],
+   "when_required": [
+    {
+     "situation": "A geologic or engineering geology report is required for the project (often in fault, landslide or other hazard zones, or when the building department asks for one).",
+     "legal_basis": "Business and Professions Code 7800 and following (Geologist and Geophysicist Act); Public Resources Code 2621 and following (fault zones)",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "notes": [
+    "Contractors' license law does not apply to a licensee acting within the Geologist and Geophysicist Act (Business and Professions Code 7051, read in the CSLB 2026 Law Book)."
+   ],
+   "find": [
+    {
+     "label": "BPELSG license lookup (engineers, land surveyors, geologists)",
+     "url": "https://www.bpelsg.ca.gov/consumers/lic_lookup.shtml",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number"
+     ],
+     "official_owner": "Board for Professional Engineers, Land Surveyors, and Geologists (BPELSG)",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Per search excerpts of this page: civil engineer licenses issued after 1982-01-01 and land surveyor licenses issued after 2000-05-20 are on DCA Search; older licenses are in PDF lists on the board's site, and the board suggests confirming status with its Enforcement Unit. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "DCA License Search (Department of Consumer Affairs, covers many state boards)",
+     "url": "https://search.dca.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number",
+      "license type / board",
+      "city",
+      "county (Advanced Search)"
+     ],
+     "official_owner": "California Department of Consumer Affairs",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "The BPELSG lookup page (seen only in search excerpts) says to use DCA Search, its Advanced Search or the results filters, to enter license numbers as numbers only without leading zeros, and that a business-name search returns nothing because the board licenses people, not businesses. A county filter exists in Advanced Search per those excerpts, but no URL pattern was verified. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Look the geologist up by name or license number on DCA License Search or the BPELSG lookup and check the license type (professional geologist, certified engineering geologist, certified hydrogeologist) and current status.",
+   "bring_or_ask": [
+    "Bring: the address, any hazard-zone notice from the city or county, existing soil reports and plans.",
+    "Ask: Which report does the building department need, and will you sign it with your license number?"
+   ],
+   "never_say": [
+    "TradeComply can assess geologic hazards",
+    "We recommend this geologist",
+    "No report is needed"
+   ]
+  },
+  {
+   "id": "architect",
+   "name": "Licensed architect",
+   "plain_description": "An architect licensed by the California Architects Board. California law lets anyone prepare plans only for certain small wood-frame buildings (Business and Professions Code 5537); plans for other buildings generally come from a licensed architect or engineer.",
+   "triggers": [
+    "architect",
+    "stamped plans",
+    "plans and specifications",
+    "design services"
+   ],
+   "when_required": [
+    {
+     "situation": "The exemption in B&P 5537 covers plans for: wood-frame single-family homes and wood-frame buildings of up to four dwelling units, of not more than two stories and basement; their wood-frame garages and similar structures; and wood-frame agricultural and ranch buildings (unless the building official finds an undue risk). If an exempt building departs from conventional framing, the building official requires that part to be prepared and stamped by a licensed architect or a registered engineer; either one may do it.",
+     "legal_basis": "Business and Professions Code 5537(a), (b)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    },
+    {
+     "situation": "Plans for buildings outside the B&P 5537 exemption must generally be prepared by a licensed architect or by a registered engineer working within the branch of their license; for most buildings either one can do it. Some building types have their own rules.",
+     "legal_basis": "Business and Professions Code 5536, 5537.1, 6735 and 6737.1",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    },
+    {
+     "situation": "A licensed contractor offers design services beyond Section 5537 or its own license work: those must be done by or under a licensed architect or engineer. A contractor may still prepare shop and field drawings and design systems needed to complete its own contracted work, but may not use the title 'architect'.",
+     "legal_basis": "Business and Professions Code 5537.2",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    },
+    {
+     "situation": "Plans prepared by an architect must be stamped and signed by the architect.",
+     "legal_basis": "Business and Professions Code 5536.1",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "find": [
+    {
+     "label": "California Architects Board License Search",
+     "url": "https://www.cab.ca.gov/cons/archs/lic_search.shtml",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "city",
+      "county",
+      "license number"
+     ],
+     "official_owner": "California Architects Board",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say the board licenses individual architects, not firms, and suggest asking to see the pocket license and photo ID. A 2026 board newsletter points to DCA License Search for verification. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "DCA License Search (Department of Consumer Affairs, covers many state boards)",
+     "url": "https://search.dca.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number",
+      "license type / board",
+      "city",
+      "county (Advanced Search)"
+     ],
+     "official_owner": "California Department of Consumer Affairs",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "The BPELSG lookup page (seen only in search excerpts) says to use DCA Search, its Advanced Search or the results filters, to enter license numbers as numbers only without leading zeros, and that a business-name search returns nothing because the board licenses people, not businesses. A county filter exists in Advanced Search per those excerpts, but no URL pattern was verified. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Search the architect's name or license number on DCA License Search (or the Board's License Search). Search the person whose stamp is on the plans and check that the status is current.",
+   "bring_or_ask": [
+    "Bring: the address, the scope and budget, any existing plans, and the building department's comments.",
+    "Ask: Who will stamp the plans, and what is that person's license number?",
+    "Ask: Does your fee include responding to plan check corrections and construction questions?"
+   ],
+   "never_say": [
+    "TradeComply replaces an architect",
+    "These plans are approved",
+    "We recommend this architect",
+    "No architect is needed"
+   ],
+   "not_required_when": [
+    {
+     "situation": "Nonstructural, nonseismic work: storefronts, interior alterations or additions, fixtures, cabinetwork, furniture or equipment, and the nonstructural work needed to install them, as long as it does not change or affect the building's structural system or safety. The building department can still ask for plans; ask it before you rely on this.",
+     "legal_basis": "Business and Professions Code 5538",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not printed in the CSLB Law Book appendix that was read. Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ]
+  },
+  {
+   "id": "landscape_architect",
+   "name": "Licensed landscape architect",
+   "plain_description": "A landscape architect licensed through the Landscape Architects Technical Committee (LATC) of the California Architects Board.",
+   "triggers": [
+    "landscape architect",
+    "landscape plans",
+    "irrigation design for others"
+   ],
+   "when_required": [
+    {
+     "situation": "Someone designs landscape work that they will not install themselves, or uses the title 'landscape architect'. A licensed landscape contractor may design systems for work it performs and supervises within its classification, but may not use the title 'landscape architect' without the license.",
+     "legal_basis": "Business and Professions Code 5641.4",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    },
+    {
+     "situation": "Practicing landscape architecture or using the title without a California landscape architect license is a violation.",
+     "legal_basis": "Business and Professions Code 5640",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Seen only in a search excerpt of an LATC page. Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "find": [
+    {
+     "label": "LATC License Search",
+     "url": "https://www.latc.ca.gov/consumers/license_verification.shtml",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "license number",
+      "name",
+      "city"
+     ],
+     "official_owner": "Landscape Architects Technical Committee (California Architects Board)",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say LATC licenses individuals, not firms or corporations. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "DCA License Search (Department of Consumer Affairs, covers many state boards)",
+     "url": "https://search.dca.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number",
+      "license type / board",
+      "city",
+      "county (Advanced Search)"
+     ],
+     "official_owner": "California Department of Consumer Affairs",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "The BPELSG lookup page (seen only in search excerpts) says to use DCA Search, its Advanced Search or the results filters, to enter license numbers as numbers only without leading zeros, and that a business-name search returns nothing because the board licenses people, not businesses. A county filter exists in Advanced Search per those excerpts, but no URL pattern was verified. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Search the person's name or license number on the LATC License Search or DCA License Search and check the status is current.",
+   "bring_or_ask": [
+    "Bring: the site plan, the agency's landscape and water-use requirements, and the irrigation scope.",
+    "Ask: Will you stamp the landscape and irrigation plans, and what is your license number?"
+   ],
+   "never_say": [
+    "TradeComply replaces a landscape architect",
+    "We recommend this landscape architect"
+   ]
+  },
+  {
+   "id": "qsd_qsp",
+   "name": "Qualified SWPPP Developer (QSD) and Qualified SWPPP Practitioner (QSP)",
+   "plain_description": "Stormwater professionals under the State Water Board's Construction General Permit. Generally a QSD writes the stormwater pollution prevention plan (SWPPP) and a QSP carries it out on site, including inspections and sampling. The permit text could not be read when TradeComply last checked; confirm with the Water Board.",
+   "triggers": [
+    "SWPPP",
+    "stormwater",
+    "QSD",
+    "QSP",
+    "Construction General Permit",
+    "WDID",
+    "SMARTS",
+    "one acre",
+    "land disturbance"
+   ],
+   "when_required": [
+    {
+     "situation": "Construction that disturbs one acre or more of land (or less than one acre when it is part of a larger common plan of development or sale that will disturb one acre or more) needs stormwater permit coverage: an individual permit or coverage under a general permit. Five acres or more is 'construction activity'; one to under five acres is 'small construction activity', which does not include routine maintenance to keep the original line, grade or purpose of a facility. In California that coverage is normally the State Water Board's Construction General Permit, which is where the QSD and QSP requirement comes from (next item).",
+     "legal_basis": "40 CFR 122.26(b)(14)(x), (b)(15) and (c)(1)",
+     "source_url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-40?part=122&section=122.26",
+     "status": "confirmed",
+     "note": "Read through the official eCFR API (the ecfr.gov web pages show a bot check)."
+    },
+    {
+     "situation": "Under California's Construction General Permit, the site SWPPP must be developed by a QSD and implemented by a QSP, who does the required inspections and sampling.",
+     "legal_basis": "State Water Board Order WQ 2022-0057-DWQ (Construction General Permit), Attachment D",
+     "source_url": "https://www.waterboards.ca.gov/water_issues/programs/stormwater/construction.html",
+     "status": "unconfirmed",
+     "rule_ids": [
+      "cgp-swppp-by-qsd",
+      "cgp-qsp-implementation-inspections",
+      "cgp-noi-smarts-before-construction"
+     ],
+     "note": "waterboards.ca.gov could not be opened from this session; the permit text was not read."
+    }
+   ],
+   "find": [
+    {
+     "label": "State Water Board stormwater training and qualification page",
+     "url": "https://www.waterboards.ca.gov/water_issues/programs/stormwater/training.html",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "State Water Resources Control Board",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts also show a State Water Board guide for licensed engineers and others registering as a QSD in SMARTS (revised March 2025). URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "SMARTS (State Water Board permit database: check a project's permit coverage and documents)",
+     "url": "https://smarts.waterboards.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "WDID number",
+      "site name",
+      "county (in the public search)"
+     ],
+     "official_owner": "State Water Resources Control Board",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "CASQA QSD/QSP overview and Qualification Directory",
+     "url": "https://www.casqa.org/training/cgp-training/qsd-qsp-overview",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "qualification type (QSD, QSP, Trainer of Record)"
+     ],
+     "official_owner": "California Stormwater Quality Association (CASQA), a nonprofit association, not a government agency. Whether the State Water Board designates its directory as the official QSD/QSP list is unconfirmed.",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened; official status unconfirmed (nonprofit association, not a government agency)",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say this page links to a Qualification Directory for looking up QSDs, QSPs and trainers; the directory's own address was not found. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Ask for the person's QSD or QSP certificate and the license or registration it is based on, and check that license on its own board's search (for example DCA License Search for an engineer). CASQA, a nonprofit association that runs QSD/QSP training, has a qualification directory; whether the State Water Board treats it as the official list was not confirmed.",
+   "bring_or_ask": [
+    "Bring: total disturbed area in acres, site plan and grading plan, schedule including rainy season dates, and the owner's contact (the owner or developer is usually the permit holder).",
+    "Ask: Are you a QSD, a QSP, or both, and when does your qualification expire?",
+    "Ask: Who will do the weekly and rain-event inspections and sampling, and who uploads reports to SMARTS?"
+   ],
+   "never_say": [
+    "TradeComply writes your SWPPP",
+    "Your site is in stormwater compliance",
+    "We recommend this QSD/QSP",
+    "No QSD is needed"
+   ],
+   "not_required_when": [
+    {
+     "situation": "A site disturbing 1 to under 5 acres may be granted a waiver of the general permit's requirements when the rainfall erosivity factor (R) for the construction period is under 5, or when a TMDL or equivalent analysis shows controls are not needed. The owner or operator must certify it; in California the waiver is filed with the State Water Board, whose own waiver terms were not read. Without a valid waiver the QSD and QSP requirement applies.",
+     "legal_basis": "40 CFR 122.26(b)(15)(i)(A), (B)",
+     "source_url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-40?part=122&section=122.26",
+     "status": "confirmed",
+     "rule_ids": [
+      "stormwater-erosivity-waiver"
+     ],
+     "note": "Read through the official eCFR API (the ecfr.gov web pages show a bot check)."
+    }
+   ]
+  },
+  {
+   "id": "hers_rater",
+   "name": "HERS rater (Energy Code field verification)",
+   "plain_description": "An independent rater certified through a provider the California Energy Commission approves, who tests and verifies certain Energy Code items (for example duct leakage or refrigerant charge) and registers the results. The Energy Commission's pages could not be opened when TradeComply last checked, so these details are unconfirmed.",
+   "triggers": [
+    "HERS",
+    "CF3R",
+    "field verification",
+    "duct leakage test",
+    "refrigerant charge",
+    "HVAC changeout",
+    "ECC-Rater",
+    "Title 24 energy"
+   ],
+   "when_required": [
+    {
+     "situation": "The energy compliance documents (CF1R) call for field verification, for example on new homes, additions and many HVAC replacements: an independent certified rater must test the work and register a CF3R before final inspection.",
+     "legal_basis": "Title 24 Part 6 (Energy Code) Section 10-103(a)(5); Section 150.2(b)1 for HVAC alterations",
+     "source_url": null,
+     "status": "unconfirmed",
+     "rule_ids": [
+      "energy-cf3r-hers-verification",
+      "energy-hvac-changeout-hers"
+     ],
+     "note": "energy.ca.gov could not be opened from this session; the Energy Code text was not read."
+    }
+   ],
+   "notes": [
+    "Search excerpts of Energy Commission pages say that from January 1, 2026 HERS providers and raters are recognized as ECC-Providers and ECC-Raters (Energy Code Compliance program). Unconfirmed: the pages were not opened."
+   ],
+   "find": [
+    {
+     "label": "Energy Commission HERS program page (links to approved providers)",
+     "url": "https://www.energy.ca.gov/programs-and-topics/programs/home-energy-rating-system-hers-program",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "approved provider (each provider runs its own rater directory)"
+     ],
+     "official_owner": "California Energy Commission",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "Energy Commission Energy Code Compliance (ECC) program page",
+     "url": "https://www.energy.ca.gov/programs-and-topics/programs/energy-code-compliance-program",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "approved ECC-Provider"
+     ],
+     "official_owner": "California Energy Commission",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Ask which Energy Commission-approved provider certifies the rater, then check the rater in that provider's own directory.",
+   "bring_or_ask": [
+    "Bring: the registered CF1R and your CF2R installation certificates, permit number and address.",
+    "Ask: Which provider are you certified with, and which tests on the CF1R will you perform?",
+    "Ask: When will the CF3R be registered so we can schedule the final inspection?"
+   ],
+   "never_say": [
+    "TradeComply verifies your energy compliance",
+    "Your project passes Title 24",
+    "We recommend this rater",
+    "No HERS testing is needed"
+   ]
+  },
+  {
+   "id": "dsa_project_inspector",
+   "name": "DSA-certified project inspector (inspector of record) for school projects",
+   "plain_description": "An inspector certified by the Division of the State Architect (DSA) for public school and community college construction under DSA's jurisdiction. Ask the school district who the project inspector is; contractors coordinate inspections with that inspector.",
+   "triggers": [
+    "DSA",
+    "Field Act",
+    "school project",
+    "inspector of record",
+    "IOR",
+    "project inspector"
+   ],
+   "when_required": [
+    {
+     "situation": "Construction, alteration or addition of a public school (K-12 or community college) building under DSA's jurisdiction: the district must have a DSA-certified project inspector, approved by DSA for that specific project, on site.",
+     "legal_basis": "Education Code 17311 (Field Act, K-12); a parallel part of the Education Code for community colleges; Title 24 Part 1, Section 4-333",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "dgs.ca.gov and leginfo could not be opened. Search excerpts of the DSA Project Inspector Certification page say the inspector must be approved by DSA for each individual project and must recertify every four years. docs/product.md cites Education Code 17280 and following for the Field Act; none of these sections was read."
+    }
+   ],
+   "find": [
+    {
+     "label": "DSA Project Inspector Certification page (Certified Project Inspector List and Project Inspector Availability List)",
+     "url": "https://www.dgs.ca.gov/DSA/Certifications/Page-Content/Project-Inspector-Certification",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "certification class (lists, per search excerpts)"
+     ],
+     "official_owner": "Department of General Services, Division of the State Architect",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say the availability list is self-reported by inspectors. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Check the inspector's name and certification class on DSA's Certified Project Inspector List, and confirm with the school district that DSA approved this inspector for this project.",
+   "bring_or_ask": [
+    "Bring: the DSA application number, approved drawings and the district's contact.",
+    "Ask the district: Who is the DSA-approved project inspector for this project, and how do we request inspections?"
+   ],
+   "never_say": [
+    "TradeComply approves school projects",
+    "We recommend this inspector",
+    "Your project meets the Field Act"
+   ]
+  },
+  {
+   "id": "asbestos_consultant",
+   "name": "Cal/OSHA-certified asbestos consultant (CAC) or site surveillance technician (CSST)",
+   "plain_description": "A person certified by Cal/OSHA (the Division of Occupational Safety and Health, DOSH) who is paid to provide asbestos health and safety services: building inspections, abatement design, contract administration, sampling, management plans and clearance air monitoring. A site surveillance technician (CSST) works on site as a consultant's (CAC's) independent representative.",
+   "triggers": [
+    "asbestos",
+    "asbestos survey",
+    "ACM",
+    "clearance air monitoring",
+    "abatement",
+    "pre-1978",
+    "demolition survey"
+   ],
+   "when_required": [
+    {
+     "situation": "Anyone who contracts to provide professional asbestos health and safety services (building inspections, abatement project design, contract administration, sampling, management plans, clearance air monitoring) as an asbestos consultant, or who works as a site surveillance technician, must be certified by DOSH.",
+     "legal_basis": "Business and Professions Code 7180(a), 7181, 7182",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "asbestos-consultant-dosh-certification-required",
+      "asbestos-consultant-definition",
+      "site-surveillance-technician-definition"
+     ]
+    },
+    {
+     "situation": "A building owner or operator that hires asbestos consulting or site surveillance work must contract with a DOSH-certified person.",
+     "legal_basis": "Business and Professions Code 7180.5",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "owner-must-hire-certified-asbestos-consultant"
+     ]
+    },
+    {
+     "situation": "Cal/OSHA's rules require DOSH certification for anyone who performs services as an asbestos consultant or site surveillance technician, and no employer may use one who cannot show it. Cal/OSHA's definition and the DOSH search page describe this as work on 100 square feet or more of asbestos-containing construction material, but the statute (B&P 7180 and 7181) sets no size limit, so do not treat a smaller job as exempt.",
+     "legal_basis": "8 CCR 341.15(a); 8 CCR 1529(q)(1), (q)(4); DOSH certification search page",
+     "source_url": "https://www.dir.ca.gov/title8/341_15.html",
+     "status": "confirmed",
+     "note": "8 CCR 1529(q) read at https://www.dir.ca.gov/title8/1529.html and the DOSH page at https://www.dir.ca.gov/databases/doshcaccsst/caccsst_query_1.html, both on 2026-11-26. The DOSH page says 'more than 100 square feet'; 1529(q)(1) says '100 square feet or more'."
+    },
+    {
+     "situation": "Before asbestos-related work begins, the owner of a commercial or industrial building, the employer or the contractor doing or contracting for the work must make a good-faith effort to find out whether asbestos is present; for a building built before 1978 the contractor or employer first asks the owner. This law does not itself say who does the survey; if you pay someone to do it, B&P 7180 and 7180.5 require a DOSH-certified consultant.",
+     "legal_basis": "Labor Code 6501.9",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf",
+     "status": "confirmed",
+     "note": "Statute text as printed in the appendix of CSLB's 2022 Law Book (fetched 2026-11-26); later amendments were not checked because leginfo.legislature.ca.gov is behind a bot challenge."
+    }
+   ],
+   "not_required_when": [
+    {
+     "situation": "A licensed contractor or registered asbestos abatement contractor may take no more than 12 bulk samples in a residential dwelling for its own bid, its own employees' exposure, or to judge its own abatement contract, if the people sampling are AHERA-certified building inspectors. The contractor may not provide professional health and safety services, risk assessments or (unless otherwise permitted) clearance air monitoring.",
+     "legal_basis": "Business and Professions Code 7180(b)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "asbestos-contractor-bulk-sampling-limit-12",
+      "contractor-no-asbestos-health-safety-services"
+     ]
+    },
+    {
+     "situation": "A preliminary site assessment or other building inspection whose main purpose is not finding asbestos and judging whether it needs abatement (for example a general property condition inspection) is not the asbestos consulting that needs certification. It does not replace the asbestos survey before demolition or renovation.",
+     "legal_basis": "8 CCR 341.15(a), Note",
+     "source_url": "https://www.dir.ca.gov/title8/341_15.html",
+     "status": "confirmed"
+    }
+   ],
+   "find": [
+    {
+     "label": "DOSH list of certified asbestos consultants and site surveillance technicians",
+     "url": "https://www.dir.ca.gov/databases/doshcaccsst/caccsst_query_1.html",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "last name",
+      "employer (affiliation)",
+      "city"
+     ],
+     "official_owner": "Cal/OSHA (DIR Division of Occupational Safety and Health), Asbestos and Carcinogen Unit",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "The form submits by POST; a GET request with the same fields returned 'All fields are blank', so no URL pattern is given. A city search (Fresno, San Diego) returned type (CAC or CSST), name, affiliation, certification number, expiration date, city and phone. The page says anyone not on the list can be verified by email to the unit."
+    },
+    {
+     "label": "DOSH Asbestos Registrants' Database (registered asbestos abatement contractors)",
+     "url": "https://www.dir.ca.gov/databases/doshacru/acrusearch.html",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "registration number",
+      "CSLB license number",
+      "employer",
+      "DBA",
+      "city",
+      "area code"
+     ],
+     "official_owner": "Cal/OSHA (DIR Division of Occupational Safety and Health), Asbestos Contractors' Registration Unit",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "POST form (up to four criteria joined by AND/OR); no URL pattern. A city search (Fresno) returned registration number, CSLB number, employer, restrictions, location and expiration ('data is current as of 11/25/2026'). These are registered asbestos abatement contractors, not consultants; the same search is listed under licensed_contractor."
+    }
+   ],
+   "verify_license_how": "Search the person on the DOSH list by last name, employer or city and check the type (CAC or CSST), certification number and expiration date. DOSH advises owners to also look at the DOSH-issued photo ID card and the current EPA AHERA refresher certificates: a CAC must hold current Building Inspector, Contractor/Supervisor, Project Designer and Management Planner accreditations, and a CSST current Building Inspector and Contractor/Supervisor. Anyone not on the list can be checked by email to the DOSH unit named on the page.",
+   "bring_or_ask": [
+    "Bring: the address, year built, areas and materials to be disturbed, and the demolition or renovation scope and schedule.",
+    "Ask: Are you a CAC (not only a CSST), and what is your certification number and expiration date?",
+    "Ask: Will your survey report cover every material we will disturb, and do you also do clearance air monitoring after abatement?",
+    "Ask: Do you have any financial ties to the abatement contractor?"
+   ],
+   "never_say": [
+    "TradeComply can tell you there is no asbestos",
+    "This building is asbestos-free",
+    "We recommend this consultant",
+    "No survey is needed"
+   ]
+  },
+  {
+   "id": "lead_professional",
+   "name": "CDPH-certified lead professional (and EPA lead-safe certified firm / renovator)",
+   "plain_description": "People certified by the California Department of Public Health (CDPH) for lead-related construction work, for example supervisors and workers, and firms and renovators certified by U.S. EPA for renovation in pre-1978 homes and child-occupied facilities.",
+   "triggers": [
+    "lead",
+    "lead-based paint",
+    "pre-1978",
+    "RRP",
+    "lead-safe",
+    "lead-related construction",
+    "child-occupied facility"
+   ],
+   "when_required": [
+    {
+     "situation": "Lead-related construction work in a residential or public building (schools, daycare centers, offices, stores and others): employees and supervisors shown to be exposed to lead at or above 50 micrograms per cubic meter (8-hour average) must be trained by an accredited provider and certified by CDPH.",
+     "legal_basis": "8 CCR 1532.1(l)(3) (citing Title 17 CCR 35040)",
+     "source_url": "https://www.dir.ca.gov/title8/1532_1.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "cert-lead-cdph-certification-50-ugm3",
+      "cert-lead-related-construction-definition"
+     ]
+    },
+    {
+     "situation": "Renovation for pay in pre-1978 housing or a child-occupied facility (unless an exception applies): the firm must be certified by EPA, and the work must be directed by a certified renovator and done by certified renovators or trained workers.",
+     "legal_basis": "40 CFR 745.81(a)(2)(ii) and (a)(3); 745.89 (firm certification)",
+     "source_url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-40?part=745&section=745.81",
+     "status": "confirmed",
+     "rule_ids": [
+      "rrp-applicability-pre-1978"
+     ],
+     "note": "Read through the official eCFR API (the ecfr.gov web pages show a bot check). EPA's rule applies in any state without an EPA-authorized state renovation program (40 CFR 745.81(a)); whether California has one was not checked here (epa.gov could not be opened)."
+    },
+    {
+     "situation": "CDPH certification categories and when each is needed (for example an inspector/assessor for lead inspections and a project monitor for clearance).",
+     "legal_basis": "Title 17 CCR 35001 and following",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "cdph.ca.gov could not be opened from this session."
+    }
+   ],
+   "find": [
+    {
+     "label": "CDPH Find a lead professional",
+     "url": "https://www.cdph.ca.gov/Programs/CCDPHP/DEODC/CLPPB/Pages/find_lead_prof.aspx",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "certification type",
+      "name",
+      "city (only for people who allowed it to be shown)"
+     ],
+     "official_owner": "California Department of Public Health, Childhood Lead Poisoning Prevention Branch",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say CDPH lists are updated monthly with names and certificate expiration dates, and that CDPH stopped issuing physical cards in March 2019. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "CDPH index of all certified individuals",
+     "url": "https://www.cdph.ca.gov/Programs/CCDPHP/DEODC/CLPPB/Pages/LRCcertlist.aspx",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name"
+     ],
+     "official_owner": "California Department of Public Health",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "EPA search for lead-safe certified renovation and dust sampling firms",
+     "url": "https://cdxapps.epa.gov/ocspp-oppt-lead/firm-location-search",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "location",
+      "firm name"
+     ],
+     "official_owner": "U.S. Environmental Protection Agency",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "EPA pages (seen in search excerpts) say a certified firm may not yet appear in the search. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved. docs/product.md names a different address, https://cdxocsppapps.epa.gov/ocspp-oppt-lead/firm-location-search; neither could be opened, so which one is current is unconfirmed.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Check the person's name, certification type and expiration date on CDPH's index of certified individuals. For EPA renovation work, check the firm in EPA's firm search and ask for the certified renovator's course certificate. A contractor license is not a lead certification.",
+   "bring_or_ask": [
+    "Bring: the year built, who uses the building (children under 6, daycare, school), the surfaces to be disturbed and any existing lead test results.",
+    "Ask: Which CDPH certification do you hold (inspector/assessor, project monitor, supervisor, worker, sampling technician) and when does it expire?",
+    "Ask (EPA renovation): What is the firm's EPA certification and who is the certified renovator on site?"
+   ],
+   "never_say": [
+    "TradeComply can tell you there is no lead",
+    "This building is lead-safe",
+    "We recommend this lead professional",
+    "No certification is needed"
+   ]
+  },
+  {
+   "id": "licensed_contractor",
+   "name": "CSLB-licensed contractor (subcontractors you hire)",
+   "plain_description": "A contractor licensed by the Contractors State License Board (CSLB) in the classification for the work. TradeComply helps you check a sub's license, bond and workers' compensation from CSLB's public data; confirm anything unclear on CSLB's own site.",
+   "triggers": [
+    "unlicensed",
+    "subcontractor license",
+    "license classification",
+    "CSLB"
+   ],
+   "when_required": [
+    {
+     "situation": "Anyone who engages in the business of, or acts as, a contractor in California must be licensed unless exempt; contracting without a license is a misdemeanor.",
+     "legal_basis": "Business and Professions Code 7028(a)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    },
+    {
+     "situation": "An unlicensed contractor cannot sue to collect payment for work that needs a license.",
+     "legal_basis": "Business and Professions Code 7031(a)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    }
+   ],
+   "not_required_when": [
+    {
+     "situation": "Casual, minor work: the license law does not apply when the total price for labor, materials and everything else on one project is under $1,000 and no building permit is needed, unless the job is part of a larger operation or split to evade the law, or the person advertises as a contractor or employs anyone to help.",
+     "legal_basis": "Business and Professions Code 7048 (amended effective 2025-01-01 and 2026-01-01)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    }
+   ],
+   "find": [
+    {
+     "label": "CSLB Check a License or HIS Registration",
+     "url": "https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/CheckLicense.aspx",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "license number",
+      "business name",
+      "person's name (last, first)",
+      "Home Improvement Salesperson registration number"
+     ],
+     "official_owner": "Contractors State License Board",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "No URL pattern: on 2026-11-26 a LicenseDetail.aspx?LicNum=<number> link and the 'Find A Licensed Contractor' city/ZIP page (ZipCodeSearch.aspx) both redirected to the search page. The page loads Google reCAPTCHA, so do not automate it; TradeComply reads CSLB's public data for license checks. CSLB's 2026 Law Book says the lookup shows contact information, license status, legal actions, classifications, business type, bond and workers' compensation, and that 'Find A Licensed Contractor' shows results in random order."
+    },
+    {
+     "label": "DOSH Asbestos Registrants' Database (contractors registered with Cal/OSHA for asbestos work)",
+     "url": "https://www.dir.ca.gov/databases/doshacru/acrusearch.html",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "registration number",
+      "CSLB license number",
+      "employer",
+      "DBA",
+      "city",
+      "area code"
+     ],
+     "official_owner": "Cal/OSHA (DIR Division of Occupational Safety and Health), Asbestos Contractors' Registration Unit",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "For asbestos abatement subs: check Cal/OSHA registration here and the C-22 class (or asbestos certification) on CSLB Check a License. POST form; no URL pattern."
+    }
+   ],
+   "verify_license_how": "Use TradeComply's license check, or search the license number on CSLB Check a License. Confirm the status is active, the classification covers the work, the contractor's bond is on file, and workers' compensation coverage (or an exemption) is shown.",
+   "bring_or_ask": [
+    "Ask the sub for: license number, classification, workers' compensation certificate and insurance certificates before any work starts.",
+    "Ask: Who is the qualifier on your license and will they supervise this work?"
+   ],
+   "never_say": [
+    "This sub is fully compliant",
+    "CSLB has approved this contractor",
+    "We recommend this sub"
+   ]
+  },
+  {
+   "id": "cslb_qualifier",
+   "name": "CSLB qualifying individual (RMO, RME or owner who qualifies the license)",
+   "plain_description": "The person whose experience and exam qualify the company's contractor license (the owner, a general partner, or a responsible managing officer, manager, member or employee). That person is responsible for supervising and controlling the company's construction work, directly or by monitoring and being available to those they delegate to.",
+   "triggers": [
+    "qualifier",
+    "RMO",
+    "RME",
+    "responsible managing",
+    "disassociation",
+    "replace qualifier"
+   ],
+   "when_required": [
+    {
+     "situation": "Every license is qualified by a person: the owner (sole owner), a general partner, or a responsible managing officer, manager, member or employee qualified in the same classification.",
+     "legal_basis": "Business and Professions Code 7068(b)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    },
+    {
+     "situation": "The qualifier is responsible for supervision and control of the company's construction operations, and may qualify additional firms only in limited cases (shared ownership, subsidiary or joint venture, same officers) and for no more than three firms in a one-year period.",
+     "legal_basis": "Business and Professions Code 7068.1(a), (b)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    }
+   ],
+   "find": [
+    {
+     "label": "CSLB Check a License",
+     "url": "https://www.cslb.ca.gov/OnlineServices/CheckLicenseII/CheckLicense.aspx",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "license number",
+      "business name",
+      "person's name (last, first)"
+     ],
+     "official_owner": "Contractors State License Board",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "No URL pattern (see the licensed contractor entry). Whether the license record lists the qualifier has not been confirmed: the results page sits behind a reCAPTCHA check and was not automated, and CSLB's Law Book description of the lookup does not mention personnel."
+    }
+   ],
+   "verify_license_how": "Search the license on CSLB Check a License and look for the qualifier and the classifications they qualify. If the record does not show the qualifier, ask CSLB.",
+   "bring_or_ask": [
+    "If your qualifier is leaving: ask CSLB how and when to report the disassociation and replace the qualifier, and calendar that deadline in TradeComply.",
+    "Ask a prospective qualifier: Which classifications are you qualified in, and do you qualify any other license now?"
+   ],
+   "never_say": [
+    "TradeComply can be your qualifier",
+    "Anyone in the office can qualify the license",
+    "We recommend this person as your qualifier"
+   ]
+  },
+  {
+   "id": "insurance_agent_broker",
+   "name": "Licensed insurance agent or broker, and admitted surety (bonds)",
+   "plain_description": "People and companies licensed by the California Department of Insurance (CDI) who sell or place insurance and surety bonds, such as the CSLB contractor's bond, workers' compensation, liability and payment and performance bonds. The law requires the bond or policy to come from an admitted surety or licensed insurer (or, for CSLB bonds, the cash deposit the law allows); it does not require you to use a broker.",
+   "triggers": [
+    "contractor bond",
+    "surety",
+    "insurance broker",
+    "workers' compensation policy",
+    "certificate of insurance",
+    "payment bond",
+    "performance bond"
+   ],
+   "when_required": [
+    {
+     "situation": "Every licensed contractor must keep a $25,000 contractor's bond on file with CSLB.",
+     "legal_basis": "Business and Professions Code 7071.6(a)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    },
+    {
+     "situation": "The CSLB bond must be executed by an admitted surety insurer, or replaced by the deposit the law allows; no other method (such as a certificate of deposit) counts.",
+     "legal_basis": "Business and Professions Code 7071.4(a)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    },
+    {
+     "situation": "A license must have a current Certificate of Workers' Compensation Insurance (issued by an insurer licensed to write workers' compensation in California) or a Certification of Self-Insurance on file, unless the licensee certifies it has no employees and does not hold a classification that always requires coverage.",
+     "legal_basis": "Business and Professions Code 7125(a), (b)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "note": "Section 7125 is printed twice in the 2026 Law Book: the current text (repealed effective January 1, 2028) and a new text operative January 1, 2028; check for changes before then."
+    },
+    {
+     "situation": "A person who sells, solicits or negotiates insurance must hold a CDI license.",
+     "legal_basis": "Insurance Code 1631",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "find": [
+    {
+     "label": "CDI Check a License (agents, brokers, adjusters, agencies)",
+     "url": "https://www.insurance.ca.gov/license-status",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number"
+     ],
+     "official_owner": "California Department of Insurance",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say the lookup shows status and discipline history, and the number search is at https://cdicloud.insurance.ca.gov/cal/LicenseNumberSearch (6 to 8 letters and digits, no spaces). URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved. docs/product.md names https://cdicloud.insurance.ca.gov/cal as the license status page; none of these CDI addresses could be opened.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "CDI company information (check whether an insurer or surety is admitted in California)",
+     "url": "https://www.insurance.ca.gov/01-consumers/120-company",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "company name"
+     ],
+     "official_owner": "California Department of Insurance",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Look up the agent or broker on CDI Check a License by name or license number and check the status and any discipline. For a bond or policy, check the insurer or surety company on CDI's company information pages, and confirm the bond and workers' compensation show on your CSLB license record.",
+   "bring_or_ask": [
+    "Bring: your CSLB license number, payroll by classification, and the contract's bond and insurance requirements.",
+    "Ask: Is the surety or insurer admitted in California, and what is your CDI license number?",
+    "Ask: Will you file the bond or workers' compensation certificate with CSLB, and when?"
+   ],
+   "never_say": [
+    "TradeComply sells insurance or bonds",
+    "You are fully insured",
+    "We recommend this broker",
+    "This policy covers everything"
+   ]
+  },
+  {
+   "id": "cpa",
+   "name": "Certified public accountant (CPA)",
+   "plain_description": "An accountant licensed by the California Board of Accountancy (or by another state's board). CSLB's blanket bond program requires reviewed financial statements with a CPA's report, and CSLB advises having financial statements for lenders prepared by a CPA.",
+   "triggers": [
+    "reviewed financial statements",
+    "audited financial statements",
+    "CPA",
+    "blanket bond",
+    "bonding capacity",
+    "prequalification financial statement"
+   ],
+   "when_required": [
+    {
+     "situation": "Applying to CSLB for approval of a blanket performance and payment bond (home improvement work): the application must include reviewed year-end financial statements and a report by a CPA licensed in California or by another state's board of accountancy, and reviewed statements are due again with license renewals (a capped bond for a company that files Form 10-K reports with the SEC is excused from the renewal statements).",
+     "legal_basis": "16 CCR 858.2(a)(3); 858.4(a)(2); 858.1(d)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "blanket-bond-application-form-13b-35",
+      "blanket-bond-renewal-financial-statements"
+     ]
+    },
+    {
+     "situation": "Only a licensed CPA (or an out-of-state CPA allowed to practice in California) may issue audit or review reports.",
+     "legal_basis": "Business and Professions Code 5050 and following",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "find": [
+    {
+     "label": "California Board of Accountancy License Lookup",
+     "url": "https://dca.ca.gov/cba/consumers/license-lookup.shtml",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "license number"
+     ],
+     "official_owner": "California Board of Accountancy",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say results show license type, number, status and any disciplinary actions. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "California Board of Accountancy out-of-state licensed CPA search",
+     "url": "https://www.cba.ca.gov/forms/mobility/cpa_search.html",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name"
+     ],
+     "official_owner": "California Board of Accountancy",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    }
+   ],
+   "verify_license_how": "Look the CPA or the CPA firm up on the Board of Accountancy License Lookup and check the status is clear, the expiration date has not passed, and whether any discipline is listed.",
+   "bring_or_ask": [
+    "Bring: year-end books, work-in-progress schedule, and the surety's or lender's written requirements.",
+    "Ask: Do you prepare reviewed or audited statements for contractors, including the ratios CSLB or the surety asks for?"
+   ],
+   "never_say": [
+    "TradeComply prepares reviewed or audited financial statements",
+    "We recommend this CPA",
+    "This is tax advice"
+   ],
+   "optional_when": [
+    {
+     "situation": "A bank loan officer will normally want balance sheets and income statements; CSLB advises having them prepared by a CPA so they meet professional accounting standards (advice, not a legal requirement).",
+     "legal_basis": "CSLB 2026 Law Book, Section III (Business Management, financing; PDF page 63)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    }
+   ]
+  },
+  {
+   "id": "crane_operator",
+   "name": "Certified crane operator",
+   "plain_description": "A crane operator certified by an accredited crane operator certifying organization for the type of crane. On construction sites the employer must make sure each operator is trained, certified and evaluated before operating.",
+   "triggers": [
+    "crane operator",
+    "operator certification",
+    "NCCCO",
+    "mobile crane",
+    "tower crane",
+    "derrick"
+   ],
+   "when_required": [
+    {
+     "situation": "Operating cranes and derricks in construction: the employer must ensure each operator is trained, certified or licensed, and evaluated first (or works only as a monitored operator-in-training). Certification from an accredited certifying entity is valid for up to five years, and the employer pays for it.",
+     "legal_basis": "8 CCR 5006.2(a), (c), (d)",
+     "source_url": "https://www.dir.ca.gov/title8/5006_2.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "crane-operator-certification-5-years",
+      "cert-crane-operator-employer-evaluation"
+     ]
+    },
+    {
+     "situation": "Federal rule for construction: operators must be trained, certified/licensed and evaluated, and a certifying organization must be accredited by a nationally recognized accrediting agency.",
+     "legal_basis": "29 CFR 1926.1427(a), (d)",
+     "source_url": "https://www.ecfr.gov/api/renderer/v1/content/enhanced/current/title-29?part=1926&section=1926.1427",
+     "status": "confirmed",
+     "note": "Read through the official eCFR API; osha.gov returned 403 'Request blocked'."
+    }
+   ],
+   "find": [],
+   "verify_license_how": "Look at the operator's card to see which organization certified them and for which crane types and capacities, then verify the card on that organization's own online verification. Keep a copy with your evaluation record.",
+   "bring_or_ask": [
+    "Bring: the crane type and capacity, the lift plan, power line distances and ground conditions.",
+    "Ask: Which crane types and capacities is your certification for, and when does it expire?",
+    "Ask (employer): Has the operator been evaluated on this equipment and is that documented?"
+   ],
+   "never_say": [
+    "TradeComply certifies crane operators",
+    "This operator is qualified for every crane",
+    "We recommend this operator"
+   ],
+   "notes": [
+    "There is no government directory of certified crane operators. 8 CCR 5006.2 accepts certification by any accredited crane operator certifying entity (or a qualifying government license), so verify the card with whichever organization issued it; TradeComply does not link to one certifier over another."
+   ]
+  },
+  {
+   "id": "crane_certifier",
+   "name": "Cal/OSHA-licensed crane certifier (certifying agency)",
+   "plain_description": "A company licensed by the Cal/OSHA Crane Unit to inspect, test and certify cranes and derricks over three tons rated capacity.",
+   "triggers": [
+    "crane certification",
+    "annual crane inspection",
+    "quadrennial",
+    "crane certifier",
+    "load test"
+   ],
+   "when_required": [
+    {
+     "situation": "Cranes and derricks used in lifting service over three tons rated capacity may not be used until the employer confirms they have current annual (and quadrennial) certificates from a currently licensed certifying agency.",
+     "legal_basis": "8 CCR 5021(a)",
+     "source_url": "https://www.dir.ca.gov/title8/5021.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "crane-annual-certification"
+     ]
+    },
+    {
+     "situation": "The Cal/OSHA Crane Unit licenses the certifying agencies that inspect and certify cranes and derricks over three tons rated capacity.",
+     "legal_basis": "Labor Code 7370-7384 (as stated on the Cal/OSHA Crane Unit page)",
+     "source_url": "https://www.dir.ca.gov/dosh/Cranes.html",
+     "status": "confirmed"
+    }
+   ],
+   "find": [
+    {
+     "label": "Cal/OSHA crane certifier accreditation database",
+     "url": "https://www.dir.ca.gov/databases/crane/cranesearch.html",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "California accreditation number",
+      "company",
+      "city",
+      "county",
+      "state",
+      "area code",
+      "crane type (bridge and gantry, tower, mobile)"
+     ],
+     "official_owner": "Cal/OSHA (DIR Division of Occupational Safety and Health), Crane Unit",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "POST form; a GET request returned 'You must enter at least one criteria', so no URL pattern is given. A county search through the form returned different lists for San Diego and Fresno on 2026-11-26, but each results page said 'This data is current as of: 08/01/2021', so confirm a certifier's license with the Cal/OSHA Crane Unit. Results are listed by accreditation number; do not re-rank them."
+    }
+   ],
+   "verify_license_how": "Search the certifier's company or accreditation number in the Cal/OSHA database, check it covers your crane type, and because the listing may be old, confirm the license with the Cal/OSHA Crane Unit.",
+   "bring_or_ask": [
+    "Bring: crane make, model, serial number and rated capacity, and the last certificates.",
+    "Ask: What is your Cal/OSHA accreditation number, and does it cover this crane type?"
+   ],
+   "never_say": [
+    "TradeComply certifies cranes",
+    "This crane is safe to use",
+    "We recommend this certifier"
+   ]
+  },
+  {
+   "id": "apprenticeship_committee",
+   "name": "DIR-approved apprenticeship committee (for public works)",
+   "plain_description": "A registered apprenticeship program sponsor (committee) whose area includes the job site. On public works you send it contract award information and request apprentices from it.",
+   "triggers": [
+    "DAS 140",
+    "DAS 142",
+    "apprentice",
+    "apprenticeship",
+    "public works",
+    "prevailing wage",
+    "training fund"
+   ],
+   "when_required": [
+    {
+     "situation": "Public works contracts of $30,000 or more carry a duty to employ apprentices (unless the craft does not use apprentices under the prevailing wage determination). The duty applies to every contractor and subcontractor on the project, even if its part is under $30,000.",
+     "legal_basis": "DIR Division of Apprenticeship Standards, Public Works Apprenticeship Requirements page (the page does not cite the statute; Labor Code 1777.5 itself was not read)",
+     "source_url": "https://www.dir.ca.gov/das/publicworks.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "apprenticeship-threshold-30000"
+     ]
+    },
+    {
+     "situation": "Send contract award information (DAS 140 or equivalent) to the apprenticeship committee that approved you to train, or, if you are not approved, to every applicable committee whose area includes the project, within 10 days after the prime contract or subcontract is signed and no later than the first day workers are on the job.",
+     "legal_basis": "8 CCR 230(a)",
+     "source_url": "https://www.dir.ca.gov/t8/230.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "das140-contract-award-deadline"
+     ]
+    },
+    {
+     "situation": "Employ one apprentice hour for every five journeyman hours. If you do not already employ enough registered apprentices, request them in writing (DAS 142) from the committees for the craft whose area includes the site, at least 72 hours before you need them, not counting Saturdays, Sundays and holidays (DIR's page says at least three business days). Pay training fund contributions.",
+     "legal_basis": "8 CCR 230.1(a) (ratio and 72-hour dispatch request); DIR DAS Public Works Apprenticeship Requirements page (training fund contributions)",
+     "source_url": "https://www.dir.ca.gov/t8/230_1.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "das142-dispatch-request-72-hours",
+      "apprentice-ratio-1-to-5",
+      "training-fund-contributions"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "DAS public works apprenticeship search (committees by county and craft)",
+     "url": "https://www.dir.ca.gov/databases/das/pwaddrstart.asp",
+     "url_pattern_with_county": "https://www.dir.ca.gov/databases/das/results_pwadd.asp?varCounty={county}&varType={craft}&Submit=Search",
+     "search_by": [
+      "county",
+      "occupation group (craft)"
+     ],
+     "official_owner": "DIR Division of Apprenticeship Standards",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "url_pattern_params": {
+      "county": "the DIR code for the county from county_codes.dir_das_public_works (URL-encode spaces as +), e.g. SAN+DIEGOG",
+      "craft": "a code from this entry's das_craft_codes, e.g. 22 for Electrical & Electronic"
+     },
+     "note": "Verified on 2026-11-26 with craft 22 (Electrical & Electronic) for three counties: Los Angeles returned 6 sponsors, Fresno 4 and San Diego 5, with different sponsors for each ('Data is current as of 11/25/2026'). The trailing '&Submit=Search' is optional. DIR's disclaimer: a listing 'does not signify they will dispatch apprentices'. Show DIR's list as-is (alphabetical); do not rank or pick a committee."
+    },
+    {
+     "label": "DAS apprenticeship program search (all programs, by keyword)",
+     "url": "https://www.dir.ca.gov/databases/das/aigstart.asp",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "occupation, program name or keyword",
+      "program type"
+     ],
+     "official_owner": "DIR Division of Apprenticeship Standards",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "GET form; the county field on this page is fixed to 'All', so no county pattern is given."
+    },
+    {
+     "label": "DAS apprenticeship status search for public works (registered apprentices)",
+     "url": "https://www.dir.ca.gov/das/appcertpw/AppCertSearch.asp",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "search string: first 4 letters of last name + first initial + last 4 digits of the Social Security number (LLLLF9999)"
+     ],
+     "official_owner": "DIR Division of Apprenticeship Standards",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "POST form; no URL pattern. The search needs part of the apprentice's Social Security number, so ask the worker or the committee; TradeComply should only link to the page and never collect the number."
+    }
+   ],
+   "das_craft_codes": {
+    "Asbestos Workers": "02",
+    "Boilermaker": "07",
+    "Bricklayer": "08",
+    "Brick Tender": "34",
+    "Carpentry": "10",
+    "Carpet, Linoleum": "12",
+    "Cement Masons": "14",
+    "Drywall / Lathers": "36",
+    "Drywall Finisher (Taper)": "55",
+    "Electrical & Electronic": "22",
+    "Elevator Mechanic": "23",
+    "Inspector / Tester": "31",
+    "Glazier & Glass Workers": "26",
+    "Heating, Ventilation & Air Conditioning": "59",
+    "Iron & Steel Workers": "32",
+    "Laborers": "34",
+    "Lineman": "38",
+    "Millwright": "48",
+    "Operating Engineer": "24",
+    "Painting & Decoration": "54",
+    "Plasterer": "57",
+    "Plaster Tender": "34",
+    "Plumbing & Pipefitting": "58",
+    "Fire Sprinkler Fitter": "63",
+    "Roofer": "62",
+    "Sheet Metal": "64",
+    "Sound / Communication Installer": "21",
+    "Surveyor": "66",
+    "Teamster": "65",
+    "Tile Layer/Setter": "68"
+   },
+   "verify_license_how": "Use the DAS public works search for the project's county and craft. To check that a worker is a registered apprentice, use the DAS registered apprentice search.",
+   "bring_or_ask": [
+    "Bring: the awarding body, project name and address, contract number and amount, start date, crafts and estimated journeyman hours for each craft.",
+    "Ask the committee: Do you dispatch apprentices to this county for this craft, and how much notice do you need?",
+    "Ask: Where do training fund contributions for this craft go?"
+   ],
+   "never_say": [
+    "TradeComply files your DAS 140 with DIR",
+    "You are exempt from apprentices",
+    "We recommend this committee"
+   ]
+  },
+  {
+   "id": "certified_electrician",
+   "name": "DIR-certified electrician (for C-10 contractors)",
+   "plain_description": "An electrician certified by the Labor Commissioner's Electrician Certification Unit. People doing electrical work for a C-10 electrical contractor must be certified or be a registered apprentice or trainee.",
+   "triggers": [
+    "C-10",
+    "electrician certification",
+    "general electrician",
+    "residential electrician",
+    "electrical trainee",
+    "ECU"
+   ],
+   "when_required": [
+    {
+     "situation": "People who do electrical work as electricians for a C-10 electrical contractor must be certified, or be a registered apprentice or a registered electrician trainee (DIR's verification page lists these three).",
+     "legal_basis": "Labor Code 108 and following, as stated on DIR's Electrician Certification Unit pages (definition of electrician in Labor Code 108(c); DLSE and CSLB enforce Labor Code 108.2). The statute text was not read.",
+     "source_url": "https://www.dir.ca.gov/dlse/ECU/ElectricalTrade.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "cert-elec-c10-workers-must-be-certified",
+      "cert-elec-electrician-definition-100-va"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "DIR electrician certification status search",
+     "url": "https://www.dir.ca.gov/DLSE/ECU/ElectCert/ElectCertSearch.asp",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "certification card number",
+      "application tracking number",
+      "trainee number",
+      "first four letters of last name + last four digits of driver license or ID (LLLL9999)"
+     ],
+     "official_owner": "DIR Labor Commissioner's Office, Electrician Certification Unit",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "POST form; no URL pattern. There is no county filter."
+    },
+    {
+     "label": "Lists of certified electricians and trainees (open data)",
+     "url": "https://data.ca.gov/dataset/dir-electrician-certification-unit-ecu",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "download"
+     ],
+     "official_owner": "DIR Electrician Certification Unit, on the state open data portal",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Link found on DIR's Electrician Certification page (fetched 2026-11-26); data.ca.gov itself could not be opened.",
+     "url_source": "linked from https://www.dir.ca.gov/dlse/ECU/ElectricalTrade.html (fetched 2026-11-26)"
+    }
+   ],
+   "verify_license_how": "Ask for the worker's certification card number and look it up on the DIR electrician certification status search; check the certification type and expiration.",
+   "bring_or_ask": [
+    "Ask each electrician for: certification card number and certification type, or their apprentice or trainee registration."
+   ],
+   "never_say": [
+    "TradeComply certifies electricians",
+    "This worker is certified for all electrical work",
+    "We recommend this electrician"
+   ]
+  },
+  {
+   "id": "building_department",
+   "name": "City or county building department (building official)",
+   "plain_description": "The local government office that issues building permits, checks plans and does inspections. Inside a city it is usually the city; in unincorporated areas it is the county.",
+   "triggers": [
+    "building permit",
+    "plan check",
+    "inspection",
+    "certificate of occupancy",
+    "final inspection",
+    "building official"
+   ],
+   "when_required": [
+    {
+     "situation": "City of Los Angeles: a permit from LADBS is required for any private property construction, alteration or repair work on buildings in the city. The Los Angeles Municipal Code lists some work that does not need a permit; that list was not read, so ask LADBS.",
+     "legal_basis": "LADBS Plan Review & Permitting page",
+     "source_url": "https://dbs.lacity.gov/services/plan-review-permitting",
+     "status": "confirmed"
+    },
+    {
+     "situation": "City of San Diego: a permit is required for projects such as new construction, additions, remodeling, or repairs to electrical, mechanical and plumbing systems.",
+     "legal_basis": "City of San Diego Development Services, Permits and Approvals page",
+     "source_url": "https://www.sandiego.gov/development-services/permits",
+     "status": "confirmed"
+    },
+    {
+     "situation": "Work that needs a building permit is never 'minor work' exempt from the contractor license law.",
+     "legal_basis": "Business and Professions Code 7048(a)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2026/2026_CSLB_Law_Book.pdf",
+     "status": "confirmed"
+    },
+    {
+     "situation": "Elsewhere: each city or county adopts and enforces the California Building Standards Code; ask that building department what permits and inspections apply.",
+     "legal_basis": "Health and Safety Code 17960 and 18938 and following (state building standards and local enforcement)",
+     "source_url": null,
+     "status": "unconfirmed",
+     "note": "Not read: leginfo.legislature.ca.gov answered with a Cloudflare bot challenge, which was not bypassed."
+    }
+   ],
+   "find": [
+    {
+     "label": "CDTFA tax rate lookup by address (tells you which city or unincorporated county area an address is in)",
+     "url": "https://maps.cdtfa.ca.gov/",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "street address",
+      "city",
+      "ZIP"
+     ],
+     "official_owner": "California Department of Tax and Fee Administration",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "This is a tax tool, used here only to tell whether an address is inside a city or in an unincorporated area (search excerpts say unincorporated addresses get the county rate and that ZIP codes alone are not reliable). Then go to that city's or county's official website. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved.",
+     "url_source": "web search result"
+    },
+    {
+     "label": "City of Los Angeles Department of Building and Safety (LADBS)",
+     "url": "https://dbs.lacity.gov/services/plan-review-permitting",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "City of Los Angeles",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "www.ladbs.org redirects here. Example of a city building department. The page links to LADBS's online permit and 'Check Permit Status' services on www.ladbsservices2.lacity.org and permitla.lacitydbs.org, which were not opened."
+    },
+    {
+     "label": "City of San Diego Development Services Department, permits",
+     "url": "https://www.sandiego.gov/development-services/permits",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "City of San Diego",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "Example of a city building department; all new permits are submitted online per the page."
+    }
+   ],
+   "verify_license_how": "Make sure you are on the government's own website (a .gov or ca.gov address, or the city's official domain), not a permit-service company's site.",
+   "bring_or_ask": [
+    "Bring: the job address and assessor's parcel number, scope of work, plans, your CSLB license number and the owner's authorization.",
+    "Ask: Is this address in your jurisdiction, and which permits, plan reviews and inspections does this work need?",
+    "Ask: Does this project need special inspections or a deputy inspector, and do you keep a list of approved inspectors or agencies?"
+   ],
+   "never_say": [
+    "No permit is needed",
+    "TradeComply issues or approves permits",
+    "Your plans will pass plan check",
+    "We recommend this permit service or expediter"
+   ]
+  },
+  {
+   "id": "special_inspector",
+   "name": "Special inspector / deputy inspector (approved by the building department)",
+   "plain_description": "An inspector approved or registered by the building department to watch certain work continuously, such as structural concrete, steel, welding or masonry. In Los Angeles these are LADBS Registered Deputy Inspectors.",
+   "triggers": [
+    "special inspection",
+    "deputy inspector",
+    "continuous inspection",
+    "welding inspection",
+    "statement of special inspections"
+   ],
+   "when_required": [
+    {
+     "situation": "City of Los Angeles: builders who need continuous inspection use LADBS-certified Deputy Inspectors; LADBS says that without a Deputy Inspector holding the correct certifications, approval for the related work may not be given.",
+     "legal_basis": "LADBS Licensing page",
+     "source_url": "https://dbs.lacity.gov/services/inspection/licensing",
+     "status": "confirmed"
+    },
+    {
+     "situation": "Where the building code requires special inspections (for example certain concrete, steel, masonry, high-strength bolting or deep foundations), a statement of special inspections is required before the permit is issued, and inspections are done by inspectors the building official accepts.",
+     "legal_basis": "California Building Code (Title 24 Part 2) Chapter 17, 1704.2.3 and 1704.3",
+     "source_url": null,
+     "status": "unconfirmed",
+     "rule_ids": [
+      "special-inspection-statement-before-permit",
+      "special-inspection-reports-and-final-report"
+     ],
+     "note": "The building code text was not read; ask the building department."
+    }
+   ],
+   "find": [
+    {
+     "label": "LADBS Deputy Building Inspector and Certified Welder Rosters",
+     "url": "https://www.ladbsservices2.lacity.org/LADBSRoster",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "certification type",
+      "name"
+     ],
+     "official_owner": "City of Los Angeles Department of Building and Safety",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Link found on the LADBS Licensing page (fetched 2026-11-26); its host could not be opened.",
+     "url_source": "linked from https://dbs.lacity.gov/services/inspection/licensing ('Hire Deputy Inspector', fetched 2026-11-26)"
+    }
+   ],
+   "verify_license_how": "Check the inspector on the building department's own roster or approved list for the exact type of inspection (for example reinforced concrete or structural welding).",
+   "bring_or_ask": [
+    "Bring: the approved plans and the statement of special inspections, the permit number and the pour or weld schedule.",
+    "Ask: Which certification do you hold for this inspection type, and when will you send reports to the building department?"
+   ],
+   "never_say": [
+    "TradeComply replaces special inspections",
+    "We recommend this inspector or agency"
+   ]
+  },
+  {
+   "id": "casp",
+   "name": "Certified Access Specialist (CASp)",
+   "plain_description": "A person certified by the Division of the State Architect (DSA) to review plans and inspect sites for state and federal accessibility rules and to issue CASp inspection reports and certificates.",
+   "triggers": [
+    "CASp",
+    "accessibility",
+    "ADA",
+    "path of travel",
+    "disability access",
+    "11B"
+   ],
+   "when_required": [],
+   "find": [
+    {
+     "label": "DSA CASp program and list of certified access specialists",
+     "url": "https://www.dgs.ca.gov/casp",
+     "url_pattern_with_county": null,
+     "search_by": [
+      "name",
+      "region",
+      "whether the CASp does inspections"
+     ],
+     "official_owner": "Department of General Services, Division of the State Architect",
+     "fetched": "2026-11-26",
+     "status": "blocked:host not allowed by this session's network policy (the proxy refused the connection); page not opened",
+     "search_by_confirmed": false,
+     "note": "Search excerpts say the list is linked from this page and that only CASps marked 'Yes' under 'Do Inspections' are available for hire. URL taken from web search results on 2026-11-26; the page itself could not be opened, so it may have moved. docs/product.md names a direct list address, https://www.apps2.dgs.ca.gov/dsa/casp/casp_certified_list.aspx, which could not be opened either.",
+     "url_source": "named as the DSA CASp website in the CCDA guide published on CSLB's site (fetched 2026-11-26; the guide's own footnote cites a 2022 access date)"
+    }
+   ],
+   "verify_license_how": "Find the CASp on DSA's list, check the certification is current and that they do inspections, and ask for their CASp number.",
+   "bring_or_ask": [
+    "Bring: the plans, the building's age and use, and any accessibility complaint or demand letter.",
+    "Ask: Will you issue a CASp Inspection Report, and what will it cover?"
+   ],
+   "never_say": [
+    "TradeComply makes your site ADA compliant",
+    "A CASp report protects you from all lawsuits",
+    "We recommend this CASp"
+   ],
+   "optional_when": [
+    {
+     "situation": "Owners may hire a CASp, and some building departments use CASp-certified inspectors. A CASp can review plans, inspect a facility, write accessibility reports, and issue CASp Inspection Reports and Disability Access Inspection Certificates under Civil Code 55.53.",
+     "legal_basis": "Civil Code 55.53 (as described by the California Commission on Disability Access guide published on CSLB's site)",
+     "source_url": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2024/CCDA%20Guide%20to%20Accessible%20Parking%20Construction%20Industry.pdf",
+     "status": "confirmed",
+     "rule_ids": [
+      "ada-casp-definition-and-services"
+     ]
+    },
+    {
+     "situation": "A commercial lease must state whether the premises have been inspected by a CASp. That is a disclosure; it does not require a CASp inspection.",
+     "legal_basis": "Civil Code 1938",
+     "source_url": null,
+     "status": "unconfirmed",
+     "rule_ids": [
+      "ada-civ-1938-casp-status-in-lease"
+     ],
+     "note": "Civil Code 1938 itself was not read (leginfo blocks automated access). Rulebook rule ada-civ-1938-casp-status-in-lease is confirmed from City of San Diego lease documents that apply the statute."
+    }
+   ]
+  },
+  {
+   "id": "competent_person",
+   "name": "Competent person (Cal/OSHA)",
+   "plain_description": "Someone you designate, usually your own trained foreman or superintendent, who can spot existing and predictable hazards and has authority to fix them right away. It is not a state license, so there is no public directory.",
+   "triggers": [
+    "competent person",
+    "trench inspection",
+    "excavation inspection",
+    "scaffold inspection",
+    "confined space",
+    "silica"
+   ],
+   "when_required": [
+    {
+     "situation": "Some safety orders require a competent person: for example, when shoring or shield material is damaged, a competent person must examine it before it is reused (8 CCR 1541.1(d)(3)). A competent person is one who can identify existing and predictable hazards and is authorized to take prompt corrective measures.",
+     "legal_basis": "8 CCR 1504 (definition); 8 CCR 1541.1(d)(3); federal 29 CFR 1926.32(f)",
+     "source_url": "https://www.dir.ca.gov/title8/1504.html",
+     "status": "confirmed",
+     "rule_ids": [
+      "competent-person-definition",
+      "osha2-cs-initial-survey-competent-person",
+      "silica-competent-person",
+      "asbestos-competent-person-inspections"
+     ]
+    }
+   ],
+   "find": [
+    {
+     "label": "Cal/OSHA Consultation Services (free help for employers)",
+     "url": "https://www.dir.ca.gov/dosh/consultation.html",
+     "url_pattern_with_county": null,
+     "search_by": [],
+     "official_owner": "Cal/OSHA (DIR Division of Occupational Safety and Health)",
+     "fetched": "2026-11-26",
+     "status": "reachable",
+     "search_by_confirmed": true,
+     "note": "The page says all Cal/OSHA Consultation services are free to California employers."
+    }
+   ],
+   "verify_license_how": "There is no license to look up. Keep a written record of who you designated, for which hazards, and the training they received.",
+   "bring_or_ask": [
+    "Decide: who is the competent person for each hazard on this job, and do they have authority to stop work?",
+    "Keep: their training records and daily inspection notes."
+   ],
+   "never_say": [
+    "TradeComply is your competent person",
+    "Anyone on site counts as the competent person",
+    "We recommend this training provider"
+   ]
+  }
+ ],
+ "counties": [
+  "Alameda",
+  "Alpine",
+  "Amador",
+  "Butte",
+  "Calaveras",
+  "Colusa",
+  "Contra Costa",
+  "Del Norte",
+  "El Dorado",
+  "Fresno",
+  "Glenn",
+  "Humboldt",
+  "Imperial",
+  "Inyo",
+  "Kern",
+  "Kings",
+  "Lake",
+  "Lassen",
+  "Los Angeles",
+  "Madera",
+  "Marin",
+  "Mariposa",
+  "Mendocino",
+  "Merced",
+  "Modoc",
+  "Mono",
+  "Monterey",
+  "Napa",
+  "Nevada",
+  "Orange",
+  "Placer",
+  "Plumas",
+  "Riverside",
+  "Sacramento",
+  "San Benito",
+  "San Bernardino",
+  "San Diego",
+  "San Francisco",
+  "San Joaquin",
+  "San Luis Obispo",
+  "San Mateo",
+  "Santa Barbara",
+  "Santa Clara",
+  "Santa Cruz",
+  "Shasta",
+  "Sierra",
+  "Siskiyou",
+  "Solano",
+  "Sonoma",
+  "Stanislaus",
+  "Sutter",
+  "Tehama",
+  "Trinity",
+  "Tulare",
+  "Tuolumne",
+  "Ventura",
+  "Yolo",
+  "Yuba"
+ ],
+ "counties_source": {
+  "url": "https://www.dir.ca.gov/databases/das/pwaddrstart.asp",
+  "fetched": "2026-11-26",
+  "note": "The 58 county names as listed in DIR's public works apprenticeship search."
+ },
+ "county_codes": {
+  "dir_das_public_works": {
+   "Alameda": "ALAMEDAA",
+   "Alpine": "ALPINEC",
+   "Amador": "AMADORC",
+   "Butte": "BUTTEC",
+   "Calaveras": "CALAVERASC",
+   "Colusa": "COLUSAC",
+   "Contra Costa": "CONTRA COSTAA",
+   "Del Norte": "DEL NORTEA",
+   "El Dorado": "EL DORADOC",
+   "Fresno": "FRESNOD",
+   "Glenn": "GLENNC",
+   "Humboldt": "HUMBOLDTA",
+   "Imperial": "IMPERIALG",
+   "Inyo": "INYOD",
+   "Kern": "KERND",
+   "Kings": "KINGSD",
+   "Lake": "LAKEA",
+   "Lassen": "LASSENC",
+   "Los Angeles": "LOS ANGELESE",
+   "Madera": "MADERAD",
+   "Marin": "MARINA",
+   "Mariposa": "MARIPOSAD",
+   "Mendocino": "MENDOCINOA",
+   "Merced": "MERCEDD",
+   "Modoc": "MODOCC",
+   "Mono": "MONOD",
+   "Monterey": "MONTEREYB",
+   "Napa": "NAPAA",
+   "Nevada": "NEVADAC",
+   "Orange": "ORANGEE",
+   "Placer": "PLACERC",
+   "Plumas": "PLUMASC",
+   "Riverside": "RIVERSIDEE",
+   "Sacramento": "SACRAMENTOC",
+   "San Benito": "SAN BENITOB",
+   "San Bernardino": "SAN BERNARDINOE",
+   "San Diego": "SAN DIEGOG",
+   "San Francisco": "SAN FRANCISCOA",
+   "San Joaquin": "SAN JOAQUINC",
+   "San Luis Obispo": "SAN LUIS OBISPOE",
+   "San Mateo": "SAN MATEOB",
+   "Santa Barbara": "SANTA BARBARAE",
+   "Santa Clara": "SANTA CLARAB",
+   "Santa Cruz": "SANTA CRUZB",
+   "Shasta": "SHASTAC",
+   "Sierra": "SIERRAC",
+   "Siskiyou": "SISKIYOUC",
+   "Solano": "SOLANOA",
+   "Sonoma": "SONOMAA",
+   "Stanislaus": "STANISLAUSC",
+   "Sutter": "SUTTERC",
+   "Tehama": "TEHAMAC",
+   "Trinity": "TRINITYC",
+   "Tulare": "TULARED",
+   "Tuolumne": "TUOLUMNEC",
+   "Ventura": "VENTURAE",
+   "Yolo": "YOLOC",
+   "Yuba": "YUBAC"
+  }
+ },
+ "review": {
+  "date": "2026-11-26",
+  "what": "Independent re-check: every reachable URL re-fetched; the DAS county URL pattern tested with Los Angeles, Fresno and San Diego (different sponsor lists for each); POST-only searches confirmed by one form submission each; every 'confirmed' legal basis re-read on the official host; blocked hosts retried and reported, not bypassed.",
+  "result": "See each entry; entries that could not be re-read stay 'unconfirmed' or 'blocked:'."
+ },
+ "legal_review": {
+  "date": "2026-11-26",
+  "what": "Adversarial legal-accuracy review: every when_required, not_required_when and optional_when basis re-read on the official host where one could be fetched (CSLB 2026 Law Book, same SHA-256 as sources/2026_CSLB_Law_Book.pdf; CSLB 2022 Law Book appendix; Title 8 on dir.ca.gov; the eCFR API) and tested for wrong section, overbroad trigger, missing exemption and wrong professional type.",
+  "changes": [
+   "attorney: the lien foreclosure situation moved to optional_when (a lawyer is required only for a corporation or LLC; advisable for a sole proprietor or partner); small claims: the higher limit is for individuals; 6125 names the legal document assistant limit",
+   "notary_public: notarization only on the accord route; the lien proof of service affidavit (CCP 2015.5) marked not read",
+   "architect / professional_engineer: either one satisfies B&P 5537(b); the general rule for other buildings and B&P 5538 added as unconfirmed; 1541.1(d)(3) applies to damaged equipment; 6737.3 wording narrowed",
+   "asbestos_consultant: the 100 sq ft wording in Cal/OSHA's rules is not an exemption (B&P 7180 has no size limit); the 341.15 Note added",
+   "qsd_qsp: the rainfall erosivity waiver added; cpa: the SEC-filer capped bond exception added"
+  ]
+ }
+}

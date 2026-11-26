@@ -73,6 +73,7 @@ can't create, change or revoke keys.
 |---|---|
 | Auth | `POST /api/auth/signup` `login` `logout` `password`; `GET /api/auth/local?token=` (local mode one-time link) |
 | Account | `GET /api/me`, `GET /api/config`, `PATCH /api/tenant`, `GET/POST /api/users`, `PATCH/DELETE /api/users/{id}`, `GET/POST /api/keys`, `PATCH /api/keys/{id}` (name, tool scope, rate limit, expiry), `DELETE /api/keys/{id}` (revoke), `GET /api/audit`, `GET /api/audit/{id}` |
+| Account data | `GET /api/tenant/export` (owner, signed in: one JSON file with every record of the company, no credentials), `DELETE /api/tenant` (owner, signed in: close the account; body `confirm_company_name`, `password`). See [Company data export and account deletion](#company-data-export-and-account-deletion) |
 | MCP governance | `GET /api/mcp/audit` (owner: MCP call log, filters, paging), `GET /api/mcp/audit/export?format=csv\|json` (owner), `GET /api/mcp/policy` (access mode, limits, tool categories), `GET /api/mcp/tool-hashes` (SHA-256 of every tool definition, for pinning). See [docs/mcp-security.md](docs/mcp-security.md) |
 | Tools | `GET /api/tools` (name, description, input schema, module), `POST /api/tools/{name}` (JSON body = arguments; runs in-process through `fastmcp.Client(server.mcp)`, writes an audit row) |
 | Records | `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/{id}`, `GET /api/projects/{id}/deadlines`; `GET/POST /api/subs`, `GET/PATCH/DELETE /api/subs/{id}`, `GET /api/subs/{id}/check`, `POST /api/subs/import` (CSV: multipart `file`, `text/csv` body or JSON `{"csv": ...}`); `GET/POST /api/documents`, `POST /api/documents/from_result`, `GET/PATCH/DELETE /api/documents/{id}`; `GET/POST /api/field_logs`, `GET/DELETE /api/field_logs/{id}`, `POST /api/field_logs/sync` (idempotent by `client_uuid`) |
@@ -80,6 +81,68 @@ can't create, change or revoke keys.
 | Billing | `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/webhook` |
 
 Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<host>/api/dashboard`.
+
+### Company data export and account deletion
+
+Customers in California (CCPA/CPRA) and business buyers expect to be able to take their data with them and to close
+their account. Settings > Account and data does both, for the account owner only (`app/account.py`).
+
+**Download all company data** (`GET /api/tenant/export`): one JSON file (`tradecomply-company-data-<date>.json`,
+streamed, nothing cached) with the company profile and settings, team members, API keys, projects, subcontractors,
+documents, field logs with their signatures, the activity log, the AI assistant (MCP) call log, integrations,
+webhooks, queued and sent notifications, single sign-on settings and calendar links. It leaves out what only
+protects the account on this server: password and API key hashes, session counters, and every stored credential
+(integration sign-ins and keys, webhook addresses and signing secrets, the SSO client secret, private calendar
+links). The file lists what it left out and why. Which columns may be exported is a fixed list per table in
+`app/store.py` (`TENANT_EXPORT`), so a secret column added later is never exported by accident;
+`tests/test_account.py` fails until every new column is listed as exported or left out. Five downloads per company
+per 10 minutes; each one is written to the activity log.
+
+**Delete company account** (`DELETE /api/tenant`, body `{"confirm_company_name": "...", "password": "..."}`, with
+the CSRF header like every signed-in change): the company name must match exactly and the owner's password is
+checked again (wrong passwords share the password-change lockout: 5 per 15 minutes). Then:
+
+1. The card subscription is canceled at Stripe right away when this server has `STRIPE_SECRET_KEY` and the company
+   has a subscription (`DELETE /v1/subscriptions/<id>`). Best effort: if Stripe can't be reached or refuses, the
+   deletion still happens, the receipt says so with the `SUPPORT_EMAIL` / `SUPPORT_URL` contact, and the server log
+   names the subscription id so the operator can cancel it in the Stripe dashboard. Stripe keeps its own invoice and
+   payment records; the Stripe customer is not deleted.
+2. Each connected integration is asked to cancel TradeComply's access where its connector can do that
+   (`Connector.revoke()`, e.g. an OAuth token revocation endpoint), best effort and reported one by one. For the
+   others the receipt says to remove TradeComply's access in that product's own settings.
+3. Every row of the company is deleted from every company table in one transaction, on SQLite and PostgreSQL alike
+   (`Store.delete_tenant`): child tables first and by `tenant_id`, so the activity log and the MCP call log (which
+   don't rely on `ON DELETE CASCADE`) go too. Every table in `APP_TABLES` is listed either as a company table or as a
+   shared one that holds nothing naming a company (`SHARED_TABLES`: processed Stripe event ids, ended-session
+   nonces, the server's own keys, the schema version); importing the store fails if a new table is in neither list.
+4. Every session, API key and calendar link of the company stops working (their rows are gone), and this browser's
+   cookies are cleared. The email addresses are free to sign up again.
+
+The answer is a short receipt: rows removed per section, the billing result, each integration's result, and what
+is kept elsewhere: files people downloaded or printed, subscribed calendars, messages already sent to Slack, Teams or
+by text, and the database backups and server logs of whoever runs the server (they expire on that server's own
+schedule). Before deleting, a company should download its data and decide with its own advisers whether any records
+must be kept; this feature carries out that decision, it doesn't make it.
+
+API keys can do neither: they act with the office role and their scope model limits which tools a key may call,
+with no notion of account-level actions, so both routes need the owner's own sign-in.
+
+Operators (for a request that arrives by email, or a company that can't sign in):
+
+```bash
+python -m app.account delete --tenant t_0123456789abcdef          # prints what would be removed; deletes nothing
+python -m app.account delete --tenant t_0123456789abcdef --yes    # deletes (add --keep-billing or --no-revoke to skip steps 1 or 2)
+python -m app.account export --tenant t_0123456789abcdef --out company.json   # the same file as the download (mode 0600)
+```
+
+They use the server's `DATABASE_URL` / `DATA_DIR`, `SECRET_KEY` and `INTEGRATIONS_KEY`. Running `delete` again on
+a company that is already gone removes any row written while the first run was in progress.
+
+Unconfirmed when this was written (2026-11-26): the Stripe cancel call above was not checked against Stripe's API
+reference (docs.stripe.com could not be reached from the environment it was written in), and no California privacy
+law text was read for this feature (leginfo.legislature.ca.gov answered with a bot challenge, HTTP 403, and was not
+bypassed; oag.ca.gov and cppa.ca.gov could not be reached). Nothing here says what the CCPA/CPRA requires of the
+operator or of a customer; ask an attorney.
 
 ### Environment variables
 
@@ -234,8 +297,9 @@ Each item: check the source, update the value, set `verified: True` and `checked
 - `tradecomply/licenses.py`: license data sources (demo fixtures, CSV)
 - `app/main.py`: the one ASGI app (FastAPI `/api`, static web app, `/mcp` mounted from `server.mcp`)
 - `app/store.py` (SQLite, tenant-scoped), `app/auth.py` (accounts, sessions, CSRF, API keys, `/mcp` gate and audit),
-  `app/billing.py` (Stripe), `app/api.py` (JSON API), `app/dashboard.py` (RAG dashboard, lien calendar, iCalendar),
-  `app/local.py` (offline mode), `app/static/` (web app, service worker, manifest)
+  `app/billing.py` (Stripe), `app/api.py` (JSON API), `app/account.py` (company data export, account deletion),
+  `app/dashboard.py` (RAG dashboard, lien calendar, iCalendar), `app/local.py` (offline mode), `app/static/` (web
+  app, service worker, manifest)
 - `app/mcp_governance.py` (MCP access mode, Origin check, per-key tool scopes, the MCP call log, `/api/mcp/*`):
   see [docs/mcp-security.md](docs/mcp-security.md)
 - `app/integrations_api.py` (`/api/integrations`), `app/connectors/` (one file per connector, auto-discovered),
