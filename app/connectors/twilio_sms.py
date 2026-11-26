@@ -23,12 +23,15 @@ person agreed to receive alert texts at that number. The record keeps the time, 
 wording confirmed and a history of every opt-in and opt-out. A confirmation text (program name, "Msg frequency
 varies", "Msg & data rates may apply", HELP and STOP) is sent right after, which is what CTIA guidance and A2P
 campaign reviews look for; the exact campaign wording is the operator's to register. A number that replied STOP can't
-be added back by staff: the person texts START (or YES) to opt back in.
+be added back by staff: the person texts START (or YES) to opt back in. Texts staff trigger by hand (confirmations,
+test texts) are limited per company and to MANUAL_TEXTS_PER_PHONE_DAY per phone per day, so removing and re-adding
+a number can't flood a phone at the operator's expense.
 
 Inbound replies (POST /api/integrations/twilio-sms/inbound, configured as the Messaging Service's or number's
 "A message comes in" webhook): the X-Twilio-Signature is checked (HMAC-SHA1 with the Auth Token over the full URL
 plus the POST parameters sorted by name, Base64), AccountSid must be this operator's, then STOP-type replies mark the
-phone opted out and START/YES mark it opted back in. All companies share the operator's sender, and Twilio opts a
+phone opted out and START/YES mark it opted back in. The signature has no timestamp, so each MessageSid is applied
+once (remembered REPLY_DEDUPE_S): a captured request replayed later changes nothing. All companies share the operator's sender, and Twilio opts a
 phone out of the whole sender (Messaging Service), so a reply applies to that phone in every company's list; nothing
 about the other companies is revealed. The answer is an empty TwiML <Response/>, so Twilio's own opt-out replies are
 the only ones sent.
@@ -84,6 +87,8 @@ import math
 import os
 import re
 import secrets as _secrets
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
@@ -94,7 +99,7 @@ from pydantic import BaseModel, Field
 
 from . import ConfigError, ConfigField, Connector, ConnectorError, NotConfigured, TestResult
 from .alerts import EVENTS_FIELD, clean_event_list, company_name, delivery_id, human_date, severity_field, wants
-from ..auth import Principal, office_up, platform_of
+from ..auth import Principal, RateLimiter, office_up, platform_of
 from ..billing import base_url, require_entitled
 from ..crypto import DecryptError, connection_context
 from ..events import EVENTS
@@ -115,6 +120,9 @@ SENT_KEEP_DAYS = 5                        # longer than the event bus's ~3-day r
 SID_RE = {"account": re.compile(r"^AC[0-9a-fA-F]{32}$"), "key": re.compile(r"^SK[0-9a-fA-F]{32}$"),
           "service": re.compile(r"^MG[0-9a-fA-F]{32}$")}
 E164_RE = re.compile(r"^\+[1-9][0-9]{7,14}$")
+MESSAGE_SID_RE = re.compile(r"^(SM|MM)[0-9a-fA-F]{32}$")      # api_v2010 Message sid pattern
+REPLY_DEDUPE_S = 3 * 366 * 86400          # how long an applied STOP/START MessageSid is remembered (replay guard)
+MANUAL_TEXTS_PER_PHONE_DAY = 5            # confirmation + test texts to one phone in 24 hours, all companies together
 NANP_RE = re.compile(r"^\+1[2-9][0-9]{2}[2-9][0-9]{6}$")
 OPTED_OUT_CODE = 21610
 RECIPIENT_ERRORS = {21211: "Twilio says this is not a valid phone number",
@@ -601,13 +609,34 @@ def _connector(platform, p: Principal) -> TwilioSmsConnector:
     return TwilioSmsConnector(ConnectorContext(platform, p.tenant_id, p.user_id, p.label))
 
 
-def _rate_limit(platform, p: Principal) -> None:
+_limiter_guard = threading.Lock()
+
+
+def _phone_limiter(platform) -> RateLimiter:
+    with _limiter_guard:
+        lim = getattr(platform, "_sms_phone_limiter", None)
+        if lim is None:
+            lim = platform._sms_phone_limiter = RateLimiter(limit=MANUAL_TEXTS_PER_PHONE_DAY, window_s=86400)
+        return lim
+
+
+def _rate_limit(platform, p: Principal, phone: str) -> None:
+    """Texts staff trigger by hand (the confirmation when a phone is added, test texts) cost the operator money and
+    land on someone's phone: at most 30 per company per 10 minutes, and MANUAL_TEXTS_PER_PHONE_DAY per phone per day
+    over all companies (adding, removing and re-adding a number can't be used to flood a phone)."""
     limiter, key = platform.integration_test_limiter, f"tenant|{p.tenant_id}"
+    phones, pkey = _phone_limiter(platform), "phone|" + hashlib.sha256(phone.encode()).hexdigest()[:24]
     wait = limiter.retry_after(key)
     if wait:
-        raise HTTPException(429, "Too many test texts in a short time. Try again in a few minutes.",
+        raise HTTPException(429, "Too many texts in a short time. Try again in a few minutes.",
+                            headers={"Retry-After": str(wait)})
+    wait = phones.retry_after(pkey)
+    if wait:
+        raise HTTPException(429, f"{mask_phone(phone)} has been sent {MANUAL_TEXTS_PER_PHONE_DAY} texts from "
+                                 "TradeComply in the last 24 hours. Try again later.",
                             headers={"Retry-After": str(wait)})
     limiter.hit(key)
+    phones.hit(pkey)
 
 
 def _book_or_error(platform, tenant_id: str) -> dict:
@@ -644,6 +673,8 @@ def add_recipient(body: RecipientIn, request: Request, p: Principal = Depends(of
         raise HTTPException(422, "Enter a US or Canadian mobile number, e.g. (415) 555-0100.")
     name = re.sub(r"\s+", " ", body.name).strip()[:100]
     company = company_name(platform, p.tenant_id) or "your company"
+    if body.send_confirmation and TwilioSmsConnector.operator_configured(platform.env):
+        _rate_limit(platform, p, phone)         # before anything changes: a refused add leaves the list as it was
     consent = {"at": now_iso(), "user_id": p.user_id, "by": p.label, "method": "staff_confirmed",
                "text": CONSENT_TEXT.format(company=company)}
 
@@ -719,7 +750,7 @@ def test_recipient(rid: str, request: Request, p: Principal = Depends(office_up)
         raise HTTPException(404, "Phone number not found")
     if rec.get("status") != "active":
         raise HTTPException(409, "This person opted out; TradeComply can't text them.")
-    _rate_limit(platform, p)
+    _rate_limit(platform, p, rec["phone"])
     company = company_name(platform, p.tenant_id)
     text = alert_text("test", {"title": "Test text: alerts reach this phone"}, company, None)
     with inst.ctx.http() as http:
@@ -765,6 +796,21 @@ async def inbound(request: Request):
     action = classify_reply(fields.get("Body"), fields.get("OptOutType"))
     phone = normalize_phone(fields.get("From"))
     if action in ("stop", "start") and phone:
-        changed = await anyio.to_thread.run_sync(apply_reply, platform, phone, action)
+        # The signature has no timestamp, so a captured request stays valid forever: each message (MessageSid) is
+        # applied once. Otherwise replaying an old START would opt back in someone who later replied STOP.
+        sid = fields.get("MessageSid") or ""
+        if not MESSAGE_SID_RE.match(sid):
+            log.warning("twilio inbound: reply without a valid MessageSid ignored")
+            return Response(EMPTY_TWIML, media_type="text/xml")
+        nonce = f"twilio:{sid}"
+        store = platform.store
+        if not await anyio.to_thread.run_sync(store.claim_nonce, nonce, int(time.time()) + REPLY_DEDUPE_S):
+            log.info("twilio inbound: message already applied (a replay or a retry); ignored")
+            return Response(EMPTY_TWIML, media_type="text/xml")
+        try:
+            changed = await anyio.to_thread.run_sync(apply_reply, platform, phone, action)
+        except BaseException:
+            await anyio.to_thread.run_sync(store.release_nonce, nonce)      # Twilio's retry must still count
+            raise
         log.info("twilio inbound: %s reply recorded on %d record(s)", action, changed)
     return Response(EMPTY_TWIML, media_type="text/xml")

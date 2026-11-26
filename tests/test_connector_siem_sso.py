@@ -954,18 +954,59 @@ def test_provider_errors_and_changed_settings_end_the_sign_in(owner, app, platfo
     assert {a["args"]["error"] for a in failures} >= {"idp_access_denied", "token_invalid_client", "config_changed"}
 
 
+def _continue_link(page: str) -> str:
+    import html as _html
+    import re as _re
+    m = _re.search(r'<a class="btn" href="([^"]+)">', page)
+    assert m, page
+    return _html.unescape(m.group(1))
+
+
 def test_company_link_start_redirects_and_checks_iss(owner, app, world):
     world.add(FakeIdP(OKTA))
     configure_sso(owner)
     c = TestClient(app)
-    r = c.get(f"/api/auth/sso/start?company={owner.tenant_id}", follow_redirects=False)
+    page = c.get(f"/api/auth/sso/start?company={owner.tenant_id}", follow_redirects=False)
+    assert page.status_code == 200 and page.headers["content-type"].startswith("text/html")
+    assert "Acme Builders" in page.text and "acme.okta.com" in page.text and "tc_sso" not in c.cookies
+    assert "samesite=strict" in page.headers["set-cookie"].lower()
+    r = c.get(_continue_link(page.text), follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].startswith(OKTA + "/oauth2/v1/authorize?")
     assert "tc_sso" in c.cookies
+    assert c.get(_continue_link(page.text), follow_redirects=False).status_code == 200    # the go cookie is used up
     r = c.get(f"/api/auth/sso/start?company={owner.tenant_id}&iss={quote('https://evil.example.com')}",
               follow_redirects=False)
     assert "different identity provider" in error_of(r)
     r = c.get("/api/auth/sso/start?company=t_0000000000000000", follow_redirects=False)
     assert "isn't set up" in error_of(r)
+
+
+def test_company_link_is_no_open_redirect_and_no_login_csrf(app, platform, world):
+    """A company link on another site (a phishing mail, an attacker's page) can't bounce a visitor straight to the
+    authorization_endpoint some company configured, and can't run the sign-in in the visitor's browser: only the
+    confirmation page's own Continue click (go + the SameSite=Strict cookie it set) redirects."""
+    evil = world.add(FakeIdP("https://idp.evil.example"))
+    evil.doc["authorization_endpoint"] = "https://phish.evil.example/login"
+    with TestClient(app) as attacker:
+        tid = signup(attacker, email="mallory@evil.example", company='<img src=x onerror="alert(1)">')["tenant_id"]
+        configure_sso(attacker, issuer="https://idp.evil.example", allowed_domains=["evil.example"])
+        page = attacker.get(f"/api/auth/sso/start?company={tid}", follow_redirects=False)
+        forged = _continue_link(page.text)                       # the attacker's own valid link...
+    victim = TestClient(app)
+    for url in (f"/api/auth/sso/start?company={tid}", forged, f"/api/auth/sso/start?company={tid}&go=x"):
+        r = victim.get(url, follow_redirects=False)              # ...is useless without the victim's own cookie
+        assert r.status_code == 200 and "location" not in r.headers, url
+        assert "tc_sso" not in victim.cookies and "phish.evil.example/login?" not in r.text
+        assert "<img" not in r.text and "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;" in r.text
+        assert "phish.evil.example" in r.text                    # the page names where Continue goes
+    assert "tc_sso_go" in victim.cookies                         # the victim's own page set its own nonce...
+    r = victim.get(forged, follow_redirects=False)               # ...which the attacker's go doesn't match
+    assert r.status_code == 200 and "location" not in r.headers and "tc_sso" not in victim.cookies
+    # The login page's start is JSON only: a cross-site form post (text/plain or urlencoded) is refused.
+    for ctype, body in (("text/plain", '{"email":"mallory@evil.example"}'),
+                        ("application/x-www-form-urlencoded", "email=mallory%40evil.example")):
+        r = victim.post("/api/auth/sso/start", content=body, headers={"content-type": ctype})
+        assert r.status_code == 422 and "authorize_url" not in r.text and "tc_sso" not in victim.cookies
 
 
 def test_enforcement_requires_a_verified_sign_in_then_blocks_passwords_except_owners(owner, app, platform, world):

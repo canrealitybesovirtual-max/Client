@@ -1586,6 +1586,14 @@ class Store:
             return con.execute("insert into revoked_sessions (nonce, expires) values (?, ?) on conflict (nonce) "
                                "do nothing", (str(nonce)[:200], int(expires))).rowcount == 1
 
+    def release_nonce(self, nonce: str) -> None:
+        """Undo claim_nonce when the work it guarded failed, so the sender's retry of the same message is accepted.
+        Only prefixed single-use nonces ("twilio:...") can be released, never a revoked session's nonce."""
+        if ":" not in str(nonce):
+            raise ValueError("only a prefixed single-use nonce can be released")
+        with self.connect() as con:
+            con.execute("delete from revoked_sessions where nonce = ?", (str(nonce)[:200],))
+
     # ------------------------------------------------------------------ audit
     def audit(self, tenant_id: str | None, user: str | None, tool: str, args: dict | None, verified: bool | None,
               ok: bool = True, source: str = "api") -> None:

@@ -583,6 +583,23 @@ def test_test_sends_are_rate_limited(owner, platform):
     assert codes == [200, 200, 429]
 
 
+def test_webhooks_per_company_are_capped(app, owner, platform, monkeypatch):
+    """Each event goes to every webhook, so an uncapped list would let one company make this server send thousands
+    of copies of every event to one URL."""
+    from app import integrations_api
+    monkeypatch.setattr(integrations_api, "MAX_WEBHOOKS", 3)
+    mock_http(platform, lambda r: httpx.Response(200, text="ok"))
+    for _ in range(3):
+        make_hook(owner, url=SLACK_URL, kind="slack")
+    r = owner.post("/api/integrations/webhooks", json={"name": "x", "url": SLACK_URL, "kind": "slack"})
+    assert r.status_code == 409 and "at most 3" in r.json()["detail"]
+    assert len(owner.get("/api/integrations/webhooks").json()) == 3
+    with TestClient(app) as other:                     # the cap is per company
+        signup(other, email="b@other.test", company="Other")
+        assert other.post("/api/integrations/webhooks", json={"name": "x", "url": SLACK_URL,
+                                                               "kind": "slack"}).status_code == 201
+
+
 # ---------------------------------------------------------------------------- events through the API
 def test_emitted_events_reach_webhooks_and_connectors(owner, platform, vendor):
     slack_seen = []

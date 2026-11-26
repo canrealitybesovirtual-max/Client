@@ -34,6 +34,7 @@ from .store import OUTBOUND_STATUSES, now_iso
 log = logging.getLogger("tradecomply.integrations")
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 STAFF = ("owner", "office")
+MAX_WEBHOOKS = 25                  # per company
 
 
 # ---------------------------------------------------------------------------- models
@@ -225,6 +226,10 @@ def list_webhooks(request: Request, p: Principal = Depends(office_up)):
 def create_webhook(body: WebhookIn, request: Request, p: Principal = Depends(office_up)):
     platform = platform_of(request)
     require_entitled(platform, p)
+    if len(platform.store.list_webhooks(p.tenant_id)) >= MAX_WEBHOOKS:
+        # Every event is sent to every webhook: without a cap one company could make this server fan each event
+        # out to thousands of copies of one URL.
+        raise HTTPException(409, f"A company can have at most {MAX_WEBHOOKS} webhooks. Delete one you no longer use.")
     events = _check_events(body.events)
     url = _validated_url(request, body.url, body.kind)
     ctx = webhook_context(p.tenant_id)

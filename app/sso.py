@@ -7,9 +7,14 @@ How it works
   (PUT /api/sso/config). TradeComply reads <issuer>/.well-known/openid-configuration (never a hard-coded provider
   URL), checks that its `issuer` is exactly the configured one, and fetches the signing keys (jwks_uri). The client
   secret is stored encrypted (SecretBox, sso_context(tenant)).
-- Sign-in: POST /api/auth/sso/start {"email"} (the login page) or GET /api/auth/sso/start?company=<tenant id>
-  (a bookmark or the provider's "initiate login URI"; optional iss= must match the configured issuer, per OIDC Core
-  section 4) sends the browser to the provider's authorization_endpoint with response_type=code,
+- Sign-in: POST /api/auth/sso/start {"email"} (the login page; a JSON body, so another site can't post it) or GET
+  /api/auth/sso/start?company=<tenant id> (a bookmark or the provider's "initiate login URI"; optional iss= must
+  match the configured issuer, per OIDC Core section 4). The GET first shows a confirmation page on this site
+  naming the company and the sign-in host; only its Continue link (a same-site click: `go` must match a
+  SameSite=Strict cookie the page set) goes on. So a link on another site can neither bounce a visitor to whatever
+  authorization_endpoint some company configured (open redirect) nor sign the visitor in to someone else's account
+  through an identity provider that answers without asking (login CSRF). Either way the browser then goes to the
+  provider's authorization_endpoint with response_type=code,
   scope="openid email profile", a signed single-use `state` (bound to the company, the issuer and client ID, the
   redirect URI and this browser through an HttpOnly cookie, valid 10 minutes), an OIDC `nonce` and a PKCE S256
   code_challenge (the verifier travels encrypted inside the state).
@@ -82,6 +87,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import hmac
+import html
 import json
 import logging
 import re
@@ -93,7 +99,7 @@ from urllib.parse import quote, urlencode, urlsplit
 
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 from .auth import EMAIL_RE, Principal, RateLimiter, client_ip, is_https, owner_only, platform_of, set_session
@@ -107,6 +113,7 @@ log = logging.getLogger("tradecomply.sso")
 
 STATE_TTL_S = 600
 COOKIE = "tc_sso"
+GO_COOKIE = "tc_sso_go"               # SameSite=Strict: proves the company link's Continue click came from this site
 COOKIE_PATH = "/api/auth/sso"
 CALLBACK_PATH = "/api/auth/sso/callback"
 SCOPES = "openid email profile"
@@ -495,7 +502,7 @@ def sso_verified(store, tenant_id: str, issuer: str, client_id: str) -> bool:
     """Has anyone in this company signed in with SSO under these settings?"""
     with store.connect() as con:
         rows = con.execute("select args_json from audit where tenant_id = ? and tool = 'sso.login' and ok = 1 "
-                           "order by id desc limit 200", (tenant_id,)).fetchall()
+                           "and source = 'sso' order by id desc limit 200", (tenant_id,)).fetchall()
     for r in rows:
         try:
             a = json.loads(r[0] or "{}")
@@ -800,11 +807,48 @@ def start_by_email(body: StartIn, request: Request):
     return _with_cookie(JSONResponse({"authorize_url": url}), request, binding)
 
 
+def _go_value(platform, company: str, nonce: str) -> str:
+    return platform.signer.mac("sso_go", f"{company}|{nonce}")
+
+
+def _confirm_page(request: Request, company: str, cfg: dict, hint: str | None) -> HTMLResponse:
+    """The company link's same-origin step: says which company and which sign-in site, and continues only when the
+    person clicks. The Continue link carries `go`, which must match the SameSite=Strict cookie set here: a link or
+    redirect from another site never sends that cookie, so it can't skip this page (no open redirect to whatever
+    authorization_endpoint a company configured, no login CSRF through an identity provider that signs in silently)."""
+    platform = platform_of(request)
+    meta = discover(platform, cfg["issuer"])
+    host = urlsplit(meta["authorization_endpoint"]).hostname or urlsplit(cfg["issuer"]).hostname or "?"
+    tenant = platform.store.get_tenant(company) or {}
+    name = str(tenant.get("company_name") or "your company")[:200]
+    nonce = _secrets.token_urlsafe(24)
+    params = {"company": company, **({"login_hint": hint} if hint else {}), "go": _go_value(platform, company, nonce)}
+    link = "/api/auth/sso/start?" + urlencode(params, quote_via=quote)
+    e = lambda s: html.escape(s, quote=True)          # noqa: E731
+    body = (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            f'<meta name="viewport" content="width=device-width, initial-scale=1">'
+            f'<title>Single sign-on - TradeComply</title><link rel="stylesheet" href="/static/styles.css"></head>'
+            f'<body><main class="auth-wrap"><div class="card">'
+            f'<h1>Sign in to {e(name)} with single sign-on</h1>'
+            f'<p>You will continue to <strong>{e(host)}</strong>, the sign-in page {e(name)} set up for '
+            f'TradeComply, and come back here signed in.</p>'
+            f'<p>Continue only if you meant to sign in to TradeComply as a member of {e(name)}.</p>'
+            f'<p><a class="btn" href="{e(link)}">Continue to {e(host)}</a> '
+            f'<a class="btn secondary" href="{e(LOGIN_PATH)}">Cancel</a></p></div></main></body></html>')
+    resp = HTMLResponse(body)
+    resp.set_cookie(GO_COOKIE, nonce, max_age=STATE_TTL_S, httponly=True, samesite="strict",
+                    secure=is_https(request), path=COOKIE_PATH)
+    return resp
+
+
 @router.get("/api/auth/sso/start")
 def start_for_company(request: Request, company: str = Query(..., min_length=3, max_length=64),
                       iss: Optional[str] = Query(None, max_length=500),
-                      login_hint: Optional[str] = Query(None, max_length=254)):
-    """A company's SSO sign-in link (bookmark, or the provider's "initiate login URI"): redirects to the provider."""
+                      login_hint: Optional[str] = Query(None, max_length=254),
+                      go: Optional[str] = Query(None, max_length=100)):
+    """A company's SSO sign-in link (bookmark, or the provider's "initiate login URI"). The first visit answers
+    with a confirmation page on this site; its Continue link (same-site, with `go` matching the page's
+    SameSite=Strict cookie) redirects to the provider."""
     platform = platform_of(request)
     try:
         _rate_limit(request, "start", 100, 600)
@@ -815,10 +859,15 @@ def start_for_company(request: Request, company: str = Query(..., min_length=3, 
         if iss is not None and iss != cfg["issuer"]:
             raise SSOError("bad_iss", "This sign-in was started by a different identity provider.", 400)
         hint = login_hint.strip() if login_hint and EMAIL_RE.match(login_hint.strip()) else None
+        nonce = request.cookies.get(GO_COOKIE) or ""
+        if not (go and nonce and hmac.compare_digest(go, _go_value(platform, company, nonce))):
+            return _confirm_page(request, company, cfg, hint)
         url, binding = _start(request, company, cfg, hint)
     except SSOError as e:
         return _back_to_login(str(e))
-    return _with_cookie(RedirectResponse(url, status_code=303), request, binding)
+    resp = _with_cookie(RedirectResponse(url, status_code=303), request, binding)
+    resp.delete_cookie(GO_COOKIE, path=COOKIE_PATH)          # single use
+    return resp
 
 
 @router.get(CALLBACK_PATH)

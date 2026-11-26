@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import json
 import logging
+import secrets
 from datetime import date, datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlencode
 
@@ -666,14 +667,70 @@ def test_signature_matches_twilios_documented_example_and_sdk():
     assert twilio_sms.valid_signature("12345", ["https://tc.example/x"], params, sig)
 
 
-def _inbound(c, body, *, from_=PHONE, account=ACCOUNT, token=AUTH_TOKEN, sig=None, extra=None):
-    params = {"MessageSid": "SM" + "d" * 32, "SmsSid": "SM" + "d" * 32, "AccountSid": account,
+def _inbound(c, body, *, from_=PHONE, account=ACCOUNT, token=AUTH_TOKEN, sig=None, extra=None, message_sid=None):
+    sid = message_sid or "SM" + secrets.token_hex(16)          # every real message has its own MessageSid
+    params = {"MessageSid": sid, "SmsSid": sid, "AccountSid": account,
               "MessagingServiceSid": SERVICE, "From": from_, "To": "+14155559999", "Body": body, "NumMedia": "0",
               "NumSegments": "1", "ApiVersion": "2010-04-01", **(extra or {})}
     url = f"{APP_URL}/api/integrations/twilio-sms/inbound"
     signature = sig or twilio_sms.compute_signature(token, url, params)
     return c.post("/api/integrations/twilio-sms/inbound", content=urlencode(params),
                   headers={"content-type": "application/x-www-form-urlencoded", "x-twilio-signature": signature})
+
+
+def test_a_replayed_signed_reply_changes_nothing(owner, platform, rx):
+    """X-Twilio-Signature has no timestamp: a captured START replayed after a later STOP must not opt the phone back
+    in (each MessageSid is applied once), and a reply without a MessageSid is not applied."""
+    platform.env = dict(TWILIO_ENV)
+    _add(owner, send_confirmation=False)
+    status = lambda: owner.get("/api/integrations/twilio_sms/recipients").json()["recipients"][0]["status"]  # noqa
+    stop1, start1, stop2 = ("SM" + secrets.token_hex(16) for _ in range(3))
+    assert _inbound(owner, "STOP", message_sid=stop1).status_code == 200 and status() == "opted_out"
+    assert _inbound(owner, "START", message_sid=start1).status_code == 200 and status() == "active"
+    assert _inbound(owner, "STOP", message_sid=stop2).status_code == 200 and status() == "opted_out"
+    replay = _inbound(owner, "START", message_sid=start1)            # the same signed request again
+    assert replay.status_code == 200 and replay.text.endswith("<Response></Response>")
+    assert status() == "opted_out"
+    assert _inbound(owner, "START", message_sid="not-a-sid").status_code == 200 and status() == "opted_out"
+    history = twilio_sms.load_book(platform, owner.tenant_id)[0]["recipients"][0]["history"]
+    assert [h["action"] for h in history] == ["opt_in", "opt_out", "opt_in", "opt_out"]
+
+
+def test_a_failed_reply_can_be_retried_by_twilio(owner, platform, rx, monkeypatch):
+    platform.env = dict(TWILIO_ENV)
+    _add(owner, send_confirmation=False)
+    sid = "SM" + secrets.token_hex(16)
+
+    def broken(*_a, **_k):
+        raise RuntimeError("database briefly down")
+    monkeypatch.setattr(twilio_sms, "apply_reply", broken)
+    c = TestClient(owner.app, raise_server_exceptions=False)
+    assert _inbound(c, "STOP", message_sid=sid).status_code == 500
+    monkeypatch.undo()
+    assert _inbound(owner, "STOP", message_sid=sid).status_code == 200      # Twilio's retry is applied
+    assert owner.get("/api/integrations/twilio_sms/recipients").json()["recipients"][0]["status"] == "opted_out"
+
+
+def test_hand_triggered_texts_are_limited_per_phone(owner, other, platform, rx):
+    """Removing and re-adding a number (in one company or several) can't be used to flood a phone with
+    confirmation texts at the operator's expense."""
+    platform.env = dict(TWILIO_ENV)
+    sent = lambda: sum(1 for r in rx.seen if r.url.path.endswith("/Messages.json"))  # noqa: E731
+    for _ in range(twilio_sms.MANUAL_TEXTS_PER_PHONE_DAY - 1):
+        rid = _add(owner).json()["recipient"]["id"]
+        assert owner.delete(f"/api/integrations/twilio_sms/recipients/{rid}").status_code == 200
+    assert _add(other).status_code == 201                               # another company, the same phone
+    before = sent()
+    assert before == twilio_sms.MANUAL_TEXTS_PER_PHONE_DAY
+    r = _add(owner)
+    assert r.status_code == 429 and "Retry-After" in r.headers
+    assert sent() == before
+    assert all(x["status"] != "active" for x in owner.get("/api/integrations/twilio_sms/recipients").json()[
+        "recipients"])                                                   # a refused add changes nothing
+    assert _add(owner, send_confirmation=False).status_code == 201      # adding without a text still works
+    rid = owner.get("/api/integrations/twilio_sms/recipients").json()["recipients"][0]["id"]
+    assert owner.post(f"/api/integrations/twilio_sms/recipients/{rid}/test").status_code == 429
+    assert sent() == before
 
 
 def test_inbound_stop_and_start_apply_to_every_company_with_that_phone(owner, other, platform, rx):

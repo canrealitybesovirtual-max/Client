@@ -1056,28 +1056,30 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Procore is the construction management platform many mid-size and large GCs and owners use: projects, the company directory (vendors), commitments (subcontracts and purchase orders), daily logs, timesheets and timecards, documents, RFIs and submittals. It has a public REST API with OAuth 2.0, webhooks, a Developer Portal with sandboxes, and an App Marketplace. Procore bought Datagrid in January 2026 and is embedding Datagrid agents as Procore AI.",
+   "summary": "Procore is the construction management software many mid-size and large GCs and owners use for projects, the company directory (vendors), subcontracts and purchase orders, daily logs, timecards, documents, RFIs and submittals.",
    "details": [
+    "It has a public REST API with OAuth 2.0, webhooks, a Developer Portal with sandboxes, and an App Marketplace.",
+    "Procore bought Datagrid in January 2026 and is embedding Datagrid agents as Procore AI.",
     "Procore's own compliance features: vendor insurance records in the Company and Project Directory (the insurance manager gets emails starting 2 weeks before a policy expires and daily for up to 60 days after; status turns non-compliant within 24 hours of expiry), a Procore Pay compliance tab on commitments, Procore Prequalification (Procore's blog says it sunsets March 31, 2027, naming COMPASS by Bespoke Metrics as the preferred replacement) and lien rights through Levelset, sold separately.",
     "TradeComply adds the California-specific checks Procore does not do: CSLB license, classification and workers' comp checks from the vendor license_number, classification-to-scope matching, unlicensed-contracting exposure, Cal/OSHA written programs and permits, California wage rules on timecards, lien, stop-payment and prompt-payment deadlines, and DIR public-works readiness."
    ],
-   "tradecomply_role": "TradeComply's built-in Procore connection signs in to your Procore company with OAuth so TradeComply's California checks can run on the Procore data they need, starting with the vendor directory's license numbers. Procore access is governed by the tool permissions you grant the app.",
+   "tradecomply_role": "Built in: sign in with your Procore account and TradeComply imports your projects and your vendor directory, then checks each vendor's CSLB license. It only reads from Procore and never changes anything there, and it sees only what the Procore login you sign in with can see.",
    "builtin": {
     "panel": "connector",
     "providers": [
      "procore"
     ],
-    "what_it_does": "Connects one Procore company with OAuth. Planned uses: re-check every vendor's CSLB license from the Procore directory, check approved subcontracts against the sub's license classes, and read timecards and accident logs for California wage and Cal/OSHA reporting checks."
+    "what_it_does": "Sign in with Procore, choose your Procore company, then click Import. TradeComply copies your California projects and your vendor directory, checks each vendor's CSLB license and saves a license report in Documents. It only reads from Procore. Reading timecards, accident logs or subcontracts is not built yet."
    },
    "uses": [
     {
-     "text": "Nightly, pull the Company Directory (GET /rest/v1.0/vendors?company_id=…). Send each vendor's license_number and name to bulk_check_subcontractors, and flag suspended or expired CSLB licenses and missing workers' comp before the PM issues a new subcontract.",
+     "text": "Built in: before the PM issues a new subcontract, run the Procore import. TradeComply sends each vendor's license number and name to bulk_check_subcontractors and flags suspended or expired CSLB licenses and missing workers' comp.",
      "tools": [
       "bulk_check_subcontractors"
      ]
     },
     {
-     "text": "For each approved subcontract (GET /rest/v1.0/work_order_contracts?project_id=…&filters[status]=Approved), run classification_for_scope against the sub's CSLB classes and the contract scope. Then run check_subcontractor_compliance, and unlicensed_contracting_exposure when the license does not cover the work.",
+     "text": "With your AI assistant: for each approved subcontract in Procore, run classification_for_scope against the sub's CSLB classes and the contract scope. Then run check_subcontractor_compliance, and unlicensed_contracting_exposure when the license does not cover the work. (The built-in import doesn't read subcontracts yet.)",
      "tools": [
       "classification_for_scope",
       "check_subcontractor_compliance",
@@ -1091,14 +1093,14 @@
      ]
     },
     {
-     "text": "Pull timecard entries (GET /rest/v1.0/projects/{project_id}/timecard_entries; time_in, time_out, lunch_time, hours, date). Run check_payroll for California daily overtime and meal/rest timing. When a crew demobilizes, run final_paycheck_deadline.",
+     "text": "Not built yet: read timecard entries from Procore (time in, time out, lunch, hours, date) and run check_payroll for California daily overtime and meal/rest timing. When a crew demobilizes, run final_paycheck_deadline.",
      "tools": [
       "check_payroll",
       "final_paycheck_deadline"
      ]
     },
     {
-     "text": "Pull the day's accident logs (GET /rest/v1.0/projects/{project_id}/accident_logs?log_date=YYYY-MM-DD) and run injury_reporting_deadlines, so the Cal/OSHA serious-injury report and the 5020 deadlines go on the safety manager's list right away.",
+     "text": "Not built yet: read the day's accident logs from Procore and run injury_reporting_deadlines, so the Cal/OSHA serious-injury report and the 5020 deadlines go on the safety manager's list right away.",
      "tools": [
       "injury_reporting_deadlines"
      ]
@@ -1111,7 +1113,7 @@
      ]
     },
     {
-     "text": "For each Procore project (GET /rest/v1.0/projects?company_id=…), seed TradeComply with project_setup_checklist, permit_required and public_works_readiness (DIR registration and certified payroll if public). Then generate compliance_calendar, plus calculate_lien_deadline for preliminary notices.",
+     "text": "Built in for projects: the Procore import adds your Procore projects to TradeComply. Then run project_setup_checklist, permit_required and public_works_readiness (DIR registration and certified payroll if public), and generate compliance_calendar, plus calculate_lien_deadline for preliminary notices.",
      "tools": [
       "project_setup_checklist",
       "permit_required",
@@ -1121,14 +1123,14 @@
      ]
     },
     {
-     "text": "Upload the IIPP, heat illness and WVPP from generate_safety_programs, or a signed home-improvement contract from generate_home_improvement_contract, into the project's Procore documents with the unified upload flow (POST /rest/v2.1/companies/{company_id}/projects/{project_id}/uploads, then PUT to the presigned URL). This is a write action that must be approved in the TradeComply web app; TradeComply's MCP tools stay read-only.",
+     "text": "Not built yet: put the IIPP, heat illness and WVPP from generate_safety_programs, or a signed home-improvement contract from generate_home_improvement_contract, into the project's Procore documents. Procore's upload takes several steps, so TradeComply keeps its reports in its own Documents for now; its MCP tools stay read-only.",
      "tools": [
       "generate_safety_programs",
       "generate_home_improvement_contract"
      ]
     },
     {
-     "text": "Register a company-level webhook (POST /rest/v1.0/webhooks/hooks, then add triggers) so a vendor create or update in Procore re-runs bulk_check_subcontractors. The exact trigger resource_name for vendors needs to be confirmed in the API reference.",
+     "text": "Not built yet: a Procore webhook so a vendor added or changed in Procore re-runs bulk_check_subcontractors on its own. The exact Procore trigger for vendors still has to be confirmed in Procore's API reference. Until then, run the import again.",
      "tools": [
       "bulk_check_subcontractors"
      ]
@@ -1854,7 +1856,7 @@
      "microsoft_project"
     ],
     "accept": ".xml,.xer",
-    "what_it_does": "Schedule import (being added to TradeComply): upload a Microsoft Project XML (MSPDI) or Primavera P6 export and TradeComply reads activity names and dates to place deadlines and safety checks next to the work."
+    "what_it_does": "Upload a Microsoft Project XML file (File > Save As > XML Format) or a Primavera P6 export for one of your projects. TradeComply reads the activity names and dates to line up lien deadlines and safety checks with the work, and saves only the dates the schedule records as actual."
    },
    "uses": [
     {
@@ -1883,7 +1885,7 @@
      ]
     },
     {
-     "text": "For Title 24 alterations, place energy_compliance_triggers (HERS verification) before the activity that closes the scope. Export TradeComply deadlines back as MSPDI Task elements the scheduler can import.",
+     "text": "For Title 24 alterations, place energy_compliance_triggers (HERS verification) before the activity that closes the scope. (Sending TradeComply deadlines back into Microsoft Project is not built.)",
      "tools": [
       "energy_compliance_triggers"
      ]
@@ -2050,7 +2052,7 @@
      "microsoft_project"
     ],
     "accept": ".xer,.xml",
-    "what_it_does": "Schedule import (being added to TradeComply): upload a Primavera P6 XER or P6 XML export (or a Microsoft Project XML file) and TradeComply reads activity names and dates to place deadlines and safety checks next to the work."
+    "what_it_does": "Upload a Primavera P6 XER or P6 XML export (or a Microsoft Project XML file) for one of your projects. TradeComply reads the activity names and dates to line up lien deadlines and safety checks with the work, and saves only the dates the schedule records as actual."
    },
    "uses": [
     {
@@ -2503,9 +2505,11 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Docusign is the e-signature service many contractors and owners already use. Its eSignature REST API v2.1 creates and sends envelopes (documents, recipients and signature tabs), tracks status and pushes status changes through Docusign Connect webhooks. Docusign also hosts an MCP server (GA 2026-09-30) that lets AI assistants prepare, send, track and manage agreements.",
-   "details": [],
-   "tradecomply_role": "TradeComply's built-in Docusign connection sends documents TradeComply generated and checked (home improvement contracts, change orders, statutory lien waivers, subcontracts) for signature, and records when they're signed. Or use Docusign's own MCP server next to TradeComply's in your AI assistant.",
+   "summary": "Docusign is the e-signature service many contractors and owners already use. Software can send documents through it for signature, follow their progress and hear when they are signed. Docusign also hosts an MCP server (GA 2026-09-30) that lets AI assistants prepare, send, track and manage agreements.",
+   "details": [
+    "Its eSignature REST API v2.1 creates and sends envelopes (documents, recipients and signature tabs), tracks status and pushes status changes through Docusign Connect webhooks."
+   ],
+   "tradecomply_role": "Built in: connect your Docusign account and TradeComply can send a home improvement contract it generated and checked to your signer and the buyer, then records on the project when it is signed. Change orders, lien waivers and subcontracts aren't sent this way yet. Or use Docusign's own MCP server next to TradeComply's in your AI assistant.",
    "builtin": {
     "panel": "connector",
     "providers": [
@@ -2513,17 +2517,17 @@
      "docusign_esign",
      "docusign_esignature"
     ],
-    "what_it_does": "Connects your Docusign account with OAuth (Authorization Code Grant). Planned uses: 'Send for signature' on TradeComply contracts, change orders and lien waivers, with completion dates recorded on the project."
+    "what_it_does": "Connect your Docusign account (you sign in on Docusign's own page). TradeComply can then send a home improvement contract it generated and checked for signature and record when it's signed. There is no Send button in the web app yet: for now sending goes through TradeComply's API."
    },
    "uses": [
     {
-     "text": "Add a one-click 'Send for signature' to TradeComply generate_home_improvement_contract output. TradeComply renders the PDF with anchor strings (for example /sn1/ and /ds1/ for the buyer, /sn2/ and /ds2/ for the contractor), creates the envelope with signHere and dateSigned tabs, and stores the envelopeId on the project.",
+     "text": "Built in: send a home improvement contract made with generate_home_improvement_contract for signature. TradeComply places the signature and date fields for the buyer and the contractor and stores the Docusign envelope on the project.",
      "tools": [
       "generate_home_improvement_contract"
      ]
     },
     {
-     "text": "Use the envelope-level Connect webhook. On envelope-completed, TradeComply records the completion date, runs home_improvement_cancellation_deadline (with buyer_age_65_or_older and disaster_repair taken from the project), and adds the last day to cancel to the project's compliance_calendar and project_setup_checklist.",
+     "text": "Built in: when the contract is signed (Docusign tells TradeComply right away if you add a Connect key; otherwise TradeComply checks when you open it), TradeComply runs home_improvement_cancellation_deadline and sends an alert with the last day the buyer may cancel and the earliest safe start date. Adding that date to compliance_calendar and project_setup_checklist is not built yet.",
      "tools": [
       "home_improvement_cancellation_deadline",
       "compliance_calendar",
@@ -2531,20 +2535,20 @@
      ]
     },
     {
-     "text": "Send change orders as envelopes after check_change_order passes, then re-run check_change_order with the signing dates from the signer completion events, so the office can see the order was fully signed before the changed work starts.",
+     "text": "Not built yet: send change orders for signature after check_change_order passes, then re-run check_change_order with the signing dates, so the office can see the order was fully signed before the changed work starts.",
      "tools": [
       "check_change_order"
      ]
     },
     {
-     "text": "Send the select_lien_waiver statutory form to the sub, and hold the progress payment until envelope-completed arrives; time the release with prompt_payment_check.",
+     "text": "Not built yet: send the select_lien_waiver statutory form to the sub for signature, and hold the progress payment until it is signed; time the release with prompt_payment_check.",
      "tools": [
       "select_lien_waiver",
       "prompt_payment_check"
      ]
     },
     {
-     "text": "Gate subcontract sending on bulk_check_subcontractors: only subs that pass license, classification and insurance checks get the subcontract envelope.",
+     "text": "Not built yet: send subcontracts only to subs that pass bulk_check_subcontractors (license, classification and insurance).",
      "tools": [
       "bulk_check_subcontractors"
      ]
@@ -3315,11 +3319,11 @@
      "splunk",
      "splunk_hec"
     ],
-    "what_it_does": "Sends each TradeComply activity-log row (company, user, tool, summarized inputs, verified, result, source, time) to the HEC URL, token and optional index your Splunk admin gives you. Being added to TradeComply."
+    "what_it_does": "Sends a copy of your TradeComply activity log (who ran which check, when, with what result) to your company's Splunk. Your Splunk admin gives you the HEC address and token to paste here."
    },
    "uses": [
     {
-     "text": "Stream every MCP/API tool call (check_payroll, prevailing_wage_penalties, apprentice_hours_required, bulk_check_subcontractors) into the GC's Splunk. This gives an independent, tamper-resistant record for SOC 2, cyber-insurance or awarding-body questionnaires.",
+     "text": "Send every MCP/API tool call (check_payroll, prevailing_wage_penalties, apprentice_hours_required, bulk_check_subcontractors) to the GC's Splunk, so there is a separate copy outside TradeComply for SOC 2, cyber-insurance or awarding-body questionnaires.",
      "tools": [
       "check_payroll",
       "prevailing_wage_penalties",
@@ -3335,7 +3339,7 @@
      ]
     },
     {
-     "text": "Alert in Splunk when field-role users trigger 401/403 errors on office-only pages, or when the anonymous /mcp demo sees unusual volume.",
+     "text": "Alert in Splunk on unusual activity in the TradeComply log, such as a burst of tool calls from one API key or checks run in the middle of the night.",
      "tools": []
     },
     {
@@ -3741,11 +3745,11 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Let your team sign in to TradeComply with your company's identity provider using OpenID Connect (authorization code with PKCE). Your IT admin creates an OIDC web app in the identity provider and enters its issuer, client ID and client secret in TradeComply. When someone leaves and is turned off in your identity provider, they can no longer sign in to TradeComply.",
+   "summary": "Let your team sign in to TradeComply with your company's identity provider (Okta, Microsoft Entra ID, Google or another OpenID Connect provider). Your IT admin creates a web app in the identity provider; the account owner enters its issuer, client ID and client secret in TradeComply. With 'SSO required' on, everyone except owners must sign in through the identity provider, so turning someone off there ends their TradeComply sign-ins. Owners can always use their TradeComply password, and API keys keep working until you revoke them.",
    "details": [
     "Okta's OIDC setup was researched for this catalog. Microsoft Entra ID and Google Workspace use the same OpenID Connect standard, but their specific setup steps were not researched here, so follow their documentation."
    ],
-   "tradecomply_role": "Built in: TradeComply redirects your users to your identity provider, checks the signed ID token, and can map identity-provider groups to TradeComply roles (owner, office, field). No Okta partnership or app-catalog listing is needed.",
+   "tradecomply_role": "Built in: TradeComply sends your users to your identity provider and checks the signed ID token it returns. Each person keeps the role you gave them in TradeComply (owner, office or field); roles are not taken from identity-provider groups. No Okta partnership or app-catalog listing is needed.",
    "builtin": {
     "panel": "connector",
     "providers": [
@@ -3759,11 +3763,11 @@
      "google_oidc",
      "google_sso"
     ],
-    "what_it_does": "Single sign-on for the TradeComply web app (being added). Your admin enters the issuer URL, client ID and client secret; TradeComply reads the issuer's discovery document rather than hard-coding any provider."
+    "what_it_does": "Single sign-on for the TradeComply web app. The settings screen isn't in the web app yet: for now the account owner sets it up through TradeComply's API with the issuer URL, client ID and client secret from your identity provider and your company's email domains."
    },
    "uses": [
     {
-     "text": "The GC's office manager turns on SSO so PMs, payroll clerks and safety managers sign in with company credentials. An identity-provider group such as 'TC-Office' maps to the TradeComply office role (which can run check_payroll, prevailing_wage_penalties and compliance_calendar); 'TC-Field' maps to field (jobsite_hazard_checklist, wildfire_smoke_requirements and field logs in the offline app).",
+     "text": "The GC's office manager turns on SSO so PMs, payroll clerks and safety managers sign in with company credentials. Each person keeps their TradeComply role: office users can run check_payroll, prevailing_wage_penalties and compliance_calendar; field users get jobsite_hazard_checklist, wildfire_smoke_requirements and field logs in the offline app. (Roles are set in TradeComply, not from identity-provider groups.)",
      "tools": [
       "check_payroll",
       "prevailing_wage_penalties",
@@ -3773,7 +3777,7 @@
      ]
     },
     {
-     "text": "When HR deactivates a laborer or superintendent in the identity provider, their next TradeComply sign-in fails, so former employees can't pull project data or generate_home_improvement_contract drafts.",
+     "text": "With 'SSO required' on, when HR turns off a laborer or superintendent in the identity provider, their next TradeComply sign-in fails, so former employees can't pull project data or generate_home_improvement_contract drafts. Revoke any API keys they made separately.",
      "tools": [
       "generate_home_improvement_contract"
      ]
@@ -4723,7 +4727,7 @@
    "not_recommended_reason": null,
    "summary": "Slack is team messaging. Incoming webhooks post a message to one channel when you send an HTTPS POST to the webhook's secret URL. Slack also hosts an MCP server (GA since 2026-02-17) that lets AI assistants search messages and files, send and schedule messages, read channels and threads, and work with canvases and Lists, under each user's permissions.",
    "details": [],
-   "tradecomply_role": "Built in: paste a Slack incoming-webhook URL into TradeComply and it posts compliance alerts (deadlines coming up, license or sub problems, injury reports due, payroll issues) to that channel. Or use Slack's MCP server next to TradeComply's in your AI assistant.",
+   "tradecomply_role": "Built in: paste a Slack incoming-webhook link into TradeComply and it posts alerts to that channel: deadline reminders, and license problems found when you import from Procore. Or use Slack's MCP server next to TradeComply's in your AI assistant.",
    "builtin": {
     "panel": "webhooks",
     "webhook_kind": "slack",
@@ -4734,7 +4738,7 @@
    },
    "uses": [
     {
-     "text": "Each morning, post the TradeComply deadline dashboard items for the next 14 days (preliminary notices, lien recording and foreclosure dates, license and COI expiries) to #compliance.",
+     "text": "Get a post in #compliance 14, 7, 3 and 1 days before each deadline (preliminary notices, lien recording and foreclosure dates, license and COI expiries).",
      "tools": []
     },
     {
@@ -4940,7 +4944,7 @@
    "not_recommended_reason": null,
    "summary": "The Teams Workflows app (built on Power Automate) gives you a webhook URL through the 'When a Teams webhook request is received' trigger or templates such as 'Send webhook alerts to a channel'. Posting JSON to it makes the workflow post a message or Adaptive Card to a channel (private channels included) or chat. It replaces the Office 365 connector incoming webhooks, which Microsoft retired in May 2026.",
    "details": [],
-   "tradecomply_role": "Built in: create the workflow in Teams, paste its URL into TradeComply, and TradeComply posts its compliance alerts as Adaptive Cards with a button back to TradeComply.",
+   "tradecomply_role": "Built in: create the workflow in Teams, paste its link into TradeComply, and TradeComply posts its alerts (deadline reminders, and license problems found when you import from Procore) with a button back to TradeComply.",
    "builtin": {
     "panel": "webhooks",
     "webhook_kind": "teams",
@@ -4948,11 +4952,11 @@
      "teams",
      "microsoft_teams"
     ],
-    "what_it_does": "Posts TradeComply alerts to a Teams channel or chat through a Workflows webhook, as an Adaptive Card. The URL is stored encrypted."
+    "what_it_does": "Posts TradeComply alerts to a Teams channel or chat through a link from the Teams Workflows app. The link is stored encrypted."
    },
    "uses": [
     {
-     "text": "Post an Adaptive Card each morning to the project team's Teams channel listing TradeComply dashboard deadlines due in 14 days (preliminary notices, lien recording dates, license and COI expiries), with a button to each item.",
+     "text": "Get a card in the project team's Teams channel 14, 7, 3 and 1 days before each deadline (preliminary notices, lien recording dates, license and COI expiries), with a button back to TradeComply.",
      "tools": []
     },
     {
@@ -5110,7 +5114,7 @@
      ]
     },
     {
-     "text": "Send injury_report_due events to the safety manager's paging or ticketing tool so the injury_reporting_deadlines clock is never missed.",
+     "text": "Send injury_report_due events to the safety manager's paging or ticketing tool so the injury_reporting_deadlines clock isn't missed (TradeComply doesn't send this alert type yet).",
      "tools": [
       "injury_reporting_deadlines"
      ]
@@ -5194,9 +5198,11 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "Twilio's Programmable Messaging REST API sends SMS and MMS from a Twilio number or Messaging Service, reports delivery status through status-callback webhooks, and receives replies including STOP and HELP. Twilio also hosts a no-sign-in MCP server that searches Twilio's documentation and API specs (Public Beta).",
-   "details": [],
-   "tradecomply_role": "Built in: connect your company's own Twilio account so TradeComply can text urgent alerts to opted-in foremen, crew leads and PMs. US texting from ordinary 10-digit numbers requires A2P 10DLC registration in your Twilio account first.",
+   "summary": "Twilio is a texting service: software uses it to send text messages, see whether they were delivered and receive replies such as STOP and HELP. Twilio also hosts a no-sign-in MCP server that searches Twilio's documentation and API specs (Public Beta).",
+   "details": [
+    "Twilio's Programmable Messaging REST API sends SMS and MMS from a Twilio number or Messaging Service, reports delivery status through status-callback webhooks, and receives replies including STOP and HELP."
+   ],
+   "tradecomply_role": "Built in: TradeComply texts its alerts to the foremen, crew leads and PMs you add, once you confirm each person agreed to get texts. The texts go out through the Twilio account of whoever runs your TradeComply server, not your own, and that account must be registered for US business texting (A2P 10DLC) for texts to be delivered.",
    "builtin": {
     "panel": "connector",
     "providers": [
@@ -5204,17 +5210,17 @@
      "twilio_sms",
      "sms"
     ],
-    "what_it_does": "Texts TradeComply alerts from your own Twilio account to people who opted in. Being added to TradeComply."
+    "what_it_does": "Texts TradeComply alerts to the phone numbers you add here, after you confirm each person agreed to get them. Anyone can reply STOP to stop the texts. They are sent from the Twilio account of whoever runs this TradeComply server."
    },
    "uses": [
     {
-     "text": "When wildfire_smoke_requirements returns an AQI at or above the threshold for a jobsite, text opted-in foremen and crew leads the required protective steps, sent through a Messaging Service registered under an A2P 10DLC campaign.",
+     "text": "Not automatic: when wildfire_smoke_requirements shows an AQI at or above the threshold for a jobsite, text opted-in foremen and crew leads the required protective steps. TradeComply's built-in texts don't include smoke readings.",
      "tools": [
       "wildfire_smoke_requirements"
      ]
     },
     {
-     "text": "When check_subcontractor_compliance or bulk_check_subcontractors finds a sub's workers' comp or license expired, text the sub's office contact (with consent) that they cannot start until it is fixed, and log the message ID on the sub record.",
+     "text": "When check_subcontractor_compliance or bulk_check_subcontractors finds a sub's workers' comp or license expired, text the PM or foreman (with their consent) that the sub can't start until it is fixed. The built-in texts send this for license problems found by the Procore import.",
      "tools": [
       "check_subcontractor_compliance",
       "bulk_check_subcontractors"
@@ -5600,9 +5606,9 @@
    "integration": "builtin",
    "recommended": true,
    "not_recommended_reason": null,
-   "summary": "A private calendar link (an iCalendar .ics feed) with your company's deadlines: preliminary notices, lien recording and foreclosure dates, license and insurance certificate expiries, and toolbox talks. Subscribe to it once in Google Calendar, Outlook or Apple Calendar and the deadlines show up on everyone's phone, read-only, with a 7-day reminder on lien, notice, license and COI items.",
+   "summary": "A private calendar link (an iCalendar .ics feed) with your company's deadlines: preliminary notices, lien recording and foreclosure dates, license and insurance certificate expiries, and toolbox talks. Subscribe to it once in Google Calendar, Outlook or Apple Calendar and the deadlines show up, read-only, for everyone who subscribed, with reminders a week before and the day before (you can change them; some calendar apps ignore reminders in subscribed calendars).",
    "details": [],
-   "tradecomply_role": "Built in, no sign-in to Google or Microsoft needed: copy the link from TradeComply and add it as a calendar 'from URL' (or 'subscribe from web'). Make a new link any time to cut off old copies.",
+   "tradecomply_role": "Built in, no sign-in to Google or Microsoft needed: make a link in TradeComply and add it as a calendar 'from URL' (or 'subscribe from web'). Make one link per person, and turn a link off when someone leaves.",
    "builtin": {
     "panel": "calendar_feed",
     "providers": [

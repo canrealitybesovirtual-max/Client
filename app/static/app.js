@@ -1270,7 +1270,7 @@
     const setupDone = (((state.me.tenant.settings || {}).onboarding || {}).done || []).length >= 3;
     const wrap = h('div', {},
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Compliance today'), h('p', {}, `As of ${fmtDate(d.today)} (California time). Select a box to show only those items.`)),
-        h('div', { class: 'row no-print' }, h('a', { class: 'btn secondary small', href: '/api/calendar.ics', download: 'tradecomply.ics' }, 'Download calendar'),
+        h('div', { class: 'row no-print' }, h('a', { class: 'btn secondary small', href: '/api/integrations/calendar_feed/calendar.ics', download: 'tradecomply.ics' }, 'Download calendar'),
           h('button', { type: 'button', class: 'btn ghost small', onclick: () => window.print() }, 'Print'))),
       !setupDone && can.write() ? h('div', { class: 'banner info no-print' }, h('p', {}, 'Finish setup to see your full picture: license, subs, projects, safety, AI assistant.'), h('a', { class: 'btn small', href: '#/welcome' }, 'Continue setup')) : null,
       h('div', { class: 'tiles', role: 'group', 'aria-label': 'Filter by status' }, tiles),
@@ -2006,7 +2006,98 @@
     }
     return out;
   }
-  function providerPanel(p, lead) {
+  // ---------- after connecting: the one or two things each connector is for
+  const RISK_LABEL = { do_not_use: ['red', 'Do not use'], high: ['red', 'High risk'], medium: ['amber', 'Medium risk'], low: ['green', 'Low risk'] };
+  function procoreLast(s) {
+    if (!s) return h('p', { class: 'small muted' }, 'Nothing imported yet.');
+    const pr = s.projects || {}, v = s.vendors || {}, counts = s.counts_by_risk || {};
+    return h('div', { class: 'small' },
+      h('p', {}, `Last import ${fmtDateTime(s.at)}${s.company_name ? ` from ${s.company_name}` : ''}: ${plural(pr.created || 0, 'new project')} and ${plural(pr.updated || 0, 'project')} updated; ${plural(v.created || 0, 'new sub')} and ${plural(v.updated || 0, 'sub')} updated.`),
+      Object.keys(RISK_LABEL).some((k) => counts[k]) ? h('p', { class: 'row' }, Object.entries(RISK_LABEL).filter(([k]) => counts[k]).map(([k, [cls, label]]) => h('span', { class: `pill ${cls}` }, `${label}: ${counts[k]}`))) : null,
+      s.report_document_id ? h('p', {}, h('a', { href: `#/document/${encodeURIComponent(s.report_document_id)}` }, 'Open the license report')) : null);
+  }
+  const NEXT_STEPS = {
+    procore: () => {
+      const box = h('div', { class: 'stack' });
+      const out = h('div', { 'aria-live': 'polite' });
+      const draw = async () => {
+        const [co, rep] = await Promise.all([api('/api/integrations/procore/companies'), api('/api/integrations/procore/report')]);
+        const sel = select('procore_company', [['', 'Choose your Procore company…'], ...co.companies.map((c) => [String(c.id), c.name])], co.company_id ? String(co.company_id) : '');
+        sel.addEventListener('change', async () => {
+          if (!sel.value) return;
+          try { await api('/api/integrations/procore/company', { method: 'POST', body: { company_id: Number(sel.value) } }); toast('Procore company saved'); } catch (err) { fill(out, msgBox('error', err.message)); }
+        });
+        const go = h('button', { type: 'button', class: 'btn', onclick: async () => {
+          fill(out);
+          if (!sel.value) { out.append(msgBox('error', 'Choose your Procore company first.')); sel.focus(); return; }
+          busy(go, true, 'Importing… this can take a minute');
+          try { await api('/api/integrations/procore/sync', { method: 'POST', body: { projects: true, vendors: true } }); toast('Procore import finished'); await draw(); } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(go, false); }
+        } }, 'Import projects and subs now');
+        fill(box, h('h4', {}, 'Next: import from Procore'),
+          h('p', { class: 'small muted' }, 'TradeComply copies your Procore projects (California only, unless you change that in Settings) and your Procore vendor directory, checks each vendor\'s CSLB license and saves a license report. It never changes anything in Procore. Run it again whenever your vendor list changes.'),
+          field('Procore company', sel), h('div', { class: 'row' }, go), procoreLast(rep.last_sync));
+      };
+      draw().catch((err) => fill(box, msgBox('error', err.message)));
+      return h('div', {}, box, out);
+    },
+    twilio_sms: () => {
+      const R = '/api/integrations/twilio_sms/recipients';
+      const box = h('div', { class: 'stack' });
+      const out = h('div', { 'aria-live': 'polite' });
+      const draw = async () => {
+        const d = await api(R);
+        const rows = d.recipients || [];
+        const list = rows.length ? table([
+          { label: 'Name', bare: true, render: (r) => h('div', {}, h('strong', {}, r.name), h('div', { class: 'small muted' }, r.phone)) },
+          { label: 'Status', render: (r) => h('div', {}, r.status === 'active' ? h('span', { class: 'pill green' }, 'Gets texts') : h('span', { class: 'pill gray' }, 'Opted out (replied STOP)'), r.last_error ? h('div', { class: 'small muted' }, r.last_error) : null) },
+          { label: 'Actions', bare: true, render: (r) => {
+            const test = r.status === 'active' ? h('button', { type: 'button', class: 'btn secondary small', onclick: async () => {
+              busy(test, true, 'Sending…');
+              try { const t = await api(`${R}/${encodeURIComponent(r.id)}/test`, { method: 'POST' }); fill(out, msgBox(t.ok ? 'info' : 'error', t.message)); } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(test, false); }
+            } }, 'Send test text') : null;
+            const del = h('button', { type: 'button', class: 'btn ghost small', onclick: async () => {
+              if (!confirm(`Stop texting ${r.name}?`)) return;
+              try { await api(`${R}/${encodeURIComponent(r.id)}`, { method: 'DELETE' }); await draw(); toast('Phone number removed'); } catch (err) { fill(out, msgBox('error', err.message)); }
+            } }, 'Remove');
+            return h('div', { class: 'row' }, test, del);
+          } }], rows) : h('p', { class: 'small muted' }, 'No phone numbers yet.');
+        const nameIn = input('name', { maxlength: '100', autocomplete: 'off' });
+        const phoneIn = input('phone', { type: 'tel', maxlength: '40', autocomplete: 'off', placeholder: '(415) 555-0100' });
+        const consent = h('input', { type: 'checkbox', name: 'consent' });
+        const addBtn = h('button', { type: 'submit', class: 'btn' }, 'Add phone number');
+        const form = h('form', { novalidate: true, onsubmit: async (ev) => {
+          ev.preventDefault();
+          fill(out);
+          if (!nameIn.value.trim() || !phoneIn.value.trim()) { out.append(msgBox('error', 'Enter the person\'s name and mobile number.')); return; }
+          if (!consent.checked) { out.append(msgBox('error', 'Check the box to confirm this person agreed to get alert texts.')); consent.focus(); return; }
+          busy(addBtn, true, 'Adding…');
+          try {
+            const r = await api(R, { method: 'POST', body: { name: nameIn.value.trim(), phone: phoneIn.value.trim(), consent: true, send_confirmation: true } });
+            await draw();
+            fill(out, msgBox('info', `Added ${r.recipient.name}.`, r.confirmation ? ` ${r.confirmation.message}` : ''));
+          } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(addBtn, false); }
+        } },
+        h('div', { class: 'form-grid' }, field('Name', nameIn), field('Mobile number', phoneIn, { hint: 'US or Canadian mobile number.' })),
+        h('div', { class: 'field check' }, h('label', {}, consent, h('span', {}, d.consent_text))),
+        addBtn);
+        fill(box, h('h4', {}, 'Who gets the texts'), list, h('h4', {}, 'Add a phone number'), form,
+          d.a2p_10dlc_note ? h('p', { class: 'small muted' }, d.a2p_10dlc_note) : null);
+      };
+      draw().catch((err) => fill(box, msgBox('error', err.message)));
+      return h('div', {}, box, out);
+    },
+  };
+
+  // A link the server returns once (the calendar feed's feed_url / url): copy it now, it is never shown again.
+  function onceLink(url, webcal) {
+    return h('div', { class: 'secret' },
+      h('p', {}, h('strong', {}, 'Your calendar link. Copy it now: it is shown only this once.'), ' Anyone with the link can see your deadlines and project names, so keep it private.'),
+      copyBox(url, 'calendar link'),
+      webcal ? h('p', { class: 'small' }, h('a', { href: webcal }, 'Open it in this computer\'s calendar app'), ' (if nothing happens, paste the link into your calendar instead).') : null);
+  }
+  // settingsOnly: the calendar and schedule panels, where "connecting" means nothing to the user. Their settings are
+  // saved without a connection check, and turning the feature off lives in the panel above.
+  function providerPanel(p, lead, { settingsOnly = false, onChange = null } = {}) {
     const wrap = h('div', { class: 'stack' });
     const out = h('div', { 'aria-live': 'polite' });
     let detail = null;
@@ -2025,15 +2116,17 @@
       const view = detail || p;
       const c = view.connection || {};
       const [cls, text] = CONN_TEXT[c.status] || CONN_TEXT.disconnected;
-      const parts = [lead, h('p', { class: 'row' }, h('span', { class: `pill ${cls}` }, text),
+      const parts = [lead, settingsOnly || !p.operator_configured ? null : h('p', { class: 'row' }, h('span', { class: `pill ${cls}` }, text),
         c.external_account ? h('span', { class: 'small' }, `Account: ${c.external_account}`) : null,
         c.updated ? h('span', { class: 'small muted' }, `Updated ${fmtDateTime(c.updated)}`) : null)];
-      if (c.last_error && c.status !== 'connected') parts.push(msgBox('error', c.last_error));
+      if (c.last_error && c.status !== 'connected' && !settingsOnly) parts.push(msgBox('error', c.last_error));
       if (!p.operator_configured) {
-        parts.push(h('div', { class: 'banner warn' }, h('p', {}, `${p.display_name} isn't set up on this TradeComply server yet, so it can't be connected. The people who run this server need to add ${p.display_name}'s app credentials first.`),
-          p.missing_env && p.missing_env.length ? h('p', { class: 'small' }, 'Missing server settings: ', p.missing_env.map((n, k) => [k ? ', ' : '', h('code', {}, n)])) : null));
+        // Nothing the customer fills in here can work until the server has the vendor app's keys, so no form.
+        parts.push(h('div', { class: 'banner warn' }, h('p', {}, h('strong', {}, `${p.display_name} can't be connected yet. `), 'This TradeComply server doesn\'t have the app keys it needs for it. Whoever runs your TradeComply server has to add them; then come back here to connect.')),
+          p.missing_env && p.missing_env.length ? more('Details for whoever runs the server', h('p', { class: 'small' }, 'Missing server settings: ', p.missing_env.map((n, k) => [k ? ', ' : '', h('code', {}, n)]))) : null);
       }
-      if (p.unconfirmed && p.unconfirmed.length) parts.push(more(`Not yet confirmed from ${p.display_name}'s documentation (${p.unconfirmed.length})`, h('ul', { class: 'bullets small' }, p.unconfirmed.map((u) => h('li', {}, u)))));
+      if (p.unconfirmed && p.unconfirmed.length) parts.push(more(`Not yet confirmed in the vendor's documentation (${p.unconfirmed.length})`, h('ul', { class: 'bullets small' }, p.unconfirmed.map((u) => h('li', {}, u)))));
+      if (!p.operator_configured) { parts.push(out); fill(wrap, ...parts); return; }
       if (!can.write()) {
         parts.push(h('p', { class: 'small muted' }, `Ask the owner or office staff to connect ${p.display_name}.`));
         fill(wrap, ...parts);
@@ -2043,6 +2136,16 @@
       const form = configForm(schema, view.config || {}, view.secrets_saved || []);
       const off = !p.operator_configured;
       const buttons = h('div', { class: 'row' });
+      if (settingsOnly) {
+        if (!schema.length) { fill(wrap, ...parts); return; }
+        const save = h('button', { type: 'button', class: 'btn secondary', onclick: () => act(save, 'Saving…', async () => {
+          detail = await api(`/api/integrations/${encodeURIComponent(p.provider)}/config`, { method: 'PUT', body: { config: configValues(form, schema) } }); draw(); toast('Settings saved');
+          if (onChange) onChange();
+        }) }, 'Save settings');
+        buttons.append(save);
+        fill(wrap, ...parts, form, buttons, out);
+        return;
+      }
       if (p.auth === 'oauth2') {
         if (schema.length) {
           const save = h('button', { type: 'button', class: 'btn secondary', onclick: () => act(save, 'Saving…', async () => {
@@ -2061,8 +2164,10 @@
           const r = await api(`/api/integrations/${encodeURIComponent(p.provider)}/connect`, { method: 'POST', body: { config: configValues(form, schema) } });
           await refresh();
           const t = r.test || {};
-          fill(out, msgBox(r.status === 'connected' ? 'info' : 'error', r.status === 'connected' ? `Connected${r.external_account ? ` to ${r.external_account}` : ''}.` : (t.message || r.last_error || 'The connection check failed.')));
-        }) }, schema.length ? 'Save and connect' : 'Connect');
+          fill(out, msgBox(r.status === 'connected' ? 'info' : 'error', r.status === 'connected' ? `Connected${r.external_account ? ` to ${r.external_account}` : ''}.` : (t.message || r.last_error || 'The connection check failed.')),
+            r.feed_url ? onceLink(r.feed_url, r.webcal_url) : null);       // the calendar feed's first link, shown once
+          if (onChange) onChange();
+        }) }, c.status === 'connected' ? 'Save changes' : schema.length ? 'Save and connect' : 'Connect');
         buttons.append(connect);
       }
       if (c.status && c.status !== 'disconnected') {
@@ -2073,20 +2178,25 @@
         }) }, 'Test connection');
         const disc = h('button', { type: 'button', class: 'btn danger', onclick: () => {
           if (!confirm(`Disconnect ${p.display_name}? TradeComply forgets the saved sign-in; your settings stay.`)) return;
-          act(disc, 'Disconnecting…', async () => { await api(`/api/integrations/${encodeURIComponent(p.provider)}/disconnect`, { method: 'POST' }); await refresh(); toast(`${p.display_name} disconnected`); });
+          act(disc, 'Disconnecting…', async () => { await api(`/api/integrations/${encodeURIComponent(p.provider)}/disconnect`, { method: 'POST' }); await refresh(); toast(`${p.display_name} disconnected`); if (onChange) onChange(); });
         } }, 'Disconnect');
         buttons.append(test, disc);
       }
-      parts.push(schema.length ? form : null, buttons, out);
+      // What to do once connected: connector-specific actions, built once and kept across redraws.
+      const live = ['connected', 'error'].includes(c.status);
+      if (live && !extra && NEXT_STEPS[p.provider]) extra = NEXT_STEPS[p.provider]();
+      if (!live) extra = null;
+      parts.push(schema.length ? (live ? more('Settings', form) : form) : null, buttons, out, extra);
       fill(wrap, ...parts);
     };
+    let extra = null;
     draw();
     if (can.write()) refresh().catch((err) => fill(out, msgBox('error', err.message)));
     return wrap;
   }
 
   // ---------- panels for the built-in features that aren't connectors
-  async function drawWebhooks(e, body) {
+  async function drawWebhooks(e, body, onChange) {
     const kind = e.builtin.webhook_kind;
     const lead = h('p', { class: 'small' }, e.builtin.what_it_does);
     if (!can.write()) { fill(body, lead, h('p', { class: 'small muted' }, 'Ask the owner or office staff to set up alerts.')); return; }
@@ -2095,7 +2205,8 @@
     const events = await loadEvents();
     const showSecret = (r) => fill(out, h('div', { class: 'secret' }, h('p', {}, h('strong', {}, 'Signing secret. Copy it now: it will not be shown again.'), ' ', r.message || ''), copyBox(r.signing_secret, 'signing secret')));
     const drawList = async () => {
-      const hooks = (await api('/api/integrations/webhooks')).filter((x) => x.kind === kind);
+      const hooks = await hooksOf(kind, true);
+      if (onChange) onChange();
       fill(list, hooks.length ? table([
         { label: 'Name', bare: true, render: (w) => h('div', {}, h('strong', {}, w.name), h('div', { class: 'small muted' }, w.url_hint)) },
         { label: 'Sends', render: (w) => (w.events.includes('*') ? 'All alerts' : w.events.map(humanize).join(', ')) },
@@ -2131,24 +2242,59 @@
     } },
     h('p', { class: 'small muted' }, HOOK_HELP[kind]),
     h('div', { class: 'form-grid' }, field('Name', nameIn, { hint: 'So you know which channel or system it is.' }), field('Webhook link', urlIn, { required: true, hint: 'Stored encrypted; afterwards only the start of the address is shown.' })),
-    h('fieldset', {}, h('legend', {}, 'Which alerts'), h('div', { class: 'checks' }, h('label', {}, allBox, 'All alerts'), evBoxes)),
+    h('fieldset', {}, h('legend', {}, 'Which alerts'), h('div', { class: 'checks' }, h('label', {}, allBox, 'All alerts'), evBoxes),
+      // Only these three are raised anywhere today (alerts.py deadline scan, procore.py import, docusign.py); update this line when more are.
+      h('p', { class: 'hint' }, 'Today TradeComply sends deadline reminders, license problems found by a Procore import, and Docusign contract updates. The other types are listed so you can choose them now; nothing sends them yet.')),
     add);
     fill(body, lead, list, h('h4', {}, 'Add one'), form, out);
     await drawList();
   }
-  async function drawCalendar(e, body) {
-    const lead = h('p', { class: 'small' }, e.builtin.what_it_does);
-    if (!can.write()) { fill(body, lead, h('p', { class: 'small muted' }, 'Ask the office for the calendar link.')); return; }
-    const slot = h('div', { 'aria-live': 'polite' });
-    const draw = (url) => {
-      const rotate = h('button', { type: 'button', class: 'btn ghost small', onclick: async () => {
-        if (!confirm('Make a new link? The old one stops working, so everyone who subscribed must add the new one.')) return;
-        try { const r = await api('/api/calendar/feed/rotate', { method: 'POST' }); draw(r.url); toast('New calendar link created'); } catch (err) { slot.append(msgBox('error', err.message)); }
-      } }, 'Make a new link');
-      fill(slot, copyBox(url, 'calendar link'), h('div', { class: 'row' }, rotate, h('a', { class: 'btn ghost small', href: '/api/calendar.ics', download: 'tradecomply.ics' }, 'Download once (.ics)')));
+  // Private calendar links (/api/integrations/calendar_feed/links). Only a hash of each link is stored, so its address
+  // is shown once, right after it is made. One link per person or device; each can be turned off on its own.
+  const CAL_LINKS = '/api/integrations/calendar_feed/links';
+  function calendarLinks({ onChange } = {}) {
+    const box = h('div', {});
+    const out = h('div', { 'aria-live': 'polite' });
+    const changed = () => { if (onChange) onChange(); };
+    const run = async (btn, label, fn) => { busy(btn, true, label); try { await fn(); } catch (err) { fill(out, msgBox('error', err.message)); } finally { busy(btn, false); } };
+    const draw = async () => {
+      const d = await api(CAL_LINKS);
+      const links = d.links || [];
+      const make = h('button', { type: 'button', class: 'btn', onclick: () => run(make, 'Making the link…', async () => {
+        const r = await api(`${CAL_LINKS}/rotate`, { method: 'POST' });
+        await draw(); fill(out, onceLink(r.url, r.webcal_url)); changed();
+      }) }, 'Make my calendar link');
+      const add = h('button', { type: 'button', class: 'btn secondary', onclick: () => run(add, 'Making the link…', async () => {
+        const r = await api(CAL_LINKS, { method: 'POST' });
+        await draw(); fill(out, onceLink(r.url, r.webcal_url)); changed();
+      }) }, 'Add a link for another person');
+      const replace = h('button', { type: 'button', class: 'btn ghost small', onclick: () => {
+        if (!confirm('Replace every calendar link with one new link? All the old links stop working, so everyone who subscribed has to add the new one.')) return;
+        run(replace, 'Replacing…', async () => { const r = await api(`${CAL_LINKS}/rotate`, { method: 'POST' }); await draw(); fill(out, onceLink(r.url, r.webcal_url)); changed(); });
+      } }, 'Replace all links');
+      const rows = links.map((l, k) => {
+        const off = h('button', { type: 'button', class: 'btn ghost small', 'aria-label': `Turn off link ${k + 1}, made ${fmtDateTime(l.created)}`, onclick: () => {
+          if (!confirm('Turn off this calendar link? Calendars subscribed with it stop updating.')) return;
+          run(off, 'Turning off…', async () => { await api(`${CAL_LINKS}/${encodeURIComponent(l.id)}`, { method: 'DELETE' }); fill(out, msgBox('info', 'That link is off.')); await draw(); changed(); });
+        } }, 'Turn off');
+        return h('li', { class: 'row' }, h('span', {}, `Link ${k + 1}, made ${fmtDateTime(l.created)}`), off);
+      });
+      fill(box, links.length
+        ? [h('p', { class: 'row' }, h('span', { class: 'pill green' }, 'On'), h('span', {}, `${plural(links.length, 'private link')} in use. For your safety a link is shown only once, when it is made: if you lost it, add a new one and turn the old one off.`)),
+          h('ul', { class: 'clean stack small' }, rows), h('div', { class: 'row' }, add, replace)]
+        : [h('p', { class: 'row' }, h('span', { class: 'pill gray' }, 'No link yet'), h('span', {}, 'Make a link, then add it to your calendar app.')), h('div', { class: 'row' }, make)]);
     };
-    fill(body, lead, h('p', { class: 'small muted' }, 'In Google Calendar, Outlook or Apple Calendar, add a calendar from a URL (Outlook calls it subscribing from the web) and paste this link. Keep it private.'), slot);
-    draw((await api('/api/calendar/feed')).url);
+    const el = h('div', {}, box, out,
+      h('p', { class: 'small muted' }, 'In Google Calendar, Outlook or Apple Calendar, add a calendar from a URL (Outlook calls it subscribing from the web) and paste the link. Each calendar app decides how often it checks for changes, often every few hours and sometimes longer.'),
+      h('p', { class: 'small' }, h('a', { href: '/api/integrations/calendar_feed/calendar.ics', download: 'tradecomply.ics' }, 'Download today\'s deadlines once (.ics file)'), ' (a one-time copy that won\'t update).'));
+    return { el, draw };
+  }
+  async function drawCalendar(e, body, onChange) {
+    const lead = h('p', { class: 'small' }, e.builtin.what_it_does);
+    if (!can.write()) { fill(body, lead, h('p', { class: 'small muted' }, 'Ask the owner or office staff for a calendar link.')); return; }
+    const links = calendarLinks({ onChange });
+    await links.draw();
+    fill(body, lead, links.el);
   }
   async function scheduleEndpoint() {
     if (intState.schedule !== undefined) return intState.schedule;
@@ -2200,31 +2346,52 @@
     } }, field('Schedule file', fileIn, { hint: `Microsoft Project: File → Save As → XML Format (*.xml). Primavera P6: export as XER or P6 XML.` }), projSel ? field('Project', projSel) : null, send);
     fill(body, lead, form, out);
   }
-  async function drawConnect(e, body) {
+  async function drawConnect(e, body, onChange) {
     const panel = (e.builtin && e.builtin.panel) || 'connector';
     const p = providerFor(e);
     const lead = h('p', { class: 'small' }, (e.builtin && e.builtin.what_it_does) || '');
-    if (panel === 'webhooks') return drawWebhooks(e, body);
-    if (panel === 'calendar_feed') await drawCalendar(e, body);
+    if (panel === 'webhooks') return drawWebhooks(e, body, onChange);
+    if (panel === 'calendar_feed') await drawCalendar(e, body, onChange);
     else if (panel === 'schedule_import') await drawSchedule(e, body);
-    if (panel !== 'connector') { if (p) body.append(h('hr'), providerPanel(p, null)); return; }
+    if (panel !== 'connector') {
+      if (p && can.write()) body.append(more(panel === 'calendar_feed' ? 'Calendar settings: reminders, filing dates, policy renewals' : 'Import settings', providerPanel(p, null, { settingsOnly: true, onChange })));
+      return;
+    }
     if (intState.providersError) { fill(body, lead, msgBox('warn', `Can't check this connection right now: ${intState.providersError}`)); return; }
-    if (!p) { fill(body, lead, msgBox('info', `This connection is being added to TradeComply and isn't available on this server yet. When it is, you'll connect ${e.name.split(' (')[0]} right here.`)); return; }
-    fill(body, providerPanel(p, lead));
+    if (!p) { fill(body, lead, msgBox('info', `${e.name.split(' (')[0]} can't be set up from this page yet.`, (e.mcp.servers || []).length ? ' You can still use it with your AI assistant: see below.' : '')); return; }
+    fill(body, providerPanel(p, lead, { onChange }));
+  }
+  async function hooksOf(kind, fresh = false) {      // the basic webhooks (Slack, Teams, signed) the alert panels manage
+    if (fresh || !intState.hooks) intState.hooks = api('/api/integrations/webhooks').catch((err) => { intState.hooks = null; throw err; });
+    return (await intState.hooks).filter((x) => x.kind === kind);
+  }
+  function slotStatus(e, status) {
+    const panel = (e.builtin && e.builtin.panel) || 'connector';
+    const p = providerFor(e);
+    const pill = (cls, text) => fill(status, h('span', { class: `pill ${cls}` }, text));
+    if (panel === 'webhooks') {
+      if (!can.write()) return;
+      hooksOf(e.builtin.webhook_kind).then((hs) => { const on = hs.filter((w) => w.enabled).length; if (on) pill('green', `${on} on`); else pill('gray', hs.length ? 'Turned off' : 'None set up'); }).catch(() => fill(status));
+    } else if (panel === 'schedule_import') pill('green', 'Ready to upload');
+    else if (panel === 'calendar_feed') {
+      if (p && (p.connection || {}).status === 'connected') pill('green', 'On'); else pill('gray', 'No link yet');
+    } else if (!p) pill('gray', intState.providersError ? 'Status unavailable' : 'Not available yet');
+    else if (!p.operator_configured) pill('amber', 'Not available yet');
+    else { const [cls, text] = CONN_TEXT[(p.connection || {}).status] || CONN_TEXT.disconnected; pill(cls, text); }
   }
   function connectSlot(e) {
     const panel = (e.builtin && e.builtin.panel) || 'connector';
     const status = h('span', { class: 'int-conn-status' });
-    const p = providerFor(e);
-    if (panel === 'connector' || p) {
-      if (!p) status.append(h('span', { class: 'pill gray' }, intState.providersError ? 'Status unavailable' : 'Not on this server yet'));
-      else if (!p.operator_configured) status.append(h('span', { class: 'pill amber' }, 'Not set up on this server yet'));
-      else { const [cls, text] = CONN_TEXT[(p.connection || {}).status] || CONN_TEXT.disconnected; status.append(h('span', { class: `pill ${cls}` }, text)); }
-    } else if (panel === 'calendar_feed') status.append(h('span', { class: 'pill green' }, 'Ready'));
+    slotStatus(e, status);
+    const onChange = async () => {
+      const p = providerFor(e);
+      if (panel === 'calendar_feed' && p) { try { const d = await api(CAL_LINKS); p.connection = { ...(p.connection || {}), status: d.active ? 'connected' : 'disconnected' }; } catch (err) { /* keep the old pill */ } }
+      slotStatus(e, status);
+    };
     const body = h('div', { class: 'int-connect-body' }, h('p', { class: 'loading small' }, 'Loading…'));
     const dt = h('details', { class: 'int-connect', 'data-entry': e.id }, h('summary', {}, h('span', { class: 'int-connect-title' }, PANEL_TITLE[panel] || 'Connect'), status), body);
     let loaded = false;
-    const load = () => { if (loaded) return; loaded = true; drawConnect(e, body).catch((err) => fill(body, msgBox('error', err.message))); };
+    const load = () => { if (loaded) return; loaded = true; drawConnect(e, body, onChange).catch((err) => fill(body, msgBox('error', err.message))); };
     dt.addEventListener('toggle', () => { if (dt.open) load(); });
     dt.openPanel = () => { dt.open = true; load(); };
     return dt;
@@ -2333,6 +2500,7 @@
   routes.integrations = async ({ query }) => {
     const [cat, live] = await Promise.all([api('/api/integrations/catalog'), api('/api/integrations').catch((err) => ({ error: err }))]);
     intState.catalog = cat;
+    intState.hooks = null;
     if (live.error) { intState.providers = []; intState.providersError = live.error.message; } else { intState.providers = live.providers || []; intState.providersError = null; intState.loadErrors = live.load_errors || []; }
     const toolNames = [...new Set(cat.entries.flatMap((e) => e.tools || []))].sort((a, b) => b.length - a.length);
     intState.toolRe = toolNames.length ? new RegExp(`\\b(${toolNames.join('|')})\\b`, 'g') : null;
@@ -2515,11 +2683,11 @@
       // calendar
       const cal = h('div', {});
       try {
-        const f = await api('/api/calendar/feed');
-        const rotate = h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (!confirm('Make a new link? The old one stops working.')) return; const r = await api('/api/calendar/feed/rotate', { method: 'POST' }); cal.replaceChildren(copyBox(r.url, 'calendar link'), rotate); toast('New calendar link created'); } }, 'Make a new link');
-        cal.append(copyBox(f.url, 'calendar link'), rotate);
+        const links = calendarLinks();
+        await links.draw();
+        cal.append(links.el);
       } catch (e) { cal.append(h('p', { class: 'muted' }, e.message)); }
-      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Calendar'), h('p', { class: 'muted' }, 'Subscribe in Google Calendar, Outlook or Apple Calendar (Add calendar → From URL). Keep this link private.'), cal));
+      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Calendar'), h('p', { class: 'muted' }, 'Your deadlines as a private calendar link for Google Calendar, Outlook or Apple Calendar. Reminders and extra dates: ', h('a', { href: '#/integrations?integration=calendar-feed' }, 'Integrations → Calendar feed'), '.'), cal));
       // activity log
       const auditSlot = h('div', {});
       let auditShown = 10;

@@ -325,6 +325,7 @@ dialog .dialog-body { padding: 1rem 1.2rem; overflow: auto; max-height: calc(100
 .int-title h3 { margin: 0 0 .1rem; font-size: 1.1rem; }
 .int-title p { margin: 0; }
 .int-badges { display: flex; flex-wrap: wrap; gap: .35rem; align-items: flex-start; }
+.int-badges .pill, .int-conn-status .pill { white-space: normal; max-width: 100%; }   /* long vendor-status labels wrap on narrow phones */
 .int-card h4 { font-size: .95rem; margin: 1rem 0 .4rem; color: var(--ink-2); }
 .int-role { background: var(--blue-soft); border-radius: 8px; padding: .55rem .7rem; font-size: .93rem; }
 .int-uses li { font-size: .92rem; }

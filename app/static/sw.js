@@ -77,7 +77,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/') || url.pathname === '/api/calendar.ics') return;
+  if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/') || url.pathname === '/api/calendar.ics'
+    || url.pathname === '/api/integrations/calendar_feed/calendar.ics') return;      // downloads: never a cached or JSON copy
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstApi(request));
   } else if (request.mode === 'navigate') {
