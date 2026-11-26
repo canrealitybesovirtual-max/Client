@@ -39,9 +39,9 @@ def test_catalog_for_a_signed_in_owner(owner):
     cat = integrations_guide.load_catalog()
     assert [e["id"] for e in body["entries"]] == [e["id"] for e in cat["entries"]]
     assert body["entries"] == cat["entries"] and body["categories"] == cat["categories"]
-    assert body["tradecomply"]["mcp_url"] == "http://testserver/mcp"              # this server, not the hosted one
-    assert body["tradecomply"]["hosted_mcp_url"] == cat["tradecomply"]["mcp_url"]
-    assert cat["tradecomply"]["mcp_url"] == "https://missed-call-recovery-n1c3.onrender.com/mcp"   # cache untouched
+    assert body["tradecomply"]["mcp_url"] == "http://testserver/mcp"              # this server's own address
+    assert "hosted_mcp_url" not in body["tradecomply"]                           # no other server's address
+    assert "mcp_url" not in cat["tradecomply"] and cat["tradecomply"]["mcp_path"] == "/mcp"   # cache untouched
     assert body["config_ready_ids"] == integrations_guide.config_ready_ids() and "box" in body["config_ready_ids"]
     assert r.headers["cache-control"] == "private, max-age=300"
     assert r.headers["x-content-type-options"] == "nosniff"

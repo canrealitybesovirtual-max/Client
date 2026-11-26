@@ -4,7 +4,7 @@
  "about": "Products a California contractor may use alongside TradeComply, and how each one fits: built into TradeComply, used side by side in your AI assistant, connected by file import/export, or reference material. Vendor facts come from each vendor's official documentation or code as read on the date shown; anything we could not confirm is marked unconfirmed. Vendor features, prices and availability change: check the official links before you rely on them.",
  "tradecomply": {
   "name": "TradeComply CA",
-  "mcp_url": "https://missed-call-recovery-n1c3.onrender.com/mcp",
+  "mcp_path": "/mcp",
   "transport": "Streamable HTTP",
   "auth": "Authorization: Bearer <TradeComply API key> (create one in Settings > AI assistant (MCP)). The server may also accept calls without a key while its public demo is open.",
   "tools_read_only": true
@@ -850,7 +850,7 @@
    "builtin": null,
    "uses": [
     {
-     "text": "Recipe: a Procore Official connector trigger on a new or updated vendor company calls TradeComply POST https://missed-call-recovery-n1c3.onrender.com/api/subs/import (Authorization: Bearer <TradeComply API key> kept in a Workato connection). Failing rows from the returned bulk_check_subcontractors-style risk report are posted to a Slack channel.",
+     "text": "Recipe: a Procore Official connector trigger on a new or updated vendor company calls POST /api/subs/import on your TradeComply server (Authorization: Bearer <TradeComply API key> kept in a Workato connection). Failing rows from the returned bulk_check_subcontractors-style risk report are posted to a Slack channel.",
      "tools": [
       "bulk_check_subcontractors"
      ]
@@ -4269,7 +4269,7 @@
    "builtin": null,
    "uses": [
     {
-     "text": "Register TradeComply's remote MCP (https://missed-call-recovery-n1c3.onrender.com/mcp) as a remote server in an Arcade project alongside Arcade's Google or Microsoft tools. A PM's single gateway can then run compliance_calendar and create the resulting deadlines as calendar events.",
+     "text": "Register TradeComply's remote MCP (your TradeComply server's /mcp address, shown in Settings > AI assistant (MCP)) as a remote server in an Arcade project alongside Arcade's Google or Microsoft tools. A PM's single gateway can then run compliance_calendar and create the resulting deadlines as calendar events.",
      "tools": [
       "compliance_calendar"
      ]
@@ -4565,7 +4565,7 @@
    "builtin": null,
    "uses": [
     {
-     "text": "Add TradeComply as a remote connector (URL https://missed-call-recovery-n1c3.onrender.com/mcp, bearer-token mode with each member's own TradeComply API key), then build a 'Payroll' Virtual MCP with check_payroll, prevailing_wage_penalties and apprentice_hours_required, and an 'Estimating' one with permit_required, estimate_permit_fees and classification_for_scope.",
+     "text": "Add TradeComply as a remote connector (your TradeComply server's /mcp address from Settings > AI assistant (MCP), bearer-token mode with each member's own TradeComply API key), then build a 'Payroll' Virtual MCP with check_payroll, prevailing_wage_penalties and apprentice_hours_required, and an 'Estimating' one with permit_required, estimate_permit_fees and classification_for_scope.",
      "tools": [
       "check_payroll",
       "prevailing_wage_penalties",

@@ -502,5 +502,8 @@ A `calendar_feed` or `schedule_import` entry whose connector is also installed s
 **MCP tools** (`tradecomply/integrations_guide.py`, `register(mcp)`; read-only): `integrations_for_task(task,
 gov_cloud_required=False, limit=6)` and `mcp_client_config(ids, tradecomply_mcp_url=None)`. The second only adds
 servers with a fixed https `url` that is `confirmed` and not a local `command`; the rest come back in `skipped`
-with the reason (and the address template or install command).
+with the reason (and the address template or install command). Without `tradecomply_mcp_url` it uses this server's
+own address: the web app's (for `/api/tools/mcp_client_config`), else `APP_URL` or `RENDER_EXTERNAL_URL` + `/mcp`,
+else the address the `/mcp` request came in on; over stdio with none of these the caller must pass it. The catalog
+file stores only `tradecomply.mcp_path` (`/mcp`), never a server address.
 

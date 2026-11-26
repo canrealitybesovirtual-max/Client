@@ -12,6 +12,15 @@ from tradecomply import integrations_guide as g
 BUILTIN_IDS = {"procore", "docusign", "slack", "microsoft-teams", "generic-webhooks", "twilio", "calendar-feed",
                "oracle-primavera", "microsoft-project", "splunk", "oidc-sso"}
 PANELS = {"connector", "webhooks", "calendar_feed", "schedule_import"}
+THIS_SERVER = "https://tradecomply.example.test"       # stands in for the operator's APP_URL
+
+
+@pytest.fixture(autouse=True)
+def operator_env(monkeypatch):
+    """Every test runs as a server whose operator set APP_URL; tests of the other cases change it."""
+    monkeypatch.setenv("APP_URL", THIS_SERVER)
+    for name in ("RENDER_EXTERNAL_URL", "SUPPORT_EMAIL", "SUPPORT_URL"):
+        monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture(scope="module")
@@ -27,7 +36,8 @@ def server_tools():
 # ---------------------------------------------------------------------------- catalog shape
 def test_catalog_entries_are_complete_and_consistent(server_tools):
     cat = g.load_catalog()
-    assert cat["checked_on"] == "2026-11-26" and cat["tradecomply"]["mcp_url"].endswith("/mcp")
+    assert cat["checked_on"] == "2026-11-26" and cat["tradecomply"]["mcp_path"] == "/mcp"
+    assert "mcp_url" not in cat["tradecomply"]                 # no server address in the product: each install is its own
     cats = {c["id"] for c in cat["categories"]}
     kinds = {k["id"] for k in cat["integration_types"]}
     assert kinds == {"builtin", "ai_assistant", "import_export", "reference"}
@@ -164,7 +174,7 @@ def test_config_combines_tradecomply_with_confirmed_remote_endpoints():
     r = g.mcp_client_config(["box", "docusign"])
     servers = r.claude_code_mcp_json["mcpServers"]
     assert list(servers) == ["tradecomply", "box", "docusign"]
-    assert servers["tradecomply"] == {"type": "http", "url": "https://missed-call-recovery-n1c3.onrender.com/mcp",
+    assert servers["tradecomply"] == {"type": "http", "url": THIS_SERVER + "/mcp",
                                       "headers": {"Authorization": "Bearer ${TRADECOMPLY_API_KEY}"}}
     assert servers["box"] == {"type": "http", "url": "https://mcp.box.com"}
     assert servers["docusign"]["url"] == "https://mcp.docusign.com/mcp"          # production, not demo
@@ -226,6 +236,59 @@ def test_config_only_tradecomply_when_nothing_selectable_and_url_checks():
         g.mcp_client_config([f"x{i}" for i in range(30)])
     with pytest.raises(ValueError, match="list"):
         g.mcp_client_config("box")
+
+
+def test_default_tradecomply_url_is_this_server_never_a_built_in_one(monkeypatch):
+    def url(**kw):
+        return g.mcp_client_config(["box"], **kw).claude_code_mcp_json["mcpServers"]["tradecomply"]["url"]
+
+    assert url() == THIS_SERVER + "/mcp"
+    monkeypatch.setenv("APP_URL", "http://192.168.1.20:8000/")          # operator-set LAN address: http allowed
+    assert url() == "http://192.168.1.20:8000/mcp"
+    monkeypatch.delenv("APP_URL")
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://tc-render.example.test")
+    assert url() == "https://tc-render.example.test/mcp"                # Render's own address when APP_URL is unset
+    monkeypatch.delenv("RENDER_EXTERNAL_URL")
+    # stdio / a laptop with no APP_URL: no guessing, the caller must say where their server is
+    with pytest.raises(ValueError, match="Pass tradecomply_mcp_url") as e:
+        g.mcp_client_config(["box"])
+    assert "example" in str(e.value) and "onrender" not in str(e.value)
+    assert url(tradecomply_mcp_url="https://mine.example.test/mcp") == "https://mine.example.test/mcp"
+    token = g.SERVER_MCP_URL.set("http://lan-host:8000/mcp")           # set by the web app around /api/tools runs
+    try:
+        assert url() == "http://lan-host:8000/mcp"
+    finally:
+        g.SERVER_MCP_URL.reset(token)
+    with pytest.raises(ValueError) as e:
+        g.mcp_client_config(["box"], tradecomply_mcp_url="ftp://x/mcp")
+    assert "your-tradecomply-server.example" in str(e.value)
+
+
+def test_mcp_tool_over_stdio_without_app_url_asks_for_the_address(monkeypatch):
+    monkeypatch.delenv("APP_URL")
+    mcp = FastMCP("t")
+    g.register(mcp)
+
+    async def run():
+        async with Client(mcp) as c:
+            tools = {t.name: t for t in await c.list_tools()}
+            r = await c.call_tool("mcp_client_config", {"ids": ["box"]}, raise_on_error=False)
+            return tools, r
+
+    tools, r = asyncio.run(run())
+    assert r.is_error and "Pass tradecomply_mcp_url" in r.content[0].text
+    desc = tools["mcp_client_config"].input_schema["properties"]["tradecomply_mcp_url"]["description"]
+    assert "this server's own /mcp" in desc and "hosted" not in desc
+
+
+def test_gov_cloud_step_names_no_built_in_contact(monkeypatch):
+    step = next(s for s in g.integrations_for_task("post alerts to slack", gov_cloud_required=True).next_steps
+                if "FedRAMP" in s)
+    assert "whoever runs your TradeComply server" in step and "support:" not in step
+    monkeypatch.setenv("SUPPORT_EMAIL", "help@tc-operator.example.test")
+    step = next(s for s in g.integrations_for_task("post alerts to slack", gov_cloud_required=True).next_steps
+                if "FedRAMP" in s)
+    assert "(support: help@tc-operator.example.test)" in step
 
 
 def test_every_config_ready_id_contributes_a_server():

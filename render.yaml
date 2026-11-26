@@ -27,6 +27,15 @@ services:
         value: /var/data
       - key: DATABASE_URL
         sync: false           # postgresql://... (Supabase Session/Transaction pooler, IPv4) or Render Postgres; blank = SQLite
+      - key: APP_URL
+        sync: false           # public https base URL of this service, e.g. https://app.your-company.example (blank =
+                              # Render's own onrender.com address). Set it before registering OAuth/SSO redirect URIs
+                              # or handing out MCP and calendar links: they are built from it
+      - key: SUPPORT_EMAIL
+        sync: false           # the operator's support address shown to customers ("contact support"); blank = "ask
+                              # whoever runs this TradeComply server". Use a business address, not a personal one
+      - key: SUPPORT_URL
+        sync: false           # the operator's support or contact page (https://...); blank = none
       - key: CSLB_AUTO_DOWNLOAD
         value: "1"
       - key: SECRET_KEY

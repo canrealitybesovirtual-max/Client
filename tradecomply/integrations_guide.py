@@ -14,6 +14,7 @@ import math
 import os
 import re
 from collections import Counter
+from contextvars import ContextVar
 from functools import lru_cache
 from typing import Annotated, Optional
 
@@ -320,26 +321,80 @@ def integrations_for_task(task: str, gov_cloud_required: bool = False, limit: in
         steps.append("No catalog product matched. Try naming the product or the job (e-signature, text alerts, "
                      f"schedule import, single sign-on, Procore, Slack). Categories: {cats}.")
     if gov_cloud_required:
-        steps.append("This filter checks the other product. TradeComply's own hosted service makes no FedRAMP "
-                     "claim; confirm with TradeComply before using it with controlled unclassified information "
-                     "(CUI).")
+        steps.append("This filter checks the other product. TradeComply itself makes no FedRAMP claim: before using "
+                     "it with controlled unclassified information (CUI), confirm with whoever runs your TradeComply "
+                     "server how and where it is hosted" + _support_hint() + ".")
     cat = load_catalog()
     return IntegrationsForTaskResult(task=task, gov_cloud_required=gov_cloud_required, matches=matches,
                                      excluded_for_gov_cloud=excluded[:15], next_steps=steps,
                                      checked_on=cat["checked_on"], note=NOTE.format(date=cat["checked_on"]))
 
 
+def _support_hint(env=None) -> str:
+    """ (support: <SUPPORT_EMAIL or SUPPORT_URL>) when the operator set one; there is no built-in contact."""
+    env = os.environ if env is None else env
+    for name in ("SUPPORT_EMAIL", "SUPPORT_URL"):
+        v = (env.get(name) or "").strip()
+        if v and len(v) <= 254 and not any(c.isspace() or c in "<>\"'`" for c in v):
+            return f" (support: {v})"
+    return ""
+
+
 # ---------------------------------------------------------------------------- mcp_client_config
+URL_EXAMPLE = "https://your-tradecomply-server.example/mcp"
+NO_URL = ("Pass tradecomply_mcp_url: your TradeComply server's /mcp address (shown in the TradeComply web app under "
+          f"Settings > AI assistant (MCP)), e.g. {URL_EXAMPLE}, or http://127.0.0.1:8000/mcp for a local install.")
+HOST_RE = re.compile(r"^[A-Za-z0-9.\-]+(:\d{1,5})?$|^\[[0-9A-Fa-f:.]+\](:\d{1,5})?$")
+# Set by the web app (app/api.py) around an in-process tool run, so /api/tools/mcp_client_config points at the
+# server the user is signed in to.
+SERVER_MCP_URL: ContextVar[str | None] = ContextVar("tradecomply_server_mcp_url", default=None)
+
+
+def _mcp_path() -> str:
+    return load_catalog()["tradecomply"].get("mcp_path") or "/mcp"
+
+
+def operator_mcp_url(env=None) -> str | None:
+    """This server's own /mcp address from the operator's settings: APP_URL, else RENDER_EXTERNAL_URL (the same
+    order as app/config.py Settings.app_url). None when neither is set. Never a built-in address: every install
+    (hosted, self-hosted, local) points its users at itself."""
+    env = os.environ if env is None else env
+    base = ((env.get("APP_URL") or env.get("RENDER_EXTERNAL_URL") or "").strip()).rstrip("/")
+    return base + _mcp_path() if base else None
+
+
+def request_mcp_url() -> str | None:
+    """This server's /mcp address from the MCP-over-HTTP request being served (None over stdio or outside a
+    request). Same rule as app/billing.py base_url: X-Forwarded-Host or Host, https when the request or the proxy
+    says so."""
+    try:
+        from fastmcp.server.dependencies import get_http_request
+        req = get_http_request()
+    except Exception:                      # stdio, no active request, or an older fastmcp
+        return None
+    host = (req.headers.get("x-forwarded-host") or req.headers.get("host") or "").split(",")[0].strip()
+    if not HOST_RE.match(host):
+        return None
+    https = req.url.scheme == "https" or req.headers.get("x-forwarded-proto", "").split(",")[0].strip() == "https"
+    return f"{'https' if https else 'http'}://{host}{_mcp_path()}"
+
+
 def _check_tradecomply_url(url: str | None, trusted: bool = False) -> str:
     """trusted: the URL is this server's own address (the web API passes it), so plain http on a LAN host is
-    allowed; anything a caller types must be https (or http://localhost)."""
-    default = load_catalog()["tradecomply"]["mcp_url"]
-    url = (url or "").strip() or default
+    allowed; anything a caller types must be https (or http://localhost). With no URL, this server's own address
+    is used (the web app's SERVER_MCP_URL, operator_mcp_url, then the current HTTP request); over stdio with no
+    APP_URL the caller must pass one."""
+    url = (url or "").strip()
+    if not url:
+        url = SERVER_MCP_URL.get() or operator_mcp_url() or request_mcp_url() or ""
+        trusted = True                     # this server's own address, from its operator or its own request
+        if not url:
+            raise ValueError(NO_URL)
     local = re.match(r"^http://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?/", url)
     plain = trusted and re.match(r"^http://[A-Za-z0-9.\-\[\]:]+/", url)
     if len(url) > 500 or any(c.isspace() for c in url) or not (url.startswith("https://") or local or plain):
         raise ValueError("tradecomply_mcp_url must be an https:// URL (or http://localhost for a local install), "
-                         "e.g. " + default)
+                         f"e.g. {URL_EXAMPLE}")
     return url
 
 
@@ -529,8 +584,10 @@ def register(mcp) -> None:
                                                     "'docusign']; 'id/server' picks one server, e.g. "
                                                     "'salesforce/sobject-all'. Ids with a confirmed remote "
                                                     f"endpoint: {ready}")],
-        tradecomply_mcp_url: Annotated[Optional[str], Field(description="TradeComply MCP URL to use (default: the "
-                                                                        "hosted service's /mcp)")] = None,
+        tradecomply_mcp_url: Annotated[Optional[str], Field(description="TradeComply MCP URL to use (default: this "
+                                                                        "server's own /mcp, from its APP_URL or the "
+                                                                        "address this call came in on; required "
+                                                                        "over stdio)")] = None,
     ) -> McpClientConfigResult:
         """Ready-to-paste MCP client settings that put TradeComply's MCP server and the selected products' remote
         MCP servers in one AI assistant.

@@ -193,11 +193,10 @@ def list_events(p: Principal = Depends(anyone)):
 def integrations_catalog(request: Request, p: Principal = Depends(anyone)):
     """The integrations catalog (tradecomply/data/integrations.json): every product a contractor may use with
     TradeComply and how (built in, alongside in an AI assistant, import/export, reference), with this server's own
-    MCP URL. The same for every signed-in user and free of secrets, so it may be cached (the app keeps a copy for
-    offline use)."""
+    MCP URL (the catalog file holds no server address: every install points its users at itself). The same for every
+    signed-in user and free of secrets, so it may be cached (the app keeps a copy for offline use)."""
     cat = integrations_guide.load_catalog()
-    body = {**cat, "tradecomply": {**cat["tradecomply"], "hosted_mcp_url": cat["tradecomply"]["mcp_url"],
-                                   "mcp_url": f"{base_url(request)}/mcp"},
+    body = {**cat, "tradecomply": {**cat["tradecomply"], "mcp_url": f"{base_url(request)}/mcp"},
             "config_ready_ids": integrations_guide.config_ready_ids()}
     return JSONResponse(body, headers={"Cache-Control": "private, max-age=300"})
 

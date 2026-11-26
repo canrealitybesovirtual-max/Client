@@ -93,7 +93,8 @@ Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<
 | `MCP_ALLOWED_ORIGINS` | unset | Comma-separated browser origins (`https://app.example.com`) allowed to call `/mcp` besides this server's own; a request with any other `Origin` header gets 403. Requests without `Origin` (every non-browser MCP client) are never refused for that. `*` turns the check off |
 | `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` | unset | Enable checkout and the billing portal. The price is the $1,000/month recurring price from the Stripe dashboard |
 | `STRIPE_WEBHOOK_SECRET` | unset | Verifies `/api/billing/webhook` (send `checkout.session.completed`, `customer.subscription.updated`/`deleted`, `invoice.payment_failed`, `invoice.paid`) |
-| `APP_URL` | `RENDER_EXTERNAL_URL` or request host | Public base URL for Stripe return links, the MCP URL and calendar links, OAuth redirect URIs (`<APP_URL>/api/integrations/<provider>/oauth/callback`) and links in Slack/Teams alerts |
+| `APP_URL` | `RENDER_EXTERNAL_URL` or request host | Public base URL for Stripe return links, the MCP URL and calendar links, OAuth redirect URIs (`<APP_URL>/api/integrations/<provider>/oauth/callback`), links in Slack/Teams alerts, and the TradeComply address the `mcp_client_config` tool puts in generated assistant configs (over stdio with no `APP_URL` the caller must pass `tradecomply_mcp_url`). Set it before registering OAuth/SSO redirect URIs or handing out MCP and calendar links |
+| `SUPPORT_EMAIL`, `SUPPORT_URL` | unset | The operator's support contact, shown to customers where they need help from whoever runs the server (billing not set up, an integration not turned on) and returned as `support_contact` by `GET /api/config`. Unset: the app says "ask whoever runs this TradeComply server". Use a business address; malformed values are ignored with a warning |
 | `INTEGRATIONS_KEY` | derived from `SECRET_KEY` (HKDF) | Base64 of 32 random bytes: the AES-256-GCM key for integration secrets at rest (OAuth tokens, API keys, webhook URLs). render.yaml generates one. Older keys go in `INTEGRATIONS_KEY_PREVIOUS` (comma-separated) during a rotation; then run `python -m app.crypto rotate`. See [docs/integrations-dev.md](docs/integrations-dev.md) |
 | `EVENTS_WORKER` | on | `0` turns off the background thread that delivers integration events (webhooks, connectors) |
 | Connector app credentials (e.g. `PROCORE_CLIENT_ID`) | unset | Each connector lists its own `required_env`; it shows as "not set up on this server" until they are set |
@@ -102,9 +103,18 @@ Use an API key from a script: `curl -H "Authorization: Bearer tck_..." https://<
 | `LICENSE_DB` | `data/cslb.sqlite` | CSLB SQLite path |
 | `DATABASE_CONNECT_TIMEOUT`, `DATABASE_CONNECT_ATTEMPTS`, `DATABASE_POOL_MAX`, `DATABASE_POOL_IDLE` | 5 s, 3, 10, 4 | Postgres only: connect timeout per attempt, startup attempts, connections in use per instance, idle connections kept |
 
+No operator or customer data is built in: every company signs up and enters its own company, license, contacts and
+credentials, and everything about the operator (public address, support contact, Stripe, Twilio and other connector
+app keys) comes from the environment variables above. The repository holds no server address (the integrations
+catalog stores only the `/mcp` path; each install points its users at itself), no contact details and no demo phone
+numbers other than 555-01xx. `tests/test_no_operator_data.py` checks this; to also scan every tracked file for your
+own identifiers without writing them into the repo, put them one per line in a file outside the checkout and run
+`TC_FORBIDDEN_STRINGS_FILE=/path/to/that/file python -m pytest -q tests/test_no_operator_data.py`.
+
 Billing states: `trialing` (14 days) and `active` have full access; `past_due` keeps access with a banner while
 Stripe retries the card; an ended trial or `canceled` gets HTTP 402 on tool runs, the dashboard and the calendar
-(data stays readable). Without Stripe settings the billing endpoints return a clear 503 message.
+(data stays readable). Without Stripe settings the billing endpoints return a 503 saying online billing is not set
+up (the missing setting names go to the server log, not to customers).
 
 ### Durable storage (Postgres)
 

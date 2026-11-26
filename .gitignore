@@ -4,3 +4,20 @@ __pycache__/
 .pytest_cache/
 .venv/
 /data/
+# Never commit local secrets, databases, dumps or keys (customer data and operator credentials live only in the
+# deployment's environment and database). The public CSLB seed is seed/*.sqlite.gz, which these patterns don't match.
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.db
+*-wal
+*-shm
+*-journal
+*.sql
+*.dump
+*.bak
+*.pem
+*.key
+.ruff_cache/
+.claude/settings.local.json

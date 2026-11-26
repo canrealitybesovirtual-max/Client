@@ -1,14 +1,44 @@
 """Runtime settings (from environment variables) and the per-app platform context shared by every request."""
+import logging
 import os
+import re
 from dataclasses import dataclass, field
 
 from .auth import RateLimiter, Signer, load_secret_key
 from .crypto import SecretBox
 from .store import Store, database_url_from_env, default_data_dir
 
+log = logging.getLogger("tradecomply.config")
+
 
 def _flag(name: str) -> bool:
     return (os.getenv(name) or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+SUPPORT_EMAIL_RE = re.compile(r"^[^@\s<>\"'`]{1,64}@[A-Za-z0-9](?:[A-Za-z0-9.-]{0,252}[A-Za-z0-9])?\.[A-Za-z]{2,63}$")
+SUPPORT_URL_RE = re.compile(r"^https?://[A-Za-z0-9.\-]+(:\d{1,5})?(/[^\s<>\"'`]*)?$")
+
+
+def _support_email(value: str | None) -> str | None:
+    """The operator's support address. There is no built-in one: unset means the app tells customers to ask whoever
+    runs their TradeComply server. A malformed value is ignored with a warning instead of being shown."""
+    v = (value or "").strip()
+    if not v:
+        return None
+    if len(v) > 254 or not SUPPORT_EMAIL_RE.match(v):
+        log.warning("SUPPORT_EMAIL is not a plain email address; ignored")
+        return None
+    return v
+
+
+def _support_url(value: str | None) -> str | None:
+    v = (value or "").strip()
+    if not v:
+        return None
+    if len(v) > 500 or not SUPPORT_URL_RE.match(v):
+        log.warning("SUPPORT_URL must be an http(s):// address with no spaces or quotes; ignored")
+        return None
+    return v
 
 
 @dataclass
@@ -24,7 +54,9 @@ class Settings:
     stripe_price_id: str | None = None
     stripe_webhook_secret: str | None = None
     stripe_api_base: str = "https://api.stripe.com"
-    app_url: str | None = None            # public base URL, e.g. https://tradecomply.onrender.com
+    app_url: str | None = None            # public base URL, e.g. https://app.your-company.example
+    support_email: str | None = None      # operator's support contact shown to customers (SUPPORT_EMAIL)
+    support_url: str | None = None        # operator's support/contact page (SUPPORT_URL, https:// or http://)
     cookie_secure: bool = False           # force the Secure cookie flag (it is also set automatically over https)
     local_mode: bool = False              # python -m app.local: one company on a laptop
     trial_days: int = 14
@@ -48,6 +80,8 @@ class Settings:
             stripe_webhook_secret=os.getenv("STRIPE_WEBHOOK_SECRET") or None,
             stripe_api_base=os.getenv("STRIPE_API_BASE") or "https://api.stripe.com",
             app_url=(os.getenv("APP_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/") or None,
+            support_email=_support_email(os.getenv("SUPPORT_EMAIL")),
+            support_url=_support_url(os.getenv("SUPPORT_URL")),
             cookie_secure=_flag("COOKIE_SECURE"),
             local_mode=_flag("TC_LOCAL"),
             events_background=(os.getenv("EVENTS_WORKER") or "1").strip().lower() not in ("0", "false", "no",
@@ -63,6 +97,14 @@ class Settings:
     @property
     def stripe_enabled(self) -> bool:
         return bool(self.stripe_secret_key and self.stripe_price_id)
+
+    @property
+    def support_contact(self) -> dict | None:
+        """{"email", "url"} from SUPPORT_EMAIL / SUPPORT_URL for customer-facing "contact us" text, or None when the
+        operator set neither (never a built-in address)."""
+        if not (self.support_email or self.support_url):
+            return None
+        return {"email": self.support_email, "url": self.support_url}
 
 
 def signing_key(store: Store) -> bytes:

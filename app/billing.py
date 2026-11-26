@@ -31,8 +31,14 @@ router = APIRouter(prefix="/api/billing", tags=["billing"])
 TOLERANCE_S = 300
 PRICE_USD_MONTH = 1000
 
-NOT_CONFIGURED = ("Online billing is not set up on this server yet (STRIPE_SECRET_KEY and STRIPE_PRICE_ID are not "
-                  "set). Contact TradeComply to subscribe.")
+# Shown to customers: no operator setting names, no built-in contact (the web app adds SUPPORT_EMAIL / SUPPORT_URL
+# from /api/config when the operator set them). The missing settings are logged for the operator instead.
+NOT_CONFIGURED = "Online billing is not set up on this server yet."
+
+
+def _not_configured() -> HTTPException:
+    log.warning("billing request refused: STRIPE_SECRET_KEY and STRIPE_PRICE_ID must both be set on this server")
+    return HTTPException(503, NOT_CONFIGURED)
 
 
 # ---------------------------------------------------------------------------- entitlement
@@ -227,7 +233,7 @@ async def checkout(request: Request, p: Principal = Depends(owner_only)):
     platform = platform_of(request)
     s = platform.settings
     if not s.stripe_enabled:
-        raise HTTPException(503, NOT_CONFIGURED)
+        raise _not_configured()
     tenant = await anyio.to_thread.run_sync(platform.store.get_tenant, p.tenant_id)
     base = base_url(request)
     form = {
@@ -253,7 +259,7 @@ async def checkout(request: Request, p: Principal = Depends(owner_only)):
 async def portal(request: Request, p: Principal = Depends(owner_only)):
     platform = platform_of(request)
     if not platform.settings.stripe_enabled:
-        raise HTTPException(503, NOT_CONFIGURED)
+        raise _not_configured()
     tenant = await anyio.to_thread.run_sync(platform.store.get_tenant, p.tenant_id)
     if not tenant.get("stripe_customer_id"):
         raise HTTPException(409, "No billing account yet. Subscribe first.")

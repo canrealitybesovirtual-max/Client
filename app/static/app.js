@@ -43,6 +43,17 @@
     return el;
   }
 
+  // "Who do I ask?" text. Whoever runs this server can set SUPPORT_EMAIL / SUPPORT_URL (sent in /api/config); there
+  // is no built-in contact, so without them customers are told to ask the people who run their TradeComply server.
+  function supportText(what) {
+    const sc = (state.config && state.config.support_contact) || {};
+    const links = [];
+    if (sc.email) links.push(h('a', { href: `mailto:${sc.email}` }, sc.email));
+    if (sc.url && /^https?:\/\//i.test(sc.url)) links.push(h('a', { href: sc.url, target: '_blank', rel: 'noopener noreferrer' }, 'support page'));
+    if (!links.length) return [`${what}, ask whoever runs this TradeComply server.`];
+    return [`${what}, contact support: `, links.map((l, k) => (k ? [' or ', l] : l)), '.'];
+  }
+
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const WORDS = { cal: 'Cal', usd: '($)', cslb: 'CSLB', coi: 'COI', noc: 'NOC', wc: "workers' comp", dir: 'DIR', osha: 'OSHA', ccr: 'CCR',
     id: 'ID', iipp: 'IIPP', hers: 'HERS', pto: 'PTO', ca: 'CA', url: 'link', w9: 'W-9', ecpr: 'eCPR', ppe: 'PPE', smip: 'SMIP',
@@ -2133,7 +2144,7 @@
         const local = state.me && state.me.tenant && state.me.tenant.plan === 'local';
         parts.push(h('div', { class: 'banner warn' }, h('p', {}, h('strong', {}, `${p.display_name} isn't turned on yet. `),
           local ? `This copy of TradeComply needs ${p.display_name}'s app keys before it can connect. Your IT person can add them (see the details below); then come back here to connect.`
-            : `This TradeComply server needs ${p.display_name}'s app keys before it can connect. Contact TradeComply (or your IT person, if your company runs its own TradeComply server) to have it turned on; then come back here to connect.`)),
+            : [`This TradeComply server needs ${p.display_name}'s app keys before it can connect. `, supportText('To have it turned on'), ' Then come back here to connect.'])),
           (p.missing_env && p.missing_env.length) || unconfirmed ? more('Details for whoever runs the server',
             p.missing_env && p.missing_env.length ? h('p', { class: 'small' }, 'Missing server settings: ', p.missing_env.map((n, k) => [k ? ', ' : '', h('code', {}, n)])) : null, unconfirmed) : null,
           out);
@@ -2729,7 +2740,7 @@
       const items = [h('dl', { class: 'kv' }, h('dt', {}, 'Plan'), h('dd', {}, me.tenant.plan === 'local' ? 'Local install' : `Core, $${((b && b.price_usd_month) || 1000).toLocaleString('en-US')}/month`),
         h('dt', {}, 'Status'), h('dd', {}, h('span', { class: `pill ${ent.ok === false ? 'red' : ent.warning ? 'amber' : 'green'}` }, ent.message || humanize(me.tenant.status))))];
       if (me.tenant.plan !== 'local') {
-        if (b && !b.configured) items.push(h('p', { class: 'muted' }, 'Online billing is not set up on this server yet. Contact TradeComply to subscribe.'));
+        if (b && !b.configured) items.push(h('p', { class: 'muted' }, 'Online billing is not set up on this server yet. ', supportText('To subscribe')));
         items.push(h('div', { class: 'row' },
           me.tenant.status !== 'active' && b && b.configured ? h('button', { type: 'button', class: 'btn', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null,
           me.tenant.has_billing_account ? h('button', { type: 'button', class: 'btn secondary', onclick: (e) => billingPortal(e.currentTarget) }, 'Manage billing and invoices') : null));

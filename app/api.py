@@ -21,7 +21,7 @@ from fastapi.responses import Response
 from fastmcp import Client
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationError
 
-from tradecomply import logic
+from tradecomply import integrations_guide, logic
 
 from . import dashboard
 from . import mcp_governance as governance
@@ -247,7 +247,8 @@ async def config(request: Request):
     return {"product": "TradeComply CA", "mcp_url": _mcp_url(request), "mcp_require_key": s.mcp_require_key,
             "mcp_public_demo": s.mcp_public_demo,
             "stripe_enabled": s.stripe_enabled, "local_mode": s.local_mode, "price_usd_month": PRICE_USD_MONTH,
-            "trial_days": s.trial_days, "claimant_roles": dashboard.ROLE_LABELS}
+            "trial_days": s.trial_days, "claimant_roles": dashboard.ROLE_LABELS,
+            "support_contact": s.support_contact}       # SUPPORT_EMAIL / SUPPORT_URL of whoever runs this server
 
 
 @router.get("/me")
@@ -614,7 +615,12 @@ async def call_tool(name: str, request: Request, p: Principal = Depends(anyone))
         args = args["arguments"]
     if not isinstance(args, dict):
         raise HTTPException(422, "Body must be a JSON object of tool arguments")
-    out = await run_tool(platform, name, args)
+    # mcp_client_config without a URL points at the server the user is signed in to, never a built-in address
+    url_token = integrations_guide.SERVER_MCP_URL.set(_mcp_url(request))
+    try:
+        out = await run_tool(platform, name, args)
+    finally:
+        integrations_guide.SERVER_MCP_URL.reset(url_token)
     sc = out["structured"] if isinstance(out["structured"], dict) else {}
     verified = sc.get("verified") if isinstance(sc.get("verified"), bool) else None
     await anyio.to_thread.run_sync(lambda: platform.store.audit(p.tenant_id, p.label, name, _summarize(args), verified,
