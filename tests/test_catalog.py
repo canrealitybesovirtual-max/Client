@@ -54,8 +54,9 @@ def test_titles_pinned_by_other_tests_stay():
 
 
 def test_layouts_match_the_schemas(live):
-    assert set(catalog.LAYOUTS) == {"validate_home_improvement_contract", "permit_required", "accessibility_field_check",
-                                    "generate_safety_programs", "project_setup_checklist", "project_risk_score"}
+    assert set(catalog.LAYOUTS) == {"validate_home_improvement_contract", "permit_required",
+                                    "accessibility_field_check", "generate_safety_programs",
+                                    "project_setup_checklist", "project_risk_score"}
     for name, lay in catalog.LAYOUTS.items():
         props = schema(live[name])["properties"]
         required = set(schema(live[name]).get("required", []))

@@ -1814,7 +1814,10 @@
    "tools": [
     "project_setup_checklist"
    ],
-   "anchors": []
+   "anchors": [
+    "usa-811-notice-2-working-days",
+    "prelim-notice-20-day-deadline"
+   ]
   },
   {
    "concept": "toolbox talk due",

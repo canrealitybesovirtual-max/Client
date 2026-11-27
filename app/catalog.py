@@ -545,6 +545,9 @@ FOLLOWUPS = {
     "find_pro": ["Do I need an engineer for a retaining wall?", "Where do I find a HERS rater?"],
     "toolbox": ["When is a toolbox talk due?", "Do I need a written injury and illness prevention program?"],
     "setup": ["What do I need before we break ground?", "Do I need to call 811 before digging?"],
+    "offroad": ["Do my excavators fall under CARB's off-road rule?",
+                "Do we have to report our off-road fleet to CARB?"],
+    "certs": ["Who needs DIR electrician certification?", "Does a crane operator have to be certified?"],
 }
 
 

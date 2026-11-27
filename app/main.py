@@ -31,7 +31,7 @@ from starlette.staticfiles import StaticFiles
 from tradecomply import cslb
 
 from . import (account, api, assistant, auth, auth_links, billing, connectors, integrations_api, mcp_governance, oauth,
-               safe_json, sso)
+               quickhelp, safe_json, search, sso)
 from .connectors import alerts, calendar_feed, docusign, procore, schedule_import, splunk, twilio_sms
 from .config import Platform, Settings
 
@@ -193,9 +193,11 @@ class GZipPublic:
     """Compresses only responses that hold no secrets and are the same for everyone: the app shell, static files
     and the tool list (about 400 KB of JSON schemas, 10x smaller gzipped, which matters on a phone). Responses
     carrying keys, tokens or account data are never compressed, so BREACH-style length attacks have nothing to
-    read. The integrations catalog (about 300 KB of JSON, the same for every signed-in user) is compressed too."""
+    read. The integrations catalog (about 300 KB of JSON, the same for every signed-in user) is compressed too, and
+    so is the suggestion vocabulary (/api/suggest/vocab, the same for everyone). Search, suggestions and Quick help
+    answers carry company data and are never compressed."""
     PATHS = {"/", "/index.html", "/sw.js", "/manifest.webmanifest", "/api/tools", "/api/docs", "/api/openapi.json",
-             "/api/integrations/catalog"}
+             "/api/integrations/catalog", "/api/suggest/vocab"}
 
     def __init__(self, app):
         self.app, self.gzip = app, GZipMiddleware(app, minimum_size=1024)
@@ -312,6 +314,8 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
         platform.events.start()           # starts a thread only; no database call on the event loop
         if settings.events_background:    # same switch as the event worker (tests drive both by hand)
             splunk.start_exporter(platform)   # background HEC export thread; idle until a company connects Splunk
+        if settings.search_warm:          # one search index per process, built on a daemon thread (app/search.py)
+            await search.warm(platform)
         if not store.persistent:
             log.warning("STORAGE IS NOT PERSISTENT: SQLite at %s is on this instance's own filesystem, which Render "
                         "replaces on every deploy and restart, so accounts, projects and logs will be lost. Set "
@@ -344,6 +348,8 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
     app.include_router(auth_links.router)  # /api/auth: forgot password, reset, invite links, email confirmation
     app.include_router(billing.router)
     app.include_router(api.router)
+    app.include_router(search.router)      # /api/search, /api/suggest, /api/suggest/vocab, /api/rules/{id}
+    app.include_router(quickhelp.router)   # POST /api/help: Quick help (built in, no model)
     app.include_router(account.router)     # GET /api/tenant/export, DELETE /api/tenant (app/account.py)
     app.include_router(assistant.router)   # /api/assistant: Ask TradeComply, the in-app AI helper
     # Connector routers first: their fixed paths (/api/integrations/docusign/...) must win over the generic
@@ -368,7 +374,8 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
                                  "error": "storage unavailable"}, status_code=503)
         return JSONResponse({"ok": True, "server": "TradeComply CA", "schema": schema,
                              "license_data": cslb.snapshot_date() or "demo fixtures",
-                             "storage": store.backend, "storage_persistent": store.persistent})
+                             "storage": store.backend, "storage_persistent": store.persistent,
+                             "search": search.status()})
 
     # API reference: a same-origin page (FastAPI's Swagger UI loads scripts from a CDN, which the CSP blocks, and
     # third-party script on this origin could read the CSRF cookie anyway).

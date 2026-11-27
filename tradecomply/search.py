@@ -20,6 +20,7 @@ no I/O beyond reading the JSON files in tradecomply/data, nothing per company.
 from __future__ import annotations
 
 import bisect
+import heapq
 import json
 import math
 import os
@@ -176,7 +177,10 @@ def phrase_key(text: str) -> str:
 
 def fold(text: str) -> str:
     """Case and accent folding for company values (casefold + NFKD, combining marks removed)."""
-    t = unicodedata.normalize("NFKD", (text or "").casefold())
+    text = text or ""
+    if text.isascii():
+        return text.lower()
+    t = unicodedata.normalize("NFKD", text.casefold())
     return "".join(c for c in t if not unicodedata.combining(c))
 
 
@@ -193,8 +197,10 @@ def match_rank(value: str, q: str) -> int:
         return 3
     if v.startswith(x):
         return 2
-    words = _FOLD_WORD.findall(v)
     qw = _FOLD_WORD.findall(x)
+    if not qw or any(p not in v for p in qw):      # a word prefix is a substring: a cheap reject first
+        return 0
+    words = _FOLD_WORD.findall(v)
     if qw and all(any(w.startswith(p) for w in words) for p in qw):
         return 1
     return 0
@@ -483,8 +489,8 @@ class Index:
                 elif short and any(w.startswith(qn) for w in tn.split()):
                     sc *= 1.8
             out.append((sc, d, {"coverage": round(cov, 3)}))
-        out.sort(key=lambda x: (-x[0], x[1].type, x[1].id))
-        return dedupe(out)[:limit], ex
+        top = heapq.nsmallest(max(limit * 3, 60), out, key=lambda x: (-x[0], x[1].type, x[1].id))
+        return dedupe(top)[:limit], ex
 
     def search(self, q: str, types: set | None = None, limit: int = 10, typing: bool = False,
                filt=None) -> list[tuple[float, Doc, dict]]:

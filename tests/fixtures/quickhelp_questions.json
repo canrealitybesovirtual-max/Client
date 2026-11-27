@@ -1,0 +1,457 @@
+{
+ "about": "The 30 questions Quick help must answer itself and the 10 it must hand off (data_map 8 and 9, written with the prototype on 2026-11-27). Company Sierra Build Co; projects Elm St ADU (Oakland, Alameda) and Kern Solar Yard (Bakersfield, Kern); sub Ace Roofing 1023456; today 2026-11-27; Ask TradeComply available. any_rules: at least one of these is cited; args: the check opens with at least these.",
+ "answer": [
+  {
+   "q": "Do I need a Cal/OSHA permit for a 6 ft trench my guys have to get into?",
+   "expect": {
+    "intent": "osha_permit",
+    "tool": "check_cal_osha_permits",
+    "any_rules": [
+     "permit-trench-excavation-5ft"
+    ],
+    "args": {
+     "excavation_max_depth_ft": 6.0,
+     "workers_enter_trench": true
+    }
+   }
+  },
+  {
+   "q": "When is my prelim due if I first delivered lumber on Nov 3?",
+   "expect": {
+    "intent": "lien",
+    "tool": "calculate_lien_deadline",
+    "any_rules": [
+     "prelim-notice-20-day-deadline"
+    ],
+    "args": {
+     "claimant_role": "supplier",
+     "first_furnishing_date": "2026-11-03"
+    }
+   }
+  },
+  {
+   "q": "I'm a sub, my last day on the job was 10/15/2026 and the owner recorded a notice of completion 10/20/2026. When do I have to record my lien?",
+   "expect": {
+    "intent": "lien",
+    "tool": "calculate_lien_deadline",
+    "any_rules": [
+     "sub-lien-30-days-after-noc-or-cessation",
+     "lien-deadline-subcontractor-supplier"
+    ],
+    "args": {
+     "claimant_role": "subcontractor",
+     "last_furnishing_date": "2026-10-15",
+     "notice_of_completion_date": "2026-10-20"
+    }
+   }
+  },
+  {
+   "q": "What license do I need to replace a water heater and add two outlets?",
+   "expect": {
+    "intent": "classification",
+    "tool": "classification_for_scope",
+    "any_rules": [
+     "class-c36-plumbing-scope",
+     "class-c10-electrical-scope",
+     "general-building-two-trade-rule"
+    ],
+    "args": {
+     "scope_of_work": "replace a water heater and add two outlets"
+    }
+   }
+  },
+  {
+   "q": "Can a B contractor take a job that's only roofing?",
+   "expect": {
+    "intent": "classification",
+    "tool": "classification_for_scope",
+    "any_rules": [
+     "general-building-two-trade-rule",
+     "b-prime-contract-two-trade-rule"
+    ]
+   }
+  },
+  {
+   "q": "Does my roofing sub need workers comp even with no employees?",
+   "expect": {
+    "intent": "workers_comp",
+    "tool": "check_subcontractor_compliance",
+    "any_rules": [
+     "workers-comp-exemption-until-2028",
+     "workers-comp-required-classifications"
+    ],
+    "args": {
+     "required_classification": "C-39"
+    }
+   }
+  },
+  {
+   "q": "How much can I take as a down payment on a $45,000 kitchen remodel?",
+   "expect": {
+    "intent": "down_payment",
+    "tool": "validate_home_improvement_contract",
+    "any_rules": [
+     "hic-down-payment-cap"
+    ],
+    "args": {
+     "contract_price_usd": 45000.0
+    }
+   }
+  },
+  {
+   "q": "Homeowner is 72 and signed the contract yesterday, how long do they have to cancel?",
+   "expect": {
+    "intent": "cancel",
+    "tool": "home_improvement_cancellation_deadline",
+    "any_rules": [
+     "senior-five-day-right-to-cancel"
+    ],
+    "args": {
+     "buyer_age_65_or_older": true,
+     "received_signed_copy_on": "2026-11-26"
+    }
+   }
+  },
+  {
+   "q": "The GC got paid two weeks ago and still hasn't paid me",
+   "expect": {
+    "intent": "prompt_pay",
+    "tool": "prompt_payment_check",
+    "any_rules": [
+     "bp-7108-5-pay-subs-7-days"
+    ],
+    "args": {
+     "payer_role": "direct_contractor",
+     "payee_role": "subcontractor"
+    }
+   }
+  },
+  {
+   "q": "What's the most retention an owner can hold on a private job signed this year?",
+   "expect": {
+    "intent": "retention",
+    "tool": "retention_cap_check",
+    "any_rules": [
+     "private-retention-5pct-cap"
+    ],
+    "args": {
+     "project_type": "private"
+    }
+   }
+  },
+  {
+   "q": "Can we start pouring at 6:30 am on Saturday in San Diego?",
+   "expect": {
+    "intent": "hours",
+    "tool": "construction_hours",
+    "any_rules": [
+     "local-sd-construction-noise-night-sunday-holiday-ban"
+    ],
+    "args": {
+     "city": "San Diego",
+     "when": "2026-11-28T06:30"
+    }
+   }
+  },
+  {
+   "q": "What are LA construction hours on Sunday?",
+   "expect": {
+    "intent": "hours",
+    "tool": "construction_hours",
+    "any_rules": [
+     "local-la-construction-hours"
+    ],
+    "args": {
+     "city": "Los Angeles"
+    }
+   }
+  },
+  {
+   "q": "AQI is 175 from wildfire smoke, what do I have to do for my crew?",
+   "expect": {
+    "intent": "smoke",
+    "tool": "wildfire_smoke_requirements",
+    "any_rules": [
+     "osha2-smoke-scope-aqi-151",
+     "osha2-smoke-voluntary-respirators-151-500"
+    ],
+    "args": {
+     "aqi_pm25": 175
+    }
+   }
+  },
+  {
+   "q": "We're grading in Kern County, do we need valley fever training?",
+   "expect": {
+    "intent": "valley_fever",
+    "tool": "valley_fever_requirements",
+    "any_rules": [
+     "osha2-valley-fever-training-endemic-counties"
+    ],
+    "args": {
+     "county": "Kern",
+     "soil_disturbing_work": true
+    }
+   }
+  },
+  {
+   "q": "It's going to be 98 degrees tomorrow, what heat rules kick in?",
+   "expect": {
+    "intent": "heat",
+    "tool": "generate_safety_programs",
+    "any_rules": [
+     "heat-high-heat-procedures-95f",
+     "heat-high-heat-procedures-construction-95F"
+    ]
+   }
+  },
+  {
+   "q": "How many porta potties do I need for 45 guys?",
+   "expect": {
+    "intent": "toilets",
+    "tool": "generate_safety_programs",
+    "any_rules": [
+     "toilets-1-per-20"
+    ]
+   }
+  },
+  {
+   "q": "One of my guys fell off a ladder and was admitted to the hospital, when do I have to report it?",
+   "expect": {
+    "intent": "injury",
+    "tool": "injury_reporting_deadlines",
+    "any_rules": [
+     "serious-injury-report-8-hours"
+    ],
+    "args": {
+     "hospitalized": true
+    }
+   }
+  },
+  {
+   "q": "Do I need a permit to build a 10x12 shed?",
+   "expect": {
+    "intent": "building_permit",
+    "tool": "permit_required",
+    "any_rules": [
+     "permit-required-exemptions-thresholds"
+    ]
+   }
+  },
+  {
+   "q": "I need an engineer to design shoring for a 22 ft excavation in Fresno",
+   "expect": {
+    "intent": "find_pro",
+    "tool": null,
+    "find": "professional_engineer"
+   }
+  },
+  {
+   "q": "We're scraping paint on a 1965 house, what lead rules apply?",
+   "expect": {
+    "intent": "lead",
+    "tool": "certifications_required",
+    "any_rules": [
+     "rrp-applicability-pre-1978",
+     "rrp-minor-repair-6-20-sqft"
+    ],
+    "args": {
+     "built_before_1978": true
+    }
+   }
+  },
+  {
+   "q": "Removing 150 sq ft of popcorn ceiling that tested positive for asbestos",
+   "expect": {
+    "intent": "asbestos",
+    "tool": "check_cal_osha_permits",
+    "any_rules": [
+     "asbestos-dosh-registration-100sqft",
+     "asbestos-100-sqft-c22-or-certification"
+    ],
+    "args": {
+     "asbestos_sqft": 150.0
+    }
+   }
+  },
+  {
+   "q": "When is the final paycheck due if I fire someone today?",
+   "expect": {
+    "intent": "final_pay",
+    "tool": "final_paycheck_deadline",
+    "any_rules": [
+     "final-pay-discharge-or-layoff-immediate"
+    ],
+    "args": {
+     "separation_type": "discharged",
+     "separation_date": "2026-11-27"
+    }
+   }
+  },
+  {
+   "q": "Is a city-funded park job over $1,000 a prevailing wage job?",
+   "expect": {
+    "intent": "public_works",
+    "tool": "public_works_readiness",
+    "any_rules": [
+     "pw-prevailing-wage-threshold-1000"
+    ]
+   }
+  },
+  {
+   "q": "How many apprentice hours do I need on a $2M school job?",
+   "expect": {
+    "intent": "apprentice",
+    "tool": "apprentice_hours_required",
+    "any_rules": [
+     "apprentice-ratio-1-to-5",
+     "apprenticeship-threshold-30000"
+    ],
+    "args": {
+     "prime_contract_usd": 2000000.0
+    }
+   }
+  },
+  {
+   "q": "What's the max size for a detached ADU?",
+   "expect": {
+    "intent": "adu",
+    "tool": "adu_rules",
+    "any_rules": [
+     "adu-detached-max-1200-attached-50pct"
+    ],
+    "args": {
+     "adu_type": "detached"
+    }
+   }
+  },
+  {
+   "q": "Does an AC changeout need a HERS test?",
+   "expect": {
+    "intent": "energy",
+    "tool": "energy_compliance_triggers",
+    "any_rules": [
+     "energy-hvac-changeout-hers",
+     "energy-cf3r-hers-verification"
+    ],
+    "args": {
+     "scope": "hvac_changeout"
+    }
+   }
+  },
+  {
+   "q": "We're disturbing 1.5 acres, do we need a SWPPP?",
+   "expect": {
+    "intent": "stormwater",
+    "tool": "calgreen_and_stormwater",
+    "any_rules": [
+     "stormwater-small-construction-1-acre-definition",
+     "cgp-swppp-by-qsd"
+    ],
+    "args": {
+     "disturbed_acres": 1.5
+    },
+    "maybe_pro": "qsd_qsp"
+   }
+  },
+  {
+   "q": "Can a handyman do a $900 job without a license?",
+   "expect": {
+    "intent": "unlicensed",
+    "tool": "unlicensed_contracting_exposure",
+    "any_rules": [
+     "minor-work-exemption-1000"
+    ],
+    "args": {
+     "contract_price_usd": 900.0
+    }
+   }
+  },
+  {
+   "q": "Is Ace Roofing's license still active?",
+   "expect": {
+    "intent": "license_lookup",
+    "tool": "verify_contractor_license",
+    "args": {
+     "license_number": "1023456"
+    }
+   }
+  },
+  {
+   "q": "How do I upload my sub list?",
+   "expect": {
+    "intent": "nav",
+    "go": "#/subs"
+   }
+  }
+ ],
+ "handoff": [
+  {
+   "q": "Should I sue the homeowner for the $18,000 they owe me?",
+   "expect": {
+    "route": "claude",
+    "find": "attorney"
+   }
+  },
+  {
+   "q": "Write a demand letter to the GC for my unpaid invoice",
+   "expect": {
+    "route": "claude"
+   }
+  },
+  {
+   "q": "Is my drywall guy really an independent contractor or an employee?",
+   "expect": {
+    "route": "claude",
+    "find": "attorney"
+   }
+  },
+  {
+   "q": "Can I skip the engineer's stamp on this retaining wall if it's under 6 feet?",
+   "expect": {
+    "route": "professional",
+    "guard": true,
+    "find": "professional_engineer"
+   }
+  },
+  {
+   "q": "What does Nevada require for a contractor license?",
+   "expect": {
+    "route": "claude"
+   }
+  },
+  {
+   "q": "Read my subcontract and tell me if the pay-if-paid clause is enforceable",
+   "expect": {
+    "route": "claude"
+   }
+  },
+  {
+   "q": "How much should I bid on a 3,000 sq ft tenant improvement?",
+   "expect": {
+    "route": "claude"
+   }
+  },
+  {
+   "q": "Can I deduct my new truck on my taxes?",
+   "expect": {
+    "route": "claude",
+    "find": "cpa"
+   }
+  },
+  {
+   "q": "Who is at fault for the water damage, me or the plumber sub?",
+   "expect": {
+    "route": "claude",
+    "find": "attorney"
+   }
+  },
+  {
+   "q": "Our foreman got a DUI over the weekend, can we fire him?",
+   "expect": {
+    "route": "claude",
+    "find": "attorney"
+   }
+  }
+ ]
+}

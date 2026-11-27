@@ -1008,6 +1008,16 @@ COLUMNS: dict[str, tuple[str, ...]] = {
                    "created_by"),
 }
 JSON_COLUMNS = {"projects": {"extra"}, "field_logs": {"attendees", "signatures"}}
+# Store.candidates: the only tables and columns type-ahead and search may read (no contact details, no signatures,
+# no document bodies), and the only filters.
+CANDIDATE_READS = {
+    "projects": ("id", "name", "city", "county", "address", "owner_name", "lender_name"),
+    "subs": ("id", "name", "license_number", "scope"),
+    "documents": ("id", "title"),
+    "field_logs": ("kind", "topic", "attendees"),
+    "users": ("name",),
+}
+CANDIDATE_WHERE = {("field_logs", "toolbox_inspection"): "kind in ('toolbox_talk', 'inspection')"}
 BOOL_COLUMNS = {"subs": {"wc_required", "w9_on_file"}, "documents": {"verified"}}
 HAS_UPDATED = {"projects", "subs"}
 
@@ -1636,6 +1646,29 @@ class Store:
         params.append(int(limit))
         with self.connect() as con:
             return [self._row(table, r) for r in con.execute(sql, params).fetchall()]
+
+    def candidates(self, tenant_id: str, table: str, columns, limit: int = 2000,
+                   where: str | None = None) -> list[dict]:
+        """The tenant's newest rows (id desc) with only the named columns, for type-ahead and search: matching,
+        distinct values and case/accent folding happen in Python (app/search.py), the same on both backends.
+        Table, columns and `where` come from the fixed allow-list CANDIDATE_READS, never from a request. Field logs
+        are always read without incident reports (they name injured workers and witnesses) and never with their
+        signatures column."""
+        allowed = CANDIDATE_READS.get(table)
+        cols = tuple(columns)
+        if allowed is None or not cols or any(c not in allowed for c in cols):
+            raise ValueError(f"bad candidate read {table!r} {cols!r}")
+        sql = f"select {', '.join(cols)} from {table} where tenant_id = ?"
+        if table == "field_logs":
+            where = where or "toolbox_inspection"
+        if where is not None:
+            clause = CANDIDATE_WHERE.get((table, where))
+            if clause is None:
+                raise ValueError(f"bad candidate filter {where!r}")
+            sql += f" and {clause}"
+        sql += " order by id desc limit ?"
+        with self.connect() as con:
+            return [dict(r) for r in con.execute(sql, (tenant_id, max(1, min(int(limit), 5000)))).fetchall()]
 
     def get(self, table: str, tenant_id: str, row_id) -> dict | None:
         _check_table(table)

@@ -1,0 +1,157 @@
+{
+ "about": "20 paraphrases written after the prototype was tuned on quickhelp_questions.json (holdout.py, 2026-11-27); a regression set now. Same company and date.",
+ "questions": [
+  {
+   "q": "my crew has to climb down into a 7 foot ditch, is there an osha permit?",
+   "expect": {
+    "intent": "osha_permit",
+    "tool": "check_cal_osha_permits",
+    "any_rules": [
+     "permit-trench-excavation-5ft"
+    ]
+   }
+  },
+  {
+   "q": "deadline to send a 20-day notice as a supplier",
+   "expect": {
+    "intent": "lien",
+    "tool": "calculate_lien_deadline"
+   }
+  },
+  {
+   "q": "what classification lets me install a mini split",
+   "expect": {
+    "intent": "classification",
+    "tool": "classification_for_scope"
+   }
+  },
+  {
+   "q": "max deposit I can collect from a homeowner on a 6000 dollar job",
+   "expect": {
+    "intent": "down_payment",
+    "tool": "validate_home_improvement_contract",
+    "any_rules": [
+     "hic-down-payment-cap"
+    ]
+   }
+  },
+  {
+   "q": "the prime still owes me for October, how fast were they supposed to pay?",
+   "expect": {
+    "intent": "prompt_pay",
+    "tool": "prompt_payment_check"
+   }
+  },
+  {
+   "q": "is retainage capped on private work now",
+   "expect": {
+    "intent": "retention",
+    "tool": "retention_cap_check"
+   }
+  },
+  {
+   "q": "noise rules for sunday work in los angeles",
+   "expect": {
+    "intent": "hours",
+    "tool": "construction_hours",
+    "any_rules": [
+     "local-la-construction-hours"
+    ]
+   }
+  },
+  {
+   "q": "smoke is really bad today, aqi 220, do the guys need masks",
+   "expect": {
+    "intent": "smoke",
+    "tool": "wildfire_smoke_requirements"
+   }
+  },
+  {
+   "q": "how much drinking water per worker when it's hot",
+   "expect": {
+    "intent": "heat",
+    "tool": "generate_safety_programs",
+    "any_rules": [
+     "heat-water-one-quart-per-hour"
+    ]
+   }
+  },
+  {
+   "q": "worker cut his hand badly and went to the ER and was kept overnight",
+   "expect": {
+    "intent": "injury",
+    "tool": "injury_reporting_deadlines"
+   }
+  },
+  {
+   "q": "permit needed for a deck 24 inches off the ground?",
+   "expect": {
+    "intent": "building_permit",
+    "tool": "permit_required"
+   }
+  },
+  {
+   "q": "sanding window trim in a 1950s house",
+   "expect": {
+    "intent": "lead",
+    "tool": "certifications_required"
+   }
+  },
+  {
+   "q": "80 sq ft of asbestos floor tile removal, do I need to register",
+   "expect": {
+    "intent": "asbestos",
+    "tool": "check_cal_osha_permits"
+   }
+  },
+  {
+   "q": "employee quit without notice yesterday, when is the last check due",
+   "expect": {
+    "intent": "final_pay",
+    "tool": "final_paycheck_deadline"
+   }
+  },
+  {
+   "q": "do I have to pay prevailing wage on a school district job",
+   "expect": {
+    "intent": "public_works",
+    "tool": "public_works_readiness"
+   }
+  },
+  {
+   "q": "can I build a 1000 sq ft granny flat in the backyard",
+   "expect": {
+    "intent": "adu",
+    "tool": "adu_rules"
+   }
+  },
+  {
+   "q": "does replacing a furnace trigger title 24 testing",
+   "expect": {
+    "intent": "energy",
+    "tool": "energy_compliance_triggers"
+   }
+  },
+  {
+   "q": "is the license for 1023456 good",
+   "expect": {
+    "intent": "license_lookup",
+    "tool": "verify_contractor_license"
+   }
+  },
+  {
+   "q": "where do I invite my foreman",
+   "expect": {
+    "intent": "nav",
+    "go_prefix": "#/settings"
+   }
+  },
+  {
+   "q": "I want to get around the permit for this patio cover",
+   "expect": {
+    "route": "claude",
+    "guard": true
+   }
+  }
+ ]
+}

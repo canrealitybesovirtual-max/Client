@@ -5,7 +5,8 @@
 - backend: runs each test on SQLite, then on PostgreSQL in a fresh schema when TC_TEST_DATABASE_URL is set
   (skipped otherwise), exactly like tests/test_platform.py.
 - make_app(tmp_path, **settings): an app on the current backend, with the event worker off (call
-  app.state.platform.events.drain() to deliver) unless events_background=True is passed.
+  app.state.platform.events.drain() to deliver) unless events_background=True is passed, and the search index not
+  warmed at startup (app.search.build_now(platform) builds it; search_warm=True warms it like production).
 - browser(c): another person's browser on the app client `c` is running (`with TestClient(app) as c`): its own
   cookies and headers, on c's event loop. Use it for every further client of that app, never a second
   `with TestClient(app)` (app/main.py refuses to start a running app again; see browser()).
@@ -71,6 +72,7 @@ def make_app(tmp_path, **overrides):
     from app.main import create_app
     overrides.setdefault("database_url", _db["url"])
     overrides.setdefault("events_background", False)
+    overrides.setdefault("search_warm", False)        # tests build the search index with app.search.build_now
     a = create_app(Settings.from_env(data_dir=str(tmp_path), **overrides))
     _db["apps"].append(a)
     return a
