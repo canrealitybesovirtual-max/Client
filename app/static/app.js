@@ -145,13 +145,35 @@
     const hex = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
     return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
   }
-  let toastTimer;
-  function toast(msg, isError = false) {
+  // toast(message, true) for an error, or toast(message, { error, action: { label, run } }). Top centre, under the top
+  // bar; 3.5 s (6 s for errors and with an action), and the timer waits while the pointer or the focus is on it. A
+  // toast is never the only place for an error or an Undo: the page keeps its own lasting copy.
+  const toastState = { timer: null, left: 0, until: 0, held: false };
+  function toast(msg, opts = false) {
+    const o = typeof opts === 'object' && opts ? opts : { error: !!opts };
     const t = $('#toast');
-    t.textContent = msg;
-    t.className = 'toast show' + (isError ? ' error' : '');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.className = 'toast'; }, isError ? 6000 : 3500);
+    if (!t.dataset.wired) {
+      t.dataset.wired = '1';
+      const hold = () => { if (!toastState.held && toastState.timer) { toastState.held = true; clearTimeout(toastState.timer); toastState.left = Math.max(1500, toastState.until - Date.now()); } };
+      const release = () => { if (toastState.held && !t.matches(':hover') && !t.contains(document.activeElement)) { toastState.held = false; toastLater(toastState.left); } };
+      t.addEventListener('pointerenter', hold); t.addEventListener('focusin', hold);
+      t.addEventListener('pointerleave', release); t.addEventListener('focusout', () => setTimeout(release, 0));
+    }
+    const act = o.action ? h('button', { type: 'button', class: 'toast-act', onclick: () => { hideToast(); o.action.run(); } }, o.action.label) : null;
+    t.replaceChildren(...[h('span', {}, msg), act].filter(Boolean));
+    t.className = 'toast show' + (o.error ? ' error' : '');
+    toastState.held = false;
+    toastLater(o.error || act ? 6000 : 3500);
+  }
+  function toastLater(ms) {
+    clearTimeout(toastState.timer);
+    toastState.until = Date.now() + ms;
+    toastState.timer = setTimeout(hideToast, ms);
+  }
+  function hideToast() {        // the words stay (as before); a hidden action button must not keep the keyboard focus
+    clearTimeout(toastState.timer); toastState.timer = null;
+    const t = $('#toast'); t.className = 'toast';
+    t.querySelectorAll('.toast-act').forEach((b) => b.remove());
   }
   async function copyText(text, what = 'Copied') {
     try { await navigator.clipboard.writeText(text); toast(what); } catch (e) {
@@ -171,9 +193,19 @@
     const pre = h('pre', { class: 'mono' + (code ? ' code' : ''), tabindex: code ? '0' : null }, text);
     return h('div', { class: 'copy-box' }, pre, h('button', { type: 'button', class: 'btn secondary small', 'aria-label': 'Copy ' + (label || ''), onclick: () => copyText(text) }, 'Copy'));
   }
+  // A button that is working: disabled, a turning spinner (still under reduced motion) and what it is doing. Its own
+  // content (text and icon) comes back afterwards.
+  const busyKids = new WeakMap();
   function busy(btn, on, text) {
     if (!btn) return;
-    if (on) { btn.dataset.label = btn.textContent; btn.disabled = true; btn.textContent = text || 'Working…'; } else { btn.disabled = false; if (btn.dataset.label) btn.textContent = btn.dataset.label; }
+    if (on) {
+      if (!busyKids.has(btn)) busyKids.set(btn, [...btn.childNodes]);
+      btn.dataset.label = btn.textContent; btn.disabled = true; btn.setAttribute('aria-disabled', 'true');
+      btn.replaceChildren(icon('spinner', 'icon spin'), text || 'Working…');
+    } else {
+      btn.disabled = false; btn.removeAttribute('aria-disabled');
+      if (busyKids.has(btn)) { btn.replaceChildren(...busyKids.get(btn)); busyKids.delete(btn); } else if (btn.dataset.label) btn.textContent = btn.dataset.label;
+    }
   }
   // Per-browser conveniences only (a hidden checklist, the last job picked). Storage can be blocked or throw (private
   // windows, strict settings, full disk), so every read and write is guarded and the page works without it.
@@ -220,7 +252,9 @@
   }
 
   // ======================================================================== state + router
-  const state = { me: null, config: null, tools: null, online: navigator.onLine, renderSeq: 0, gsAway: null };
+  // prefill: what Quick help asked a check to be opened with (memory only, cleared on every other route);
+  // todayJob: the job picked on Today in this tab (never applied by itself anywhere else)
+  const state = { me: null, config: null, tools: null, online: navigator.onLine, renderSeq: 0, gsAway: null, prefill: null, todayJob: '' };
   const can = {
     write: () => state.me && ['owner', 'office'].includes(state.me.user.role),
     owner: () => state.me && state.me.user.role === 'owner',
@@ -238,7 +272,9 @@
     }
     $('#company').textContent = state.me ? state.me.tenant.company_name : '';
     $('#nav').hidden = !state.me;
+    $('#account-open').hidden = !state.me;
     syncAsk();
+    syncNav();
     return state.me;
   }
 
@@ -253,37 +289,72 @@
   const routes = {};
   const PUBLIC = new Set(['login', 'signup', 'forgot']);
   const OPEN = new Set(['reset', 'invite']);         // one-time links: work signed in or out (#/reset/<token>)
-  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial', connect: 'Connect an app',
+  const TITLES = { dashboard: 'Today', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Checks', documents: 'Documents', document: 'Document', field: 'Field log', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', more: 'More', login: 'Log in', signup: 'Start free trial', connect: 'Connect an app',
     forgot: 'Forgot password', reset: 'Set a new password', invite: 'Join your team', 'confirm-email': 'Confirm your email' };
+  // New names people type or share. The routes themselves never change (bookmarks, emailed and calendar links keep
+  // working); an alias is swapped for its route before the page is drawn, so Back doesn't bounce.
+  const ALIASES = { today: { to: 'dashboard' }, home: { to: 'dashboard' }, checks: { to: 'tools' }, subcontractors: { to: 'subs' },
+    log: { to: 'field' }, 'field-log': { to: 'field' }, apps: { to: 'integrations' }, docs: { to: 'documents' },
+    help: { to: 'dashboard', then: 'help' }, search: { to: 'dashboard', then: 'search' } };
 
   async function render() {
     const seq = ++state.renderSeq;
     let { name, args, query } = parseHash();
+    let then = null;
+    if (ALIASES[name] && !routes[name]) {
+      const a = ALIASES[name];
+      const qs = query.toString();
+      const hash = `#/${[a.to, ...(a.then ? [] : args.map(encodeURIComponent))].join('/')}${qs && !a.then ? `?${qs}` : ''}`;
+      history.replaceState(history.state, '', hash);
+      routeHash = hash;                    // the hashchange guard (boot) must not put the alias back
+      ({ name, args, query } = parseHash());
+      then = a.then || null;
+    }
     const signedOutOk = PUBLIC.has(name) || OPEN.has(name);
     if (!state.me && !signedOutOk) await loadMe();
     if (!state.me && !signedOutOk) name = 'login';
     if (state.me && PUBLIC.has(name)) name = 'dashboard';
     if (!routes[name]) name = state.me ? 'dashboard' : 'login';
+    // what Quick help asked for applies only to the check it named, once: any other route forgets it
+    if (state.prefill && !(name === 'tools' && args[0] === state.prefill.tool)) state.prefill = null;
     syncAsk();
-    document.querySelectorAll('#nav a').forEach((a) => {
-      const r = a.dataset.route;
-      const cur = r === name || (r === 'projects' && name === 'project') || (r === 'documents' && name === 'document');
-      if (cur) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
-    });
+    syncNav(name);
     renderBanner();
     const main = $('#main');
-    main.replaceChildren(h('p', { class: 'loading' }, 'Loading…'));
+    main.setAttribute('aria-busy', 'true');
+    // another page: the last one goes at once (nothing of it can be read or pressed as if it were the new one);
+    // the same page drawn again (after a save) stays until its new copy is ready
+    if (state.shownHash !== location.hash) main.replaceChildren();
+    // Nothing flashes for a quick page; after 400 ms a grey outline of the page, and one line for screen readers.
+    const slow = setTimeout(() => {
+      if (seq !== state.renderSeq) return;
+      main.replaceChildren(skeleton(name, args));
+      routeStatus(`Loading ${TITLES[name] || 'the page'}…`);
+    }, 400);
     let view;
-    try { view = await routes[name]({ args, query }); } catch (e) { view = errorCard(e); }
+    try { view = await routes[name]({ args, query }); } catch (e) { view = errorCard(e, name, args); }
+    clearTimeout(slow);
     if (seq !== state.renderSeq) return;
     main.replaceChildren(view);
+    state.shownHash = location.hash;
+    main.removeAttribute('aria-busy');
+    routeStatus('');
     document.title = `${TITLES[name] || 'TradeComply'} · TradeComply CA`;
     main.focus({ preventScroll: true });
     window.scrollTo(0, 0);
+    if (typeof view.afterRender === 'function') view.afterRender();      // e.g. Settings ?section=: after the scroll above
+    if (then === 'help') openHelp();
   }
 
-  function errorCard(e) {
+  // §2.9: a missing record says so and points to its list; anything else says what the server said, with Try again
+  const MISSING = { project: ['project', 'projects', 'Projects'], document: ['document', 'documents', 'Documents'], tools: ['check', 'tools', 'Checks'] };
+  function errorCard(e, name, args = []) {
     if (e && e.status === 402) return subscribeCard(e.message);
+    const miss = e && e.status === 404 && MISSING[name] && (name !== 'tools' || args.length) ? MISSING[name] : null;
+    if (miss) {
+      return h('div', {}, h('div', { class: 'card empty-state' }, icon('folder', 'icon es-icon'), h('h1', {}, `That ${miss[0]} isn't here any more`),
+        h('p', {}, 'It may have been deleted, or the link is wrong.'), h('a', { class: 'btn secondary', href: `#/${miss[1]}` }, `Go to ${miss[2]}`)));
+    }
     return h('div', { class: 'card' }, h('h1', {}, 'Something went wrong'), h('p', {}, e && e.message ? e.message : String(e)),
       h('button', { class: 'btn secondary', type: 'button', onclick: () => render() }, 'Try again'));
   }
@@ -314,16 +385,16 @@
     if (!state.me) return;
     const ent = state.me.entitlement || {};
     if (state.me.user.must_change_password && parseHash().name !== 'connect') {      // the consent asks for it itself
-      slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('alert'), h('p', {}, 'You are using a temporary password. Set your own password now.'),
-        h('a', { class: 'btn small secondary', href: '#/settings' }, 'Change password')));
+      slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('soon'), h('p', {}, 'You are using a temporary password. Set your own password now.'),
+        h('a', { class: 'btn small secondary', href: '#/settings?section=account' }, 'Change password')));
     }
     const confirmBanner = emailConfirmBanner();
     if (confirmBanner) slot.append(confirmBanner);
     if (ent.ok === false) {
-      slot.append(h('div', { class: 'banner error', role: 'alert' }, icon('stop'), h('p', {}, ent.message || 'Subscription required.'),
+      slot.append(h('div', { class: 'banner error', role: 'alert' }, icon('overdue'), h('p', {}, ent.message || 'Subscription required.'),
         can.owner() ? h('button', { class: 'btn small', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null));
     } else if (ent.warning) {
-      slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('alert'), h('p', {}, ent.message),
+      slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('soon'), h('p', {}, ent.message),
         can.owner() ? h('button', { class: 'btn small secondary', type: 'button', onclick: (e) => billingPortal(e.currentTarget) }, 'Update card') : null));
     } else if (ent.reason === 'trial' && ent.trial_days_left <= 7) {
       slot.append(h('div', { class: 'banner info', role: 'status' }, h('p', {}, `${ent.message}.`),
@@ -356,7 +427,7 @@
 
   // ======================================================================== shared UI pieces
   const RAG_TEXT = { red: 'Act now', amber: 'Coming up', green: 'On track' };
-  const RAG_ICON = { red: 'stop', amber: 'alert', green: 'check' };
+  const RAG_ICON = { red: 'overdue', amber: 'soon', green: 'ok' };
   const ragPill = (rag, text) => h('span', { class: `pill ${rag || 'gray'}` }, rag ? icon(RAG_ICON[rag]) : null, text || RAG_TEXT[rag] || 'Unknown');
   const RISK_TEXT = { low: 'Low risk', medium: 'Medium risk', high: 'High risk', do_not_use: 'Do not use' };
 
@@ -377,8 +448,8 @@
   }
   function verifiedBadge(r) {
     const v = verifiedInfo(r);
-    if (v.ok) return h('span', { class: 'verify yes' }, icon('check'), v.date ? `Verified against official source on ${fmtDate(v.date)}` : 'Verified against official source');
-    return h('span', { class: 'verify no' }, icon('alert'), 'Not yet verified');
+    if (v.ok) return h('span', { class: 'verify yes' }, icon('verified'), v.date ? `Verified against official source on ${fmtDate(v.date)}` : 'Verified against official source');
+    return h('span', { class: 'verify no' }, icon('unverified'), 'Not yet verified');
   }
   function citationList(cites) {
     if (!cites || !cites.length) return null;
@@ -418,18 +489,253 @@
   function openDialog(title, content) {
     const dlg = h('dialog', { 'aria-labelledby': 'dlg-title' });
     const close = () => { dlg.close(); dlg.remove(); };
-    dlg.append(h('div', { class: 'dialog-body' }, h('div', { class: 'card-head' }, h('h2', { id: 'dlg-title' }, title),
-      h('button', { type: 'button', class: 'btn ghost small', onclick: close, 'aria-label': 'Close' }, 'Close')), content));
+    dlg.append(h('div', { class: 'dialog-body' }, h('div', { class: 'card-head dialog-head' }, h('h2', { id: 'dlg-title' }, title),
+      h('button', { type: 'button', class: 'btn quiet dialog-close', onclick: close, 'aria-label': 'Close' }, icon('close'))), content));
     dlg.addEventListener('cancel', () => setTimeout(() => dlg.remove(), 0));
     document.body.append(dlg);
     dlg.showModal();
     return { close, el: dlg };
   }
-  function table(columns, rows, { cards = true } = {}) {
+  function table(columns, rows, { cards = true, rowAttrs = null } = {}) {
     return h('div', { class: 'table-wrap' }, h('table', { class: 'data' + (cards ? ' cards' : '') },
       h('thead', {}, h('tr', {}, columns.map((c) => h('th', { scope: 'col' }, c.label)))),
-      h('tbody', {}, rows.map((r) => h('tr', {}, columns.map((c) => h('td', { 'data-label': c.bare ? null : c.label, class: c.bare ? 'cell-main' : null }, c.render ? c.render(r) : (r[c.key] ?? '—'))))))));
+      h('tbody', {}, rows.map((r) => h('tr', rowAttrs ? rowAttrs(r) : {}, columns.map((c) => h('td', { 'data-label': c.bare ? null : c.label, class: c.bare ? 'cell-main' : null },
+        h('div', { class: 'cell-v' }, c.render ? c.render(r) : (r[c.key] ?? '—')))))))));
   }
+
+  // ======================================================================== page chrome (header, badges, empty states, skeletons, toasts, menus, sheets, resetUserState)
+  // "What is this page?" under every page title (spec 5.10). Only the page's own text: nothing here is a rule.
+  const PAGE_HELP = {
+    dashboard: 'What needs your attention today across all your jobs, and shortcuts to the jobs people do most. Deadlines come from your projects\' dates and your subs\' insurance and license dates.',
+    projects: 'Each project holds a job\'s dates and details once, so every check can fill them in. Its deadlines come from the dates you enter.',
+    subs: 'Your subs\' licenses, insurance certificates and workers\' comp, checked against CSLB data. Import a list once; dates that expire show on Today.',
+    tools: 'Calculators built on California rules. Each result shows its official source and whether TradeComply has verified it.',
+    field: 'Toolbox talks, daily inspections and incident first reports, with signatures. Works without signal and sends when you\'re back online.',
+    documents: 'Saved check results, notes and safety programs, ready to print or share.',
+    professionals: 'Official state lookups for licensed and certified people, filtered to the job\'s county where the state\'s site allows it.',
+    integrations: 'Connect calendar reminders, text alerts and other apps your company uses.',
+    settings: 'Your account, your company, your team and billing.',
+    more: 'Everything that isn\'t in the bottom bar.',
+  };
+  PAGE_HELP.project = PAGE_HELP.projects;
+  // One header for every page: where you are (breadcrumbs on wide screens, a back link on phones), what the page is
+  // for, at most one main action, and "What is this page?" folded away.
+  function pageHead({ title, purpose, back, crumbs, primary, secondary, help } = {}) {
+    const head = h('div', { class: 'page-head' });
+    if (crumbs && crumbs.length) {
+      head.append(h('nav', { class: 'crumbs no-print', 'aria-label': 'Breadcrumb' }, h('ol', {}, crumbs.map((c) =>
+        h('li', c.href ? {} : { 'aria-current': 'page' }, c.href ? h('a', { href: c.href }, c.label) : c.label)))));
+    }
+    if (back) head.append(h('a', { class: 'back no-print', href: back.href }, icon('back'), back.label));
+    head.append(h('div', { class: 'page-title' }, h('h1', {}, title), purpose ? h('p', { class: 'purpose' }, purpose) : null));
+    const acts = [primary, ...[].concat(secondary || [])].filter(Boolean);
+    if (acts.length) head.append(h('div', { class: 'page-actions no-print' }, acts));
+    if (help) head.append(h('details', { class: 'page-help no-print' }, h('summary', {}, icon('help'), 'What is this page?'), h('p', {}, help)));
+    return head;
+  }
+  // Status: icon + shape + word (colour only helps). The old .pill colours stay as aliases.
+  const BADGE_ICON = { overdue: 'overdue', soon: 'soon', ok: 'ok', info: 'info', unverified: 'unverified', unconfirmed: 'unverified', verified: 'verified' };
+  const badge = (kind, text) => h('span', { class: `badge badge-${kind}` }, BADGE_ICON[kind] ? icon(BADGE_ICON[kind]) : null, text);
+  // Empty and missing states (spec 2.9): a title, one sentence, one action, and the page's own icon.
+  function emptyState({ icon: ic, title, text, actions = [], tag = 'h2' }) {
+    const acts = actions.filter(Boolean);
+    return h('div', { class: 'empty-state' }, ic ? icon(ic, 'icon es-icon') : null, h(tag, {}, title), text ? h('p', {}, text) : null,
+      acts.length ? h('div', { class: 'row' }, acts) : null);
+  }
+  // A grey outline of the page that is still loading (shown only after 400 ms; see render()).
+  function skeleton(name, args = []) {
+    const bars = (n, cls) => Array.from({ length: n }, () => h('span', { class: `sk-bar ${cls}` }));
+    const kind = name === 'tools' && args.length ? 'tool' : name;
+    const rows = { dashboard: [...bars(3, 'sk-row'), h('div', { class: 'sk-tiles' }, bars(8, 'sk-tile'))], projects: bars(4, 'sk-row'), documents: bars(4, 'sk-row'),
+      subs: bars(4, 'sk-row'), tools: [...bars(1, 'sk-row'), h('div', { class: 'sk-tiles' }, bars(6, 'sk-tile'))], tool: bars(5, 'sk-row') }[kind] || bars(3, 'sk-line');
+    return h('div', { class: 'skeleton', 'aria-hidden': 'true' }, h('span', { class: 'sk-bar sk-h1' }), h('span', { class: 'sk-bar sk-line' }), rows);
+  }
+  function routeStatus(text) {          // one quiet line for screen readers while a slow page loads
+    let el = document.getElementById('route-status');
+    if (!el) { el = h('div', { id: 'route-status', class: 'visually-hidden', role: 'status' }); $('.content').prepend(el); }
+    if (el.textContent !== text) el.textContent = text;
+  }
+  // Navigation. The bottom bar on phones holds five links in each role's order, the last is More; the elements
+  // themselves move (no CSS order), so reading, Tab and visual order are the same. Wide screens put every link back
+  // in its sidebar group.
+  const NAV_BARS = { office: ['dashboard', 'projects', 'subs', 'tools', 'more'], field: ['dashboard', 'field', 'tools', 'projects', 'more'] };
+  const UNDER_MORE = new Set(['documents', 'document', 'integrations', 'settings', 'professionals', 'rule', 'welcome']);
+  let navHome = null;                   // [link, its placeholder in the sidebar]
+  const fieldRole = () => !!(state.me && state.me.user && state.me.user.role === 'field');
+  function syncNav(name = parseHash().name) {
+    const nav = $('#nav');
+    if (!nav) return;
+    if (!navHome) navHome = [...nav.querySelectorAll('a[data-route]')].map((a) => { const mark = document.createComment(a.dataset.route); a.before(mark); return [a, mark]; });
+    const role = fieldRole() ? 'field' : 'office';
+    const bar = NAV_BARS[role];
+    const links = Object.fromEntries(navHome.map(([a]) => [a.dataset.route, a]));
+    for (const [a, mark] of navHome) {
+      a.classList.toggle('in-bar', bar.includes(a.dataset.route));
+      if (mark.nextSibling !== a) mark.after(a);
+    }
+    const phone = narrowScreen();
+    if (phone) bar.forEach((r) => nav.append(links[r]));
+    const cur = name === 'project' ? 'projects' : name === 'document' ? 'documents' : name;
+    for (const [a] of navHome) { if (a.dataset.route === cur) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+    // phones: a page that lives under More marks More as containing it ("true", not "page": More isn't that page)
+    if (phone && (UNDER_MORE.has(name) || name === (role === 'field' ? 'subs' : 'field'))) links.more.setAttribute('aria-current', 'true');
+  }
+  // The account menu (wide screens): Settings, Display, Log out. APG menu button: Enter, Space or Down opens on the
+  // first item, Up on the last; arrows move; Esc closes and goes back to the button; Tab closes.
+  let accountUi = null;
+  function accountMenu() {
+    const btn = $('#account-open');
+    const menu = $('#account-menu');
+    const items = () => [...menu.querySelectorAll('[role=menuitem]')];
+    const open = (where = 'first') => { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); const it = items(); (where === 'last' ? it[it.length - 1] : it[0]).focus(); };
+    const close = (back = true) => { if (menu.hidden) return; menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); };
+    btn.addEventListener('click', () => (menu.hidden ? open() : close()));
+    btn.addEventListener('keydown', (e) => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(e.key === 'ArrowUp' ? 'last' : 'first'); } });
+    menu.addEventListener('keydown', (e) => {
+      const it = items();
+      const i = it.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); it[(i + (e.key === 'ArrowDown' ? 1 : -1) + it.length) % it.length].focus(); }
+      else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); (e.key === 'Home' ? it[0] : it[it.length - 1]).focus(); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+      else if (e.key === 'Tab') close(false);
+      else if (e.key === ' ' && document.activeElement && document.activeElement.tagName === 'A') { e.preventDefault(); document.activeElement.click(); }
+    });
+    menu.addEventListener('click', (e) => {
+      const it = e.target.closest('[role=menuitem]');
+      if (!it) return;
+      close(false);
+      if (it.classList.contains('menu-logout')) logOut();
+    });
+    document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !e.target.closest('.account')) close(false); });
+    return { close };
+  }
+  // Every Log out button: the server ends the session, and this person's things kept on this device go too.
+  async function logOut() {
+    await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    await signedOut({ explicit: true });
+    go('login');
+  }
+  // Help (the top bar button). It opens the panel that is available here; More and #/help use the same door.
+  function openHelp() {
+    const b = $('#ask-open');
+    if (b && !b.hidden && $('#ask-panel').hidden) openAsk();
+  }
+  // Someone else signed in (or nobody is): nothing the last person had in memory stays on screen.
+  function resetUserState() {
+    state.prefill = null;
+    state.todayJob = '';
+    if (accountUi) accountUi.close(false);
+  }
+
+  // ======================================================================== display (theme and contrast)
+  // Follows the device (prefers-color-scheme / prefers-contrast) unless this device was set otherwise in Settings >
+  // Display. Device settings, not company data: tc.display and tc.contrast are written only when someone changes
+  // them and stay after sign-out. Applied here, before the first page is drawn (a moment of the device theme can
+  // show first: the CSP rules out an inline script in the page head).
+  const THEME_TOPBAR = { light: '#0f3d6e', dark: '#0b2440' };       // = --topbar in styles.css (a test compares)
+  function applyDisplay() {
+    const root = document.documentElement;
+    const t = local.get('tc.display');
+    if (t === 'light' || t === 'dark') root.dataset.theme = t; else delete root.dataset.theme;
+    if (local.get('tc.contrast') === 'more') root.dataset.contrast = 'more'; else delete root.dataset.contrast;
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      m.setAttribute('content', THEME_TOPBAR[t] || (/dark/.test(m.getAttribute('media') || '') ? THEME_TOPBAR.dark : THEME_TOPBAR.light));
+    });
+  }
+  applyDisplay();
+  function displaySection() {
+    const theme = radioChips({ label: 'Colours', value: local.get('tc.display') || 'auto',
+      options: [['auto', 'Match this device'], ['light', 'Light'], ['dark', 'Dark']],
+      onChange: (v) => { if (v === 'auto') local.del('tc.display'); else local.set('tc.display', v); applyDisplay(); } });
+    const sw = h('input', { type: 'checkbox', role: 'switch', checked: local.get('tc.contrast') === 'more' });
+    sw.addEventListener('change', () => { if (sw.checked) local.set('tc.contrast', 'more'); else local.del('tc.contrast'); applyDisplay(); });
+    return h('section', { class: 'card', id: 'set-display', 'data-section': 'display', 'aria-labelledby': 'display-h' }, h('h2', { id: 'display-h' }, 'Display'),
+      theme.el, h('label', { class: 'switch' }, sw, h('span', {}, 'Extra contrast')),
+      h('p', { class: 'small muted' }, 'Extra contrast draws every line and status in a text colour and underlines every link. Saved on this device only.'));
+  }
+
+  // ======================================================================== combobox and chips
+  // Choice chips (spec 2.4): a radio group. Arrow keys move and pick; Tab enters and leaves the group; never
+  // pre-picked unless the value is already set. (The type-ahead combobox and projectFormExtras come with the form work.)
+  function radioChips({ label, options, value = '', onChange }) {
+    const lid = `rc-${++fieldSeq}`;
+    let cur = value;
+    const btns = options.map(([v, text]) => h('button', { type: 'button', class: 'chip', role: 'radio', 'data-value': v, 'aria-checked': String(v === value), tabindex: v === value ? '0' : '-1' },
+      icon('check', 'icon icon-on'), text));
+    if (!btns.some((b) => b.tabIndex === 0)) btns[0].tabIndex = 0;
+    const pick = (b, focus) => {
+      btns.forEach((x) => { x.setAttribute('aria-checked', String(x === b)); x.tabIndex = x === b ? 0 : -1; });
+      if (focus) b.focus();
+      if (b.dataset.value !== cur) { cur = b.dataset.value; if (onChange) onChange(cur); }
+    };
+    btns.forEach((b, i) => {
+      b.addEventListener('click', () => pick(b, false));
+      b.addEventListener('keydown', (e) => {
+        const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+        if (step) { e.preventDefault(); pick(btns[(i + step + btns.length) % btns.length], true); }
+      });
+    });
+    return { el: h('div', { class: 'field' }, h('span', { class: 'label', id: lid }, label), h('div', { class: 'chips', role: 'radiogroup', 'aria-labelledby': lid }, btns)), get: () => cur };
+  }
+  // GET /api/suggest/vocab: the same for every person (no rule text, no company data); revalidated by the browser
+  // with its ETag, kept by the service worker for offline use, and in memory for this page load.
+  let vocabP = null;
+  function vocab() {
+    if (!vocabP) vocabP = api('/api/suggest/vocab').catch((e) => { vocabP = null; throw e; });
+    return vocabP;
+  }
+  // A job's city "is covered" when it is one of the cities TradeComply has local rules for, or one of their names.
+  function coveredCity(v, city) {
+    const items = (v && v.sources && v.sources.city_covered && v.sources.city_covered.items) || [];
+    const k = String(city || '').trim().toLowerCase();
+    if (!k) return null;
+    return items.find((i) => String(i.value).toLowerCase() === k || (i.aliases || []).some((a) => String(a).toLowerCase() === k)) || null;
+  }
+  const coveredCount = (v) => ((v && v.sources && v.sources.city_covered && v.sources.city_covered.items) || []).length;
+
+  // ======================================================================== drafts and device keys (stored, tc.index, forgetUser, forgetTenant)
+  // Every per-company key on this device goes through stored(), which records whose it is in tc.index (browser storage
+  // can't be listed safely), so Log out removes that person's keys and closing the company removes all of its own.
+  const INDEX_KEY = 'tc.index';
+  function keyIndex() {
+    let v = null;
+    try { v = JSON.parse(local.get(INDEX_KEY) || '{}'); } catch (e) { v = null; }
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  }
+  function saveIndex(ix) { if (Object.keys(ix).length) local.set(INDEX_KEY, JSON.stringify(ix)); else local.del(INDEX_KEY); }
+  function stored(key, value, { t, u = null }) {        // value null: delete
+    const ix = keyIndex();
+    if (value === null || value === undefined) { local.del(key); delete ix[key]; saveIndex(ix); return true; }
+    const ok = local.set(key, typeof value === 'string' ? value : JSON.stringify(value));
+    if (ok) { ix[key] = { t, u }; saveIndex(ix); }
+    return ok;
+  }
+  function forgetKeys(match) {
+    const ix = keyIndex();
+    for (const [k, m] of Object.entries(ix)) if (m && match(m)) { local.del(k); delete ix[k]; }
+    saveIndex(ix);
+  }
+  const forgetUser = (tid, uid) => forgetKeys((m) => m.t === tid && m.u === uid);
+  function forgetTenant(tid) {
+    forgetKeys((m) => m.t === tid);
+    local.del(`tc.gettingStarted.${tid}`);
+    local.del(`tc.finder.project.${tid}`);
+  }
+  // The last job picked on this device by this person. Offered as a one-tap "Last used" chip; never applied by
+  // itself (yesterday's job must not fill today's lien check). Replaces the finder's old tc.finder.project.<tenant>.
+  const lastJob = {
+    who() { return state.me && state.me.user && state.me.user.id ? { t: state.me.tenant.id, u: state.me.user.id } : null; },
+    get() {
+      const w = this.who();
+      if (!w) return '';
+      const key = `tc.lastJob.${w.t}.${w.u}`;
+      let v = local.get(key);
+      const old = local.get(`tc.finder.project.${w.t}`);
+      if (old !== null) { if (v === null && /^\d+$/.test(old)) { stored(key, old, w); v = old; } local.del(`tc.finder.project.${w.t}`); }
+      return v && /^\d+$/.test(v) ? v : '';
+    },
+    set(id) { const w = this.who(); if (w) stored(`tc.lastJob.${w.t}.${w.u}`, id ? String(id) : null, w); },
+  };
 
   // ======================================================================== markdown (escaped first, then a small safe subset)
   function inlineMd(s) {
@@ -1076,7 +1382,7 @@
     claimant_role: (p) => (p.extra || {}).claimant_role, public_or_private: (p) => p.public_or_private,
     is_public: (p) => p.public_or_private === 'public', public_project: (p) => p.public_or_private === 'public',
   };
-  function toolPanel(spec, { onResult } = {}) {
+  function toolPanel(spec, { onResult, projectId = null } = {}) {
     const form = buildSchemaForm(spec);
     let filledFrom = null;
     const fillable = form.fields.filter((x) => x.set && PROJECT_FIELDS[x.name]);
@@ -1095,6 +1401,9 @@
         });
         fillSlot.append(h('div', { class: 'field' }, h('label', { for: sel.id }, 'Fill in from a project'), sel,
           h('span', { class: 'hint' }, 'Copies the project\'s name, address, dates and contract price into the matching fields below.')));
+        // ?project=<id> in the link (a project's own page, a Today tile with its job picked, a Needs-you-now row):
+        // that job was chosen explicitly, so fill from it as if picked here
+        if (projectId && projects.some((x) => String(x.id) === String(projectId))) { sel.value = String(projectId); sel.dispatchEvent(new Event('change')); }
       }).catch(() => {});
     }
     const result = h('div', { 'aria-live': 'polite' });
@@ -1233,7 +1542,7 @@
 
   function mcpDemoNote() {
     const url = state.config ? state.config.mcp_url : location.origin + '/mcp';
-    return h('div', { class: 'card small' }, h('h2', {}, 'Using an AI assistant?'),
+    return h('details', { class: 'card small mcp-note' }, h('summary', {}, 'Using an AI assistant? (MCP)'),
       h('p', { class: 'muted' }, state.config && state.config.mcp_require_key ? 'Connect it to this MCP server with an API key from Settings:' : 'Point it at this MCP server to try the checks:'),
       copyBox(url, 'MCP URL'));
   }
@@ -1279,7 +1588,7 @@
     const gone = (message, again) => show(h('div', { class: 'card' },
       h('h1', { tabindex: '-1' }, 'This link has expired'),
       h('p', {}, message || 'This link has expired or was already used. Ask for a new one.'),
-      h('div', { class: 'row' }, again || null, h('a', { class: 'btn secondary', href: state.me ? '#/dashboard' : '#/login' }, state.me ? 'Go to your dashboard' : 'Log in'))));
+      h('div', { class: 'row' }, again || null, h('a', { class: 'btn secondary', href: state.me ? '#/dashboard' : '#/login' }, state.me ? 'Go to Today' : 'Log in'))));
     return { wrap, show, gone };
   }
   // Two password fields that must match (OWASP: type the new password twice).
@@ -1476,7 +1785,7 @@
     const gone = (message, status) => show(h('div', { class: 'card' },
       h('h1', { tabindex: '-1' }, status === 403 ? 'Start again in the app' : 'This request has expired'),
       h('p', {}, message || 'This sign-in request has expired or was already used. Go back to the app and connect again.'),
-      h('a', { class: 'btn secondary', href: '#/dashboard' }, 'Go to your dashboard')));
+      h('a', { class: 'btn secondary', href: '#/dashboard' }, 'Go to Today')));
     if (!REQUEST_RE.test(id)) return gone();
     // A temporary password first: changing it later would disconnect the app again.
     if (state.me.user.must_change_password && state.connectPwLater !== id) return show(passwordFirst(id));
@@ -1510,7 +1819,7 @@
       } else {
         show(h('div', { class: 'card' }, h('h1', { tabindex: '-1' }, 'Not connected'),
           h('p', {}, `“${req.client_name}” can't use TradeComply. Nothing was shared with it.`),
-          h('div', { class: 'row' }, back, h('a', { class: 'btn secondary', href: '#/dashboard' }, 'Go to your dashboard'))));
+          h('div', { class: 'row' }, back, h('a', { class: 'btn secondary', href: '#/dashboard' }, 'Go to Today'))));
       }
     }
     const company = req.company_name || 'your company';
@@ -1748,7 +2057,7 @@
     if (!left.length) { local.set(gsKey(), 'done'); if (tenantSetting('getting_started') !== 'done') saveTenantSetting('getting_started', 'done'); return null; }
     const card = h('section', { class: 'card gs no-print', 'aria-labelledby': 'gs-h' },
       h('div', { class: 'gs-head' },
-        h('div', { class: 'gs-title' }, h('h2', { id: 'gs-h' }, 'Getting started'), h('span', { class: 'small muted' }, `${steps.length - left.length} of ${steps.length} done`)),
+        h('div', { class: 'gs-title' }, h('h2', { id: 'gs-h' }, icon('checklist'), 'Getting started'), h('span', { class: 'small muted' }, `${steps.length - left.length} of ${steps.length} done`)),
         h('button', { type: 'button', class: 'btn ghost small', 'aria-label': 'Hide getting started', onclick: () => {
           state.gsAway = state.me.tenant.id;          // stays hidden this session even if the browser blocks storage
           local.set(gsKey(), 'hidden');
@@ -1760,9 +2069,138 @@
       setupDone ? null : h('p', { class: 'small muted gs-more' }, 'Or go step by step: ', h('a', { href: '#/welcome' }, 'guided setup'), '.'));
     return card;
   }
+  // Today (spec 1.8): what needs you now, then the jobs people do most, then how things stand. A tile opens its
+  // check for a job only when a job is picked here, on this page (never yesterday's job by itself).
+  const TODAY_TILES = {
+    office: [
+      { label: 'Lien and prelim dates', hint: 'When to send notices and record a lien', href: '#/tools/calculate_lien_deadline', job: true, icon: 'g-paid' },
+      { label: 'Check a sub', hint: 'License, insurance and workers\' comp', href: '#/tools/check_subcontractor_compliance', icon: 'g-license' },
+      { label: 'Verify a license', hint: 'Look up any CSLB number', href: '#/tools/verify_contractor_license', icon: 'verified' },
+      { label: 'Is a permit needed?', hint: 'Sheds, fences, decks, re-roofs and more', href: '#/tools/permit_required', job: true, icon: 'g-permits' },
+      { label: 'Check a homeowner contract', hint: 'Required notices, down payment, cancel rights', href: '#/tools/validate_home_improvement_contract', job: true, icon: 'g-contract' },
+      { label: 'Can we work today?', city: true, href: '#/tools/construction_hours', job: true, icon: 'clock' },
+      { label: 'Start a toolbox talk', hint: 'Sign-in sheet that works offline', href: '#/field?kind=toolbox_talk', job: true, icon: 'log' },
+      { label: 'Find a licensed professional', hint: 'Engineers, attorneys, CASp, HERS raters', href: '#/professionals', job: true, icon: 'find' },
+    ],
+    field: [
+      { label: 'Start a toolbox talk', hint: 'Sign-in sheet that works offline', href: '#/field?kind=toolbox_talk', job: true, icon: 'log' },
+      { label: 'Daily inspection', hint: 'Log today\'s walk-through', href: '#/field?kind=inspection', job: true, icon: 'checklist' },
+      { label: 'Someone got hurt', hint: 'Reporting deadlines, then the incident report', href: '#/tools/injury_reporting_deadlines', job: true, icon: 'injury' },
+      { label: 'Can we work today?', city: true, href: '#/tools/construction_hours', job: true, icon: 'clock' },
+      { label: 'Wildfire smoke', hint: 'Enter today\'s AQI to see what the rule requires.', href: '#/tools/wildfire_smoke_requirements', job: true, icon: 'smoke' },
+      { label: 'Look up a safety rule', hint: 'Fall protection, trenches, scaffolds, ladders, silica', href: '#/tools/lookup_safety_standard', job: true, icon: 'g-safety' },
+    ],
+  };
+  const withJob = (href, id) => (id ? `${href}${href.includes('?') ? '&' : '?'}project=${encodeURIComponent(id)}` : href);
+  const weekday = (iso) => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short' }) : ''; };
+  // One action per item, chosen by its kind. Each names its own project or sub, so it is an explicit choice.
+  function needsAction(i) {
+    const p = i.project_id;
+    if (['prelim_notice', 'lien_recording', 'lien_foreclosure'].includes(i.kind) && p) return ['Open lien check', `#/tools/calculate_lien_deadline?project=${p}`];
+    if (i.kind === 'toolbox_talk' && p) return ['Start toolbox talk', `#/field?project=${p}&kind=toolbox_talk`];
+    if ((i.kind === 'coi_expiry' || i.kind === 'license_expiry') && i.sub_id) return ['Open sub', `#/subs?sub=${i.sub_id}`];
+    if (i.kind === 'license_expiry') return ['Verify license', '#/tools/verify_contractor_license'];
+    if (i.kind === 'data_problem' && p && can.write()) return ['Fix dates', `#/project/${p}`];
+    return null;
+  }
+  function dueBadge(i) {
+    const n = i.days_left;
+    const exp = /expir/.test(i.kind);
+    const word = i.kind === 'data_problem' ? 'Check this' : exp ? (n < 0 ? 'Expired' : n === 0 ? 'Expires today' : `Expires in ${plural(n, 'day')}`)
+      : n < 0 ? 'Overdue' : n === 0 ? 'Due today' : n === 1 ? 'Due tomorrow' : `Due in ${n} days`;
+    return badge({ red: 'overdue', amber: 'soon', green: 'ok' }[i.rag] || 'neutral', word);
+  }
+  const RAG_RANK = { red: 0, amber: 1, green: 2 };
+  function needsRow(i) {
+    const act = needsAction(i);
+    const thisYear = todayISO().slice(0, 4);
+    return h('li', { class: 'needs-row' },
+      h('div', { class: 'needs-date' }, String(i.date).startsWith(thisYear) ? fmtDate(i.date).replace(/, \d{4}$/, '') : fmtDate(i.date), h('span', { class: 'wd' }, weekday(i.date))),
+      h('div', { class: 'needs-body' }, h('h3', {}, i.title),
+        h('div', { class: 'row small' }, dueBadge(i), i.project_id ? h('a', { href: `#/project/${i.project_id}` }, i.project_name) : null,
+          i.sub_id ? h('a', { href: `#/subs?sub=${i.sub_id}` }, i.sub_name) : null)),
+      act ? h('div', { class: 'needs-act' }, h('a', { class: 'btn secondary small', href: act[1] }, act[0])) : null);
+  }
   routes.dashboard = async () => {
-    if (!entitled()) return subscribeCard(state.me.entitlement.message);
-    const [d, facts] = await Promise.all([api('/api/dashboard'), gettingStartedFacts()]);
+    const field = !can.write();
+    const ok = entitled();
+    const [d, facts, projects, v] = await Promise.all([
+      ok ? api('/api/dashboard').catch((e) => ({ error: e })) : Promise.resolve({ error: { status: 402, message: state.me.entitlement.message } }),
+      ok ? gettingStartedFacts().catch(() => null) : null, api('/api/projects').catch(() => []), vocab().catch(() => null)]);
+    const err = d.error || null;
+    const offline = !!err && isOffline(err);
+    const active = projects.filter((p) => !['closed', 'completed'].includes(p.status));
+    const jobOf = (id) => active.find((p) => String(p.id) === String(id)) || null;
+    if (state.todayJob && !jobOf(state.todayJob)) state.todayJob = '';
+    const head = pageHead({ title: 'Today', purpose: field ? 'Your job today: safety talks, logs and quick checks.'
+      : `As of ${fmtDate((d && d.today) || todayISO())} (California time). What needs you, and the jobs people do most.`,
+    primary: field ? null : h('a', { class: 'btn', href: '#/tools' }, 'Run a check'), help: PAGE_HELP.dashboard });
+
+    // the job picker: starts on "Pick a job"; the last job used here is a one-tap chip, never picked by itself
+    const jobSel = select('today_job', [['', 'Pick a job'], ...active.map((p) => [String(p.id), p.city ? `${p.name} — ${p.city}` : p.name])], state.todayJob, { id: 'today-job' });
+    const chipSlot = h('div', {});
+    const tilesEl = h('div', { class: 'task-tiles' });
+    const n = coveredCount(v);
+    const drawTiles = () => {
+      const job = jobOf(state.todayJob);
+      fill(tilesEl, TODAY_TILES[field ? 'field' : 'office'].map((t) => {
+        let hint = t.hint;
+        if (t.city) {
+          const city = job && job.city ? String(job.city).trim() : '';
+          const covered = city ? coveredCity(v, city) : null;
+          if (city && v && !covered) return h('p', { class: 'task-note' }, `TradeComply has city rules for ${plural(n, 'city', 'cities')}; ${city} isn't one yet.`);
+          hint = covered ? `Construction hours in ${covered.value}` : n ? `City construction hours (${plural(n, 'city', 'cities')} so far)` : 'City construction hours';
+        }
+        return h('a', { class: 'task-tile', href: t.job && job ? withJob(t.href, job.id) : t.href }, icon(t.icon), h('span', { class: 'tt-label' }, t.label), h('span', { class: 'tt-hint' }, hint));
+      }));
+      const last = lastJob.get();
+      const lj = last && last !== state.todayJob ? jobOf(last) : null;
+      fill(chipSlot, lj ? h('button', { type: 'button', class: 'chip', onclick: () => { jobSel.value = String(lj.id); jobSel.dispatchEvent(new Event('change')); jobSel.focus(); } },
+        icon('recent'), `Last used: ${lj.name} · Use it`) : null);
+    };
+    jobSel.addEventListener('change', async () => { state.todayJob = jobSel.value; if (jobSel.value) lastJob.set(jobSel.value); drawTiles(); if (field) { drawField(); fill(fieldSlot, await weekLogs()); } });
+    const picker = active.length ? h('div', { class: 'job-pick' }, h('div', { class: 'field' }, h('label', { for: 'today-job' }, 'For job'), jobSel), chipSlot) : null;
+    const tilesCard = h('section', { class: 'card', 'aria-labelledby': 'todo-h' }, h('h2', { id: 'todo-h' }, 'What do you need to do today?'), picker, tilesEl);
+
+    const nowCard = h('section', { class: 'card', 'aria-labelledby': 'now-h' }, h('h2', { id: 'now-h' }, 'Needs you now'));
+    const sorted = (list) => [...list].sort((a, b) => (RAG_RANK[a.rag] - RAG_RANK[b.rag]) || String(a.date).localeCompare(String(b.date)));
+    // ---- field crews: the six field tiles, toolbox talks due, this week's logs, and how things stand
+    const fieldSlot = h('div', {});
+    const drawField = async () => {
+      if (!d.items) return;
+      const items = sorted(d.items.filter((i) => i.kind === 'toolbox_talk' && (!state.todayJob || String(i.project_id) === state.todayJob)));
+      fill(nowCard, h('h2', { id: 'now-h' }, 'Needs you now'), items.length ? h('ul', { class: 'needs-list' }, items.slice(0, 5).map(needsRow))
+        : h('p', { class: 'muted' }, d.projects.length ? 'No toolbox talks due for this job.' : 'No deadlines or alerts yet. They show here once your office adds projects and subs.'));
+    };
+    const weekLogs = async () => {
+      const since = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+      const queue = await Outbox.all().catch(() => []);
+      let logs = [];
+      if (!offline) logs = await api(`/api/field_logs${state.todayJob ? `?project_id=${encodeURIComponent(state.todayJob)}` : ''}`).catch(() => []);
+      const rows = logs.filter((l) => String(l.date) >= since);
+      const pending = queue.filter((q) => !state.todayJob || String(q.project_id) === state.todayJob);
+      return h('section', { class: 'card', 'aria-labelledby': 'week-h' }, h('h2', { id: 'week-h' }, 'This week\'s logs'),
+        pending.length ? h('p', {}, h('span', { class: 'pill amber' }, `${pending.length} waiting to send`)) : null,
+        rows.length ? h('ul', { class: 'list' }, rows.slice(0, 10).map((l) => h('li', { class: 'list-row' }, icon('log'), h('span', { class: 'lr-text' },
+          h('span', { class: 'lr-title' }, `${humanize(l.kind)}${l.topic ? ` · ${l.topic}` : ''}`), h('span', { class: 'lr-meta' }, `${fmtDate(l.date)} · ${weekday(l.date)}`)), h('span', {}), h('span', {}))))
+          : h('p', { class: 'muted' }, offline ? 'Logs from the office need a connection.' : 'No logs yet this week.'),
+        h('a', { class: 'btn secondary', href: withJob('#/field?kind=toolbox_talk', state.todayJob) }, 'New log'));
+    };
+    const offlineLine = h('p', { class: 'card offline-line' }, icon('cloud-off'), ' Deadlines need a connection. Your tiles and saved logs still work.');
+    drawTiles();
+    if (field) {
+      if (!err) await drawField();
+      const how = d.overall ? h('section', { class: 'card', 'aria-labelledby': 'how-h' }, h('h2', { id: 'how-h' }, 'How things stand'),
+        h('div', { class: 'tiles static' }, ['red', 'amber', 'green'].map((rag) => h('div', { class: `tile ${rag}` }, h('span', { class: 'n' }, d.overall[rag]), h('span', { class: 't' }, icon(RAG_ICON[rag]), RAG_TEXT[rag])))),
+        h('p', { class: 'small muted' }, 'Your office sees the details for each project and sub on Today.')) : null;
+      fill(fieldSlot, await weekLogs());
+      return h('div', {}, head, tilesCard, err ? (offline ? offlineLine : err.status === 402 ? subscribeCard(err.message) : h('p', { class: 'card' }, err.message)) : nowCard, fieldSlot, how);
+    }
+
+    // ---- owner and office
+    if (err) {
+      return h('div', {}, head, tilesCard, offline ? offlineLine : err.status === 402 ? subscribeCard(err.message) : errorCard(err));
+    }
     const filter = { rag: null };
     const licenseInGroup = () => !!(filter.rag && d.company && d.company.rag === filter.rag);   // the boxes count it too
     const licCard = licenseCardView(d.company);
@@ -1779,22 +2217,31 @@
     };
     const tiles = ['red', 'amber', 'green'].map((rag) => h('button', { type: 'button', class: `tile ${rag}`, 'data-rag': rag, 'aria-pressed': 'false',
       onclick: () => { filter.rag = filter.rag === rag ? null : rag; draw(); } },
-    h('span', { class: 'n' }, d.overall[rag]), h('span', { class: 't' }, RAG_TEXT[rag])));
+    h('span', { class: 'n' }, d.overall[rag]), h('span', { class: 't' }, icon(RAG_ICON[rag]), RAG_TEXT[rag])));
     const setupDone = (((state.me.tenant.settings || {}).onboarding || {}).done || []).length >= 3;
-    const wrap = h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Compliance today'), h('p', {}, `As of ${fmtDate(d.today)} (California time). Select a box to show only those items.`)),
-        h('div', { class: 'row no-print' }, h('a', { class: 'btn secondary small', href: '/api/integrations/calendar_feed/calendar.ics', download: 'tradecomply.ics' }, 'Download calendar'),
-          h('button', { type: 'button', class: 'btn ghost small', onclick: () => window.print() }, 'Print'))),
-      gettingStartedCard(d, facts, setupDone),
+    // Needs you now: what is late or close (red, amber, or within 14 days), worst first, then by date
+    const needs = sorted(d.items.filter((i) => i.rag !== 'green' || i.days_left <= 14));
+    const dlHead = h('h2', { id: 'dl-h', tabindex: '-1' }, 'Deadlines and alerts');
+    append(nowCard, [needs.length ? [h('ul', { class: 'needs-list' }, needs.slice(0, 5).map(needsRow)),
+      d.items.length > 5 ? h('button', { type: 'button', class: 'btn quiet', onclick: () => { dlHead.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); dlHead.focus({ preventScroll: true }); } },
+        icon('arrow-right'), `See all ${d.items.length}`) : null]
+      : emptyState({ icon: 'today', title: 'Nothing due in the next 14 days', text: 'Deadlines from your projects and alerts about your subs show here, soonest first.', tag: 'h3',
+        actions: [can.write() ? h('a', { class: 'btn secondary', href: '#/project/new' }, 'Add a project') : null] })]);
+    const health = h('section', { class: 'health', 'aria-labelledby': 'how-h' },
+      h('div', { class: 'card-head' }, h('h2', { id: 'how-h' }, 'How things stand'),
+        h('div', { class: 'row no-print' }, h('a', { class: 'btn secondary small', href: '/api/integrations/calendar_feed/calendar.ics', download: 'tradecomply.ics' }, icon('download'), 'Download calendar'),
+          h('button', { type: 'button', class: 'btn quiet small', onclick: () => window.print() }, icon('print'), 'Print'))),
+      h('p', { class: 'small muted' }, 'Select a box to show only those items.'),
       h('div', { class: 'tiles', role: 'group', 'aria-label': 'Filter by status' }, tiles),
       h('div', { class: 'grid grid-2' },
-        h('section', { class: 'card', 'aria-labelledby': 'dl-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'dl-h' }, 'Deadlines and alerts'), h('span', { class: 'small muted' }, `${d.counts.red} act now · ${d.counts.amber} coming up`)), listSlot),
+        h('section', { class: 'card', 'aria-labelledby': 'dl-h' }, h('div', { class: 'card-head' }, dlHead, h('span', { class: 'small muted' }, `${d.counts.red} act now · ${d.counts.amber} coming up`)), listSlot),
         h('div', {}, licCard,
           h('section', { class: 'card' }, h('h2', {}, 'Projects'), d.projects.length ? h('ul', { class: 'clean' }, d.projects.map((p) => h('li', { class: 'row' }, h('a', { href: `#/project/${p.id}` }, p.name), h('span', { class: 'pill gray' }, humanize(p.status)), p.public_or_private === 'public' ? h('span', { class: 'pill blue' }, 'Public') : null))) :
             h('div', { class: 'empty' }, h('p', {}, 'No projects yet.'), can.write() ? h('a', { class: 'btn secondary', href: '#/project/new' }, 'Add a project') : null)))),
       h('section', { class: 'card', 'aria-labelledby': 'subs-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'subs-h' }, 'Subcontractors'), h('span', { class: 'small muted' }, `${d.sub_counts.red} high risk · ${d.sub_counts.amber} need documents · ${d.sub_counts.green} clear`)), subSlot));
     draw();
-    return wrap;
+    // Getting started stays the second block (right after the header) until it is done or hidden
+    return h('div', {}, head, gettingStartedCard(d, facts, setupDone), nowCard, tilesCard, health);
   };
 
   // ======================================================================== projects
@@ -1841,57 +2288,90 @@
   }
 
   routes.projects = async () => {
-    const rows = await api('/api/projects');
+    const [rows, dash] = await Promise.all([api('/api/projects'), entitled() ? api('/api/dashboard').catch(() => null) : null]);
+    const roles = (state.config && state.config.claimant_roles) || {};
+    // each job's next date from Today's list (the soonest one not yet past, else the latest past one)
+    const nextOf = (id) => {
+      const its = ((dash && dash.items) || []).filter((i) => i.project_id === id).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      return its.find((i) => i.days_left >= 0) || its[its.length - 1] || null;
+    };
+    const row = (p) => {
+      const nx = nextOf(p.id);
+      return h('li', {}, h('a', { class: 'list-row', href: `#/project/${p.id}` }, icon('projects'),
+        h('span', { class: 'lr-text' }, h('span', { class: 'lr-title' }, p.name),
+          h('span', { class: 'lr-meta' }, [p.city, p.county].filter(Boolean).join(', ') || 'No address yet', ' · ', p.public_or_private === 'public' ? 'Public' : 'Private',
+            roles[(p.extra || {}).claimant_role || 'direct_contractor'] ? ` · ${roles[(p.extra || {}).claimant_role || 'direct_contractor']}` : ''),
+          nx ? h('span', { class: 'lr-meta' }, `Next: ${nx.title} · ${fmtDate(nx.date)}`) : null),
+        badge(p.status === 'active' ? 'ok' : 'neutral', humanize(p.status)), icon('chevron-right', 'icon lr-chev')));
+    };
     return h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Projects'), h('p', {}, 'Each project gets a lien calendar and a toolbox-talk schedule.')),
-        can.write() ? h('a', { class: 'btn', href: '#/project/new' }, '+ Add project') : null),
-      rows.length ? h('div', { class: 'grid grid-2' }, rows.map((p) => h('a', { class: 'card', href: `#/project/${p.id}` },
-        h('div', { class: 'card-head' }, h('h2', {}, p.name), h('span', { class: 'pill gray' }, humanize(p.status))),
-        h('p', { class: 'muted small' }, [p.address, p.city, p.county].filter(Boolean).join(', ') || 'No address yet'),
-        h('div', { class: 'row small' }, h('span', { class: 'pill blue' }, p.public_or_private === 'public' ? 'Public' : 'Private'),
-          h('span', {}, ((state.config && state.config.claimant_roles) || {})[(p.extra || {}).claimant_role || 'direct_contractor'] || ''))))) :
-        h('div', { class: 'card empty' }, h('p', {}, can.write() ? 'No projects yet. Add one to build its lien calendar.' : 'No projects yet. Your office adds them; each one gets a lien calendar.'), can.write() ? h('a', { class: 'btn', href: '#/project/new' }, 'Add a project') : null));
+      pageHead({ title: 'Projects', purpose: 'Each job\'s dates and details, once: its deadlines and every check use them.', help: PAGE_HELP.projects,
+        primary: can.write() ? h('a', { class: 'btn', href: '#/project/new' }, icon('plus'), 'Add a project') : null }),
+      rows.length ? h('section', { class: 'card', 'aria-label': 'Projects' }, h('ul', { class: 'list' }, rows.map(row)))
+        : h('div', { class: 'card' }, emptyState({ icon: 'projects', title: can.write() ? 'Add your first project' : 'No projects yet',
+          text: can.write() ? 'TradeComply builds its lien calendar and fills in your checks from it.' : 'Your office adds projects.',
+          actions: [can.write() ? h('a', { class: 'btn', href: '#/project/new' }, 'Add a project') : null] })));
   };
 
+  // A project is a hub: its deadlines, then every check that can use its details, opened with them filled in.
   routes.project = async ({ args }) => {
     const id = args[0];
     if (id === 'new') {
-      if (!can.write()) return h('div', { class: 'card' }, h('p', {}, 'Ask the office to add projects.'));
-      return h('div', {}, h('div', { class: 'page-head' }, h('h1', {}, 'Add a project')), h('div', { class: 'card' }, projectForm(null, (p) => go(`project/${p.id}`))));
+      if (!can.write()) return h('div', {}, pageHead({ title: 'Add a project', back: { href: '#/projects', label: 'Projects' } }), h('div', { class: 'card' }, h('p', {}, 'Your office adds projects.')));
+      return h('div', {}, pageHead({ title: 'Add a project', purpose: 'A job\'s dates and details, once. Its lien calendar and your checks use them.',
+        crumbs: [{ label: 'Projects', href: '#/projects' }, { label: 'Add a project' }], back: { href: '#/projects', label: 'Projects' } }),
+      h('div', { class: 'card' }, projectForm(null, (p) => go(`project/${p.id}`))));
     }
     const p = await api(`/api/projects/${encodeURIComponent(id)}`);
-    const [dl, logs, docs, subs] = await Promise.all([
+    const [dl, logs, docs, subs, v] = await Promise.all([
       api(`/api/projects/${p.id}/deadlines`).catch((e) => ({ error: e })),
       api(`/api/field_logs?project_id=${p.id}`).catch(() => []),
       api(`/api/documents?project_id=${p.id}`).catch(() => []),
-      api(`/api/subs?project_id=${p.id}`).catch(() => [])]);
+      (entitled() ? api(`/api/subs?project_id=${p.id}&check=1`) : Promise.reject(new Error('plain'))).catch(() => api(`/api/subs?project_id=${p.id}`).catch(() => [])),
+      vocab().catch(() => null)]);
     const role = ((state.config && state.config.claimant_roles) || {})[(p.extra || {}).claimant_role || 'direct_contractor'];
     const edit = () => { const d = openDialog('Edit project', projectForm(p, () => { d.close(); render(); })); };
     const del = async () => { if (!confirm(`Delete project "${p.name}"? Its field logs and documents stay but lose the project link.`)) return; await api(`/api/projects/${p.id}`, { method: 'DELETE' }); toast('Project deleted'); go('projects'); };
+    const covered = p.city ? coveredCity(v, p.city) : null;
+    const n = coveredCount(v);
+    const checkRow = (label, href, ic = 'checks') => h('li', {}, h('a', { class: 'list-row', href }, icon(ic), h('span', { class: 'lr-text' }, h('span', { class: 'lr-title' }, label)), h('span', {}), icon('chevron-right', 'icon lr-chev')));
+    const tool = (name) => `#/tools/${name}?project=${p.id}`;
+    const checks = [
+      checkRow('Lien and prelim dates', tool('calculate_lien_deadline'), 'g-paid'),
+      checkRow('Stop payment notice deadline', tool('stop_payment_notice_deadline'), 'g-paid'),
+      checkRow('Before you break ground: setup checklist', tool('project_setup_checklist'), 'g-start'),
+      checkRow('Is a permit needed?', tool('permit_required'), 'g-permits'),
+      covered ? checkRow(`Work hours in ${covered.value}`, tool('construction_hours'), 'clock') : null,
+      covered ? checkRow('City permits and notices', tool('local_jobsite_requirements'), 'pin') : null,
+      p.public_or_private === 'public' ? checkRow('Public works readiness', tool('public_works_readiness'), 'g-public') : null,
+      checkRow('Find a professional near this job', `#/professionals?project=${p.id}`, 'find'),
+    ];
+    const missingDates = !p.first_furnishing_date || !p.last_furnishing_date;
+    const dd = [['Your role', role], ['Job type', p.public_or_private === 'public' ? 'Public' : 'Private'], ['Status', humanize(p.status)], ['Owner', p.owner_name], ['Lender', p.lender_name],
+      ['Contract price', p.contract_price != null ? money(p.contract_price) : null], ['Start', p.start_date && fmtDate(p.start_date)], ['First furnished', p.first_furnishing_date && fmtDate(p.first_furnishing_date)],
+      ['Last furnished', p.last_furnishing_date && fmtDate(p.last_furnishing_date)], ['Completed', p.completion_date && fmtDate(p.completion_date)], ['Notice of completion', p.noc_date && fmtDate(p.noc_date)]]
+      .filter(([, x]) => x !== null && x !== undefined && x !== '');
+    const subPill = (s) => (s.check ? ragPill(s.check.rag, RISK_TEXT[s.check.overall_risk] || RAG_TEXT[s.check.rag]) : null);
     return h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('p', {}, h('a', { href: '#/projects' }, '← Projects')), h('h1', {}, p.name), h('p', {}, [p.address, p.city, p.county].filter(Boolean).join(', '))),
-        can.write() ? h('div', { class: 'row no-print' }, h('button', { type: 'button', class: 'btn secondary', onclick: edit }, 'Edit'), h('button', { type: 'button', class: 'btn danger', onclick: del }, 'Delete')) : null),
+      pageHead({ title: p.name, purpose: [p.address, p.city, p.county].filter(Boolean).join(', ') || 'No address yet', help: PAGE_HELP.project,
+        crumbs: [{ label: 'Projects', href: '#/projects' }, { label: p.name }], back: { href: '#/projects', label: 'Projects' },
+        primary: can.write() ? h('button', { type: 'button', class: 'btn', onclick: edit }, icon('edit'), 'Edit') : null }),
+      missingDates && can.write() ? h('div', { class: 'callout' }, icon('soon'), h('p', {}, 'Add the first and last furnishing dates to see this job\'s lien deadlines.'), h('button', { type: 'button', class: 'btn secondary small', onclick: edit }, 'Edit')) : null,
       h('div', { class: 'grid grid-2' },
         h('section', { class: 'card', 'aria-labelledby': 'lc-h' }, h('h2', { id: 'lc-h' }, 'Lien and safety calendar'),
           dl.error ? (dl.error.status === 402 ? subscribeCard(dl.error.message) : h('p', {}, dl.error.message)) : [alertList(dl.items, { empty: 'Add dates to this project to see its deadlines.', inProject: true }),
-            dl.notes && dl.notes.length ? h('details', {}, h('summary', {}, 'How these dates were worked out'), h('ul', { class: 'bullets small' }, dl.notes.map((n) => h('li', {}, n)))) : null]),
-        h('section', { class: 'card' }, h('h2', {}, 'Details'), h('dl', { class: 'kv' },
-          h('dt', {}, 'Your role'), h('dd', {}, role || '—'),
-          h('dt', {}, 'Job type'), h('dd', {}, p.public_or_private === 'public' ? 'Public' : 'Private'),
-          h('dt', {}, 'Status'), h('dd', {}, humanize(p.status)),
-          h('dt', {}, 'Owner'), h('dd', {}, p.owner_name || '—'),
-          h('dt', {}, 'Lender'), h('dd', {}, p.lender_name || '—'),
-          h('dt', {}, 'Contract price'), h('dd', {}, p.contract_price != null ? money(p.contract_price) : '—'),
-          h('dt', {}, 'Start'), h('dd', {}, fmtDate(p.start_date)),
-          h('dt', {}, 'First furnished'), h('dd', {}, fmtDate(p.first_furnishing_date)),
-          h('dt', {}, 'Last furnished'), h('dd', {}, fmtDate(p.last_furnishing_date)),
-          h('dt', {}, 'Completed'), h('dd', {}, fmtDate(p.completion_date)),
-          h('dt', {}, 'Notice of completion'), h('dd', {}, fmtDate(p.noc_date))))),
+            dl.notes && dl.notes.length ? h('details', {}, h('summary', {}, 'How these dates were worked out'), h('ul', { class: 'bullets small' }, dl.notes.map((x) => h('li', {}, x)))) : null]),
+        h('section', { class: 'card', 'aria-labelledby': 'pc-h' }, h('h2', { id: 'pc-h' }, 'Checks for this job'),
+          h('p', { class: 'small muted' }, 'Each opens with this job\'s details filled in. Nothing runs until you press its button.'),
+          h('ul', { class: 'list' }, checks),
+          p.city && !covered && v ? h('p', { class: 'small muted' }, `TradeComply has city rules for ${plural(n, 'city', 'cities')}; ${p.city} isn't one yet.`) : null)),
+      h('section', { class: 'card', 'aria-labelledby': 'pd-h' }, h('h2', { id: 'pd-h' }, 'Details'), h('dl', { class: 'kv' }, dd.flatMap(([k, x]) => [h('dt', {}, k), h('dd', {}, x)])),
+        can.write() ? h('div', { class: 'row no-print' }, h('button', { type: 'button', class: 'btn danger small', onclick: del }, icon('delete'), 'Delete project')) : null),
       h('div', { class: 'grid grid-3' },
-        h('section', { class: 'card' }, h('h2', {}, 'Subs on this job'), subs.length ? h('ul', { class: 'bullets' }, subs.map((s) => h('li', {}, s.name, s.scope ? ` (${s.scope})` : ''))) : h('p', { class: 'muted' }, 'None linked.')),
+        h('section', { class: 'card' }, h('h2', {}, 'Subs on this job'), subs.length ? h('ul', { class: 'clean' }, subs.map((s) => h('li', { class: 'row' }, h('a', { href: `#/subs?sub=${s.id}` }, s.name), s.scope ? h('span', { class: 'small muted' }, s.scope) : null, subPill(s)))) : h('p', { class: 'muted' }, 'None linked.')),
         h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Field logs'), h('a', { class: 'btn secondary small', href: `#/field?project=${p.id}` }, 'New log')),
           logs.length ? h('ul', { class: 'bullets' }, logs.slice(0, 8).map((l) => h('li', {}, `${fmtDate(l.date)}: ${humanize(l.kind)}${l.topic ? ' – ' + l.topic : ''}`))) : h('p', { class: 'muted' }, 'No logs yet.')),
-        h('section', { class: 'card' }, h('h2', {}, 'Documents'), docs.length ? h('ul', { class: 'bullets' }, docs.map((d) => h('li', {}, h('a', { href: `#/document/${d.id}` }, d.title)))) : h('p', { class: 'muted' }, 'None yet. Save tool results here.'))));
+        h('section', { class: 'card' }, h('h2', {}, 'Documents'), docs.length ? h('ul', { class: 'bullets' }, docs.map((d) => h('li', {}, h('a', { href: `#/document/${d.id}` }, d.title)))) : h('p', { class: 'muted' }, 'None yet. Save check results here.'))));
   };
 
   // ======================================================================== subcontractors
@@ -1957,7 +2437,7 @@
   async function loadSubs() {
     try { return await api('/api/subs?check=1'); } catch (e) { if (e.status !== 402) throw e; return api('/api/subs'); }
   }
-  routes.subs = async () => {
+  routes.subs = async ({ query } = {}) => {
     const rows = await loadSubs();
     const projects = await projectOptions();
     const add = () => { const d = openDialog('Add subcontractor', subForm(null, () => { d.close(); render(); }, projects)); };
@@ -1968,50 +2448,145 @@
       { label: 'Problems', render: (s) => s.check && s.check.problems.length ? h('ul', { class: 'bullets small' }, s.check.problems.map((p) => h('li', {}, p))) : (s.check ? 'None' : '—') },
       { label: 'COI expires', render: (s) => s.coi_expiry && s.coi_expiry < todayISO() ? h('span', { class: 'error-text' }, `${fmtDate(s.coi_expiry)} (expired)`) : fmtDate(s.coi_expiry) },
       { label: 'Actions', bare: true, render: (s) => can.write() ? h('div', { class: 'row' },
-        h('button', { type: 'button', class: 'btn ghost small', onclick: () => { const d = openDialog(`Edit ${s.name}`, subForm(s, () => { d.close(); render(); }, projects)); } }, 'Edit'),
-        h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Remove ${s.name}?`)) { await api(`/api/subs/${s.id}`, { method: 'DELETE' }); toast('Removed'); render(); } } }, 'Remove')) : null },
+        h('button', { type: 'button', class: 'btn quiet small', onclick: () => { const d = openDialog(`Edit ${s.name}`, subForm(s, () => { d.close(); render(); }, projects)); } }, icon('edit'), 'Edit'),
+        h('button', { type: 'button', class: 'btn quiet small', onclick: async () => { if (confirm(`Remove ${s.name}?`)) { await api(`/api/subs/${s.id}`, { method: 'DELETE' }); toast('Removed'); render(); } } }, icon('delete'), 'Remove')) : null },
     ];
     const tableSlot = h('section', { class: 'card', 'aria-label': 'Subcontractor list' });
-    const drawTable = (list) => tableSlot.replaceChildren(list.length ? table(cols, worstFirst(list, (x) => x.check && x.check.overall_risk, (x) => x.check && x.check.rag))
-      : h('div', { class: 'empty' }, h('p', {}, 'No subcontractors yet.'), h('p', { class: 'small' }, can.write() ? 'Import your list above, or add them one at a time.' : 'Your office adds subcontractors. Ask them to add your list.')));
+    const drawTable = (list) => tableSlot.replaceChildren(list.length ? table(cols, worstFirst(list, (x) => x.check && x.check.overall_risk, (x) => x.check && x.check.rag), { rowAttrs: (s) => ({ id: `sub-${s.id}` }) })
+      : emptyState({ icon: 'subs', title: can.write() ? 'Add your subcontractors' : 'No subcontractors yet',
+        text: can.write() ? 'Import your list once and TradeComply checks each license and insurance date.' : 'Your office adds subcontractors. Ask them to add your list.',
+        actions: can.write() ? [h('button', { type: 'button', class: 'btn', onclick: () => { importBox.open = true; importBox.querySelector('summary').focus(); } }, 'Import a list'),
+          h('button', { type: 'button', class: 'btn secondary', onclick: add }, 'Add a sub')] : [] }));
     drawTable(rows);
-    return h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Subcontractors'), h('p', {}, 'License, classification, insurance, workers\' comp and bond, checked against CSLB data.')),
-        can.write() ? h('button', { type: 'button', class: 'btn', onclick: add }, '+ Add subcontractor') : null),
-      can.write() ? h('details', { class: 'card', open: rows.length ? undefined : true }, h('summary', {}, h('strong', {}, 'Import your sub list (CSV)')),
-        h('div', { class: 'result-section' }, importPanel(async () => { drawTable(await loadSubs()); }))) : null,
-      tableSlot);
+    const importBox = can.write() ? h('details', { class: 'card', id: 'sub-import', open: rows.length ? undefined : true }, h('summary', {}, h('strong', {}, 'Import your sub list (CSV)')),
+      h('div', { class: 'result-section' }, importPanel(async () => { drawTable(await loadSubs()); }))) : null;
+    const view = h('div', {},
+      pageHead({ title: 'Subcontractors', purpose: 'License, class, insurance, workers\' comp and bond, checked against CSLB data.', help: PAGE_HELP.subs,
+        primary: can.write() ? h('button', { type: 'button', class: 'btn', onclick: add }, icon('plus'), 'Add a sub') : null,
+        secondary: can.write() ? h('button', { type: 'button', class: 'btn secondary', onclick: () => { importBox.open = true; importBox.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); importBox.querySelector('summary').focus({ preventScroll: true }); } }, 'Import a list') : null }),
+      importBox, tableSlot);
+    // ?sub=<id> (from Today, a project or search): that row, marked until the next tap or key
+    const want = query && query.get('sub');
+    view.afterRender = () => {
+      const tr = want && /^\d+$/.test(want) ? document.getElementById(`sub-${want}`) : null;
+      if (!tr) return;
+      tr.classList.add('row-highlight');
+      tr.scrollIntoView({ block: 'center' });
+      const clear = () => { tr.classList.remove('row-highlight'); document.removeEventListener('pointerdown', clear, true); document.removeEventListener('keydown', clear, true); };
+      setTimeout(clear, 3000);
+      document.addEventListener('pointerdown', clear, true); document.addEventListener('keydown', clear, true);
+    };
+    return view;
   };
 
   // ======================================================================== tools
-  routes.tools = async ({ args }) => {
+  // Checks (spec 1.10): search first, the role's common checks, then the job groups. A cached /api/tools from before
+  // this release (no groups, common or summary) falls back to the module list and titles.
+  const GROUP_ICON = { start: 'g-start', paid: 'g-paid', license: 'g-license', contract: 'g-contract', safety: 'g-safety', certs: 'g-certs', pay: 'g-pay',
+    public: 'g-public', permits: 'g-permits', access: 'g-access', equipment: 'g-equipment', rules: 'rule' };
+  function checkGroups(data) {
+    if (Array.isArray(data.groups) && data.groups.length && data.common) return data.groups;
+    return (data.modules || []).map((m) => ({ id: m.id, label: m.label, purpose: '', tools: (m.tools || []).map((t) => (typeof t === 'string' ? t : t.name)) }));
+  }
+  const toolSummary = (t) => t.summary || firstSentence(t.description);
+  const toolRow = (t, kind = null) => h('li', {}, h('a', { class: 'list-row', href: `#/tools/${encodeURIComponent(t.name)}` }, icon(GROUP_ICON[t.group] || 'checks'),
+    h('span', { class: 'lr-text' }, h('span', { class: 'lr-title' }, t.title), h('span', { class: 'lr-meta' }, toolSummary(t))),
+    kind ? h('span', { class: 'lr-kind' }, kind) : h('span', {}), icon('chevron-right', 'icon lr-chev')));
+  // offline, or while the server's search index is still starting: every word must start one of the check's words
+  function localToolMatch(tools, v, q) {
+    const words = q.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    const keys = (v && v.tool_keys) || {};
+    return tools.filter((t) => !t.hidden).filter((t) => {
+      const hay = [t.title, toolSummary(t), t.name.replace(/_/g, ' '), ...(keys[t.name] || [])].join(' ').toLowerCase().split(/[^a-z0-9]+/);
+      return words.length && words.every((w) => hay.some((k) => k.startsWith(w)));
+    });
+  }
+  routes.tools = async ({ args, query }) => {
     const data = await getTools();
-    const current = args[0] ? data.tools.find((t) => t.name === args[0]) : null;
-    const search = h('input', { type: 'search', placeholder: 'Search tools', 'aria-label': 'Search tools' });
-    const list = h('div', {});
-    const drawList = () => {
-      const q = search.value.trim().toLowerCase();
-      list.replaceChildren(...data.modules.map((m) => {
-        const tools = m.tools.filter((t) => !q || (t.title + ' ' + t.name + ' ' + t.description).toLowerCase().includes(q));
-        if (!tools.length) return null;
-        return h('details', { open: q || !current || (current && current.module === m.id) ? true : undefined },
-          h('summary', {}, m.label, ' ', h('span', { class: 'count' }, `(${tools.length})`)),
-          tools.map((t) => h('a', { href: `#/tools/${encodeURIComponent(t.name)}`, 'aria-current': current && current.name === t.name ? 'page' : undefined },
-            t.title, h('span', { class: 'desc' }, firstSentence(t.description)))));
-      }).filter(Boolean));
-      if (!list.children.length) list.append(h('p', { class: 'muted' }, 'No tools match.'));
+    const groups = checkGroups(data);
+    const byName = Object.fromEntries(data.tools.map((t) => [t.name, t]));
+    if (args[0]) {
+      const current = byName[args[0]];
+      if (!current) throw new ApiError(404, 'That check isn\'t in TradeComply.');
+      const g = groups.find((x) => x.tools.includes(current.name)) || null;
+      const side = h('aside', { class: 'card tool-list', 'aria-label': 'All checks' }, groups.map((gg) => {
+        const list = gg.tools.map((nm) => byName[nm]).filter((t) => t && (!t.hidden || t === current));
+        return list.length ? h('details', { open: gg === g ? true : undefined }, h('summary', {}, gg.label, ' ', h('span', { class: 'count' }, `(${list.length})`)),
+          list.map((t) => h('a', { href: `#/tools/${encodeURIComponent(t.name)}`, 'aria-current': t === current ? 'page' : undefined }, t.title))) : null;
+      }));
+      return h('div', {},
+        pageHead({ title: current.title, purpose: current.summary || current.module_label,
+          crumbs: [{ label: 'Checks', href: '#/tools' }, g ? { label: g.label, href: `#/tools?group=${encodeURIComponent(g.id)}` } : null, { label: current.title }].filter(Boolean),
+          back: { href: '#/tools', label: 'Checks' } }),
+        h('div', { class: 'tool-layout has-tool' }, side, toolPanel(current, { projectId: query.get('project') })));
+    }
+    const shown = data.tools.filter((t) => !t.hidden);
+    const role = fieldRole() ? 'field' : (state.me.user.role === 'office' ? 'office' : 'owner');
+    const common = ((data.common && data.common[role]) || []).map((nm) => byName[nm]).filter(Boolean);
+    const search = h('input', { type: 'search', id: 'check-q', placeholder: 'e.g. prelim, trench permit, COI, Saturday work', enterkeyhint: 'search', autocomplete: 'off', spellcheck: 'false' });
+    const status = h('p', { class: 'visually-hidden', role: 'status' });
+    const results = h('div', { class: 'check-results' });
+    const commonEl = common.length ? h('section', { class: 'common-checks', 'aria-labelledby': 'cc-h' }, h('h2', { id: 'cc-h' }, 'Common checks'),
+      h('div', { class: 'task-tiles' }, common.map((t) => h('a', { class: 'task-tile', href: `#/tools/${encodeURIComponent(t.name)}` }, icon(GROUP_ICON[t.group] || 'checks'),
+        h('span', { class: 'tt-label' }, t.title), h('span', { class: 'tt-hint' }, toolSummary(t)))))) : null;
+    const want = query.get('group');
+    const wide = !narrowScreen();
+    const list = h('div', { class: 'tool-list tool-groups' }, groups.map((g) => {
+      const tools = g.tools.map((nm) => byName[nm]).filter((t) => t && !t.hidden);
+      if (!tools.length) return null;
+      return h('details', { class: 'tool-group', id: `grp-${g.id}`, open: wide || want === g.id ? true : undefined },
+        h('summary', {}, icon(GROUP_ICON[g.id] || 'checks'), h('span', { class: 'tg-label' }, g.label), h('span', { class: 'tg-count' }, plural(tools.length, 'check')),
+          icon('chevron-down', 'icon tg-chev'), g.purpose ? h('span', { class: 'tg-purpose' }, g.purpose) : null),
+        h('ul', { class: 'list' }, tools.map((t) => toolRow(t))));
+    }));
+    const draw = (items, nearest, q) => {
+      list.hidden = !!q;
+      if (commonEl) commonEl.hidden = !!q;
+      if (!q) { fill(results); status.textContent = ''; return; }
+      fill(results, items.length
+        ? h('section', { class: 'card', 'aria-labelledby': 'bm-h' }, h('h2', { id: 'bm-h' }, 'Best matches'), h('ul', { class: 'list' }, items.map((t) => toolRow(t, t.hidden ? 'For AI assistants' : null))))
+        : h('div', { class: 'card' }, emptyState({ icon: 'search', title: `No check matches “${q}”`, text: 'Try a shorter word, or another way to say it.' }),
+          nearest.length ? [h('h3', {}, 'Closest checks'), h('ul', { class: 'list' }, nearest.map((t) => toolRow(t)))] : null));
+      status.textContent = items.length ? `${plural(items.length, 'check')} found.` : `No check matches “${q}”.`;
     };
-    search.addEventListener('input', drawList);
-    drawList();
-    const panel = current ? toolPanel(current) : h('div', { class: 'card tool-intro' }, h('h2', {}, 'Pick a check'),
-      h('p', {}, `${data.count} checks, grouped by topic. Each result shows its official source, whether that source has been verified, and a disclaimer. Save any result to Documents or print it.`),
-      h('p', { class: 'small' }, 'When a result needs a licensed person (an engineer, an attorney, an asbestos consultant…), it says who, why and where to look.'),
-      h('p', { class: 'muted small' }, 'Your AI assistant can run the same checks (Settings → AI assistant).'));
-    return h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, current ? current.title : 'Tools'), h('p', {}, current ? current.module_label : 'Checks and calculators built on California rules')),
-        current ? h('a', { class: 'btn ghost small no-print', href: '#/tools' }, '← All tools')
-          : h('a', { class: 'btn secondary small no-print nav-narrow', href: '#/professionals' }, 'Find a professional')),     // phones: not in the bottom bar
-      h('div', { class: 'tool-layout' + (current ? ' has-tool' : '') }, h('aside', { class: 'card tool-list', 'aria-label': 'Tool list' }, search, list), panel));
+    // Typing asks POST /api/search (the words go in the body, never the address), 150 ms after the last key, and
+    // drops an answer that is no longer the latest.
+    let seq = 0;
+    let ctrl = null;
+    let timer = null;
+    const runSearch = async () => {
+      const q = search.value.trim();
+      const my = ++seq;
+      if (ctrl) { ctrl.abort(); ctrl = null; }
+      if (!q) { draw([], [], ''); return; }
+      let items = null;
+      let nearest = [];
+      if (navigator.onLine) {
+        ctrl = new AbortController();
+        try {
+          const r = await api('/api/search', { method: 'POST', body: { q: q.slice(0, 200), types: ['tool'] }, signal: ctrl.signal });
+          if (my !== seq) return;
+          if (r && r.ready !== false) {
+            const g = (r.groups || []).find((x) => x.type === 'tool');
+            items = ((g && g.items) || []).map((x) => byName[x.id]).filter(Boolean);
+            nearest = (r.nearest || []).map((x) => byName[x.id]).filter(Boolean).slice(0, 3);
+          }
+        } catch (e) { if (my !== seq) return; }
+      }
+      if (items === null) { const v = await vocab().catch(() => null); if (my !== seq) return; items = localToolMatch(data.tools, v, q); }
+      draw(items, nearest, q);
+    };
+    search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(runSearch, 150); });
+    const view = h('div', {},
+      pageHead({ title: 'Checks', purpose: `${shown.length} checks built on California rules. Search in your own words.`, help: PAGE_HELP.tools,
+        secondary: h('a', { class: 'btn secondary small no-print nav-narrow', href: '#/professionals' }, icon('find'), 'Find a professional') }),     // phones: not in the bottom bar
+      h('div', { class: 'check-search', role: 'search' }, h('div', { class: 'field' }, h('label', { for: 'check-q' }, 'Search checks'), search)),
+      status, results, commonEl, list);
+    view.afterRender = () => {
+      const el = want ? document.getElementById(`grp-${want}`) : null;
+      if (el) { el.open = true; el.scrollIntoView({ block: 'start' }); el.querySelector('summary').focus({ preventScroll: true }); }
+    };
+    return view;
   };
 
   // ======================================================================== licensed professionals: handoffs + finder
@@ -2186,8 +2761,8 @@
       others.length ? h('p', { class: 'small' }, 'You might also mean: ', others.map((o, i) => [i ? ', ' : '', h('a', { href: finderHref(typeIdOf(o)) }, String(o.name || humanize(typeIdOf(o))))])) : null);
   }
   routes.professionals = async ({ query }) => {
-    const head = h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Find a licensed professional'),
-      h('p', {}, 'When a job needs a licensed or certified person, find one near the job and check their license on the official state lookups.')));
+    const head = pageHead({ title: 'Find a licensed professional', help: PAGE_HELP.professionals,
+      purpose: 'When a job needs a licensed or certified person, find one near the job and check their license on the official state lookups.' });
     let typesRes;
     try { typesRes = await api('/api/professionals/types'); } catch (e) {
       return h('div', {}, head, finderProblem(e, () => render()), h('p', { class: 'small muted' }, OFFICIAL_NOTE));
@@ -2196,9 +2771,9 @@
     const counties = typesRes && Array.isArray(typesRes.counties) && typesRes.counties.length && typesRes.counties.every((c) => typeof c === 'string') ? typesRes.counties : CA_COUNTIES;
     if (!types.length) return h('div', {}, head, h('div', { class: 'card empty' }, h('p', {}, 'No kinds of professionals are listed on this server yet.')), h('p', { class: 'small muted' }, OFFICIAL_NOTE));
     const projects = await api('/api/projects').catch(() => []);
-    const lastKey = `tc.finder.project.${state.me.tenant.id}`;
     const active = projects.filter((p) => !['closed', 'completed'].includes(p.status));
-    let projectId = query.get('project') || local.get(lastKey) || (active.length === 1 ? String(active[0].id) : '');
+    // the last job picked on this device only sets the county filter of official lookups (no legal date comes from it)
+    let projectId = query.get('project') || lastJob.get() || (active.length === 1 ? String(active[0].id) : '');
     if (!projects.some((p) => String(p.id) === projectId)) projectId = '';
     const projectOf = (id) => projects.find((p) => String(p.id) === String(id)) || null;
     const startCounty = countyMatch(query.get('county'), counties) || (projectId ? countyMatch(projectOf(projectId).county, counties) : '');
@@ -2216,7 +2791,7 @@
       projSel = select('project', [['', 'No project'], ...projects.map((p) => [String(p.id), p.name])], projectId, { id: 'pf-project', 'aria-describedby': 'pf-project-h' });
       projSel.addEventListener('change', () => {
         const p = projectOf(projSel.value);
-        if (p) local.set(lastKey, String(p.id)); else local.del(lastKey);
+        lastJob.set(p ? p.id : null);
         const c = p ? countyMatch(p.county, counties) : '';
         if (c) countySel.value = c;
         projHint.textContent = p && !c ? `“${p.name}” has no county we recognize. Pick the county below, or add it to the project.` : 'Fills in the job\'s county.';
@@ -2307,13 +2882,14 @@
     const rows = await api('/api/documents');
     const add = () => { const d = openDialog('New document', docEditor(null, (doc) => { d.close(); go(`document/${doc.id}`); })); };
     return h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Documents'), h('p', {}, 'Safety programs, notices, prequal reports and saved tool results.')),
-        can.write() ? h('button', { type: 'button', class: 'btn', onclick: add }, '+ New document') : null),
+      pageHead({ title: 'Documents', purpose: 'Saved check results, notes and safety programs, ready to print or share.', help: PAGE_HELP.documents,
+        primary: can.write() ? h('button', { type: 'button', class: 'btn', onclick: add }, icon('plus'), 'New note') : null }),
       rows.length ? h('div', { class: 'grid grid-2' }, rows.map((d) => h('a', { class: 'card card-link', href: `#/document/${d.id}` },
         h('div', { class: 'card-head' }, h('h2', {}, d.title), d.verified === null || d.verified === undefined ? null : verifiedBadge({ verified: !!d.verified })),
         h('p', { class: 'small muted' }, `${DOC_KIND[d.kind] || humanize(d.kind)} · ${fmtDateTime(d.created)}${d.source_tool ? ' · from ' + humanize(d.source_tool) : ''}`),
         h('p', { class: 'small excerpt' }, docExcerpt(d))))) :
-        h('div', { class: 'card empty' }, h('p', {}, 'No documents yet. Run a tool and choose "Save as document".'), h('a', { class: 'btn secondary', href: '#/tools' }, 'Open tools')));
+        h('div', { class: 'card' }, emptyState({ icon: 'folder', title: 'Saved results and programs live here', text: 'Run a check and choose Save as document, or write your safety programs.',
+          actions: [h('a', { class: 'btn secondary', href: '#/tools/verify_contractor_license' }, 'Verify a license'), h('a', { class: 'btn secondary', href: '#/tools/calculate_lien_deadline' }, 'Lien and prelim dates')] })));
   };
   // the page already shows the title (and the print header repeats it), so drop a matching first heading
   const stripTitle = (body, title) => String(body || '').replace(/^\s*#\s+(.+)\n+/, (m, t) => (t.trim() === String(title).trim() ? '' : m));
@@ -2322,13 +2898,13 @@
     const edit = () => { const dlg = openDialog('Edit document', docEditor(d, () => { dlg.close(); render(); })); };
     const del = async () => { if (!confirm(`Delete "${d.title}"?`)) return; await api(`/api/documents/${d.id}`, { method: 'DELETE' }); toast('Deleted'); go('documents'); };
     return h('div', {},
-      h('div', { class: 'page-head no-print' }, h('div', {}, h('p', {}, h('a', { href: '#/documents' }, '← Documents')), h('h1', {}, d.title),
-        h('p', {}, `${humanize(d.kind)} · created ${fmtDateTime(d.created)}${d.created_by ? ' by ' + d.created_by : ''}`)),
-      h('div', { class: 'row' }, d.verified === null || d.verified === undefined ? null : verifiedBadge({ verified: !!d.verified }),
-        h('button', { type: 'button', class: 'btn secondary', onclick: () => window.print() }, 'Print / PDF'),
-        h('button', { type: 'button', class: 'btn ghost', onclick: () => download(`${d.title.replace(/[^\w.-]+/g, '_').slice(0, 80)}.md`, d.body_markdown, 'text/markdown') }, 'Download'),
-        can.write() ? h('button', { type: 'button', class: 'btn ghost', onclick: edit }, 'Edit') : null,
-        can.write() ? h('button', { type: 'button', class: 'btn danger', onclick: del }, 'Delete') : null)),
+      h('div', { class: 'no-print' }, pageHead({ title: d.title, purpose: `${DOC_KIND[d.kind] || humanize(d.kind)} · created ${fmtDateTime(d.created)}${d.created_by ? ' by ' + d.created_by : ''}`,
+        crumbs: [{ label: 'Documents', href: '#/documents' }, { label: d.title }], back: { href: '#/documents', label: 'Documents' },
+        primary: h('button', { type: 'button', class: 'btn', onclick: () => window.print() }, icon('print'), 'Print / PDF') }),
+      h('div', { class: 'row doc-actions' }, d.verified === null || d.verified === undefined ? null : verifiedBadge({ verified: !!d.verified }),
+        h('button', { type: 'button', class: 'btn quiet', onclick: () => download(`${d.title.replace(/[^\w.-]+/g, '_').slice(0, 80)}.md`, d.body_markdown, 'text/markdown') }, icon('download'), 'Download'),
+        can.write() ? h('button', { type: 'button', class: 'btn quiet', onclick: edit }, icon('edit'), 'Edit') : null,
+        can.write() ? h('button', { type: 'button', class: 'btn danger', onclick: del }, icon('delete'), 'Delete') : null)),
       h('div', { class: 'print-only print-head' }, h('div', { class: 'small' }, h('strong', {}, state.me.tenant.company_name), state.me.tenant.cslb_license ? ` · CSLB license #${state.me.tenant.cslb_license}` : '',
         ` · printed ${fmtDate(todayISO())}`), h('h1', {}, d.title)),
       h('article', { class: 'card' }, h('div', { class: 'md', html: md(stripTitle(d.body_markdown, d.title)) }),
@@ -2390,7 +2966,8 @@
     };
     const err = h('div', { role: 'alert' });
     const btn = h('button', { type: 'submit', class: 'btn' }, 'Save log');
-    const kind = select('kind', [['toolbox_talk', 'Toolbox / tailgate talk'], ['inspection', 'Daily inspection'], ['incident', 'Incident first report']], 'toolbox_talk');
+    const startKind = ['toolbox_talk', 'inspection', 'incident'].includes(query && query.get('kind')) ? query.get('kind') : 'toolbox_talk';
+    const kind = select('kind', [['toolbox_talk', 'Toolbox / tailgate talk'], ['inspection', 'Daily inspection'], ['incident', 'Incident first report']], startKind);
     const form = h('form', { novalidate: true, onsubmit: async (e) => {
       e.preventDefault(); err.replaceChildren();
       const data = formData(form);
@@ -2424,9 +3001,9 @@
     const projName = (id) => (projects.find((p) => p.id === id) || {}).name || '';
     const syncBtn = h('button', { type: 'button', class: 'btn secondary small', onclick: async () => { busy(syncBtn, true, 'Syncing…'); await syncOutbox({ quiet: false }); busy(syncBtn, false); render(); } }, 'Sync now');
     return h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Field log'), h('p', {}, 'Toolbox talks, inspections and incident reports. Works without signal.')),
-        h('div', { class: 'queue' }, h('span', { id: 'queue-count', class: `pill ${queue.length ? 'amber' : 'green'}` }, queue.length ? `${queue.length} waiting to sync` : 'All field logs synced'), queue.length && navigator.onLine ? syncBtn : null)),
-      h('section', { class: 'card' }, form),
+      pageHead({ title: 'Field log', purpose: 'Toolbox talks, inspections and incident reports. Works without signal.', help: PAGE_HELP.field,
+        secondary: h('div', { class: 'queue' }, h('span', { id: 'queue-count', class: `pill ${queue.length ? 'amber' : 'green'}` }, queue.length ? `${queue.length} waiting to sync` : 'All field logs synced'), queue.length && navigator.onLine ? syncBtn : null) }),
+      h('section', { class: 'card', 'aria-label': 'New log' }, form),
       h('section', { class: 'card' }, h('h2', {}, 'Recent logs'),
         queue.length ? h('ul', { class: 'bullets' }, queue.map((q) => h('li', {}, `${fmtDate(q.date)} · ${humanize(q.kind)}${q.topic ? ' – ' + q.topic : ''} `, h('span', { class: 'pill amber' }, q._error ? `Needs fixing: ${q._error}` : 'Waiting to sync')))) : null,
         recent.length ? table([
@@ -2434,7 +3011,9 @@
           { label: 'Project', render: (l) => projName(l.project_id) || '—' }, { label: 'Topic', key: 'topic' },
           { label: 'People', render: (l) => { const a = l.attendees || []; const att = a.filter((x) => x.signed).length; return `${plural(a.length, 'person', 'people')}: ${l.signature_count || 0} signed${att > (l.signature_count || 0) ? `, ${att - (l.signature_count || 0)} marked attended` : ''}`; } },
           { label: 'By', key: 'created_by' }], recent.slice(0, 30)) :
-          (queue.length ? null : h('p', { class: 'muted' }, navigator.onLine ? 'No logs yet.' : 'Connect to see logs from the office.'))));
+          (queue.length ? null : navigator.onLine ? emptyState({ icon: 'log', tag: 'h3', title: 'No logs for this job yet', text: 'Start a toolbox talk. It saves on this phone and sends when you have signal.',
+            actions: [h('button', { type: 'button', class: 'btn secondary', onclick: () => { kind.value = 'toolbox_talk'; kind.focus(); } }, 'Start toolbox talk')] })
+            : h('p', { class: 'muted' }, 'Connect to see logs from the office.'))));
   };
 
   // ======================================================================== AI agent connection (settings + onboarding)
@@ -2611,15 +3190,17 @@
     reload();
     return h('section', { class: 'card', id: 'mcp-log' },
       h('div', { class: 'card-head' }, h('h2', {}, 'AI assistant call log (MCP)'), h('button', { type: 'button', class: 'btn ghost small', onclick: reload }, 'Refresh')),
-      h('p', { class: 'small muted' }, 'Every tool call made through the MCP server: which key or connected app, which tool, the result, how long it took and where it came from. Arguments are never stored, because they can hold employee data; each row keeps a SHA-256 fingerprint of them instead.'),
-      h('div', { class: 'form-grid' }, field('API key', keySel), field('Result', statusSel), field('From', from), field('To', to)),
-      h('div', { class: 'row' }, csvLink, jsonLink), slot);
+      h('p', { class: 'small muted' }, 'Every tool call made through the MCP server. Arguments are never stored (they can hold employee data).'),
+      h('details', { class: 'more' }, h('summary', {}, 'Filter or download the log'),
+        h('p', { class: 'small muted' }, 'Each row shows which key or connected app, which tool, the result, how long it took and where it came from, and keeps a SHA-256 fingerprint of the arguments instead of the arguments.'),
+        h('div', { class: 'form-grid' }, field('API key', keySel), field('Result', statusSel), field('From', from), field('To', to)),
+        h('div', { class: 'row' }, csvLink, jsonLink)), slot);
   }
 
   // ======================================================================== onboarding
   const STEPS = ['Your license', 'Sub list', 'First project', 'Safety programs', 'AI assistant'];
   routes.welcome = async ({ query }) => {
-    if (!can.write()) return h('div', { class: 'card' }, h('h1', {}, 'Welcome'), h('p', {}, 'Your office has set things up. Use the Field tab for toolbox talks and inspections.'), h('a', { class: 'btn', href: '#/field' }, 'Open Field'));
+    if (!can.write()) return h('div', { class: 'card' }, h('h1', {}, 'Welcome'), h('p', {}, 'Your office has set things up. Use the Field log for toolbox talks and inspections.'), h('a', { class: 'btn', href: '#/field' }, 'Open the Field log'));
     const settings = state.me.tenant.settings || {};
     const ob = settings.onboarding || { done: [] };
     let step = Math.min(5, Math.max(1, Number(query.get('step')) || ob.step || 1));
@@ -2638,8 +3219,8 @@
     const gate = { ready: true, open() { if (!this.ready) { this.ready = true; if (navSlot) navSlot.replaceChildren(nav(true)); } } };
     const nav = (canNext = true) => h('div', { class: 'row' },
       step > 1 ? h('button', { type: 'button', class: 'btn ghost', onclick: () => { step -= 1; draw(); } }, 'Back') : null,
-      h('button', { type: 'button', class: 'btn ghost', onclick: async () => { await saveProgress(false); if (step < 5) { step += 1; draw(); } else go('dashboard'); } }, step < 5 ? 'Skip for now' : 'Finish later'),
-      canNext ? h('button', { type: 'button', class: 'btn', onclick: async () => { await saveProgress(true); if (step < 5) { step += 1; draw(); } else { toast('Setup complete'); go('dashboard'); } } }, step < 5 ? 'Next step' : 'Go to dashboard') : null);
+      h('button', { type: 'button', class: 'btn ghost', onclick: async () => { await saveProgress(false); if (step < 5) { step += 1; draw(); } else go('dashboard'); } }, step < 5 ? 'Skip for now' : 'Skip'),
+      canNext ? h('button', { type: 'button', class: 'btn', onclick: async () => { await saveProgress(true); if (step < 5) { step += 1; draw(); } else { toast('Setup complete'); go('dashboard'); } } }, step < 5 ? 'Next step' : 'Go to Today') : null);
 
     const steps = {
       1: async () => {
@@ -2689,7 +3270,7 @@
           pick.length > 1 ? h('p', { class: 'small' }, 'Also available: ', pick.slice(1).map((t, k) => [k ? ', ' : '', h('a', { href: `#/tools/${t.name}` }, t.title)])) : null,
           toolPanel(pick[0], { onResult: () => gate.open() })];
       },
-      5: async () => [h('h2', {}, 'Step 5: Connect your AI assistant'), agentConnect({ keysBelow: false })],
+      5: async () => [h('h2', {}, 'Step 5: Connect an AI assistant (optional)'), agentConnect({ keysBelow: false })],
     };
     const draw = async () => {
       drawStepper();
@@ -2702,14 +3283,14 @@
       history.replaceState(null, '', `#/welcome?step=${step}`);
     };
     await draw();
-    return h('div', {}, h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, `Welcome, ${state.me.tenant.company_name}`), h('p', {}, 'Five steps, about 15 minutes. You can skip any step and come back.'))), stepper, body);
+    return h('div', {}, pageHead({ title: `Welcome, ${state.me.tenant.company_name}`, purpose: 'Five steps, about 15 minutes. You can skip any step and come back.' }), stepper, body);
   };
 
   // ======================================================================== integrations
   // The catalog (GET /api/integrations/catalog) says what each product is and how it fits; the live connectors
   // (GET /api/integrations) say what is installed on this server and connected for this company. Connect panels are
   // drawn generically from each connector's config_schema, so new connectors need no UI code here.
-  const INT_KIND_PILL = { builtin: 'green', ai_assistant: 'blue', import_export: 'violet', reference: 'gray' };
+  const INT_KIND_PILL = { builtin: 'blue', ai_assistant: 'blue', import_export: 'gray', reference: 'gray' };    // a kind, not a status: no red/amber/green
   const INT_ORDER = { builtin: 0, ai_assistant: 1, import_export: 2, reference: 3 };
   const GOV_PILL = { yes: 'green', partial: 'amber', no: 'red', unconfirmed: 'gray', not_applicable: 'gray' };
   const CONN_TEXT = { connected: ['green', 'Connected'], pending: ['amber', 'Waiting for sign-in'], error: ['red', 'Needs attention'], disconnected: ['gray', 'Not connected'] };
@@ -3220,20 +3801,16 @@
     if (!g) return h('p', { class: 'small muted int-gov' }, 'Government cloud: no US government version was found in our research.');
     return h('p', { class: 'small int-gov' }, h('span', { class: `pill ${GOV_PILL[g.supported] || 'gray'}` }, g.label), ' ', g.note, g.url ? [' ', ext(g.url, g.name || 'Government version')] : null);
   }
+  const hasPanel = (e) => !!(e.builtin || (intState.providers || []).some((p) => p.catalog_id === e.id));
   function intCard(e, cat, kindLabels) {
     const id = `int-${e.id}`;
     const useLi = (u) => h('li', {}, withToolLinks(u.text));
     const uses = e.uses || [];
     const notes = (e.api && e.api.notes) || [];
-    const card = h('article', { class: 'card int-card', id, 'aria-labelledby': `${id}-h` },
-      h('div', { class: 'int-head' },
-        h('div', { class: 'int-title' }, h('h3', { id: `${id}-h` }, e.name), h('p', { class: 'small muted' }, e.vendor)),
-        h('div', { class: 'int-badges' }, h('span', { class: `pill ${INT_KIND_PILL[e.integration] || 'gray'}` }, kindLabels[e.integration] || e.integration), vendorStatusPill(e.status.label),
-          e.recommended === false ? h('span', { class: 'pill red' }, 'Not recommended') : null)),
-      h('p', {}, e.summary),
-      e.recommended === false && e.not_recommended_reason ? msgBox('warn', e.not_recommended_reason) : null,
-      h('p', { class: 'int-role' }, h('strong', {}, 'With TradeComply: '), e.tradecomply_role),
-      e.builtin || (intState.providers || []).some((p) => p.catalog_id === e.id) ? connectSlot(e) : null,
+    const panel = hasPanel(e);
+    // everything past the summary, the role and the connect panel; a built-in card (always shown open on the page)
+    // folds it into "Read more" so the page stays short on a phone
+    const rest = [
       uses.length ? [h('h4', {}, 'How contractors use it with TradeComply'), h('ul', { class: 'bullets int-uses' }, uses.slice(0, 3).map(useLi))] : null,
       uses.length > 3 ? more(`${uses.length - 3} more ${uses.length - 3 === 1 ? 'idea' : 'ideas'}`, h('ul', { class: 'bullets int-uses' }, uses.slice(3).map(useLi))) : null,
       mcpBlock(e),
@@ -3246,7 +3823,18 @@
         (e.research_notes || []).map((r) => h('p', { class: 'small muted' }, r)),
         h('ul', { class: 'bullets small int-sources' }, e.sources.map((s) => h('li', {}, s.url ? ext(s.url) : h('code', {}, s.path), s.note ? h('span', { class: 'muted' }, ` (${s.note})`) : null))),
         h('p', { class: 'small muted' }, `Checked ${fmtDate(cat.checked_on)}.`)),
-      h('p', { class: 'int-links small' }, e.links.map((l, k) => [k ? ' · ' : '', ext(l.url, l.label)])));
+      h('p', { class: 'int-links small' }, e.links.map((l, k) => [k ? ' · ' : '', ext(l.url, l.label)]))];
+    const card = h('article', { class: 'card int-card', id, 'aria-labelledby': `${id}-h` },
+      h('div', { class: 'int-head' },
+        h('div', { class: 'int-title' }, h('h3', { id: `${id}-h` }, e.name), h('p', { class: 'small muted' }, e.vendor)),
+        h('div', { class: 'int-badges' }, h('span', { class: `pill ${INT_KIND_PILL[e.integration] || 'gray'}` }, kindLabels[e.integration] || e.integration), vendorStatusPill(e.status.label),
+          e.recommended === false ? h('span', { class: 'pill red' }, 'Not recommended') : null)),
+      h('p', { class: panel ? 'int-lead' : null }, panel ? firstSentence(e.summary) : e.summary),
+      e.recommended === false && e.not_recommended_reason ? msgBox('warn', e.not_recommended_reason) : null,
+      panel ? null : h('p', { class: 'int-role' }, h('strong', {}, 'With TradeComply: '), e.tradecomply_role),
+      panel ? connectSlot(e) : null,
+      panel ? h('details', { class: 'more int-more' }, h('summary', {}, `Read more about ${e.name.split(' (')[0]}`),
+        firstSentence(e.summary) !== e.summary ? h('p', {}, e.summary) : null, h('p', { class: 'int-role' }, h('strong', {}, 'With TradeComply: '), e.tradecomply_role), rest) : rest);
     card.dataset.hay = [e.name, e.vendor, e.summary, e.tradecomply_role, (e.keywords || []).join(' '), uses.map((u) => u.text).join(' '),
       (e.tools || []).map((t) => `${t} ${humanize(t)}`).join(' '), kindLabels[e.integration], (e.builtin || {}).what_it_does || ''].join(' ').toLowerCase();
     return card;
@@ -3259,8 +3847,7 @@
       ['reference', 'Background for your IT or security team, such as security checklists. Nothing to connect.'],
     ];
     const kindLabels = Object.fromEntries(cat.integration_types.map((k) => [k.id, k.label]));
-    return h('section', { class: 'card', 'aria-labelledby': 'int-how-h' },
-      h('h2', { id: 'int-how-h' }, 'How TradeComply works with your other tools'),
+    return h('details', { class: 'card int-how' }, h('summary', {}, h('strong', {}, 'How TradeComply connects to other apps')),
       h('p', {}, 'TradeComply doesn\'t replace the software you already use. It checks the California rules behind what\'s in it: licenses, liens, payroll, safety and contracts. There are four ways to put them together:'),
       h('ul', { class: 'int-ways clean' }, ways.map(([k, text]) => h('li', {}, h('span', { class: `pill ${INT_KIND_PILL[k]}` }, kindLabels[k]), h('p', {}, text)))),
       h('p', { class: 'small muted' }, 'TradeComply\'s AI-assistant tools only look things up and check them; they can\'t change anything in your other systems. Built-in connections only do what you set them up to do, like posting an alert to your channel. Product details were checked against each vendor\'s official documentation on ', fmtDate(cat.checked_on), '; anything we couldn\'t confirm is marked.'));
@@ -3343,16 +3930,30 @@
       h('label', { class: 'switch small-switch', for: 'int-gov' }, govBox, 'Only products with a US government cloud version (or no cloud involved)'),
       count);
 
-    // sections
+    // sections: Connected, Built in (never folded: their panels open from the card), then each catalog category
+    // folded, with its count. Every card is in exactly one place.
     const cards = new Map();
-    const sections = cat.categories.map((c) => {
-      const list = cat.entries.filter((e) => e.category === c.id)
-        .sort((a, b) => ((a.recommended === false) - (b.recommended === false)) || (INT_ORDER[a.integration] - INT_ORDER[b.integration]) || a.name.localeCompare(b.name));
+    const make = (e) => { const el = intCard(e, cat, kindLabels); cards.set(e.id, { el, e }); return el; };
+    const order = (list) => list.sort((a, b) => ((a.recommended === false) - (b.recommended === false)) || (INT_ORDER[a.integration] - INT_ORDER[b.integration]) || a.name.localeCompare(b.name));
+    const isConnected = (e) => { const p = providerFor(e); return !!(p && (p.connection || {}).status === 'connected'); };
+    const connected = order(cat.entries.filter(isConnected));
+    const builtin = order(cat.entries.filter((e) => !isConnected(e) && hasPanel(e)));
+    const placed = new Set([...connected, ...builtin].map((e) => e.id));
+    const sections = [];
+    if (connected.length) sections.push(h('section', { class: 'int-section', id: 'int-connected', 'aria-labelledby': 'int-connected-h' }, h('h2', { id: 'int-connected-h' }, 'Connected'),
+      h('div', { class: 'int-grid' }, connected.map(make))));
+    sections.push(h('section', { class: 'int-section', id: 'int-builtin', 'aria-labelledby': 'int-builtin-h' }, h('h2', { id: 'int-builtin-h' }, 'Built in'),
+      h('p', { class: 'muted small' }, 'TradeComply connects to these for you: open a panel to sign in, paste a link or upload a file.'),
+      h('div', { class: 'int-grid' }, builtin.map(make))));
+    const folded = cat.categories.map((c) => {
+      const list = order(cat.entries.filter((e) => e.category === c.id && !placed.has(e.id)));
       if (!list.length) return null;
-      const grid = h('div', { class: 'int-grid' }, list.map((e) => { const el = intCard(e, cat, kindLabels); cards.set(e.id, { el, e }); return el; }));
-      return h('section', { class: 'int-section', id: `int-cat-${c.id}`, 'data-cat': c.id, 'aria-labelledby': `int-cat-${c.id}-h` },
-        h('h2', { id: `int-cat-${c.id}-h` }, c.label), h('p', { class: 'muted small' }, c.description), grid);
+      return h('details', { class: 'int-section', id: `int-cat-${c.id}`, 'data-cat': c.id },
+        h('summary', {}, h('h2', { id: `int-cat-${c.id}-h` }, c.label), h('span', { class: 'count' }, plural(list.length, 'product'))),
+        h('p', { class: 'muted small' }, c.description), h('div', { class: 'int-grid' }, list.map(make)));
     }).filter(Boolean);
+    sections.push(...folded);
+    const autoOpened = new Set();
     const matched = new Set(cat.entries.map((e) => providerFor(e)).filter(Boolean).map((p) => p.provider));
     const extra = (intState.providers || []).filter((p) => !matched.has(p.provider));
     const extraSection = extra.length ? h('section', { class: 'int-section', 'aria-labelledby': 'int-extra-h' }, h('h2', { id: 'int-extra-h' }, 'More connections on this server'),
@@ -3375,7 +3976,14 @@
         el.hidden = !ok;
         if (ok) shown += 1;
       }
-      sections.forEach((s) => { s.hidden = !s.querySelector('.int-card:not([hidden])'); });
+      const narrowed = !!(words.length || filters.cat || filters.types.size || filters.gov);
+      sections.forEach((s) => {
+        const hit = !!s.querySelector('.int-card:not([hidden])');
+        s.hidden = !hit && (s.tagName === 'DETAILS' || narrowed || s.id === 'int-connected');
+        if (s.tagName !== 'DETAILS') return;
+        // a search or filter that finds a card in a folded category opens it; clearing folds it back
+        if (narrowed && hit && !s.open) { s.open = true; autoOpened.add(s); } else if (!narrowed && autoOpened.has(s)) { s.open = false; autoOpened.delete(s); }
+      });
       empty.hidden = shown > 0;
       count.textContent = `${plural(shown, 'product')} shown of ${cards.size}.`;
       const qs = new URLSearchParams();
@@ -3390,16 +3998,18 @@
     catSel.addEventListener('change', apply);
     govBox.addEventListener('change', apply);
 
-    const jump = h('nav', { class: 'jump no-print', 'aria-label': 'Integration categories' }, sections.map((s) => h('a', { href: '#', class: 'pill gray', onclick: (ev) => { ev.preventDefault(); s.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, s.querySelector('h2').textContent)),
-      h('a', { href: '#', class: 'pill blue', onclick: (ev) => { ev.preventDefault(); $('#int-assistant').scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, 'AI assistant setup'));
     const view = h('div', {},
-      h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Integrations'), h('p', {}, 'Use TradeComply with Procore, Docusign, Slack, Teams, your calendar, your AI assistant and more.'))),
-      top, explainer(cat), claudeCard(cat.tradecomply.mcp_url), filterCard, jump, empty, sections, extraSection, assistantBuilder(cat),
+      pageHead({ title: 'Integrations', purpose: 'Calendar reminders, text alerts and the other apps your company uses.', help: PAGE_HELP.integrations }),
+      top,
+      h('p', { class: 'int-intro' }, 'Use TradeComply with Procore, Docusign, Slack, Teams, your calendar and your AI assistant. Built-in connections are below; the catalog says how everything else fits.'),
+      explainer(cat), claudeCard(cat.tradecomply.mcp_url), filterCard, empty, sections.slice(0, connected.length ? 2 : 1), assistantBuilder(cat), sections.slice(connected.length ? 2 : 1), extraSection,
       h('p', { class: 'small muted' }, cat.about));
     apply();
     if (focusEntry && cards.has(focusEntry.id)) {
       const { el } = cards.get(focusEntry.id);
       el.hidden = false;
+      const fold = el.closest('details.int-section');
+      if (fold) { fold.hidden = false; fold.open = true; }
       setTimeout(() => { const dt = el.querySelector('details.int-connect'); if (dt && dt.openPanel) dt.openPanel(); el.scrollIntoView({ block: 'start' }); }, 0);
     }
     return view;
@@ -3408,17 +4018,22 @@
   // ======================================================================== settings
   // Forget everything this browser holds for the signed-in company (the cached API copies and app state); after the
   // company is deleted, also its checklist and finder choices and any field logs still waiting to sync.
-  async function signedOut({ forgetCompany = false } = {}) {
+  // explicit: the person pressed Log out, so what this device kept for them (drafts, recent items, last job) goes
+  // too; a session the server ended keeps them, keyed by person, for when they sign back in.
+  async function signedOut({ forgetCompany = false, explicit = false } = {}) {
     const tid = state.me && state.me.tenant && state.me.tenant.id;
+    const uid = state.me && state.me.user && state.me.user.id;
+    if (explicit && tid && uid) forgetUser(tid, uid);
     if (forgetCompany && tid) {
-      local.del(`tc.gettingStarted.${tid}`);
-      local.del(`tc.finder.project.${tid}`);
+      forgetTenant(tid);
+      if (uid) local.del(`tc.confirmHidden.${uid}`);
       try { for (const x of await Outbox.all()) await Outbox.del(x.client_uuid); } catch (e) { /* no offline store */ }
     }
     if (navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage('clear-api-cache');
     if (window.caches) caches.delete('tc-api-v1').catch(() => {});
     state.me = null; state.tools = null; state.mcpPolicy = null; state.gsAway = null;
-    $('#nav').hidden = true; $('#company').textContent = '';
+    resetUserState();
+    $('#nav').hidden = true; $('#company').textContent = ''; $('#account-open').hidden = true;
   }
   // Owner only: one-file export of the company's records (GET /api/tenant/export) and closing the account
   // (DELETE /api/tenant). Until the server has those endpoints (404/405/501) the section says so instead of failing.
@@ -3557,10 +4172,12 @@
         items.push(h('div', { class: 'row' }, test), out);
       } else {
         items.push(h('p', {}, h('span', { class: 'pill gray' }, 'Not set up'), ' Invites and reset links aren\'t emailed. You can still copy them in Team and send them yourself.'));
-        items.push(h('p', { class: 'small' }, 'Whoever runs this TradeComply server sets these environment variables: ', h('code', {}, 'MAIL_FROM'), ', and either ',
-          h('code', {}, 'POSTMARK_SERVER_TOKEN'), ' (Postmark) or ', names(st.env.smtp), ' (SMTP). ', h('code', {}, 'APP_URL'), ' must be this server\'s https address.'));
-        if (st.missing && st.missing.length) items.push(h('p', { class: 'small' }, 'Missing or not valid: ', names(st.missing), '.'));
-        items.push(h('p', { class: 'small muted' }, 'Render\'s free plan blocks email (SMTP) ports, so use Postmark there.'));
+        // the server settings, for whoever runs it (open: it is what an owner passes on)
+        items.push(h('details', { class: 'more', open: true }, h('summary', {}, 'For whoever runs this server'),
+          h('p', { class: 'small' }, 'Whoever runs this TradeComply server sets these environment variables: ', h('code', {}, 'MAIL_FROM'), ', and either ',
+            h('code', {}, 'POSTMARK_SERVER_TOKEN'), ' (Postmark) or ', names(st.env.smtp), ' (SMTP). ', h('code', {}, 'APP_URL'), ' must be this server\'s https address.'),
+          st.missing && st.missing.length ? h('p', { class: 'small' }, 'Missing or not valid: ', names(st.missing), '.') : null,
+          h('p', { class: 'small muted' }, 'Render\'s free plan blocks email (SMTP) ports, so use Postmark there.')));
       }
       fill(body, items);
     }).catch((e) => fill(body, h('p', { class: 'muted' }, e.message)));
@@ -3602,6 +4219,9 @@
     api('/api/assistant/usage').then(draw).catch((e) => fill(body, h('p', { class: 'muted' }, e.message)));
     return sec;
   }
+  // Settings groups and their sections, in order (the server's catalog.SETTINGS_SECTIONS has the same keys and roles)
+  const SETTINGS_GROUPS = [['You', ['account', 'display', 'apps']], ['Company', ['company', 'team', 'billing']], ['Help and AI', ['ask', 'mcp']],
+    ['Reminders and connections', ['calendar', 'email', 'integrations']], ['Records', ['activity', 'mcp-log']], ['', ['data']]];
   routes.settings = async ({ query }) => {
     if (query.get('integration')) {         // the OAuth callback lands on #/settings?integration=..&result=..
       location.replace(`#/integrations?${query.toString()}`);
@@ -3623,15 +4243,11 @@
       field('New password', input('new_password', { type: 'password', autocomplete: 'new-password', minlength: '10' }), { required: true, hint: 'At least 10 characters.' })),
     h('p', { class: 'small muted' }, 'Changing it signs you out on your other devices, disconnects apps you connected and turns off API keys you made.'),
     pwErr, h('button', { type: 'submit', class: 'btn secondary' }, 'Change password'));
-    const logout = async () => {
-      await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
-      signedOut();
-      go('login');
-    };
-    sections.push(h('section', { class: 'card', 'aria-labelledby': 'acct-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'acct-h' }, 'Your account'), h('button', { type: 'button', class: 'btn ghost', onclick: logout }, 'Log out')),
+    sections.push(h('section', { class: 'card', 'data-section': 'account', 'aria-labelledby': 'acct-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'acct-h' }, 'Your account'), h('button', { type: 'button', class: 'btn quiet', onclick: () => logOut() }, icon('logout'), 'Log out')),
       h('dl', { class: 'kv' }, h('dt', {}, 'Email'), h('dd', {}, me.user.email || '—', emailLinks ? ' ' : null, emailLinks ? h('span', { class: `pill ${me.user.email_confirmed ? 'green' : 'gray'}` }, me.user.email_confirmed ? 'Confirmed' : 'Not confirmed') : null),
         h('dt', {}, 'Role'), h('dd', {}, humanize(me.user.role))),
-      emailLinks ? emailAccount(me) : null, pwForm));
+      emailLinks ? emailAccount(me) : null,
+      h('details', { class: 'snippet', open: me.user.must_change_password ? true : undefined }, h('summary', {}, 'Change password'), pwForm)));
     sections.push(connectedAppsSection());
     if (can.write()) {
       // company
@@ -3641,7 +4257,7 @@
         try { const t = await api('/api/tenant', { method: 'PATCH', body: formData(cForm) }); state.me.tenant = { ...state.me.tenant, ...t }; $('#company').textContent = t.company_name; toast('Company saved'); } catch (ex) { cErr.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); }
       } }, h('div', { class: 'form-grid' }, field('Company name', input('company_name', { value: me.tenant.company_name }), { required: true }),
         field('CSLB license number', input('cslb_license', { value: me.tenant.cslb_license || '', inputmode: 'numeric' }))), cErr, h('button', { type: 'submit', class: 'btn secondary' }, 'Save company'));
-      sections.unshift(h('section', { class: 'card' }, h('h2', {}, 'Company'), cForm));
+      sections.unshift(h('section', { class: 'card', 'data-section': 'company', 'aria-labelledby': 'company-h' }, h('h2', { id: 'company-h' }, 'Company'), cForm));
       // team
       const team = h('div', {});
       const linkOut = h('div', { 'aria-live': 'polite' });
@@ -3693,7 +4309,7 @@
           h('p', { class: 'small muted' }, emailLinks ? 'They get an email with a link to set their own password. You also get the link to send yourself.' : 'You get a link to send them (text or email). They use it to set their own password.'),
           iForm, out);
       }
-      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Team'), team, linkOut, invite));
+      sections.push(h('section', { class: 'card', 'data-section': 'team', 'aria-labelledby': 'team-h' }, h('h2', { id: 'team-h' }, 'Team'), team, linkOut, invite));
       if (can.owner()) sections.push(emailSection(), assistantSection());
       // AI + keys
       const keys = h('div', {});
@@ -3712,8 +4328,10 @@
       };
       await drawKeys();
       state.onKeysChanged = drawKeys;
-      sections.push(h('section', { class: 'card', id: 'ai' }, h('h2', {}, 'AI assistant (MCP)'), agentConnect(), h('h3', {}, 'API keys'), keys));
-      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Integrations'), h('p', { class: 'muted' }, 'Connect Procore, Docusign, Slack or Teams alerts, text messages, your calendar and schedule files, and see which other tools work with TradeComply in your AI assistant.'),
+      sections.push(h('section', { class: 'card', id: 'ai', 'data-section': 'mcp', 'aria-labelledby': 'mcp-h' }, h('h2', { id: 'mcp-h' }, 'AI assistant (MCP)'),
+        h('p', { class: 'muted' }, 'Connect Claude or another AI assistant to TradeComply\'s checks.'),
+        h('details', { class: 'snippet' }, h('summary', {}, 'Setup details for developers'), agentConnect()), h('h3', {}, 'API keys'), keys));
+      sections.push(h('section', { class: 'card', 'data-section': 'integrations', 'aria-labelledby': 'int-set-h' }, h('h2', { id: 'int-set-h' }, 'Integrations'), h('p', { class: 'muted' }, 'Connect Procore, Docusign, Slack or Teams alerts, text messages, your calendar and schedule files, and see which other tools work with TradeComply in your AI assistant.'),
         h('a', { class: 'btn secondary', href: '#/integrations' }, 'Open Integrations')));
       // calendar
       const cal = h('div', {});
@@ -3722,10 +4340,10 @@
         await links.draw();
         cal.append(links.el);
       } catch (e) { cal.append(h('p', { class: 'muted' }, e.message)); }
-      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Calendar'), h('p', { class: 'muted' }, 'Your deadlines as a private calendar link for Google Calendar, Outlook or Apple Calendar. Reminders and extra dates: ', h('a', { href: '#/integrations?integration=calendar-feed' }, 'Integrations → Calendar feed'), '.'), cal));
+      sections.push(h('section', { class: 'card', 'data-section': 'calendar', 'aria-labelledby': 'calendar-h' }, h('h2', { id: 'calendar-h' }, 'Calendar'), h('p', { class: 'muted' }, 'Your deadlines as a private calendar link for Google Calendar, Outlook or Apple Calendar. Reminders and extra dates: ', h('a', { href: '#/integrations?integration=calendar-feed' }, 'Integrations → Calendar feed'), '.'), cal));
       // activity log
       const auditSlot = h('div', {});
-      let auditShown = 10;
+      let auditShown = narrowScreen() ? 5 : 10;        // phones: each row is a card
       const loadAudit = async () => {
         const all = await api('/api/audit?limit=200');
         const rows = all.slice(0, auditShown);
@@ -3735,7 +4353,7 @@
           { label: 'Via', render: (r) => ({ mcp: 'AI assistant', assistant: 'Ask TradeComply' }[r.source] || 'Web/API') },
           { label: 'Result', render: (r) => r.ok ? (r.verified === true ? h('span', { class: 'pill green' }, 'Verified') : r.verified === false ? h('span', { class: 'pill amber' }, 'Not yet verified') : h('span', { class: 'pill gray' }, 'Done')) : h('span', { class: 'pill red' }, 'Error') }], rows) : h('p', { class: 'muted' }, 'No checks run yet.'), moreBtn].filter(Boolean));
       };
-      sections.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Activity log'), h('button', { type: 'button', class: 'btn ghost small', onclick: loadAudit }, 'Refresh')), auditSlot));
+      sections.push(h('section', { class: 'card', 'data-section': 'activity', 'aria-labelledby': 'activity-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'activity-h' }, 'Activity log'), h('button', { type: 'button', class: 'btn ghost small', onclick: loadAudit }, 'Refresh')), auditSlot));
       loadAudit().catch((e) => auditSlot.replaceChildren(h('p', {}, e.message)));
       if (can.owner()) sections.push(mcpLogSection());
     }
@@ -3750,16 +4368,71 @@
           me.tenant.status !== 'active' && b && b.configured ? h('button', { type: 'button', class: 'btn', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null,
           me.tenant.has_billing_account ? h('button', { type: 'button', class: 'btn secondary', onclick: (e) => billingPortal(e.currentTarget) }, 'Manage billing and invoices') : null));
       }
-      sections.push(h('section', { class: 'card', id: 'billing' }, h('h2', {}, 'Billing'), items));
+      sections.push(h('section', { class: 'card', id: 'billing', 'data-section': 'billing', 'aria-labelledby': 'billing-h' }, h('h2', { id: 'billing-h' }, 'Billing'), items));
       sections.push(companyDataSection());
     }
-    // a long page on a phone: jump links to each section
-    sections.forEach((sec, k) => { if (!sec.id) sec.id = `set-${k}`; });
-    const jump = sections.length < 3 ? null : h('nav', { class: 'jump no-print', 'aria-label': 'Settings sections' }, sections.map((sec) => {
-      const t = sec.querySelector('h2'); return t ? h('a', { href: '#', class: 'pill gray', onclick: (e) => { e.preventDefault(); sec.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, t.textContent.replace(/ \(MCP\)$/, '')) : null;
-    }));
-    return h('div', {}, h('div', { class: 'page-head' }, h('h1', {}, 'Settings')), jump, h('div', { class: 'stack' }, sections));
+    sections.push(displaySection());
+    // One page, grouped (spec 1.5): You, Company, Help and AI, Reminders and connections, Records, then Account and
+    // data. Each section keeps its heading id; #/settings?section=<key> opens at that heading.
+    const keyOf = (sec) => sec.dataset.section || { 'connected-apps': 'apps', email: 'email', 'ask-settings': 'ask', 'mcp-log': 'mcp-log', 'company-data': 'data' }[sec.id] || '';
+    sections.forEach((sec) => { const k = keyOf(sec); sec.dataset.section = k; if (!sec.id) sec.id = `set-${k}`; });
+    const byKey = Object.fromEntries(sections.map((sec) => [sec.dataset.section, sec]));
+    const groups = SETTINGS_GROUPS.map(([label, keys]) => [label, keys.map((k) => byKey[k]).filter(Boolean)]).filter(([, list]) => list.length);
+    const jumpLink = (sec) => { const t = sec.querySelector('h2'); return t ? h('a', { href: '#', class: 'pill gray', onclick: (e) => { e.preventDefault(); sec.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); } }, t.textContent.replace(/ \(MCP\)$/, '')) : null; };
+    const jump = sections.length < 3 ? null : h('nav', { class: 'jump no-print', 'aria-label': 'Settings sections' }, groups.map(([label, list]) => [label ? h('span', { class: 'jump-group' }, label) : null, list.map(jumpLink)]));
+    const view = h('div', {}, pageHead({ title: 'Settings', purpose: fieldRole() ? 'Your account and this device.' : 'Your account, your company, your team and billing.', help: PAGE_HELP.settings }), jump,
+      groups.map(([label, list], g) => h('div', { class: 'set-block stack', role: label ? 'group' : null, 'aria-labelledby': label ? `sg-${g}` : null },
+        label ? h('p', { class: 'set-group', id: `sg-${g}` }, label) : null, list)));
+    const want = query.get('section');
+    view.afterRender = () => {          // after render()'s own scroll to the top and focus on the page
+      const sec = want && byKey[want];
+      const t = sec && sec.querySelector('h2');
+      if (!t) return;
+      t.setAttribute('tabindex', '-1');
+      t.scrollIntoView({ block: 'start' });
+      t.focus({ preventScroll: true });
+    };
+    return view;
   };
+
+  // ======================================================================== command palette
+  // (Search TradeComply, spec 4. Built with the palette work; until then #search-open stays hidden. Its
+  // <dialog id="palette"> is made on first open and placed after #ask-panel, outside .app: a closed <dialog> already
+  // in the page would be the one an existing test waits on to be removed after the key-access dialog closes.)
+
+  // ======================================================================== Quick help (built in)
+  // (The built-in Help tab, spec 5.7: no html:, no innerHTML. Built with the Help panel work.)
+
+  // ======================================================================== more page
+  // Phones: everything that isn't in the bottom bar, by group, with whose account is open (a shared tablet).
+  routes.more = async () => {
+    const field = fieldRole();
+    const row = (href, ic, label, detail, onclick) => h('li', {}, h(onclick ? 'button' : 'a', onclick ? { type: 'button', class: 'list-row', onclick } : { class: 'list-row', href },
+      icon(ic), h('span', { class: 'lr-text' }, h('span', { class: 'lr-title' }, label), detail ? h('span', { class: 'lr-meta' }, detail) : null), h('span', {}), icon('chevron-right', 'icon lr-chev')));
+    const setupDone = (((state.me.tenant.settings || {}).onboarding || {}).done || []).length >= 3;
+    const helpReady = !$('#ask-open').hidden;
+    const searchReady = !$('#search-open').hidden;
+    const groups = [
+      ['Work', [field ? row('#/subs', 'subs', 'Subcontractors', 'Who is on your jobs and whether their license is OK')
+        : row('#/field', 'log', 'Field log', 'Toolbox talks, inspections and incident reports')]],
+      ['Checks', [row('#/professionals', 'find', 'Find a professional', 'Official lookups for engineers, attorneys, CASp, HERS raters and more')]],
+      ['Paperwork', [row('#/documents', 'docs', 'Documents', 'Saved results, notes and safety programs')]],
+      ['Help', [helpReady ? row(null, 'claude', 'Ask TradeComply', 'Questions in plain words, answered by Claude (Anthropic)', () => openHelp()) : null,
+        searchReady ? row(null, 'search', 'Search', 'Find any check, rule, project or sub', () => $('#search-open').click()) : null,
+        !field && !setupDone ? row('#/welcome', 'checklist', 'Guided setup', 'Your license, sub list, first project, safety programs') : null]],
+      ['Set up', [row('#/integrations', 'plug', 'Integrations', 'Calendar reminders, text alerts and other apps'),
+        row('#/settings', 'settings', 'Settings', field ? 'Your account' : 'Company, team, billing and your account'),
+        row('#/settings?section=display', 'auto', 'Display', 'Light, dark or match this device')]],
+    ].map(([g, rows]) => [g, rows.filter(Boolean)]).filter(([, rows]) => rows.length);
+    const u = state.me.user;
+    return h('div', {}, pageHead({ title: 'More', help: PAGE_HELP.more }),
+      groups.map(([g, rows], k) => h('section', { class: 'more-group', 'aria-labelledby': `mg-${k}` }, h('h2', { id: `mg-${k}` }, g), h('div', { class: 'card' }, h('ul', { class: 'list' }, rows)))),
+      h('p', { class: 'small muted signed-in' }, `Signed in as ${u.name || u.email} · ${state.me.tenant.company_name}`),
+      h('button', { type: 'button', class: 'btn secondary block', onclick: () => logOut() }, icon('logout'), 'Log out'));
+  };
+
+  // ======================================================================== rule page
+  // (#/rule/<id>, spec 1.11: GET /api/rules/{id}. Built with the search and Quick help work.)
 
   // ======================================================================== Ask TradeComply (the AI helper)
   // The Ask button in the top bar opens a sheet beside the page (full screen on phones) for questions in plain words.
@@ -3775,6 +4448,7 @@
     if (!btn) return;
     const who = state.me && state.me.user && state.me.user.id ? `${state.me.tenant.id}|${state.me.user.id}` : null;
     if (who !== ask.who) {          // someone else signed in on this device: nothing of the last person's stays
+      if (ask.who) resetUserState();
       closeAsk(false);
       ask.who = who; ask.conv = null; ask.chats = null;
       if (ask.parts) { ask.parts.ta.value = ''; fill(ask.parts.status); askDraw(); }
@@ -3977,7 +4651,8 @@
     e.preventDefault();
     closeAsk();
   });
-  try { window.matchMedia('(max-width: 899px)').addEventListener('change', askModal); } catch (e) { /* old browser */ }
+  try { window.matchMedia('(max-width: 899px)').addEventListener('change', () => { askModal(); syncNav(); }); } catch (e) { /* old browser */ }
+  accountUi = accountMenu();
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }

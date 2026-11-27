@@ -12,11 +12,16 @@
    v7: Ask TradeComply, the in-app AI helper. /api/assistant/* is network only: never cached, never answered from an
    old copy or with the offline JSON.
    v8: final pre-launch fixes (skip link, sign-in messages from a cookie, the API cache cleared when the server ends
-   a session, field-role wording, phone stepper). */
-const SHELL_CACHE = 'tc-shell-v8';
+   a session, field-role wording, phone stepper).
+   v9: ease of use (Today, Checks, grouped navigation with More, the Lucide icon set, dark mode and Display settings).
+   /api/suggest/vocab (the same for everyone, no rule text, no company data) is cached so field suggestions work
+   offline; /api/dashboard stays network only on purpose: an old copy would show wrong "days left". Search, suggest
+   and Quick help are POSTs, which this worker never handles. */
+const SHELL_CACHE = 'tc-shell-v9';
 const API_CACHE = 'tc-api-v1';
-const SHELL = ['/', '/static/v8/app.js', '/static/v8/styles.css', '/manifest.webmanifest', '/icon.svg'];
-const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog', '/api/professionals/types'];
+const SHELL = ['/', '/static/v9/app.js', '/static/v9/styles.css', '/manifest.webmanifest', '/icon.svg'];
+const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog', '/api/professionals/types',
+  '/api/suggest/vocab'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
