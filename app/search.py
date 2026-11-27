@@ -478,17 +478,29 @@ def _city_items() -> list[dict]:
     return out
 
 
+def _trade_words() -> dict[str, list[str]]:
+    """Class code -> what contractors call the trade, from the vocabulary groups that expand to that class
+    ("roofer", "re-roof" and "shingles" for C-39)."""
+    out: dict[str, list[str]] = {}
+    for g in engine.vocab()["groups"]:
+        for code in re.findall(r"\(([ABC](?:-\d+)?)\)", g["concept"]):       # "roofing (C-39)"
+            out.setdefault(code, []).extend(f["form"] if isinstance(f, dict) else f for f in g["forms"])
+    return out
+
+
 def _class_items(held: bool) -> list[dict]:
     from tradecomply import licensing
+    words = _trade_words()
     out = []
     for code, name, rid, cite in engine.BASE_CLASSES:
-        out.append(engine.option(code, f"{code} {name}", cite, aliases=[code.replace("-", ""), name.lower()],
-                                 rule_id=rid))
+        out.append(engine.option(code, f"{code} {name}", cite,
+                                 aliases=[code.replace("-", ""), name.lower(), *words.get(code, [])], rule_id=rid))
     for code, e in licensing.class_table().items():
         cite = core.rule(e.rule_id).citation_text or "16 CCR 832"
         num = code.split("-")[1]
         out.append(engine.option(code, f"{code} {e.name}", cite,
-                                 aliases=[f"c{num}", f"C {num}", e.name.lower(), *e.keywords], rule_id=e.rule_id))
+                                 aliases=[f"c{num}", f"C {num}", e.name.lower(), *e.keywords, *words.get(code, [])],
+                                 rule_id=e.rule_id))
     for it in engine.cslb_d_subcategories()["items"]:
         still = engine.d_still_issued(it)
         if not still and not held:
@@ -694,7 +706,6 @@ APP_FIELDS = {"project.city": {"source": "city_tenant", "strict": False},
               "project.county": {"source": "county", "strict": True},
               "project.address": {"source": "project_address"}, "project.owner_name": {"source": "owner_name"},
               "project.lender_name": {"source": "lender_name"}, "sub.name": {"source": "sub"},
-              "sub.license_number": {"source": "sub_license"},
               "sub.scope": {"source": "scope_phrase"},
               "sub.required_class": {"source": "class_needed", "strict": False},
               "field.topic": {"source": "field_topic"}, "field.attendee": {"source": "crew_name"},

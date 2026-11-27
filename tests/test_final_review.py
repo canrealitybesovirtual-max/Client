@@ -422,6 +422,10 @@ WRITE_ROUTES = {
     "PATCH /api/keys/{key_id}": (LOGGED, "api_key.update"),
     "DELETE /api/keys/{key_id}": (LOGGED, "api_key.revoke"),
     "POST /api/tools/{name}": "logged under the tool's own name",
+    "POST /api/help": "not logged: Quick help stores nothing (docs/quick-help.md); a POST only to keep the question "
+                      "out of URLs",
+    "POST /api/search": "not logged: reads only; a POST only to keep typed text out of URLs",
+    "POST /api/suggest": "not logged: reads only; a POST only to keep typed text out of URLs",
     "POST /api/projects": "not logged: records keep their own created time; deleting is logged",
     "PATCH /api/projects/{project_id}": "not logged: records keep their updated time; deleting is logged",
     "DELETE /api/projects/{project_id}": (LOGGED, "project.delete"),

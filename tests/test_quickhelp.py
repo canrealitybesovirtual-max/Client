@@ -377,6 +377,7 @@ def test_not_entitled_keeps_actions_and_drops_rule_text(owner, app):
         assert not [b for b in a["blocks"] if b["type"] in ("rule", "requirement")]
         assert "SUBSCRIBE" in [b.get("code") for b in a["blocks"]]
         assert [b for b in a["blocks"] if b["type"] == "action"]
+        assert "rules" not in a["lead"] and "Here is when the law requires" not in a["lead"]
 
 
 def test_go_actions_follow_the_role(owner):

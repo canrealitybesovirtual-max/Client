@@ -121,6 +121,10 @@ def test_counties_cities_and_classes(owner):
     c39 = next(i for i in s["class_needed"]["items"] if i["value"] == "C-39")
     assert c39["rule_id"] == "class-c39-roofing-scope" and "roofer" not in c39["label"]
     assert "reroof" in c39["aliases"] and c39["detail"] == core.rule("class-c39-roofing-scope").citation_text
+    assert "roofer" in c39["aliases"]                                # what contractors call the trade (vocabulary)
+    items = [engine.option(i["value"], i["label"], aliases=i.get("aliases", [])) for i in s["class_needed"]["items"]]
+    assert [o["value"] for o in engine.match_options(items, "roofer", 1)] == ["C-39"]
+    assert [o["value"] for o in engine.match_options(items, "c10", 1)] == ["C-10"]
     for sid in ("class_needed", "class_held", "craft", "hazard", "city_tenant"):
         assert s[sid]["strict"] is False, sid
     for sid in ("county", "city_covered", "equipment", "qualifying_event"):

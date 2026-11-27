@@ -1255,9 +1255,17 @@ def finish(out: dict, ctx: Ctx, too_long: bool) -> dict:
     """Entitlement trimming (spec 5.4 step 9), the counts notes and the envelope."""
     blocks = out["blocks"]
     if not ctx.entitled:
+        dropped = {b["type"] for b in blocks if b["type"] in ("rule", "requirement")}
         blocks = [b for b in blocks if b["type"] not in ("rule", "requirement")]
         out["more_rules"] = []
         blocks.append(note("SUBSCRIBE"))
+        if "requirement" in dropped:      # the lead must not promise the requirement it no longer shows
+            tid = next(b["type_id"] for b in blocks if b.get("kind") == "find_professional")
+            a_name, names, licensed = _pro_name(tid)
+            out["lead"] = fill("LEAD_PRO_FIND" if licensed else "LEAD_PRO_FIND_OTHER", LEADS, a_name=a_name,
+                               names=names)
+        if out["lead"] in (LEADS["LEAD_TOOL"], LEADS["LEAD_RULES"], LEADS["LEAD_RULES_ONLY"]):
+            out["lead"] = ""              # "these rules..." with no rule shown: the SUBSCRIBE note says why
     unverified = sum(1 for b in blocks if b["type"] == "rule" and not b["verified"])
     if unverified:
         blocks.append(note("UNVERIFIED_SOME", n=unverified))
