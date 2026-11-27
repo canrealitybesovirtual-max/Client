@@ -23,11 +23,12 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationEr
 
 from tradecomply import integrations_guide, logic, professionals
 
-from . import dashboard
+from . import auth_links, dashboard
 from . import mcp_governance as governance
 from .auth import (EMAIL_RE, Principal, anyone, get_principal, hash_password, license_digits, new_api_key, office_up,
                    owner_only, platform_of)
 from .billing import PRICE_USD_MONTH, base_url, entitlement, require_entitled
+from .mailer import valid_recipient
 from .store import FIELD_LOG_KINDS, IntegrityError
 
 logger = logging.getLogger("tradecomply.api")
@@ -139,7 +140,7 @@ class SyncIn(BaseModel):
     logs: list[dict] = Field(max_length=500)
 
 
-RESERVED_SETTINGS = {"ics_gen"}        # server-owned keys inside tenant settings
+RESERVED_SETTINGS = {"ics_gen", "assistant_off"}     # server-owned or owner-only keys inside tenant settings
 
 
 class TenantIn(BaseModel):
@@ -248,19 +249,26 @@ async def config(request: Request):
             "mcp_public_demo": s.mcp_public_demo,
             "stripe_enabled": s.stripe_enabled, "local_mode": s.local_mode, "price_usd_month": PRICE_USD_MONTH,
             "trial_days": s.trial_days, "claimant_roles": dashboard.ROLE_LABELS,
-            "support_contact": s.support_contact}       # SUPPORT_EMAIL / SUPPORT_URL of whoever runs this server
+            "support_contact": s.support_contact,       # SUPPORT_EMAIL / SUPPORT_URL of whoever runs this server
+            "email_links": auth_links.enabled(_p(request))}     # invites, resets and confirmations by email
 
 
 @router.get("/me")
 def me(request: Request, p: Principal = Depends(anyone)):
+    from . import assistant         # imports this module (execute_tool)
     store = _store(request)
     tenant = store.get_tenant(p.tenant_id)
     user = store.user_by_id(p.user_id) if p.user_id else None
     return {"user": {"id": user["id"], "email": user["email"], "name": user["name"], "role": user["role"],
-                     "must_change_password": bool(user["must_change_password"])} if user else
-            {"id": None, "email": None, "name": p.label, "role": p.role, "must_change_password": False},
+                     "must_change_password": bool(user["must_change_password"]),
+                     "email_confirmed": bool(user["email_confirmed_at"]),
+                     "confirm_link_sent": not user["email_confirmed_at"] and store.confirm_link_sent(p.tenant_id,
+                                                                                                     user["id"])}
+            if user else
+            {"id": None, "email": None, "name": p.label, "role": p.role, "must_change_password": False,
+             "email_confirmed": False, "confirm_link_sent": False},
             "via": p.via, "tenant": _tenant_public(tenant), "entitlement": entitlement(tenant),
-            "mcp_url": _mcp_url(request)}
+            "mcp_url": _mcp_url(request), "assistant": assistant.status(_p(request), p, tenant)}
 
 
 @router.patch("/tenant")
@@ -290,22 +298,58 @@ def list_users(request: Request, p: Principal = Depends(office_up)):
 
 @router.post("/users")
 async def invite_user(body: UserIn, request: Request, p: Principal = Depends(owner_only)):
+    """Add someone to the company: they get an invite link to set their own password (app/auth_links.py), emailed
+    when sending is set up and always shown to the owner to copy. Nobody, the owner included, ever knows it."""
     import secrets
     store = _store(request)
     email = body.email.strip().lower()
-    if not EMAIL_RE.match(email):
+    if not EMAIL_RE.match(email) or not valid_recipient(email):
         raise HTTPException(422, "Enter a valid email address")
     if await anyio.to_thread.run_sync(store.user_by_email, email):
         raise HTTPException(409, "That email already has an account")
-    temp = secrets.token_urlsafe(9)
-    pw_hash = await anyio.to_thread.run_sync(hash_password, temp)
+    # a real hash of a secret nobody knows: a pending invitee's login takes the same time as anyone's, and fails
+    pw_hash = await anyio.to_thread.run_sync(hash_password, secrets.token_urlsafe(32))
+    name = " ".join((body.name or "").split()) or None
     try:
         u = await anyio.to_thread.run_sync(lambda: store.create_user(p.tenant_id, email, pw_hash, body.role,
-                                                                     name=body.name, must_change_password=True))
+                                                                     name=name))
     except IntegrityError:      # created a moment ago, after the check above (unique email index)
         raise HTTPException(409, "That email already has an account")
-    return {"id": u["id"], "email": u["email"], "role": u["role"], "temporary_password": temp,
-            "message": "Share this temporary password with them privately. They'll be asked to change it."}
+    return await auth_links.invite(request, p, u, "user.invite")
+
+
+async def _member(request: Request, p: Principal, user_id: int) -> dict:
+    u = await anyio.to_thread.run_sync(_store(request).user_by_id, user_id)
+    if not u or u["tenant_id"] != p.tenant_id:
+        _not_found("User")
+    return u
+
+
+@router.post("/users/{user_id}/invite")
+async def resend_invite(user_id: int, request: Request, p: Principal = Depends(owner_only)):
+    """A new invite link for someone who hasn't joined yet (the old links stop working). Also for people added
+    before invite links, who got a temporary password: it stops working too."""
+    import secrets
+    u = await _member(request, p, user_id)
+    if u["last_login"]:
+        raise HTTPException(409, "They already joined. Make a reset link instead.")
+    if u["must_change_password"]:
+        pw_hash = await anyio.to_thread.run_sync(hash_password, secrets.token_urlsafe(32))
+        u = await anyio.to_thread.run_sync(lambda: _store(request).update_user(
+            p.tenant_id, user_id, pw_hash=pw_hash, must_change_password=0))
+    return await auth_links.invite(request, p, u, "user.invite_resent")
+
+
+@router.post("/users/{user_id}/reset-link")
+async def make_reset_link(user_id: int, request: Request, p: Principal = Depends(owner_only)):
+    """A one-time password reset link for a team member, for the owner to send them (text or in person). Nothing
+    changes on their account until they use it."""
+    if user_id == p.user_id:
+        raise HTTPException(422, "Change your own password in Your account.")
+    u = await _member(request, p, user_id)
+    if not u["last_login"]:
+        raise HTTPException(409, "They haven't joined yet. Send a new invite link instead.")
+    return await auth_links.owner_reset_link(request, p, u)
 
 
 @router.patch("/users/{user_id}")
@@ -586,6 +630,27 @@ async def run_tool(platform, name: str, args: dict) -> dict:
 
 @router.post("/tools/{name}")
 async def call_tool(name: str, request: Request, p: Principal = Depends(anyone)):
+    await authorize_tool(request, p, name)
+    try:
+        args = await request.json() if (await request.body()) else {}
+    except ValueError:
+        raise HTTPException(422, "Body must be a JSON object of tool arguments")
+    if isinstance(args, dict) and isinstance(args.get("arguments"), dict) and len(args) == 1:
+        args = args["arguments"]
+    return await run_authorized_tool(request, p, name, args, source="api")
+
+
+async def execute_tool(request: Request, p: Principal, name: str, args, source: str) -> dict:
+    """Everything POST /api/tools/{name} does for one call, for callers inside the app (Ask TradeComply,
+    app/assistant.py): the same checks, guards, activity-log row, errors and handoffs. Raises HTTPException as the
+    route does."""
+    await authorize_tool(request, p, name)
+    return await run_authorized_tool(request, p, name, args, source=source)
+
+
+async def authorize_tool(request: Request, p: Principal, name: str) -> None:
+    """May this caller run this tool now: subscription (402), the tool exists (404), an API key's rate limits (429)
+    and tool scope (403)."""
     platform = _p(request)
     await anyio.to_thread.run_sync(require_entitled, platform, p)
     names = {s["name"] for s in await tool_specs(platform)}
@@ -607,12 +672,12 @@ async def call_tool(name: str, request: Request, p: Principal = Depends(anyone))
     if p.via == "key" and not governance.scope_allows(p.scopes, name, await governance.tool_index(platform)):
         raise HTTPException(403, f"This API key is not allowed to use the tool {name!r}. An owner or office user "
                                  "can change the key's tools in Settings > AI assistant (MCP) > API keys.")
-    try:
-        args = await request.json() if (await request.body()) else {}
-    except ValueError:
-        raise HTTPException(422, "Body must be a JSON object of tool arguments")
-    if isinstance(args, dict) and isinstance(args.get("arguments"), dict) and len(args) == 1:
-        args = args["arguments"]
+
+
+async def run_authorized_tool(request: Request, p: Principal, name: str, args, source: str) -> dict:
+    """Run a tool authorize_tool allowed, with the caller's guards; write the activity-log row (`source`: "api",
+    "assistant"); a tool error is a 422 with a plain message; handoffs are added to a result."""
+    platform = _p(request)
     if not isinstance(args, dict):
         raise HTTPException(422, "Body must be a JSON object of tool arguments")
     # mcp_client_config without a URL points at the server the user is signed in to, never a built-in address
@@ -627,7 +692,7 @@ async def call_tool(name: str, request: Request, p: Principal = Depends(anyone))
     sc = out["structured"] if isinstance(out["structured"], dict) else {}
     verified = sc.get("verified") if isinstance(sc.get("verified"), bool) else None
     await anyio.to_thread.run_sync(lambda: platform.store.audit(p.tenant_id, p.label, name, _summarize(args), verified,
-                                                                ok=not out["is_error"], source="api"))
+                                                                ok=not out["is_error"], source=source))
     if out["is_error"]:
         raise HTTPException(422, friendly_tool_error(out["text"]))
     attach_handoffs(out, name, args)

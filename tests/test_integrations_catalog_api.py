@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from app import connectors as registry
 from app.connectors import Connector, TestResult, validate_connector_class
 from tradecomply import integrations_guide
-from tests.support import backend, login, make_app, signup  # noqa: F401
+from tests.support import backend, join, make_app, signup  # noqa: F401
 
 
 @pytest.fixture
@@ -58,9 +58,8 @@ def test_catalog_is_gzipped_and_holds_no_secrets(owner):
 
 
 def test_every_role_and_api_keys_can_read_the_catalog(app, owner):
-    r = owner.post("/api/users", json={"email": "field@acme.test", "role": "field"})
     field = TestClient(app)
-    login(field, "field@acme.test", r.json()["temporary_password"])
+    join(field, owner, "field@acme.test", "field")
     assert field.get("/api/integrations/catalog").status_code == 200
     assert field.get("/api/integrations/catalog/mcp-config?ids=slack").status_code == 200
     key = owner.post("/api/keys", json={"name": "Workato"}).json()["key"]

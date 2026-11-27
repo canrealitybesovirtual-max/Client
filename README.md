@@ -49,9 +49,12 @@ project with lien calendar, Cal/OSHA questionnaire, connect an AI agent), Dashbo
 sub table, calendar download), Projects, Subcontractors (CSV import), Tools (forms generated from each tool's JSON
 schema; results show "Verified against official source on <date>" or "Not yet verified", citations, disclaimer,
 Save as document, Print / PDF), Documents, Field (toolbox talks, inspections, incident reports with on-screen
-signatures; saved to IndexedDB offline and synced via `/api/field_logs/sync`), Settings (company, password, team
-invites, API keys with per-key tool scope, rate limit and expiry, MCP config snippets, calendar feed, activity log,
-the owner's MCP call log with CSV/JSON download, billing). The service worker caches the app
+signatures; saved to IndexedDB offline and synced via `/api/field_logs/sync`), Settings (company, password, email
+confirmation and change, team invite links and owner-made password reset links, the owner's Email status, API keys
+with per-key tool scope, rate limit and expiry, MCP config snippets, calendar feed, activity log, the owner's MCP call
+log with CSV/JSON download, billing). Signed out: log in, sign up, Forgot password, and the pages one-time links open
+(set a new password, join your team, confirm your email). An **Ask** button in the top bar opens Ask TradeComply, the
+AI helper (see below), when the server has it set up. The service worker caches the app
 shell plus `/api/tools`, `/api/me`, `/api/config` and `/api/projects` (network first) so the Field screen opens offline.
 
 Tool descriptions and parameter docs are written for AI agents as well as people, so the web app rewrites them for
@@ -72,11 +75,13 @@ can't create, change or revoke keys.
 | Area | Endpoints |
 |---|---|
 | Auth | `POST /api/auth/signup` `login` `logout` `password`; `GET /api/auth/local?token=` (local mode one-time link) |
-| Account | `GET /api/me`, `GET /api/config`, `PATCH /api/tenant`, `GET/POST /api/users`, `PATCH/DELETE /api/users/{id}`, `GET/POST /api/keys`, `PATCH /api/keys/{id}` (name, tool scope, rate limit, expiry), `DELETE /api/keys/{id}` (revoke), `GET /api/audit`, `GET /api/audit/{id}` |
+| One-time links | `POST /api/auth/forgot` (`{email}`: always the same answer), `POST /api/auth/link` (`{token, purpose}`: what a link is for, without using it), `POST /api/auth/reset` (`{token, new_password}`), `POST /api/auth/invite/accept` (`{token, password, name?}`: joins and signs in), `POST /api/auth/email/confirm` (`{token}`, signed in as that person), `POST /api/auth/email/resend`, `POST /api/auth/email/change` (`{current_password, new_email}`), `GET /api/auth/email-status` and `POST /api/auth/email-test` (owner). See [Email: invites, password resets and email confirmation](#email-invites-password-resets-and-email-confirmation) |
+| Account | `GET /api/me`, `GET /api/config`, `PATCH /api/tenant`, `GET/POST /api/users` (POST: an invite link), `POST /api/users/{id}/invite` (a new invite link), `POST /api/users/{id}/reset-link` (owner: a password reset link to hand over), `PATCH/DELETE /api/users/{id}` (DELETE also cancels an invite), `GET/POST /api/keys`, `PATCH /api/keys/{id}` (name, tool scope, rate limit, expiry), `DELETE /api/keys/{id}` (revoke), `GET /api/audit`, `GET /api/audit/{id}` |
 | Account data | `GET /api/tenant/export` (owner, signed in: one JSON file with every record of the company, no credentials), `DELETE /api/tenant` (owner, signed in: close the account; body `confirm_company_name`, `password`). See [Company data export and account deletion](#company-data-export-and-account-deletion) |
 | Connected apps (OAuth) | `GET /api/oauth/requests/{id}`, `POST /api/oauth/requests/{id}/approve`, `POST .../deny` (the consent screen, signed in), `GET /api/oauth/connections` (yours; owners see the company's), `DELETE /api/oauth/connections/{id}` (disconnect). Protocol endpoints outside `/api`: `/.well-known/oauth-protected-resource[/mcp]`, `/.well-known/oauth-authorization-server`, `POST /oauth/register`, `GET /oauth/authorize`, `POST /oauth/token`, `POST /oauth/revoke`. See [Add TradeComply to Claude](#add-tradecomply-to-claude-custom-connector) |
 | MCP governance | `GET /api/mcp/audit` (owner: MCP call log, filters, paging), `GET /api/mcp/audit/export?format=csv\|json` (owner), `GET /api/mcp/policy` (access mode, limits, tool categories), `GET /api/mcp/tool-hashes` (SHA-256 of every tool definition, for pinning). See [docs/mcp-security.md](docs/mcp-security.md) |
 | Tools | `GET /api/tools` (name, description, input schema, module), `POST /api/tools/{name}` (JSON body = arguments; runs in-process through `fastmcp.Client(server.mcp)`, writes an audit row) |
+| AI helper | `GET /api/assistant/status`, `GET/POST /api/assistant/conversations`, `GET/DELETE /api/assistant/conversations/{id}`, `POST /api/assistant/conversations/{id}/messages` (`{text, page?}`: the answer when done), `POST /api/assistant/conversations/{id}/stop`, `GET /api/assistant/usage` and `PUT /api/assistant/settings` (owner). Signed-in people only (not API keys). See [Ask TradeComply](#ask-tradecomply-the-ai-helper) |
 | Records | `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/{id}`, `GET /api/projects/{id}/deadlines`; `GET/POST /api/subs`, `GET/PATCH/DELETE /api/subs/{id}`, `GET /api/subs/{id}/check`, `POST /api/subs/import` (CSV: multipart `file`, `text/csv` body or JSON `{"csv": ...}`); `GET/POST /api/documents`, `POST /api/documents/from_result`, `GET/PATCH/DELETE /api/documents/{id}`; `GET/POST /api/field_logs`, `GET/DELETE /api/field_logs/{id}`, `POST /api/field_logs/sync` (idempotent by `client_uuid`) |
 | Compliance view | `GET /api/dashboard`, `GET /api/license/{number}`, `GET /api/calendar.ics` (cookie, API key, or the private feed link from `GET /api/calendar/feed`; rotate with `POST /api/calendar/feed/rotate`) |
 | Billing | `GET /api/billing/status`, `POST /api/billing/checkout`, `POST /api/billing/portal`, `POST /api/billing/webhook` |
@@ -131,7 +136,7 @@ documents, field logs with their signatures, the activity log, the AI assistant 
 webhooks, queued and sent notifications, single sign-on settings and calendar links. It leaves out what only
 protects the account on this server: password and API key hashes, session counters, and every stored credential
 (integration sign-ins and keys, webhook addresses and signing secrets, the SSO client secret, private calendar
-links). The file lists what it left out and why. Which columns may be exported is a fixed list per table in
+links, the hashes of open invite, reset and confirmation links). The file lists what it left out and why. Which columns may be exported is a fixed list per table in
 `app/store.py` (`TENANT_EXPORT`), so a secret column added later is never exported by accident;
 `tests/test_account.py` fails until every new column is listed as exported or left out. Five downloads per company
 per 10 minutes; each one is written to the activity log.
@@ -182,6 +187,71 @@ law text was read for this feature (leginfo.legislature.ca.gov answered with a b
 bypassed; oag.ca.gov and cppa.ca.gov could not be reached). Nothing here says what the CCPA/CPRA requires of the
 operator or of a customer; ask an attorney.
 
+### Email: invites, password resets and email confirmation
+
+People join a company through an **invite link** and set their own password; nobody, the owner included, ever sees
+it. When the server can send email, the link is emailed; the owner always gets a copy to send by text as well, so
+invites work with no email set up at all (Settings > Team: Invite, New invite link, Cancel invite). For someone who
+already joined, an owner can make a **password reset link** to hand over (Settings > Team > Reset link). With email
+set up, people can also use **Forgot password?** on the login page, and confirm their own address (a small banner on
+the dashboard, which "Not now" hides for good; or Settings > Your account, which also changes the sign-in email).
+
+| Link | Lasts | Made by | Notes |
+|---|---|---|---|
+| Reset (emailed) | 30 minutes | Forgot password | Only to a **confirmed** address. Signs the person out everywhere, disconnects their connected apps, ends their other links, clears a login lockout, emails a "your password was changed" notice; it doesn't sign anyone in |
+| Reset (owner) | 24 hours | Settings > Team | Shown to the owner to send themselves; nothing on the account changes until it is used |
+| Invite | 7 days | Settings > Team | Emailed (when set up) and shown to the owner. Using one ends the other. The emailed one also confirms the address |
+| Confirm email | 24 hours | Sign-up, Settings | Must be opened while signed in as that person (the login shows in its place). A new address replaces the old one only when confirmed; the old address gets a notice first |
+
+Each link works once, from one POST after the person acts (opening it changes nothing, so mail scanners that open
+links can't use it up), and its token sits after the `#`, which never reaches a server log. A password change, a
+reset, an email change or the person being removed ends every link they have, and removing or demoting an owner ends
+the invite and reset links that owner made. Companies that require SSO get no
+password links except for owners (the same break-glass rule as login); Forgot password emails them a pointer to SSO.
+There is **no sign-in link by email** ("magic link"): NIST SP 800-63B-4 section 3.1.3.1 says email SHALL NOT be used
+for out-of-band authentication. People added before invite links keep their temporary password and are still asked to
+change it; an owner can send them an invite link instead, which turns the temporary password off.
+
+**Setting up email** (whoever runs the server; Settings > Email shows owners whether it is set up and which variable
+names are missing, never values):
+
+- `MAIL_FROM`, for example `TradeComply <no-reply@your-company.example>`, and `APP_URL` with the server's **https**
+  address (links are built only from it, never from the request's host; without it nothing is emailed).
+- Then either **Postmark** (`POSTMARK_SERVER_TOKEN`; HTTPS, so it also works on Render's free plan, which blocks the
+  SMTP ports 25, 465 and 587; Render blocks port 25 on every plan). `MAIL_FROM` must be a confirmed Sender Signature
+  or domain in Postmark. TradeComply turns link and open tracking off on every message, so links are never rewritten
+  through Postmark.
+- Or **SMTP** (`SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY=starttls` (port 587, the default) or `ssl` (465),
+  `SMTP_USERNAME`, `SMTP_PASSWORD`). TLS is required and the certificate is checked; a server without STARTTLS gets
+  nothing. render.yaml's `starter` plan can use SMTP; a free-plan Render service needs Postmark.
+- Settings > Email > Send me a test email checks it.
+
+Without email everything still works through copied links; "Forgot password?" then tells people to ask their
+owner. Design notes and sources: [docs/email-links.md](docs/email-links.md).
+
+### Ask TradeComply (the AI helper)
+
+With `ANTHROPIC_API_KEY` set, an **Ask** button in the top bar opens a panel where anyone signed in asks questions in
+plain words: beside the page on wide screens (the page narrows), full screen on phones (a modal dialog that the Back
+button and Esc close). Claude (Anthropic's Messages API, `claude-opus-5-5` by default) answers and
+runs TradeComply's own read-only checks through the same path as `POST /api/tools/{name}`, as that person: the same
+subscription check, activity-log rows (Via "Ask TradeComply") and licensed-professional handoffs. Each answer shows
+"Checked: ..." with the checks it ran. The panel says on every screen: "Answers come from Claude by Anthropic and can
+be wrong. What you type and tool results are sent to Anthropic." It helps licensed people and never replaces them.
+
+- Sent to Anthropic: the (non-secret) system prompt, the tool list, the chat so far with today's date and the open
+  page's name, and each check's inputs and result. Checks read no company records.
+- Stored: each person's chats (private to them; deleted after 90 days without use, with the person, or in the company
+  deletion), and token usage per question. The company export has the questions, answers and usage, not the model's
+  raw messages.
+- Limits: 30 questions per person per day, 5M tokens per company per month, 50 chats per person, 40 questions per
+  chat, 8 calls and 16 checks per question, 120 s per answer. Owners see usage and turn it off in Settings > Ask
+  TradeComply.
+- Refusal fallback is on (`fallbacks: "default"`); a refused question gets a plain notice. Never set
+  `ANTHROPIC_LOG=debug` in production (the SDK would log what people type).
+
+Data flow, every setting and the design decisions with their sources: [docs/ai-helper.md](docs/ai-helper.md).
+
 ### Environment variables
 
 | Variable | Default | Meaning |
@@ -198,6 +268,15 @@ operator or of a customer; ask an attorney.
 | `SUPPORT_EMAIL`, `SUPPORT_URL` | unset | The operator's support contact, shown to customers where they need help from whoever runs the server (billing not set up, an integration not turned on) and returned as `support_contact` by `GET /api/config`. Unset: the app says "ask whoever runs this TradeComply server". Use a business address; malformed values are ignored with a warning |
 | `INTEGRATIONS_KEY` | derived from `SECRET_KEY` (HKDF) | Base64 of 32 random bytes: the AES-256-GCM key for integration secrets at rest (OAuth tokens, API keys, webhook URLs). render.yaml generates one. Older keys go in `INTEGRATIONS_KEY_PREVIOUS` (comma-separated) during a rotation; then run `python -m app.crypto rotate`. See [docs/integrations-dev.md](docs/integrations-dev.md) |
 | `EVENTS_WORKER` | on | `0` turns off the background thread that delivers integration events (webhooks, connectors) |
+| `MAIL_FROM` | unset (no email) | Sender of invites, reset links and confirmations, e.g. `TradeComply <no-reply@your-company.example>`. With a backend below and an https `APP_URL`, email links are on. See [Email](#email-invites-password-resets-and-email-confirmation) |
+| `MAIL_REPLY_TO` | unset | Optional Reply-To address |
+| `POSTMARK_SERVER_TOKEN`, `POSTMARK_MESSAGE_STREAM` | unset, `outbound` | Send through Postmark's HTTPS API (works on Render's free plan). Wins over SMTP when both are set |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USERNAME`, `SMTP_PASSWORD` | unset, 587 / 465, `starttls` | Send by SMTP with required TLS (`starttls` or `ssl`; anything else turns email off). Render's free plan blocks SMTP ports |
+| `MAIL_BACKEND=outbox`, `MAIL_OUTBOX_FILE` | unset | Development and tests only (ignored on Render): keep messages in memory and, with `MAIL_OUTBOX_FILE`, append them to that file as JSON lines |
+| `ANTHROPIC_API_KEY` | unset (no AI helper) | The operator's Anthropic API key for Ask TradeComply. Unset: the Ask button is hidden and owners see "AI helper is not set up". Never per company, never logged or sent to a browser |
+| `ASSISTANT_MODEL`, `ASSISTANT_EFFORT` | `claude-opus-5-5`, `medium` | The model and effort (`low`, `medium`, `high`) for Ask TradeComply |
+| `ASSISTANT_DAILY_MESSAGES`, `ASSISTANT_MONTHLY_TOKENS` | 30, 5000000 | Questions per person per California day; tokens per company per month (input + cache writes + output + cache reads / 10) |
+| `ASSISTANT_MAX_CONVERSATIONS`, `ASSISTANT_MAX_TURNS`, `ASSISTANT_RETENTION_DAYS`, `ASSISTANT_TURN_TIMEOUT_S` | 50, 40, 90, 120 | Chats per person, questions per chat, days an unused chat is kept, seconds per answer. See [docs/ai-helper.md](docs/ai-helper.md) |
 | Connector app credentials (e.g. `PROCORE_CLIENT_ID`) | unset | Each connector lists its own `required_env`; it shows as "not set up on this server" until they are set |
 | `TRUSTED_PROXY_HOPS` | `0` | How many proxies in front of the app each append the address they saw to `X-Forwarded-For`. `0`: per-IP limits use the first entry, which a client can set. `N`: the N-th entry from the right, which it can't. How Render fills the header is not confirmed, so check (for example log the header of a request you send with a made-up `X-Forwarded-For`) before setting it: a wrong value makes many people share one address's limits |
 | `COOKIE_SECURE` | auto | `1` forces the Secure cookie flag (it is set automatically when the request is https / `X-Forwarded-Proto: https`) |
@@ -298,7 +377,15 @@ newest 50,000 in each log. Connected apps (OAuth for Claude and other MCP client
 60-second codes, access tokens for 1 hour, rotating refresh tokens with reuse detection, only SHA-256 hashes stored,
 tokens bound to `<APP_URL>/mcp`, the consent screen shows the address the app returns to (plain-ASCII hosts only, so
 a look-alike domain can't pass for another), and approving needs the person's own session (never an API key) in the
-browser that started the sign-in. MCP governance (scopes, limits, Origin check, OAuth, OWASP MCP Top 10
+browser that started the sign-in. One-time links (invites, password resets, email confirmation): 256-bit tokens in
+the URL fragment, stored as SHA-256, single use under a row lock, bound to the person's email and session counter,
+used only by a POST after the person acts, built only from the https `APP_URL`; Forgot password answers the same way
+for every address and does its lookup after the response; messages are built with Python's `EmailMessage` (no header
+injection, one recipient), SMTP needs verified TLS, and no token, link, body or key is logged. Ask TradeComply: people
+with a session only (API keys 403, OAuth tokens never on `/api`), chats readable only by their person, checks run as
+that person through the same path as the Tools page and only read-only ones, answers rendered by the same escaping
+markdown renderer, the Anthropic key passed explicitly and never logged, and `/api/assistant/*` never cached by the
+service worker. MCP governance (scopes, limits, Origin check, OAuth, OWASP MCP Top 10
 self-assessment): [docs/mcp-security.md](docs/mcp-security.md).
 
 ### Known limits
@@ -308,12 +395,20 @@ self-assessment): [docs/mcp-security.md](docs/mcp-security.md).
   threads (up to `DATABASE_POOL_MAX` connections at once), but each is still a network round trip, so keep Postgres
   in or near the service's region.
 - Per-IP limits use the first `X-Forwarded-For` entry, which a client can spoof, unless `TRUSTED_PROXY_HOPS` is set;
-  per-email and global limits back them up. (OAuth's per-IP limits key on the whole chain, so a caller can't aim
-  them at someone else's address, such as Claude's; it can still bypass them, and then one caller can use up the
+  per-email and global limits back them up. (OAuth's per-IP limits and the email-link and forgot-password limits key
+  on the whole chain, so a caller can't aim them at someone else's address, such as Claude's or an office's; it can still bypass them, and then one caller can use up the
   global cap of 2,000 app registrations an hour, which blocks new connections until it resets.) Sessions are stateless signed cookies (revoked on logout); API keys expire only when given an expiry date.
-- Team invites set "must change password", but the server doesn't force the change before other use.
-- No email: team invites show a temporary password to share; there is no password-reset email yet (an owner can
-  remove and re-invite a user).
+- People added before invite links have "must change password", but the server doesn't force the change before
+  other use (an owner can send them an invite link instead).
+- Any company on a trial can make this server email an invite to any address, with a company name it chose. Invite
+  emails are capped at 50 per company per hour, names are cut to 80 characters, bodies are plain text and links only
+  ever point at `APP_URL`; watch the mail provider's bounce and complaint reports.
+- Passwords need 10 characters, as before. NIST SP 800-63B-4 asks 15 for a password used alone; raising it is one
+  constant (`MIN_PASSWORD`) and the web app's hints.
+- No sign-in link by email (see Email above). Without email set up, someone who forgot their password needs an
+  owner's reset link, and a company's only owner needs whoever runs the server.
+- Ask TradeComply's "one answer at a time" and Stop are in memory too (one instance). Its answers come from an AI
+  model and can be wrong; token budgets are estimates until real usage is seen (docs/ai-helper.md).
 - Toolbox-talk cadence counts Monday-Friday and ignores holidays. Lien items for public projects are not computed
   (stop payment notices and bond claims have their own rules).
 - The service worker only caches what the user has opened; the Field screen needs one online visit per device.
@@ -347,6 +442,8 @@ Each item: check the source, update the value, set `verified: True` and `checked
   app, service worker, manifest)
 - `app/mcp_governance.py` (MCP access mode, Origin check, per-key tool scopes, the MCP call log, `/api/mcp/*`):
   see [docs/mcp-security.md](docs/mcp-security.md)
+- `app/assistant.py` (Ask TradeComply, the in-app AI helper, `/api/assistant/*`): see [docs/ai-helper.md](docs/ai-helper.md);
+  tests run against `tests/fake_anthropic.py` (the real SDK over a mock transport)
 - `app/integrations_api.py` (`/api/integrations`), `app/connectors/` (one file per connector, auto-discovered),
   `app/events.py` (event bus and delivery worker), `app/webhooks.py` (Slack, Teams, signed generic webhooks),
   `app/safe_http.py` (SSRF-guarded outbound HTTP), `app/crypto.py` (secrets at rest): see

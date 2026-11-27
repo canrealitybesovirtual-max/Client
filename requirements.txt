@@ -8,3 +8,4 @@ python-multipart>=0.0.9
 psycopg[binary]>=3.1
 cryptography>=42
 PyJWT[crypto]>=2.10.1         # 2.10.0: CVE-2024-53861 (iss substring match)
+anthropic>=2.13.0             # Ask TradeComply: beta fallbacks="default", thinking.block_binding, tool search (tested 2.13.0; built on httpx2)

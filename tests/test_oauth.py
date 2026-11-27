@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 from app import mcp_governance as gov
 from app import oauth
 from app.auth import RateLimiter, hash_key
-from tests.support import (CLAUDE_CALLBACK, PW, backend, login, make_app, oauth_connect, pkce,  # noqa: F401
+from tests.support import (CLAUDE_CALLBACK, PW, backend, join, make_app, oauth_connect, pkce,  # noqa: F401
                            signup)
 from tests.test_mcp_governance import INIT, MCP_HEADERS, lic, mcp_rows, mcp_session, sse_json
 
@@ -618,16 +618,14 @@ def test_client_ip_with_trusted_proxy_hops():
 # ---------------------------------------------------------------------------- the /mcp gate
 def test_access_token_follows_the_person(owner, app):
     store = app.state.platform.store
-    office = owner.post("/api/users", json={"email": "office@acme.test", "role": "office"}).json()
     with TestClient(app, base_url=BASE) as o:
-        login(o, "office@acme.test", office["temporary_password"])
+        office = join(o, owner, "office@acme.test", "office")
         t = oauth_connect(o)["tokens"]
         assert tools_call_status(owner, t["access_token"]) == 200
         assert owner.patch(f"/api/users/{office['id']}", json={"role": "field"}).status_code == 200
         assert tools_call_status(owner, t["access_token"]) == 200                    # read live: still allowed
         # a password change disconnects every app of that person
-        r = o.post("/api/auth/password", json={"current_password": office["temporary_password"],
-                                               "new_password": PW + "-new"})
+        r = o.post("/api/auth/password", json={"current_password": PW, "new_password": PW + "-new"})
         assert r.status_code == 200
         assert tools_call_status(owner, t["access_token"]) == 401
         o.headers["x-csrf-token"] = o.cookies.get("tc_csrf")                       # the new session's token
@@ -679,10 +677,9 @@ def test_subscription_audience_and_limits(owner, app, monkeypatch):
 
 # ---------------------------------------------------------------------------- connected apps
 def test_connections_are_per_person_owners_see_the_company_and_companies_are_isolated(owner, app):
-    office = owner.post("/api/users", json={"email": "office@acme.test", "role": "office"}).json()
     mine = oauth_connect(owner)
     with TestClient(app, base_url=BASE) as o, TestClient(app, base_url=BASE) as other:
-        login(o, "office@acme.test", office["temporary_password"])
+        join(o, owner, "office@acme.test", "office")
         theirs = oauth_connect(o, redirect_uri=LOOPBACK_CB)
         signup(other, email="owner@bravo.test", company="Bravo Electric", license_number="654321")
         rows = owner.get("/api/oauth/connections").json()
@@ -829,9 +826,8 @@ def test_every_ended_connection_and_denial_is_in_the_activity_log(owner, app, ca
                                              "client_id": got["client"]["client_id"]}).status_code == 200
     assert reasons() == ["code_reused", "revoked_by_app"]
     # a removed person; a password change
-    office = owner.post("/api/users", json={"email": "o@acme.test", "role": "office"}).json()
     with TestClient(app, base_url=BASE) as o:
-        login(o, "o@acme.test", office["temporary_password"])
+        office = join(o, owner, "o@acme.test", "office")
         oauth_connect(o)
     assert owner.delete(f"/api/users/{office['id']}").status_code == 200
     oauth_connect(owner)
@@ -897,9 +893,8 @@ def test_removing_a_person_while_they_approve_leaves_no_grant(owner, app, backen
     """The owner's Remove can land between the approval reading the person and writing the grant. The grant must
     not be written (on SQLite the next person invited would get the same id, and with it the connection)."""
     store = app.state.platform.store
-    office = owner.post("/api/users", json={"email": "leaver@acme.test", "role": "office"}).json()
     with TestClient(app, base_url=BASE) as o:
-        login(o, "leaver@acme.test", office["temporary_password"])
+        office = join(o, owner, "leaver@acme.test", "office")
         client = register(o)
         verifier, challenge = pkce()
         rid = request_id(authorize(o, client, challenge))

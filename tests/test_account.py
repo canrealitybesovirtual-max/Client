@@ -62,6 +62,11 @@ def populate(c, platform, tid: str, tag: str) -> dict:
     invited = c.post("/api/users", json={"email": office_email, "role": "office"}).json()
     field_email = f"field@{low}.example.com"
     field = c.post("/api/users", json={"email": field_email, "role": "field"}).json()
+    for inv in (invited, field):                 # both join through their invite links, with the password PW
+        r = TestClient(c.app).post("/api/auth/invite/accept", json={"token": inv["invite_path"].rsplit("/", 1)[1],
+                                                                    "password": PW})
+        assert r.status_code == 200, r.text
+    assert c.post(f"/api/users/{invited['id']}/reset-link").status_code == 200    # a one-time link left open
     store.save_connection(tid, "acme_crm", status="connected", config={"account": f"{tag} CRM"},
                           external_account=f"{tag} CRM account",
                           secret_blob=box.encrypt_json({"api_key": f"{tag}-crm-secret"},
@@ -76,12 +81,18 @@ def populate(c, platform, tid: str, tag: str) -> dict:
                           secret_blob=box.encrypt(f"{tag}-sso-secret", sso_context(tid)),
                           allowed_domains=[f"{low}.example.com"])
     store.add_calendar_token(tid, hashlib.sha256(f"{tag}-calendar-token".encode()).hexdigest())
+    owner_id = c.get("/api/me").json()["user"]["id"]                # an Ask TradeComply chat, a turn and its usage
+    chat = store.create_assistant_conversation(tid, owner_id, 50)
+    store.append_assistant_turn(tid, owner_id, chat["id"], messages=[{"role": "user", "content": f"{tag} raw"}],
+                                prompt=f"{tag} question", reply=f"{tag} answer", checked=[], outcome="answered",
+                                title=f"{tag} question")
+    store.add_assistant_usage(tid, store.start_assistant_usage(tid, owner_id, "claude-opus-5-5"), input_tokens=10,
+                              output_tokens=5)
     connected = oauth_connect(c)                     # a connected app (app/oauth.py): a grant and its tokens
     app_tokens = connected["tokens"]
     return {"key": key["key"], "key_id": key["id"], "office_email": office_email, "app_tokens": app_tokens,
             "app_client_id": connected["client"]["client_id"],
-            "office_password": invited["temporary_password"], "field_email": field_email,
-            "field_password": field["temporary_password"],
+            "office_password": PW, "field_email": field_email, "field_password": PW,
             "plain_secrets": [key["key"], f"{tag}-crm-secret", f"https://hooks.example.com/{low}/secret-path",
                               f"{tag}-signing-secret", f"{tag}-sso-secret", app_tokens["access_token"],
                               app_tokens["refresh_token"]]}
@@ -93,7 +104,8 @@ def stored_secrets(store, tid: str) -> list[str]:
     with store.connect() as con:
         for table, cols in (("users", ("pw_hash",)), ("api_keys", ("key_hash",)),
                             ("calendar_tokens", ("token_hash",)), ("oauth_tokens", ("token_hash",)),
-                            ("oauth_grants", ("code_challenge",)), *SECRET_BLOB_COLUMNS.items()):
+                            ("oauth_grants", ("code_challenge",)), ("auth_links", ("token_hash",)),
+                            *SECRET_BLOB_COLUMNS.items()):
             for col in cols:
                 out += [r[0] for r in con.execute(f"select {col} from {table} where tenant_id = ?", (tid,)).fetchall()
                         if r[0]]
@@ -191,7 +203,8 @@ def test_every_column_is_exported_or_left_out_on_purpose(app):
         assert set(cols) <= set(TENANT_EXPORT_OMITTED[table])
     for table, col in (("users", "pw_hash"), ("users", "session_gen"), ("api_keys", "key_hash"),
                        ("calendar_tokens", "token_hash"), ("oauth_tokens", "token_hash"),
-                       ("oauth_grants", "code_challenge")):
+                       ("oauth_grants", "code_challenge"), ("auth_links", "token_hash"),
+                       ("auth_links", "session_gen")):
         assert col in TENANT_EXPORT_OMITTED[table]
     # every table is either the company's own (deleted with it) or shared and company-free
     assert set(TENANT_DELETE_ORDER) | set(SHARED_TABLES) | {"tenants"} == set(APP_TABLES)

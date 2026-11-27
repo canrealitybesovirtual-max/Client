@@ -24,7 +24,7 @@ from app.connectors import ConnectorContext, ConnectorError, NotConnected, valid
 from app.connectors import procore
 from app.connectors.procore import ProcoreAPI, ProcoreConnector, cslb_number
 from app.crypto import DecryptError, connection_context
-from tests.support import backend, json_response, login, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
 
 CLIENT_ID = "test-procore-client-id"
 CLIENT_SECRET = "test-procore-client-secret"
@@ -555,9 +555,8 @@ def test_do_not_use_vendors_raise_one_alert_each(owner, platform, fake):
 
 def test_field_role_cannot_import_and_writes_need_csrf(app, owner, fake):
     connect(owner)
-    r = owner.post("/api/users", json={"email": "field@acme.test", "role": "field"})
     field = TestClient(app)
-    login(field, "field@acme.test", r.json()["temporary_password"])
+    join(field, owner, "field@acme.test", "field")
     assert field.post("/api/integrations/procore/sync").status_code == 403
     assert field.get("/api/integrations/procore/companies").status_code == 403
     no_csrf = TestClient(app, cookies=owner.cookies)

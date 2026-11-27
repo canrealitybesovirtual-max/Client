@@ -270,10 +270,12 @@ def test_field_role_can_only_log(app):
         signup(owner)
         pid = owner.post("/api/projects", json={"name": "Job"}).json()["id"]
         inv = owner.post("/api/users", json={"email": "crew@acme.test", "role": "field"}).json()
-        assert inv["temporary_password"]
-        r = field.post("/api/auth/login", json={"email": "crew@acme.test", "password": inv["temporary_password"]})
-        assert r.status_code == 200 and r.json()["must_change_password"] is True
+        assert "temporary_password" not in inv and inv["invite_path"].startswith("/#/invite/tcl_")
+        r = field.post("/api/auth/invite/accept", json={"token": inv["invite_path"].rsplit("/", 1)[1],
+                                                        "password": PW})
+        assert r.status_code == 200
         field.headers["x-csrf-token"] = field.cookies.get("tc_csrf")
+        assert field.get("/api/me").json()["user"]["must_change_password"] is False
         assert field.post("/api/projects", json={"name": "nope"}).status_code == 403
         assert field.post("/api/subs", json={"name": "nope"}).status_code == 403
         assert field.post("/api/documents", json={"title": "nope"}).status_code == 403
@@ -282,6 +284,28 @@ def test_field_role_can_only_log(app):
         r = field.post("/api/field_logs", json={"kind": "toolbox_talk", "date": "2026-11-20", "project_id": pid,
                                                 "topic": "Ladders", "attendees": [{"name": "Ana", "acknowledged": True}]})
         assert r.status_code == 201 and r.json()["created_by"] == "crew@acme.test"
+
+
+def test_people_added_with_a_temporary_password_before_invite_links_still_sign_in(app):
+    """Backward compatibility: someone an owner added before invite links has a temporary password and
+    must_change_password. They can still log in, are asked to change it, and can be sent an invite link instead."""
+    from app.auth import hash_password
+    with TestClient(app) as owner, TestClient(app) as legacy:
+        tid = signup(owner)["tenant_id"]
+        store = app.state.platform.store
+        u = store.create_user(tid, "legacy@acme.test", hash_password("temp-pass-123"), "field",
+                              must_change_password=True)
+        r = legacy.post("/api/auth/login", json={"email": "legacy@acme.test", "password": "temp-pass-123"})
+        assert r.status_code == 200 and r.json()["must_change_password"] is True
+        legacy.headers["x-csrf-token"] = legacy.cookies.get("tc_csrf")
+        assert legacy.get("/api/me").json()["user"]["must_change_password"] is True
+        assert owner.post(f"/api/users/{u['id']}/invite").status_code == 409      # they signed in: already joined
+        v = store.create_user(tid, "never@acme.test", hash_password("temp-pass-456"), "field",
+                              must_change_password=True)
+        inv = owner.post(f"/api/users/{v['id']}/invite").json()                  # never signed in: a new link
+        assert inv["invite_path"].startswith("/#/invite/")
+        r = TestClient(app).post("/api/auth/login", json={"email": "never@acme.test", "password": "temp-pass-456"})
+        assert r.status_code == 401                          # the old temporary password stopped working
 
 
 # ---------------------------------------------------------------------------- API keys on /api and /mcp
@@ -592,9 +616,11 @@ def test_static_shell_and_security_headers(client):
 
 # ============================================================================ security regression tests (adversarial review)
 def _login_temp(app, owner, email, role):
+    """The owner invites someone, who joins through the invite link."""
     inv = owner.post("/api/users", json={"email": email, "role": role}).json()
     c = TestClient(app, raise_server_exceptions=False)
-    assert c.post("/api/auth/login", json={"email": email, "password": inv["temporary_password"]}).status_code == 200
+    r = c.post("/api/auth/invite/accept", json={"token": inv["invite_path"].rsplit("/", 1)[1], "password": PW})
+    assert r.status_code == 200
     c.headers["x-csrf-token"] = c.cookies.get("tc_csrf")
     return c, inv
 
@@ -905,6 +931,8 @@ def test_every_cookie_write_route_requires_csrf(app):
     header must be refused (403), except the few that are deliberately cookie-less."""
     exempt = {"/api/auth/signup", "/api/auth/login", "/api/auth/logout", "/api/billing/webhook",
               "/api/auth/sso/start",                   # starts a login, like /api/auth/login (no session yet)
+              # one-time links (app/auth_links.py): no session yet; JSON bodies only, so no other site can post them
+              "/api/auth/forgot", "/api/auth/link", "/api/auth/reset", "/api/auth/invite/accept",
               "/api/integrations/twilio-sms/inbound"}  # called by Twilio, authenticated by X-Twilio-Signature
     with TestClient(app, raise_server_exceptions=False) as c:
         signup(c)

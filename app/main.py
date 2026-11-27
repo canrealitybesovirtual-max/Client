@@ -26,7 +26,8 @@ from starlette.staticfiles import StaticFiles
 
 from tradecomply import cslb
 
-from . import account, api, auth, billing, connectors, integrations_api, mcp_governance, oauth, sso
+from . import (account, api, assistant, auth, auth_links, billing, connectors, integrations_api, mcp_governance, oauth,
+               sso)
 from .connectors import alerts, calendar_feed, docusign, procore, schedule_import, splunk, twilio_sms
 from .config import Platform, Settings
 
@@ -213,9 +214,11 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
 
     app.include_router(auth.router)
+    app.include_router(auth_links.router)  # /api/auth: forgot password, reset, invite links, email confirmation
     app.include_router(billing.router)
     app.include_router(api.router)
     app.include_router(account.router)     # GET /api/tenant/export, DELETE /api/tenant (app/account.py)
+    app.include_router(assistant.router)   # /api/assistant: Ask TradeComply, the in-app AI helper
     # Connector routers first: their fixed paths (/api/integrations/docusign/...) must win over the generic
     # /api/integrations/{provider}/... routes.
     for connector_router in (docusign.router, procore.router, alerts.router, twilio_sms.router,

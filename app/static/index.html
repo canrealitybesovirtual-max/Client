@@ -9,8 +9,8 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon.svg">
-<link rel="stylesheet" href="/static/v5/styles.css">
-<script src="/static/v5/app.js" defer></script>
+<link rel="stylesheet" href="/static/v7/styles.css">
+<script src="/static/v7/app.js" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
@@ -28,6 +28,7 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 20.5h20z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 9.5v5M12 17.4v.1" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
   <symbol id="i-stop" viewBox="0 0 24 24"><path d="M8 2.5h8L21.5 8v8L16 21.5H8L2.5 16V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 7.5v5.5M12 16.4v.1" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-ask" viewBox="0 0 24 24"><path d="M4 4.5h16v11H10.5L6 19.5v-4H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8.5 9h7M8.5 12h4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .6-8A6 6 0 0 0 7 8.6 5 5 0 0 0 7 18.5zM3 3l18 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </svg>
 <div class="app">
@@ -35,6 +36,7 @@
     <a class="brand" href="#/dashboard" aria-label="TradeComply CA home"><svg class="icon brand-icon" aria-hidden="true"><use href="#i-logo"/></svg><span>TradeComply <span class="brand-ca">CA</span></span></a>
     <span id="company" class="company"></span>
     <span id="net" class="net" hidden><svg class="icon" aria-hidden="true"><use href="#i-cloud-off"/></svg>Offline</span>
+    <button id="ask-open" class="ask-btn" type="button" aria-controls="ask-panel" aria-expanded="false" hidden><svg class="icon" aria-hidden="true"><use href="#i-ask"/></svg><span>Ask</span></button>
   </header>
   <nav id="nav" class="nav" aria-label="Main" hidden>
     <a href="#/dashboard" data-route="dashboard"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span class="nav-long">Dashboard</span><span class="nav-short">Home</span></a>
@@ -57,6 +59,7 @@
     <footer class="footer">Compliance information, not legal advice. Every result shows its source and whether it has been verified.</footer>
   </div>
 </div>
+<aside id="ask-panel" class="ask-panel" aria-labelledby="ask-title" hidden></aside>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>

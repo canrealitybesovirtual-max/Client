@@ -30,7 +30,7 @@ from starlette.routing import Mount
 from app import sso
 from app.connectors import splunk
 from app.connectors.splunk import SplunkHECConnector
-from tests.support import PW, backend, json_response, login, make_app, mock_http, signup  # noqa: F401
+from tests.support import PW, backend, json_response, join, login, make_app, mock_http, signup  # noqa: F401
 
 APP_URL = "https://tc.example.com"
 HEC_HOST = "http-inputs-acme.splunkcloud.com"
@@ -291,11 +291,8 @@ def owner(app):
 
 
 def invite(owner, email: str, role: str = "office") -> TestClient:
-    r = owner.post("/api/users", json={"email": email, "role": role})
-    assert r.status_code == 200, r.text
     c = TestClient(owner.app)
-    login(c, email, r.json()["temporary_password"])
-    c.temp_password = r.json()["temporary_password"]
+    join(c, owner, email, role)          # they set the password PW through the invite link
     return c
 
 
@@ -1024,7 +1021,7 @@ def test_enforcement_requires_a_verified_sign_in_then_blocks_passwords_except_ow
     assert r.status_code == 200 and r.json()["enforced"] is True and r.json()["sessions_ended"] == 1
     assert office.get("/api/me").status_code == 401                   # the office user's password session ended
     assert owner.get("/api/me").status_code == 200                    # the owner's didn't
-    r = TestClient(app).post("/api/auth/login", json={"email": "pat@acme.com", "password": office.temp_password})
+    r = TestClient(app).post("/api/auth/login", json={"email": "pat@acme.com", "password": PW})
     assert r.status_code == 403 and "single sign-on" in r.json()["detail"]
     r = TestClient(app).post("/api/auth/login", json={"email": "pat@acme.com", "password": "wrong-password-123"})
     assert r.status_code == 401                                       # a wrong password still says just that

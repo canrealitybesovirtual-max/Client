@@ -87,7 +87,7 @@ const { chromium } = require('playwright');
 const crypto = require('crypto');
 const path = require('path');
 (async () => {
-  const [base, shots] = process.argv.slice(2);
+  const [base, shots, tempPassword] = process.argv.slice(2);
   const browser = await chromium.launch();
   const out = { errors: [] };
   const CB = 'https://claude.ai/api/mcp/auth_callback';
@@ -124,14 +124,15 @@ const path = require('path');
       bannerSlot: document.querySelector('#banner').innerText, nav: !document.querySelector('#nav').hidden };
   });
 
-  // ---- an owner, an office user with a temporary password, and a Claude-like client
+  // ---- an owner, an office user with a temporary password (added before invite links: the test made both), and a
+  // Claude-like client
   const setupCtx = await browser.newContext({ ...opts, viewport: { width: 1280, height: 900 } });
   const sp = await setupCtx.newPage();
   watch(sp, 'setup');
   await sp.goto(base + '/#/login');
-  out.signup = (await call(sp, '/api/auth/signup', { method: 'POST', body: { company_name: 'Connect Builders Inc.', email: 'owner@example.test', password: 'correct-horse-battery' } })).status;
-  const invite = await call(sp, '/api/users', { method: 'POST', body: { email: 'office@example.test', role: 'office' } });
-  out.invite = invite.status;
+  out.signup = (await call(sp, '/api/auth/login', { method: 'POST', body: { email: 'owner@example.test', password: 'correct-horse-battery' } })).status;
+  const invite = { data: { temporary_password: tempPassword } };
+  out.invite = (await call(sp, '/api/users')).status;
   await setupCtx.close();
   const claude = await register('Claude', CB);
 
@@ -340,7 +341,19 @@ def test_connect_flow_in_a_real_browser(tmp_path, playwright_env, live_server):
     os.makedirs(shots, exist_ok=True)
     script = tmp_path / "oauth.js"
     script.write_text(SMOKE)
-    r = subprocess.run([node, str(script), base, shots], env=env, capture_output=True, text=True, timeout=300)
+    # The owner, and an office user added the way it worked before invite links (a temporary password the owner
+    # shared, must_change_password): the phone part checks that such a person still gets "set your own password".
+    import httpx
+    from app.auth import hash_password
+    from app.store import Store
+    temp = "temp-" + os.urandom(6).hex()
+    r = httpx.post(base + "/api/auth/signup", json={"company_name": "Connect Builders Inc.", "email": "owner@example.test",
+                                                    "password": "correct-horse-battery"})
+    assert r.status_code == 200, r.text
+    st = Store(str(tmp_path / "data"))
+    st.create_user(r.json()["tenant_id"], "office@example.test", hash_password(temp), "office", must_change_password=True)
+    st.close()
+    r = subprocess.run([node, str(script), base, shots, temp], env=env, capture_output=True, text=True, timeout=300)
     assert r.returncode == 0, r.stderr[-3000:]
     out = json.loads(r.stdout)
     assert out["errors"] == []

@@ -6,6 +6,7 @@
   (skipped otherwise), exactly like tests/test_platform.py.
 - make_app(tmp_path, **settings): an app on the current backend, with the event worker off (call
   app.state.platform.events.drain() to deliver) unless events_background=True is passed.
+- join(c, owner, email, role): the owner invites someone and client `c` joins through the invite link (signed in).
 - mock_http(platform, handler, hosts=None): every outbound call of that app goes to handler(request) ->
   httpx.Response (an httpx.MockTransport); DNS answers come from `hosts` ({"name": "ip" or [ips]}, default: a public
   address for every name), so the SSRF checks still run. Returns the list of requests seen.
@@ -90,6 +91,19 @@ def login(c, email: str, password: str = PW) -> None:
     r = c.post("/api/auth/login", json={"email": email, "password": password})
     assert r.status_code == 200, r.text
     c.headers["x-csrf-token"] = c.cookies.get("tc_csrf")
+
+
+def join(c, owner, email: str, role: str = "field", password: str = PW, name: str | None = None) -> dict:
+    """The owner (client `owner`, signed in) invites `email`; client `c` accepts the invite link with `password`
+    and is signed in as that person, with the CSRF header set. Returns the invite response."""
+    r = owner.post("/api/users", json={"email": email, "role": role, **({"name": name} if name else {})})
+    assert r.status_code == 200, r.text
+    invite = r.json()
+    token = invite["invite_path"].rsplit("/", 1)[1]
+    r = c.post("/api/auth/invite/accept", json={"token": token, "password": password})
+    assert r.status_code == 200, r.text
+    c.headers["x-csrf-token"] = c.cookies.get("tc_csrf")
+    return invite
 
 
 def fake_resolver(hosts: dict | None = None, default: str | None = PUBLIC_TEST_IP):

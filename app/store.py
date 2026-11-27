@@ -28,7 +28,7 @@ from datetime import datetime, timedelta, timezone
 log = logging.getLogger("tradecomply.store")
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 9
 
 TENANT_STATUSES = ("trialing", "active", "past_due", "canceled")
 ROLES = ("owner", "office", "field")
@@ -40,6 +40,8 @@ WEBHOOK_KINDS = ("slack", "teams", "generic")
 OUTBOUND_STATUSES = ("pending", "sending", "delivered", "failed", "skipped")
 OUTBOUND_DONE = ("delivered", "failed", "skipped")
 MCP_AUDIT_STATUSES = ("ok", "error", "denied", "rate_limited")
+AUTH_LINK_PURPOSES = ("reset", "invite", "confirm", "signin")     # 'signin' is reserved (not offered: see README)
+ASSISTANT_OUTCOMES = ("answered", "refused", "cut_off")              # Ask TradeComply turns (app/assistant.py)
 PROVIDER_RE = re.compile(r"^[a-z][a-z0-9_]{1,39}$")
 
 # Raised by both backends for unique / foreign-key / check violations. On SQLite it is sqlite3's own class; psycopg's
@@ -351,6 +353,80 @@ MIGRATIONS: dict[int, str] = {
     create index if not exists oauth_tokens_expires on oauth_tokens(expires);
 
     alter table mcp_audit_log add column oauth_grant_id integer;
+    """,
+    # One-time links sent by email or shown to an owner (app/auth_links.py): password reset, team invite and email
+    # confirmation ('signin' is reserved: a CHECK constraint can't be changed later on SQLite without rebuilding the
+    # table). Only the SHA-256 of each token is stored; expiries are unix seconds. A link is bound to the person's
+    # email and session counter when it was made, so a password change, a reset, an email change, SSO becoming
+    # required or a removed person (SQLite reuses ids) ends it.
+    8: """
+    create table if not exists auth_links (
+        id integer primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        user_id integer not null references users(id) on delete cascade,
+        user_email text not null,
+        purpose text not null check (purpose in ('reset','invite','confirm','signin')),
+        token_hash text not null unique,
+        sent_to text,
+        session_gen integer not null,
+        created_by integer,
+        expires integer not null,
+        created text not null
+    );
+    create index if not exists auth_links_user on auth_links(tenant_id, user_id, purpose);
+    create index if not exists auth_links_expires on auth_links(expires);
+
+    alter table users add column email_confirmed_at text;
+    -- the Team page reads "never signed in" as "invited, has not joined". Before invite links everyone without a
+    -- temporary password had signed in (a founder at sign-up, which set no last_login), so none of them is pending
+    update users set last_login = created where last_login is null and must_change_password = 0;
+    """,
+    # Ask TradeComply, the in-app AI helper (app/assistant.py, docs/ai-helper.md). A chat belongs to one person; each
+    # turn row holds the person's message and every API message it produced (messages_json), stored exactly as sent
+    # and received and replayed unchanged on the next message (thinking blocks are bound to that prefix). prompt and
+    # reply are the text shown in the panel and exported. Usage is one row per message, kept after a chat is deleted
+    # (the daily and monthly limits count it); user_id is set to null when the person is removed.
+    9: """
+    -- autoincrement: a chat id is never given out twice (SQLite otherwise reuses the highest), so an answer still being
+    -- written for a chat deleted meanwhile (its person removed, say) can never land in someone else's new chat
+    create table if not exists assistant_conversations (
+        id integer primary key autoincrement,
+        tenant_id text not null references tenants(id) on delete cascade,
+        user_id integer not null,
+        title text not null,
+        created text not null,
+        updated text not null
+    );
+    create index if not exists assistant_conversations_owner on assistant_conversations(tenant_id, user_id, updated);
+    create index if not exists assistant_conversations_updated on assistant_conversations(updated);
+
+    create table if not exists assistant_turns (
+        id integer primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        conversation_id integer not null references assistant_conversations(id) on delete cascade,
+        messages_json text not null,
+        prompt text not null,
+        reply text not null,
+        checked_json text not null default '[]',
+        outcome text not null check (outcome in ('answered','refused','cut_off')),
+        context_tokens integer not null default 0,
+        created text not null
+    );
+    create index if not exists assistant_turns_conversation on assistant_turns(conversation_id, id);
+
+    create table if not exists assistant_usage (
+        id integer primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        user_id integer,
+        model text not null,
+        input_tokens integer not null default 0,
+        output_tokens integer not null default 0,
+        cache_read_tokens integer not null default 0,
+        cache_write_tokens integer not null default 0,
+        created text not null
+    );
+    create index if not exists assistant_usage_tenant on assistant_usage(tenant_id, created);
+    create index if not exists assistant_usage_person on assistant_usage(tenant_id, user_id, created);
     """,
 }
 
@@ -717,19 +793,113 @@ PG_MIGRATIONS: dict[int, str] = {
     end
     $rls7$;
     """,
+    # One-time links (see the SQLite migration 8), with row level security and no Data API privileges.
+    8: """
+    create table if not exists auth_links (
+        id bigint generated by default as identity primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        user_id bigint not null references users(id) on delete cascade,
+        user_email text not null,
+        purpose text not null check (purpose in ('reset','invite','confirm','signin')),
+        token_hash text not null unique,
+        sent_to text,
+        session_gen integer not null,
+        created_by bigint,
+        expires bigint not null,
+        created text not null
+    );
+    create index if not exists auth_links_user on auth_links(tenant_id, user_id, purpose);
+    create index if not exists auth_links_expires on auth_links(expires);
+
+    alter table users add column if not exists email_confirmed_at text collate "C";
+    update users set last_login = created where last_login is null and must_change_password = 0;   -- see SQLite 8
+
+    do $rls8$
+    declare r text; seq text;
+    begin
+      alter table auth_links enable row level security;
+      foreach r in array array['anon','authenticated'] loop
+        if exists (select 1 from pg_roles where rolname = r) then
+          execute format('revoke all on table auth_links from %I', r);
+          seq := pg_get_serial_sequence('auth_links', 'id');
+          execute format('revoke all on sequence %s from %I', seq, r);
+        end if;
+      end loop;
+    end
+    $rls8$;
+    """,
+    # Ask TradeComply (see the SQLite migration 9), with row level security and no Data API privileges.
+    9: """
+    create table if not exists assistant_conversations (
+        id bigint generated by default as identity primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        user_id bigint not null,
+        title text not null,
+        created text collate "C" not null,
+        updated text collate "C" not null
+    );
+    create index if not exists assistant_conversations_owner on assistant_conversations(tenant_id, user_id, updated);
+    create index if not exists assistant_conversations_updated on assistant_conversations(updated);
+
+    create table if not exists assistant_turns (
+        id bigint generated by default as identity primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        conversation_id bigint not null references assistant_conversations(id) on delete cascade,
+        messages_json text not null,
+        prompt text not null,
+        reply text not null,
+        checked_json text not null default '[]',
+        outcome text not null check (outcome in ('answered','refused','cut_off')),
+        context_tokens integer not null default 0,
+        created text collate "C" not null
+    );
+    create index if not exists assistant_turns_conversation on assistant_turns(conversation_id, id);
+
+    create table if not exists assistant_usage (
+        id bigint generated by default as identity primary key,
+        tenant_id text not null references tenants(id) on delete cascade,
+        user_id bigint,
+        model text not null,
+        input_tokens bigint not null default 0,
+        output_tokens bigint not null default 0,
+        cache_read_tokens bigint not null default 0,
+        cache_write_tokens bigint not null default 0,
+        created text collate "C" not null
+    );
+    create index if not exists assistant_usage_tenant on assistant_usage(tenant_id, created);
+    create index if not exists assistant_usage_person on assistant_usage(tenant_id, user_id, created);
+
+    do $rls9$
+    declare t text; r text; seq text;
+    begin
+      foreach t in array array['assistant_conversations','assistant_turns','assistant_usage'] loop
+        execute format('alter table %I enable row level security', t);
+        foreach r in array array['anon','authenticated'] loop
+          if exists (select 1 from pg_roles where rolname = r) then
+            execute format('revoke all on table %I from %I', t, r);
+            seq := pg_get_serial_sequence(quote_ident(t), 'id');
+            execute format('revoke all on sequence %s from %I', seq, r);
+          end if;
+        end loop;
+      end loop;
+    end
+    $rls9$;
+    """,
 }
 APP_TABLES = ("tenants", "users", "api_keys", "projects", "subs", "documents", "field_logs", "audit", "stripe_events",
               "revoked_sessions", "app_secrets", "schema_version", "integration_connections", "webhooks",
               "outbound_events", "mcp_audit_log", "sso_configs", "calendar_tokens", "oauth_clients", "oauth_requests",
-              "oauth_grants", "oauth_tokens")
+              "oauth_grants", "oauth_tokens", "auth_links", "assistant_conversations", "assistant_turns",
+              "assistant_usage")
 assert sorted(MIGRATIONS) == sorted(PG_MIGRATIONS) and max(MIGRATIONS) == SCHEMA_VERSION
 
 # Account data rights (app/account.py: GET /api/tenant/export, DELETE /api/tenant). Every table in APP_TABLES is
 # either a company's own (deleted with it, child tables first) or shared by the whole server and holding nothing that
 # names a company. A new table must be added to one of the two, or importing this module fails.
 TENANT_DELETE_ORDER = ("outbound_events", "webhooks", "integration_connections", "mcp_audit_log", "calendar_tokens",
-                       "oauth_tokens", "oauth_grants", "sso_configs", "field_logs", "documents", "subs", "projects",
-                       "api_keys", "audit", "users")
+                       "oauth_tokens", "oauth_grants", "auth_links", "assistant_turns", "assistant_conversations",
+                       "assistant_usage", "sso_configs", "field_logs", "documents", "subs", "projects", "api_keys",
+                       "audit", "users")
 SHARED_TABLES = {
     "stripe_events": "ids and types of Stripe events already processed (no company id)",
     "revoked_sessions": "random nonces of ended sessions and used one-time links, with an expiry (no company id)",
@@ -748,7 +918,8 @@ assert set(TENANT_DELETE_ORDER) | set(SHARED_TABLES) | {"tenants"} == set(APP_TA
 TENANT_EXPORT: dict[str, tuple[str, ...]] = {
     "tenants": ("id", "company_name", "cslb_license", "plan", "status", "trial_ends", "stripe_customer_id",
                 "stripe_subscription_id", "settings_json", "created"),
-    "users": ("id", "email", "name", "role", "must_change_password", "created", "last_login"),
+    "users": ("id", "email", "name", "role", "must_change_password", "created", "last_login",
+              "email_confirmed_at"),
     "api_keys": ("id", "name", "prefix", "created_by", "created", "last_used", "revoked", "revoked_at", "scopes_json",
                  "rate_limit_per_min", "expires_at"),
     "projects": ("id", "name", "address", "city", "county", "owner_name", "lender_name", "public_or_private",
@@ -773,6 +944,12 @@ TENANT_EXPORT: dict[str, tuple[str, ...]] = {
     "oauth_grants": ("id", "user_id", "user_email", "client_id", "client_name", "redirect_uri", "scope", "resource",
                      "created", "last_used", "expires", "revoked", "revoked_at"),
     "oauth_tokens": ("id", "grant_id", "kind", "expires", "used_at", "created"),
+    "auth_links": ("id", "user_id", "user_email", "purpose", "sent_to", "created_by", "expires", "created"),
+    "assistant_conversations": ("id", "user_id", "title", "created", "updated"),
+    "assistant_turns": ("id", "conversation_id", "prompt", "reply", "checked_json", "outcome", "context_tokens",
+                        "created"),
+    "assistant_usage": ("id", "user_id", "model", "input_tokens", "output_tokens", "cache_read_tokens",
+                        "cache_write_tokens", "created"),
 }
 _SAME_FOR_EVERY_ROW = "the company id: the same on every row, given once at the top of the file"
 TENANT_EXPORT_OMITTED: dict[str, dict[str, str]] = {
@@ -792,8 +969,16 @@ TENANT_EXPORT_OMITTED: dict[str, dict[str, str]] = {
                      "code_challenge": "PKCE challenge of the one-time sign-in code (only used during sign-in)"},
     "oauth_tokens": {"tenant_id": _SAME_FOR_EVERY_ROW,
                      "token_hash": "hash of an access token, refresh token or one-time code (a credential)"},
+    "auth_links": {"tenant_id": _SAME_FOR_EVERY_ROW,
+                   "token_hash": "hash of a one-time invite, password reset or email confirmation link (a credential)",
+                   "session_gen": "the person's session counter when the link was made (a password change ends it)"},
+    "assistant_turns": {"tenant_id": _SAME_FOR_EVERY_ROW,
+                        "messages_json": "the AI model's raw messages for the turn: thinking blocks are signed data no "
+                                         "one can read, and the check inputs and results repeat the question and the "
+                                         "answer (both are exported as prompt and reply)"},
     **{t: {"tenant_id": _SAME_FOR_EVERY_ROW} for t in ("projects", "subs", "documents", "field_logs", "audit",
-                                                        "outbound_events", "mcp_audit_log")},
+                                                        "outbound_events", "mcp_audit_log", "assistant_conversations",
+                                                        "assistant_usage")},
 }
 # Stored JSON text exported as JSON values (column -> key in the export), 0/1 columns exported as booleans, and
 # "is there a secret" flags computed from omitted columns (flag -> column).
@@ -801,7 +986,8 @@ EXPORT_JSON = {"tenants": {"settings_json": "settings"}, "api_keys": {"scopes_js
                "projects": {"extra": "extra"}, "field_logs": {"attendees": "attendees", "signatures": "signatures"},
                "audit": {"args_json": "args"}, "integration_connections": {"config_json": "config"},
                "webhooks": {"events_json": "events"}, "outbound_events": {"payload_json": "payload"},
-               "sso_configs": {"allowed_domains_json": "allowed_domains"}}
+               "sso_configs": {"allowed_domains_json": "allowed_domains"},
+               "assistant_turns": {"checked_json": "checked"}}
 EXPORT_BOOL = {"users": ("must_change_password",), "api_keys": ("revoked",), "subs": ("wc_required", "w9_on_file"),
                "documents": ("verified",), "audit": ("verified", "ok"), "webhooks": ("enabled",),
                "sso_configs": ("enforced",), "calendar_tokens": ("revoked",), "oauth_grants": ("revoked",)}
@@ -1541,8 +1727,8 @@ class Store:
             con.execute("insert into tenants (id, company_name, cslb_license, plan, status, trial_ends, created) "
                         "values (?,?,?,?,?,?,?)", (tid, company_name, cslb_license, plan, status, trial_ends, created))
             uid = self._insert_id(con, "insert into users (tenant_id, email, name, pw_hash, role, "
-                                       "must_change_password, created) values (?,?,?,?,?,?,?)",
-                                  (tid, email.strip().lower(), name, pw_hash, "owner", 0, created))
+                                       "must_change_password, created, last_login) values (?,?,?,?,?,?,?,?)",
+                                  (tid, email.strip().lower(), name, pw_hash, "owner", 0, created, created))
             tenant = self._row("tenants", con.execute("select * from tenants where id = ?", (tid,)).fetchone())
             user = dict(con.execute("select * from users where id = ?", (uid,)).fetchone())
         return tenant, user
@@ -1655,8 +1841,8 @@ class Store:
 
     def list_users(self, tenant_id: str) -> list[dict]:
         with self.connect() as con:
-            rows = con.execute("select id, email, name, role, created, last_login, must_change_password from users "
-                               "where tenant_id = ? order by id", (tenant_id,)).fetchall()
+            rows = con.execute("select id, email, name, role, created, last_login, must_change_password, "
+                               "email_confirmed_at from users where tenant_id = ? order by id", (tenant_id,)).fetchall()
             return [dict(r) for r in rows]
 
     def update_user(self, tenant_id: str, user_id: int, **fields) -> dict | None:
@@ -1670,6 +1856,8 @@ class Store:
             with self.connect() as con:
                 con.execute(f"update users set {', '.join(f'{k} = ?' for k in values)} where tenant_id = ? and id = ?",
                             [*values.values(), tenant_id, user_id])
+                if values.get("role", "owner") != "owner":      # no longer an owner: the links they made end too
+                    con.execute("delete from auth_links where tenant_id = ? and created_by = ?", (tenant_id, user_id))
         with self.connect() as con:
             row = con.execute("select * from users where tenant_id = ? and id = ?", (tenant_id, user_id)).fetchone()
             return dict(row) if row else None
@@ -1683,6 +1871,16 @@ class Store:
         with self.connect() as con:
             gone = con.execute("delete from users where tenant_id = ? and id = ?", (tenant_id, user_id)).rowcount > 0
             self._end_oauth_grants(con, "tenant_id = ? and user_id = ?", (tenant_id, user_id), "person_removed")
+            # their links, and the invite and reset links they made for others as an owner
+            con.execute("delete from auth_links where tenant_id = ? and (user_id = ? or created_by = ?)",
+                        (tenant_id, user_id, user_id))
+            # their Ask TradeComply chats go too (a new person given the same id must not see them); usage rows stay
+            # for the company's monthly count, no longer naming anyone
+            con.execute("delete from assistant_turns where tenant_id = ? and conversation_id in (select id from "
+                        "assistant_conversations where tenant_id = ? and user_id = ?)", (tenant_id, tenant_id, user_id))
+            con.execute("delete from assistant_conversations where tenant_id = ? and user_id = ?", (tenant_id, user_id))
+            con.execute("update assistant_usage set user_id = null where tenant_id = ? and user_id = ?",
+                        (tenant_id, user_id))
             return gone
 
     # ------------------------------------------------------------------ API keys
@@ -1829,6 +2027,145 @@ class Store:
             raise ValueError("only a prefixed single-use nonce can be released")
         with self.connect() as con:
             con.execute("delete from revoked_sessions where nonce = ?", (str(nonce)[:200],))
+
+    # ------------------------------------------------------------------ one-time links (app/auth_links.py)
+    # A link joins to its person only while that person's email and session counter are what they were when it was
+    # made: a password change, a reset, an email change or SSO becoming required (each bumps or changes one) ends
+    # every outstanding link, and a removed person's id reused by SQLite never matches. A link an owner made (an
+    # invite or a reset link to hand over) works only while that person is still an owner of the company: removing
+    # or demoting them deletes those links too (delete_user, update_user), and this join refuses any left behind.
+    _AUTH_LINK_SQL = ("select l.id, l.tenant_id, l.user_id, l.purpose, l.sent_to, l.created_by, l.expires, u.email, "
+                      "u.role, u.name, u.last_login, u.email_confirmed_at, t.company_name from auth_links l "
+                      "join users u on u.id = l.user_id and u.tenant_id = l.tenant_id "
+                      "and u.session_gen = l.session_gen and lower(u.email) = lower(l.user_email) "
+                      "join tenants t on t.id = l.tenant_id "
+                      "left join users c on c.id = l.created_by and c.tenant_id = l.tenant_id and c.role = 'owner' "
+                      "where l.token_hash = ? and l.purpose = ? and l.expires > ? "
+                      "and (l.created_by is null or c.id is not null)")
+
+    def create_auth_links(self, tenant_id: str, user_id: int, purpose: str, tokens: list[tuple[str, str | None]],
+                          ttl_s: int, *, created_by: int | None = None, keep: int = 0) -> int | None:
+        """Store one-time links for a person of this company: `tokens` is a list of (SHA-256 of the token, the
+        address it is emailed to or None for a link shown to an owner). In the same transaction: expired links
+        (anyone's) are deleted, and of this person's earlier links for this purpose only the newest `keep` stay
+        (for a confirmation, only ones sent to the same address: asking to confirm another address ends the rest).
+        Returns the expiry (unix seconds), or None if the person isn't in this company."""
+        if purpose not in AUTH_LINK_PURPOSES or not tokens:
+            raise ValueError("bad one-time link")
+        if not all(isinstance(h, str) and SHA256_RE.match(h) for h, _ in tokens):
+            raise ValueError("store only the SHA-256 of a one-time link token")
+        if not _id_ok(user_id):
+            return None
+        now = int(time.time())
+        expires = now + int(ttl_s)
+        with self.connect() as con:
+            u = self._read_for_update(con, "select id, email, session_gen from users where tenant_id = ? and id = ?",
+                                      (tenant_id, user_id))
+            if u is None:
+                return None
+            con.execute("delete from auth_links where expires < ?", (now,))
+            same = purpose == "confirm"
+            con.execute("delete from auth_links where tenant_id = ? and user_id = ? and purpose = ? and id not in "
+                        "(select id from auth_links where tenant_id = ? and user_id = ? and purpose = ? "
+                        + ("and sent_to = ? " if same else "") + "order by id desc limit ?)",
+                        (tenant_id, user_id, purpose, tenant_id, user_id, purpose,
+                         *([(tokens[0][1] or "").strip().lower()] if same else []), max(0, int(keep))))
+            for token_hash, sent_to in tokens:
+                con.execute("insert into auth_links (tenant_id, user_id, user_email, purpose, token_hash, sent_to, "
+                            "session_gen, created_by, expires, created) values (?,?,?,?,?,?,?,?,?,?)",
+                            (tenant_id, user_id, u["email"], purpose, token_hash,
+                             sent_to.strip().lower() if sent_to else None, u["session_gen"], created_by, expires,
+                             now_iso()))
+        return expires
+
+    def auth_link(self, token_hash: str, purpose: str) -> dict | None:
+        """A live link with its person and company, without using it up (opening a link changes nothing)."""
+        if purpose not in AUTH_LINK_PURPOSES or not isinstance(token_hash, str) or not SHA256_RE.match(token_hash):
+            return None
+        with self.connect() as con:
+            row = con.execute(self._AUTH_LINK_SQL, (token_hash, purpose, int(time.time()))).fetchone()
+        return dict(row) if row else None
+
+    def confirm_link_sent(self, tenant_id: str, user_id: int) -> bool:
+        """Is a confirmation link for the person's current email still open (sent at sign-up, say)?"""
+        with self.connect() as con:
+            return con.execute("select 1 from auth_links l join users u on u.id = l.user_id and u.tenant_id = "
+                               "l.tenant_id and u.session_gen = l.session_gen and l.sent_to = lower(u.email) "
+                               "where l.tenant_id = ? and l.user_id = ? and l.purpose = 'confirm' and l.expires > ?",
+                               (tenant_id, user_id, int(time.time()))).fetchone() is not None
+
+    def use_auth_link(self, token_hash: str, purpose: str, *, user_id: int | None = None, pw_hash: str | None = None,
+                      name: str | None = None) -> dict | None:
+        """Use a link once, in one locked transaction (SQLite: the write lock; Postgres: FOR UPDATE on the person,
+        then on the link), so two requests with the same link can't both succeed: the second waits, then finds it gone.
+        `user_id`: only for that person (an email confirmation needs the person's own session). By purpose:
+          reset    new password, session counter + 1 (every session ends), all their links deleted, connected apps
+                   ended (oauth.revoked rows), activity row auth.password_reset
+          invite   their password and name, session counter + 1, signed in now (last_login), the address confirmed
+                   when the link came by email, all their links deleted, activity row user.joined
+          confirm  the address the link was emailed to becomes confirmed; if it isn't their current email, it
+                   becomes their email (IntegrityError if someone else has it), activity row auth.email_confirmed
+                   or auth.email_changed
+        Returns the person's updated row plus previous_email (an email change) and company_name, or None."""
+        if purpose not in ("reset", "invite", "confirm") or not isinstance(token_hash, str) \
+                or not SHA256_RE.match(token_hash):
+            return None
+        if purpose in ("reset", "invite") and not pw_hash:
+            raise ValueError("a new password hash is required")
+        params = (token_hash, purpose, int(time.time()))
+        with self.connect() as con:
+            if self.backend == "sqlite":
+                con.execute("begin immediate")
+                row = con.execute(self._AUTH_LINK_SQL, params).fetchone()
+            else:
+                # The person first, then the link: the order create_auth_links and delete_user lock in. Locking both
+                # at once (FOR UPDATE OF l, u) let two of one person's links used at the same moment each hold a row
+                # the other needed (a deadlock, a 500). The link is read again under the lock: the other request
+                # may have used it, or ended it, meanwhile.
+                row = con.execute(self._AUTH_LINK_SQL, params).fetchone()
+                if row is not None:
+                    con.execute("select id from users where tenant_id = ? and id = ? for update",
+                                (row["tenant_id"], row["user_id"]))
+                    row = con.execute(self._AUTH_LINK_SQL + " for update of l", params).fetchone()
+            if row is None or (user_id is not None and row["user_id"] != user_id) \
+                    or (purpose == "confirm" and not row["sent_to"]):
+                return None
+            link = dict(row)
+            tid, uid, email, ts = link["tenant_id"], link["user_id"], link["email"], now_iso()
+            emailed_here = (link["sent_to"] or "") == email.lower()
+            who, previous = (tid, uid), None
+            if purpose == "reset":
+                con.execute("update users set pw_hash = ?, session_gen = session_gen + 1, must_change_password = 0, "
+                            "email_confirmed_at = coalesce(email_confirmed_at, ?) where tenant_id = ? and id = ?",
+                            (pw_hash, ts if emailed_here else None, *who))
+                con.execute("delete from auth_links where tenant_id = ? and user_id = ?", who)
+                self._end_oauth_grants(con, "tenant_id = ? and user_id = ?", who, "password_reset")
+                self._audit_row(con, tid, email, "auth.password_reset",
+                                {"user_id": uid, "via": "email" if link["sent_to"] else "owner_link"}, None)
+            elif purpose == "invite":
+                con.execute("update users set pw_hash = ?, name = coalesce(?, name), session_gen = session_gen + 1, "
+                            "must_change_password = 0, last_login = ?, email_confirmed_at = "
+                            "coalesce(email_confirmed_at, ?) where tenant_id = ? and id = ?",
+                            (pw_hash, name, ts, ts if emailed_here else None, *who))
+                con.execute("delete from auth_links where tenant_id = ? and user_id = ?", who)
+                self._audit_row(con, tid, email, "user.joined",
+                                {"user_id": uid, "via": "email" if emailed_here else "copied_link"}, None)
+            else:
+                target = link["sent_to"] or ""
+                if emailed_here:
+                    con.execute("update users set email_confirmed_at = ? where tenant_id = ? and id = ?", (ts, *who))
+                    con.execute("delete from auth_links where tenant_id = ? and user_id = ? and purpose = 'confirm'",
+                                who)
+                    self._audit_row(con, tid, email, "auth.email_confirmed", {"user_id": uid}, None)
+                else:
+                    con.execute("update users set email = ?, email_confirmed_at = ? where tenant_id = ? and id = ?",
+                                (target, ts, *who))
+                    con.execute("delete from auth_links where tenant_id = ? and user_id = ?", who)
+                    self._audit_row(con, tid, target, "auth.email_changed", {"user_id": uid, "from": email,
+                                                                             "to": target}, None)
+                    previous = email
+            user = dict(con.execute("select * from users where tenant_id = ? and id = ?", who).fetchone())
+        return {**user, "previous_email": previous, "company_name": link["company_name"]}
 
     # ------------------------------------------------------------------ audit
     def _tenant_alive(self, con, tenant_id: str | None) -> bool:
@@ -2792,6 +3129,156 @@ class Store:
                             (iso_in(-self.OAUTH_UNUSED_CLIENT_S), iso_in(-self.OAUTH_IDLE_CLIENT_S)))
         except IntegrityError:          # a grant for one of them was created at this moment: next time
             pass
+
+    # ------------------------------------------------------------------ Ask TradeComply (app/assistant.py)
+    # Every chat query filters by company AND person: a chat is visible only to the person who started it.
+    def create_assistant_conversation(self, tenant_id: str, user_id: int, max_count: int) -> dict | None:
+        """A new, empty chat for this person; None when they already have max_count chats. A chat of theirs that has
+        no answer yet (its first question was stopped, failed or never sent) is reused instead of making another:
+        the app lists only chats with answers, so empty ones must not pile up against the limit unseen."""
+        now = now_iso()
+        with self.connect() as con:
+            self._read_for_update(con, "select id from tenants where id = ?", (tenant_id,))
+            empty = con.execute("select id, created from assistant_conversations c where tenant_id = ? and "
+                                "user_id = ? and not exists (select 1 from assistant_turns t where "
+                                "t.conversation_id = c.id) order by id desc limit 1", (tenant_id, user_id)).fetchone()
+            if empty is not None:
+                con.execute("update assistant_conversations set updated = ? where tenant_id = ? and id = ?",
+                            (now, tenant_id, empty["id"]))
+                return {"id": empty["id"], "title": "New chat", "created": empty["created"], "updated": now,
+                        "turns": 0}
+            have = con.execute("select count(*) from assistant_conversations where tenant_id = ? and user_id = ?",
+                               (tenant_id, user_id)).fetchone()[0]
+            if have >= max_count:
+                return None
+            new_id = self._insert_id(con, "insert into assistant_conversations (tenant_id, user_id, title, created, "
+                                          "updated) values (?,?,?,?,?)", (tenant_id, user_id, "New chat", now, now))
+        return {"id": new_id, "title": "New chat", "created": now, "updated": now, "turns": 0}
+
+    def list_assistant_conversations(self, tenant_id: str, user_id: int, limit: int = 200,
+                                     since: str | None = None) -> list[dict]:
+        """The person's chats, newest first; `since`: only chats used since then (retention not yet purged)."""
+        with self.connect() as con:
+            rows = con.execute("select c.id, c.title, c.created, c.updated, (select count(*) from assistant_turns t "
+                               "where t.conversation_id = c.id) as turns from assistant_conversations c "
+                               "where c.tenant_id = ? and c.user_id = ? and c.updated >= ? "
+                               "order by c.updated desc, c.id desc limit ?",
+                               (tenant_id, user_id, since or "", _limit(limit))).fetchall()
+        return [dict(r) for r in rows]
+
+    def assistant_conversation(self, tenant_id: str, user_id: int, conversation_id,
+                               since: str | None = None) -> dict | None:
+        """The chat and its turns, oldest first (messages_json as stored text), if it is this person's (and, with
+        `since`, used since then)."""
+        if not _id_ok(conversation_id):
+            return None
+        with self.connect() as con:
+            row = con.execute("select id, title, created, updated from assistant_conversations where tenant_id = ? "
+                              "and user_id = ? and id = ? and updated >= ?",
+                              (tenant_id, user_id, conversation_id, since or "")).fetchone()
+            if row is None:
+                return None
+            turns = con.execute("select id, messages_json, prompt, reply, checked_json, outcome, context_tokens, "
+                                "created from assistant_turns where tenant_id = ? and conversation_id = ? order by id",
+                                (tenant_id, conversation_id)).fetchall()
+        out = dict(row)
+        out["turns"] = [{**dict(t), "checked": _loads(t["checked_json"], [])} for t in turns]
+        return out
+
+    def append_assistant_turn(self, tenant_id: str, user_id: int, conversation_id, *, messages: list, prompt: str,
+                              reply: str, checked: list, outcome: str, context_tokens: int = 0,
+                              title: str | None = None) -> dict | None:
+        """Add one turn to the person's chat and touch the chat (its title too, while it is "New chat"), in one
+        transaction. None if the chat is gone or is not theirs."""
+        if outcome not in ASSISTANT_OUTCOMES:
+            raise ValueError(f"bad outcome {outcome!r}")
+        if not _id_ok(conversation_id):
+            return None
+        now = now_iso()
+        with self.connect() as con:
+            row = self._read_for_update(con, "select title from assistant_conversations where tenant_id = ? and "
+                                             "user_id = ? and id = ?", (tenant_id, user_id, conversation_id))
+            if row is None:
+                return None
+            turn = {"messages_json": json.dumps(messages, ensure_ascii=False, separators=(",", ":")),
+                    "prompt": prompt, "reply": reply, "checked_json": _dumps(checked), "outcome": outcome,
+                    "context_tokens": int(context_tokens or 0), "created": now}
+            turn_id = self._insert_id(con, "insert into assistant_turns (tenant_id, conversation_id, messages_json, "
+                                           "prompt, reply, checked_json, outcome, context_tokens, created) values "
+                                           "(?,?,?,?,?,?,?,?,?)", (tenant_id, conversation_id, *turn.values()))
+            new_title = title if title and row["title"] == "New chat" else row["title"]
+            con.execute("update assistant_conversations set updated = ?, title = ? where tenant_id = ? and id = ?",
+                        (now, new_title, tenant_id, conversation_id))
+        return {"id": turn_id, **turn, "checked": checked, "title": new_title}
+
+    def delete_assistant_conversation(self, tenant_id: str, user_id: int, conversation_id) -> bool:
+        if not _id_ok(conversation_id):
+            return False
+        with self.connect() as con:
+            row = self._read_for_update(con, "select id from assistant_conversations where tenant_id = ? and "
+                                             "user_id = ? and id = ?", (tenant_id, user_id, conversation_id))
+            if row is None:
+                return False
+            con.execute("delete from assistant_turns where tenant_id = ? and conversation_id = ?",
+                        (tenant_id, conversation_id))
+            con.execute("delete from assistant_conversations where tenant_id = ? and id = ?",
+                        (tenant_id, conversation_id))
+            return True
+
+    def start_assistant_usage(self, tenant_id: str, user_id: int, model: str) -> int | None:
+        """The usage row of one message, written before its first call to Anthropic: the message counts toward the
+        daily limit even if it is then stopped, times out or fails. Tokens are added as each call reports them
+        (add_assistant_usage). None for a company deleted meanwhile."""
+        with self.connect() as con:
+            if not self._tenant_alive(con, tenant_id):
+                return None
+            return self._insert_id(con, "insert into assistant_usage (tenant_id, user_id, model, created) values "
+                                        "(?, (select id from users where tenant_id = ? and id = ?), ?, ?)",
+                                   (tenant_id, tenant_id, user_id, str(model)[:100], now_iso()))
+
+    def add_assistant_usage(self, tenant_id: str, usage_id: int, *, input_tokens: int = 0, output_tokens: int = 0,
+                            cache_read_tokens: int = 0, cache_write_tokens: int = 0) -> None:
+        with self.connect() as con:
+            con.execute("update assistant_usage set input_tokens = input_tokens + ?, output_tokens = output_tokens + "
+                        "?, cache_read_tokens = cache_read_tokens + ?, cache_write_tokens = cache_write_tokens + ? "
+                        "where tenant_id = ? and id = ?",
+                        (int(input_tokens), int(output_tokens), int(cache_read_tokens), int(cache_write_tokens),
+                         tenant_id, usage_id))
+
+    def assistant_usage_since(self, tenant_id: str, since: str, user_id: int | None = None) -> dict:
+        """Sums since `since` (store time, UTC) for the company, or for one person in it: messages and tokens."""
+        sql = ("select count(*), coalesce(sum(input_tokens), 0), coalesce(sum(output_tokens), 0), "
+               "coalesce(sum(cache_read_tokens), 0), coalesce(sum(cache_write_tokens), 0) from assistant_usage "
+               "where tenant_id = ? and created >= ?")
+        params: list = [tenant_id, since]
+        if user_id is not None:
+            sql += " and user_id = ?"
+            params.append(user_id)
+        with self.connect() as con:
+            row = con.execute(sql, params).fetchone()
+        return dict(zip(("messages", "input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens"),
+                        (int(v) for v in row)))
+
+    def assistant_usage_by_person(self, tenant_id: str, since: str) -> list[dict]:
+        """Per person since `since`: user_id (None for people since removed), messages and token sums."""
+        with self.connect() as con:
+            rows = con.execute("select user_id, count(*) as messages, coalesce(sum(input_tokens), 0) as "
+                               "input_tokens, coalesce(sum(output_tokens), 0) as output_tokens, "
+                               "coalesce(sum(cache_read_tokens), 0) as cache_read_tokens, "
+                               "coalesce(sum(cache_write_tokens), 0) as cache_write_tokens from assistant_usage "
+                               "where tenant_id = ? and created >= ? group by user_id order by messages desc, user_id",
+                               (tenant_id, since)).fetchall()
+        return [{k: (v if k == "user_id" else int(v)) for k, v in dict(r).items()} for r in rows]    # PG sums: numeric
+
+    def purge_assistant(self, chats_before: str, usage_before: str) -> int:
+        """Retention: delete chats not used since `chats_before` (with their turns) and usage rows older than
+        `usage_before`. Returns the number of chats deleted."""
+        with self.connect() as con:
+            con.execute("delete from assistant_turns where conversation_id in (select id from assistant_conversations "
+                        "where updated < ?)", (chats_before,))
+            gone = con.execute("delete from assistant_conversations where updated < ?", (chats_before,)).rowcount
+            con.execute("delete from assistant_usage where created < ?", (usage_before,))
+            return gone
 
     # ------------------------------------------------------------------ key rotation of stored secrets
     def rotate_secret_blobs(self, transform) -> int:

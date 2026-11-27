@@ -182,14 +182,14 @@
     if (d && typeof d === 'object' && d.message) return d.message;
     return status === 0 ? 'You appear to be offline.' : `Something went wrong (${status}).`;
   }
-  async function api(path, { method = 'GET', body, form, raw, contentType, keepSession = false } = {}) {
-    const opts = { method, headers: {}, credentials: 'same-origin' };
+  async function api(path, { method = 'GET', body, form, raw, contentType, keepSession = false, signal } = {}) {
+    const opts = { method, headers: {}, credentials: 'same-origin', signal };
     if (method !== 'GET') opts.headers['X-CSRF-Token'] = cookie('tc_csrf');
     if (form) opts.body = form;
     else if (raw !== undefined) { opts.body = raw; opts.headers['Content-Type'] = contentType || 'text/plain'; }
     else if (body !== undefined) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
     let res;
-    try { res = await fetch(path, opts); } catch (e) { throw new ApiError(0, 'You appear to be offline. Try again when you have signal.'); }
+    try { res = await fetch(path, opts); } catch (e) { throw new ApiError(0, signal && signal.aborted ? 'Stopped.' : 'You appear to be offline. Try again when you have signal.'); }
     const ct = res.headers.get('content-type') || '';
     const data = ct.includes('json') ? await res.json().catch(() => null) : await res.text();
     if (!res.ok) {
@@ -223,6 +223,7 @@
     }
     $('#company').textContent = state.me ? state.me.tenant.company_name : '';
     $('#nav').hidden = !state.me;
+    syncAsk();
     return state.me;
   }
 
@@ -235,16 +236,20 @@
   const go = (path) => { if (location.hash === '#/' + path) render(); else location.hash = '#/' + path; };
 
   const routes = {};
-  const PUBLIC = new Set(['login', 'signup']);
-  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial', connect: 'Connect an app' };
+  const PUBLIC = new Set(['login', 'signup', 'forgot']);
+  const OPEN = new Set(['reset', 'invite']);         // one-time links: work signed in or out (#/reset/<token>)
+  const TITLES = { dashboard: 'Dashboard', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Tools', documents: 'Documents', document: 'Document', field: 'Field', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', login: 'Log in', signup: 'Start free trial', connect: 'Connect an app',
+    forgot: 'Forgot password', reset: 'Set a new password', invite: 'Join your team', 'confirm-email': 'Confirm your email' };
 
   async function render() {
     const seq = ++state.renderSeq;
     let { name, args, query } = parseHash();
-    if (!state.me && !PUBLIC.has(name)) await loadMe();
-    if (!state.me && !PUBLIC.has(name)) name = 'login';
+    const signedOutOk = PUBLIC.has(name) || OPEN.has(name);
+    if (!state.me && !signedOutOk) await loadMe();
+    if (!state.me && !signedOutOk) name = 'login';
     if (state.me && PUBLIC.has(name)) name = 'dashboard';
     if (!routes[name]) name = state.me ? 'dashboard' : 'login';
+    syncAsk();
     document.querySelectorAll('#nav a').forEach((a) => {
       const r = a.dataset.route;
       const cur = r === name || (r === 'projects' && name === 'project') || (r === 'documents' && name === 'document');
@@ -293,6 +298,8 @@
       slot.append(h('div', { class: 'banner warn', role: 'status' }, icon('alert'), h('p', {}, 'You are using a temporary password. Set your own password now.'),
         h('a', { class: 'btn small secondary', href: '#/settings' }, 'Change password')));
     }
+    const confirmBanner = emailConfirmBanner();
+    if (confirmBanner) slot.append(confirmBanner);
     if (ent.ok === false) {
       slot.append(h('div', { class: 'banner error', role: 'alert' }, icon('stop'), h('p', {}, ent.message || 'Subscription required.'),
         can.owner() ? h('button', { class: 'btn small', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null));
@@ -303,6 +310,29 @@
       slot.append(h('div', { class: 'banner info', role: 'status' }, h('p', {}, `${ent.message}.`),
         can.owner() ? h('button', { class: 'btn small secondary', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe') : null));
     }
+  }
+
+  // A small note on the dashboard and Settings while the person's email isn't confirmed (only when this server emails
+  // links). "Not now" hides it for good in this browser. Without a confirmed address there is no reset by email.
+  function emailConfirmBanner() {
+    const u = state.me && state.me.user;
+    const route = parseHash().name || 'dashboard';
+    if (!u || !u.id || u.email_confirmed || !(state.config && state.config.email_links) || state.confirmSent
+      || !['dashboard', 'settings'].includes(route) || local.get(`tc.confirmHidden.${u.id}`)) return null;
+    const box = h('div', { class: 'banner info', role: 'status' });
+    const sent = u.confirm_link_sent;      // a link emailed a moment ago (at sign-up) still works: say so first
+    const send = h('button', { type: 'button', class: 'btn small secondary', onclick: async () => {
+      busy(send, true, 'Sending…');
+      try {
+        await api('/api/auth/email/resend', { method: 'POST' });
+        state.confirmSent = true;
+        box.replaceChildren(h('p', {}, `We sent a link to ${u.email}. It works once, for 24 hours.`));
+      } catch (e) { toast(e.message, true); busy(send, false); }
+    } }, sent ? 'Send a new link' : 'Send link');
+    const later = h('button', { type: 'button', class: 'btn small ghost', onclick: () => { local.set(`tc.confirmHidden.${u.id}`, '1'); box.remove(); } }, 'Not now');
+    box.append(h('p', {}, sent ? `We emailed a link to confirm ${u.email}, so you can reset your password if you forget it. No email? Check spam, or send a new one.`
+      : 'Confirm your email so you can reset your password if you forget it.'), send, later);
+    return box;
   }
 
   // ======================================================================== shared UI pieces
@@ -392,6 +422,9 @@
     const link = (href, text) => keep(`<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`);
     s = esc(String(s ?? '').replace(/\u0000/g, ''));
     s = s.replace(/`([^`]+)`/g, (_, c) => keep(`<code>${c}</code>`));
+    // a page of this app (#/professionals, #/tools/calculate_lien_deadline): opens here, in the same tab
+    s = s.replace(/\[([^\]\u0000]+)\]\((#\/[a-z-]+(?:\/[A-Za-z0-9_-]+)?)\)/g, (_, text, href) => keep(`<a href="${href}">${text}</a>`));
+    s = s.replace(/(^|[\s(])(#\/[a-z-]+(?:\/[A-Za-z0-9_-]+)?)(?=[\s).,;:!?]|$)/g, (_, pre, href) => pre + keep(`<a href="${href}">${href}</a>`));
     s = s.replace(/\[([^\]\u0000]+)\]\(((?:https?:\/\/|mailto:)[^\s()\u0000]+)\)/g, (_, text, href) => link(href, text));
     s = s.replace(/(^|[\s(])(https?:\/\/[^\s()<\u0000]+?)([.,;:!?]*)(?=[\s()<\u0000]|$)/g, (_, pre, href, tail) => pre + link(href, href) + tail);
     s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -1143,6 +1176,7 @@
     const deleted = query && query.get('deleted') === '1';
     // Shown in place of #/connect while signed out: remember the app's request for the trip through SSO or sign-up.
     const connecting = parseHash().name === 'connect';
+    const confirming = parseHash().name === 'confirm-email';     // a confirmation link opened while signed out
     if (connecting) pendingConnect.save(query.get('request'));
     const ssoError = query && query.get('sso') === 'error' ? query.get('message') || 'Signing in with SSO didn\'t work. Try again.' : null;
     const err = h('div', { role: 'alert' }, ssoError ? h('div', { class: 'banner error' }, h('p', {}, ssoError)) : null);
@@ -1163,14 +1197,15 @@
       try {
         const r = await api('/api/auth/login', { method: 'POST', body: formData(form) });
         state.config = null; await loadMe();
-        if (!resumeConnect()) go(r.must_change_password ? 'settings' : 'dashboard');
+        if (!resumeConnect()) { if (confirming) render(); else go(r.must_change_password ? 'settings' : 'dashboard'); }
       } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
     } },
     field('Work email', input('email', { type: 'email', autocomplete: 'username', inputmode: 'email' }), { required: true }),
     field('Password', input('password', { type: 'password', autocomplete: 'current-password' }), { required: true }),
+    h('p', { class: 'small forgot-link' }, h('a', { href: '#/forgot' }, 'Forgot password?')),
     err, btn, h('p', { class: 'auth-or small muted' }, 'or'), sso);
     return h('div', { class: 'auth-wrap' },
-      h('div', { class: 'auth-hero' }, h('h1', {}, 'Log in to TradeComply'), h('p', {}, connecting ? 'Log in to finish connecting the app.' : 'California construction compliance for your company')),
+      h('div', { class: 'auth-hero' }, h('h1', {}, 'Log in to TradeComply'), h('p', {}, connecting ? 'Log in to finish connecting the app.' : confirming ? 'Log in to confirm your email.' : 'California construction compliance for your company')),
       deleted ? h('div', { class: 'banner info', role: 'status' }, h('p', {}, 'Your company account was deleted and you are signed out.'), ...(lastDeletion || []).map((m) => h('p', { class: 'small' }, m))) : null,
       navigator.onLine ? null : h('div', { class: 'banner warn' }, h('p', {}, 'You are offline. Log in once with signal; after that the Field screen works offline.')),
       h('div', { class: 'card' }, form, h('p', { class: 'small muted' }, 'New here? ', h('a', { href: '#/signup' }, 'Start a 14-day free trial'))),
@@ -1206,6 +1241,180 @@
       h('div', { class: 'card small' }, h('h2', {}, 'In the first 15 minutes'), h('ul', { class: 'value-list' },
         h('li', {}, 'License health check on your own CSLB license'), h('li', {}, 'Risk report on your sub list'),
         h('li', {}, 'Lien deadline calendar for a project'), h('li', {}, 'Draft Cal/OSHA safety programs'), h('li', {}, 'Connect your AI assistant'))));
+  };
+
+  // ======================================================================== one-time links (app/auth_links.py)
+  // Forgot password, a reset link, an invite link and an email confirmation link. The token is in the address after
+  // the # (#/reset/<token>), so it never reaches a server log; opening the page uses nothing up. The link is used
+  // only by the button the person presses. Text only, no pop-ups.
+  const LINK_RE = /^tcl_[A-Za-z0-9_-]{43}$/;
+  const MIN_PW = 10;
+  function linkPage() {
+    const wrap = h('div', { class: 'auth-wrap' });
+    const show = (...cards) => {
+      wrap.replaceChildren(...cards);
+      const t = wrap.querySelector('h1');
+      if (t && wrap.isConnected) t.focus();
+      return wrap;
+    };
+    const gone = (message, again) => show(h('div', { class: 'card' },
+      h('h1', { tabindex: '-1' }, 'This link has expired'),
+      h('p', {}, message || 'This link has expired or was already used. Ask for a new one.'),
+      h('div', { class: 'row' }, again || null, h('a', { class: 'btn secondary', href: state.me ? '#/dashboard' : '#/login' }, state.me ? 'Go to your dashboard' : 'Log in'))));
+    return { wrap, show, gone };
+  }
+  // Two password fields that must match (OWASP: type the new password twice).
+  function passwordPair(err, label = 'New password') {
+    const pw = input('pw', { type: 'password', autocomplete: 'new-password', minlength: String(MIN_PW) });
+    const again = input('pw_again', { type: 'password', autocomplete: 'new-password', minlength: String(MIN_PW) });
+    const check = () => {
+      err.replaceChildren();
+      if (pw.value.trim().length < MIN_PW) { err.append(bannerText('error', `Use at least ${MIN_PW} characters.`)); pw.focus(); return null; }
+      if (pw.value !== again.value) { err.append(bannerText('error', 'The two passwords don\'t match.')); again.setAttribute('aria-invalid', 'true'); again.focus(); return null; }
+      again.removeAttribute('aria-invalid');
+      return pw.value.trim();
+    };
+    return { fields: [field(label, pw, { required: true, hint: `At least ${MIN_PW} characters.` }), field('Type it again', again, { required: true })], check };
+  }
+  async function peekLink(token, purpose) {
+    return api('/api/auth/link', { method: 'POST', body: { token, purpose } });
+  }
+  const ssoCard = (company) => h('div', { class: 'card' }, h('h1', { tabindex: '-1' }, 'Sign in with SSO'),
+    h('p', {}, `${company || 'Your company'} signs in with single sign-on (SSO), so you don't need a TradeComply password. Log in with your work email and choose Sign in with SSO.`),
+    h('a', { class: 'btn', href: '#/login' }, 'Go to log in'));
+
+  routes.forgot = async () => {
+    const off = state.config && state.config.email_links === false;
+    const card = h('div', { class: 'card' });
+    const back = h('p', { class: 'small muted link-note' }, h('a', { href: '#/login' }, 'Back to log in'));
+    if (off) {
+      card.append(h('p', {}, 'Email isn\'t set up on this server, so we can\'t email you a reset link.'),
+        h('p', {}, 'Ask your company\'s owner to make you a reset link in Settings > Team. They can text it to you.'), back);
+    } else {
+      const err = h('div', { role: 'alert' });
+      const btn = h('button', { type: 'submit', class: 'btn block' }, 'Email me a reset link');
+      const form = h('form', { onsubmit: async (e) => {
+        e.preventDefault(); err.replaceChildren(); busy(btn, true, 'Sending…');
+        try {
+          const r = await api('/api/auth/forgot', { method: 'POST', body: formData(form) });
+          card.replaceChildren(h('div', { class: 'banner info', role: 'status' }, h('p', {}, r.message)), back);
+        } catch (ex) { err.append(bannerText(isOffline(ex) ? 'warn' : 'error', ex.message)); busy(btn, false); }
+      } },
+      field('Work email', input('email', { type: 'email', autocomplete: 'username', inputmode: 'email' }), { required: true }),
+      err, btn);
+      card.append(form, back);
+    }
+    return h('div', { class: 'auth-wrap' },
+      h('div', { class: 'auth-hero' }, h('h1', {}, 'Forgot your password?'), h('p', {}, off ? 'Your company\'s owner can help.' : 'We\'ll email you a link to set a new one.')),
+      card);
+  };
+
+  routes.reset = async ({ args }) => {
+    const token = args[0] || '';
+    const page = linkPage();
+    const again = h('a', { class: 'btn', href: '#/forgot' }, 'Get a new link');
+    if (!LINK_RE.test(token)) return page.gone(null, again);
+    let link;
+    try { link = await peekLink(token, 'reset'); } catch (e) {
+      if (e.status === 404 || e.status === 422) return page.gone(e.status === 404 ? e.message : null, again);
+      throw e;
+    }
+    if (link.sso) return page.show(ssoCard(link.company_name));
+    const err = h('div', { role: 'alert' });
+    const pair = passwordPair(err);
+    const btn = h('button', { type: 'submit', class: 'btn block' }, 'Set new password');
+    const form = h('form', { novalidate: true, onsubmit: async (e) => {
+      e.preventDefault();
+      const pw = pair.check();
+      if (!pw) return;
+      busy(btn, true, 'Saving…');
+      try {
+        const r = await api('/api/auth/reset', { method: 'POST', body: { token, new_password: pw } });
+        if (state.me && state.me.user.email === r.email) await signedOut();     // that session just ended too
+        page.show(h('div', { class: 'card', role: 'status' }, h('h1', { tabindex: '-1' }, 'Password changed'),
+          h('p', {}, `Log in as ${r.email} with your new password. You were signed out on every other device, and apps you connected were disconnected.`),
+          h('a', { class: 'btn', href: '#/login' }, 'Log in')));
+      } catch (ex) {
+        if (ex.status === 404) { page.gone(ex.message, again); return; }
+        err.append(bannerText(isOffline(ex) ? 'warn' : 'error', ex.message)); busy(btn, false);
+      }
+    } }, ...pair.fields, err, btn);
+    return page.show(h('div', { class: 'card' }, h('h1', { tabindex: '-1' }, 'Set a new password'),
+      h('p', {}, 'For ', h('strong', {}, link.email), link.company_name ? ` at ${link.company_name}` : '', '.'),
+      form,
+      h('p', { class: 'small muted link-note' }, `This link works once, until ${fmtDateTime(link.expires_at)}.`)));
+  };
+
+  routes.invite = async ({ args }) => {
+    const token = args[0] || '';
+    const page = linkPage();
+    const askOwner = h('p', { class: 'small muted' }, 'Ask the person who invited you for a new invite link.');
+    if (!LINK_RE.test(token)) return page.gone(null, askOwner);
+    let link;
+    try { link = await peekLink(token, 'invite'); } catch (e) {
+      if (e.status === 404 || e.status === 422) return page.gone(e.status === 404 ? 'This invite link has expired or was already used. Ask the person who invited you for a new one.' : null);
+      throw e;
+    }
+    if (link.sso) return page.show(ssoCard(link.company_name));
+    const company = link.company_name || 'your company';
+    const err = h('div', { role: 'alert' });
+    const pair = passwordPair(err, 'Choose a password');
+    const btn = h('button', { type: 'submit', class: 'btn block' }, 'Join and sign in');
+    const nameIn = input('name', { autocomplete: 'name', value: link.name || '' });
+    const form = h('form', { novalidate: true, onsubmit: async (e) => {
+      e.preventDefault();
+      const pw = pair.check();
+      if (!pw) return;
+      busy(btn, true, 'Joining…');
+      try {
+        await api('/api/auth/invite/accept', { method: 'POST', body: { token, password: pw, name: nameIn.value.trim() || null } });
+        if (state.me) await signedOut();           // another account was signed in on this browser
+        state.config = null;
+        await loadMe();
+        toast(`Welcome to ${company}`);
+        location.replace('#/welcome');             // the used link doesn't stay in history
+      } catch (ex) {
+        if (ex.status === 404) { page.gone('This invite link has expired or was already used. Ask the person who invited you for a new one.'); return; }
+        err.append(bannerText(isOffline(ex) ? 'warn' : 'error', ex.message)); busy(btn, false);
+      }
+    } },
+    field('Email', input('email_shown', { value: link.email, readonly: true, autocomplete: 'username' })),
+    field('Your name', nameIn), ...pair.fields, err, btn);
+    return page.show(h('div', { class: 'card' }, h('h1', { tabindex: '-1' }, `Join ${company} on TradeComply`),
+      h('p', {}, 'Set your password to sign in. California construction compliance checks, deadlines and field logs for your team.'),
+      state.me && state.me.user.email !== link.email ? bannerText('warn', `You're signed in as ${state.me.user.email}. Joining signs you out of that account on this browser.`) : null,
+      form,
+      h('p', { class: 'small muted link-note' }, `This invite works once, until ${fmtDateTime(link.expires_at)}.`)));
+  };
+
+  routes['confirm-email'] = async ({ args }) => {
+    const token = args[0] || '';
+    const page = linkPage();
+    const again = h('a', { class: 'btn', href: '#/settings' }, 'Send a new link');
+    if (!LINK_RE.test(token)) return page.gone(null, again);
+    let link;
+    try { link = await peekLink(token, 'confirm'); } catch (e) {
+      if (e.status === 404 || e.status === 422) return page.gone(e.status === 404 ? 'This link has expired or was already used. You can send a new one from Settings.' : null, again);
+      throw e;
+    }
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'button', class: 'btn block', onclick: async () => {
+      err.replaceChildren(); busy(btn, true, 'Confirming…');
+      try {
+        const r = await api('/api/auth/email/confirm', { method: 'POST', body: { token } });
+        await loadMe();
+        toast(r.changed ? `Your sign-in email is now ${r.email}` : 'Email confirmed');
+        location.replace('#/settings');
+      } catch (ex) {
+        if (ex.status === 404) { page.gone(ex.message, again); return; }
+        err.append(bannerText(isOffline(ex) ? 'warn' : 'error', ex.message)); busy(btn, false);
+      }
+    } }, 'Confirm email');
+    const changing = link.email !== state.me.user.email;
+    return page.show(h('div', { class: 'card' }, h('h1', { tabindex: '-1' }, 'Confirm your email'),
+      h('p', {}, changing ? 'Make ' : 'Confirm ', h('strong', {}, link.email), changing ? ' your sign-in email.' : ' as your sign-in email.'),
+      h('p', { class: 'small muted' }, `Signed in as ${state.me.user.email}.`),
+      err, btn));
   };
 
   // ======================================================================== connect an app (OAuth consent) + connected apps
@@ -3258,6 +3467,118 @@
       h('div', { class: 'row' }, dl), dlOut,
       h('details', { class: 'danger-zone' }, h('summary', {}, 'Delete company account'), h('div', { class: 'danger-body' }, form)));
   }
+
+  // Settings > Team: what an invite or an owner's reset link gave back. The owner always gets the link to copy
+  // (built from this browser's address when the server has no APP_URL: it never goes into an email from here).
+  const oneTimeUrl = (url, path) => url || (path ? location.origin + path : null);
+  function showInvite(slot, r) {
+    const url = oneTimeUrl(r.invite_url, r.invite_path);
+    fill(slot, h('div', { class: 'secret', role: 'status' }, h('p', {}, h('strong', {}, `${r.email} (${humanize(r.role)})`)), h('p', {}, r.message),
+      url ? copyBox(url, 'invite link') : null,
+      url ? h('p', { class: 'small muted' }, `Works once, until ${fmtDateTime(r.expires_at)}. Anyone with this link can join as ${r.email}, so send it only to them.`) : null));
+    slot.firstChild.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
+  }
+  function showResetLink(slot, r) {
+    fill(slot, h('div', { class: 'secret', role: 'status' }, h('p', {}, h('strong', {}, `Password reset link for ${r.email}`)),
+      copyBox(oneTimeUrl(r.reset_url, r.reset_path), 'reset link'),
+      h('p', { class: 'small muted' }, `Works once, until ${fmtDateTime(r.expires_at)}. Send it to them yourself (text or in person). Their password stays the same until they use it.`)));
+    slot.firstChild.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
+  }
+  // Settings > Your account: confirm the email, or change it (current password, then a link to the new address).
+  function emailAccount(me) {
+    const out = h('div', { 'aria-live': 'polite' });
+    const parts = [];
+    if (!me.user.email_confirmed) {
+      const send = h('button', { type: 'button', class: 'btn secondary small', onclick: async () => {
+        busy(send, true, 'Sending…');
+        try { await api('/api/auth/email/resend', { method: 'POST' }); fill(out, bannerText('info', `We sent a link to ${me.user.email}. It works once, for 24 hours.`)); } catch (e) { fill(out, bannerText('error', e.message)); }
+        busy(send, false);
+      } }, me.user.confirm_link_sent ? 'Send a new link' : 'Send confirmation link');
+      parts.push(h('p', { class: 'small muted' }, me.user.confirm_link_sent ? 'We emailed you a link to confirm this address. Confirm it so you can reset your password by email if you forget it. '
+        : 'Confirm your email so you can reset your password by email if you forget it. '), send);
+    }
+    const err = h('div', { role: 'alert' });
+    const btn = h('button', { type: 'submit', class: 'btn secondary' }, 'Send link to new email');
+    const form = h('form', { onsubmit: async (e) => {
+      e.preventDefault(); fill(err); busy(btn, true, 'Sending…');
+      try {
+        const r = await api('/api/auth/email/change', { method: 'POST', body: formData(form) });
+        form.reset();
+        fill(out, bannerText('info', r.sent ? `We sent a link to ${r.sent_to}. Open it within 24 hours, signed in as you, and your sign-in email changes.` : 'We couldn\'t send the email. Try again later.'));
+      } catch (ex) { err.append(bannerText('error', ex.message)); }
+      busy(btn, false);
+    } }, h('div', { class: 'form-grid' },
+      field('New email', input('new_email', { type: 'email', inputmode: 'email', autocomplete: 'email' }), { required: true }),
+      field('Current password', input('current_password', { type: 'password', autocomplete: 'current-password' }), { required: true })),
+    err, btn);
+    parts.push(out, h('details', { class: 'snippet' }, h('summary', {}, 'Change email'), form));
+    return h('div', { class: 'email-account' }, parts);
+  }
+  // Settings > Email (owners): is sending set up on this server, and which settings to give whoever runs it.
+  // Names only: the server never sends a value.
+  function emailSection() {
+    const body = h('div', {}, h('p', { class: 'loading' }, 'Loading…'));
+    const sec = h('section', { class: 'card', id: 'email', 'aria-labelledby': 'email-h' }, h('h2', { id: 'email-h' }, 'Email'), body);
+    const names = (list) => list.map((n, k) => [k ? ', ' : '', String(n).split(' or ').map((x, j) => [j ? ' or ' : '', h('code', {}, x)])]);
+    api('/api/auth/email-status').then((st) => {
+      const kind = { postmark: 'Postmark', smtp: 'SMTP', outbox: 'a test outbox (local only)' }[st.backend] || st.backend;
+      const out = h('div', { 'aria-live': 'polite' });
+      const items = [];
+      if (st.enabled) {
+        items.push(h('p', {}, h('span', { class: 'pill green' }, 'Set up'), ` Invites, password resets and email confirmations are emailed, through ${kind}.`));
+        const test = h('button', { type: 'button', class: 'btn secondary small', onclick: async () => {
+          busy(test, true, 'Sending…');
+          try { const r = await api('/api/auth/email-test', { method: 'POST' }); fill(out, bannerText(r.sent ? 'info' : 'warn', r.sent ? `Test email sent to ${r.to}.` : 'The test email wasn\'t accepted. Check the email settings on the server.')); } catch (e) { fill(out, bannerText('error', e.message)); }
+          busy(test, false);
+        } }, 'Send me a test email');
+        items.push(h('div', { class: 'row' }, test), out);
+      } else {
+        items.push(h('p', {}, h('span', { class: 'pill gray' }, 'Not set up'), ' Invites and reset links aren\'t emailed. You can still copy them in Team and send them yourself.'));
+        items.push(h('p', { class: 'small' }, 'Whoever runs this TradeComply server sets these environment variables: ', h('code', {}, 'MAIL_FROM'), ', and either ',
+          h('code', {}, 'POSTMARK_SERVER_TOKEN'), ' (Postmark) or ', names(st.env.smtp), ' (SMTP). ', h('code', {}, 'APP_URL'), ' must be this server\'s https address.'));
+        if (st.missing && st.missing.length) items.push(h('p', { class: 'small' }, 'Missing or not valid: ', names(st.missing), '.'));
+        items.push(h('p', { class: 'small muted' }, 'Render\'s free plan blocks email (SMTP) ports, so use Postmark there.'));
+      }
+      fill(body, items);
+    }).catch((e) => fill(body, h('p', { class: 'muted' }, e.message)));
+    return sec;
+  }
+  // Settings > Ask TradeComply (owners): is the AI helper set up on this server, is it on for the company, and this
+  // month's use. Names the server setting, never its value.
+  function assistantSection() {
+    const st = (state.me && state.me.assistant) || {};
+    const body = h('div', {}, h('p', { class: 'loading' }, 'Loading…'));
+    const sec = h('section', { class: 'card', id: 'ask-settings', 'aria-labelledby': 'ask-set-h' }, h('h2', { id: 'ask-set-h' }, 'Ask TradeComply'), body);
+    if (!st.configured) {
+      fill(body, h('p', {}, h('span', { class: 'pill gray' }, 'Not set up'), ' AI helper is not set up. Whoever runs this server turns it on with the ',
+        h('code', {}, st.env_var || 'ANTHROPIC_API_KEY'), ' setting.'));
+      return sec;
+    }
+    const num = (n) => Number(n || 0).toLocaleString('en-US');
+    const draw = (u) => {
+      const out = h('div', { 'aria-live': 'polite' });
+      const sw = h('input', { type: 'checkbox', role: 'switch', checked: u.enabled });
+      sw.addEventListener('change', async () => {
+        sw.disabled = true;
+        try {
+          state.me.assistant = await api('/api/assistant/settings', { method: 'PUT', body: { enabled: sw.checked } });
+          syncAsk();
+          fill(out, bannerText('info', sw.checked ? 'Ask TradeComply is on for your team.' : 'Ask TradeComply is off. No one in your company can use it.'));
+        } catch (e) { sw.checked = !sw.checked; fill(out, bannerText('error', e.message)); }
+        sw.disabled = false;
+      });
+      const pct = u.budget_tokens ? Math.min(100, Math.round((100 * u.counted_tokens) / u.budget_tokens)) : 0;
+      fill(body,
+        h('p', { class: 'muted' }, 'The Ask button in the top bar answers questions in plain words and runs the same checks as the Tools page. Answers come from Claude by Anthropic: what people type and the check results are sent to Anthropic.'),
+        h('label', { class: 'switch' }, sw, h('span', {}, 'Let my team use Ask TradeComply')), out,
+        h('p', {}, `This month: ${plural(u.messages, 'question')}, ${num(u.counted_tokens)} of ${num(u.budget_tokens)} tokens (${pct}%).`),
+        u.people.length ? table([{ label: 'Person', render: (r) => r.email || 'Someone since removed' }, { label: 'Questions', key: 'messages' },
+          { label: 'Tokens', render: (r) => num(r.counted_tokens) }], u.people) : null,
+        h('p', { class: 'small muted' }, `Each person can ask ${u.daily_messages} questions a day. The monthly allowance is counted in tokens (pieces of words); parts of a chat the AI has already read count a tenth.`));
+    };
+    api('/api/assistant/usage').then(draw).catch((e) => fill(body, h('p', { class: 'muted' }, e.message)));
+    return sec;
+  }
   routes.settings = async ({ query }) => {
     if (query.get('integration')) {         // the OAuth callback lands on #/settings?integration=..&result=..
       location.replace(`#/integrations?${query.toString()}`);
@@ -3266,6 +3587,7 @@
     if (query.get('billing') === 'success') { toast('Thanks! Your subscription is being activated.'); setTimeout(async () => { await loadMe(); renderBanner(); }, 2500); }
     const me = state.me;
     const sections = [];
+    const emailLinks = !!(state.config && state.config.email_links);
     // account
     const pwErr = h('div', { role: 'alert' });
     const pwForm = h('form', { onsubmit: async (e) => {
@@ -3283,7 +3605,9 @@
       go('login');
     };
     sections.push(h('section', { class: 'card', 'aria-labelledby': 'acct-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'acct-h' }, 'Your account'), h('button', { type: 'button', class: 'btn ghost', onclick: logout }, 'Log out')),
-      h('dl', { class: 'kv' }, h('dt', {}, 'Email'), h('dd', {}, me.user.email || '—'), h('dt', {}, 'Role'), h('dd', {}, humanize(me.user.role))), pwForm));
+      h('dl', { class: 'kv' }, h('dt', {}, 'Email'), h('dd', {}, me.user.email || '—', emailLinks ? ' ' : null, emailLinks ? h('span', { class: `pill ${me.user.email_confirmed ? 'green' : 'gray'}` }, me.user.email_confirmed ? 'Confirmed' : 'Not confirmed') : null),
+        h('dt', {}, 'Role'), h('dd', {}, humanize(me.user.role))),
+      emailLinks ? emailAccount(me) : null, pwForm));
     sections.push(connectedAppsSection());
     if (can.write()) {
       // company
@@ -3296,31 +3620,57 @@
       sections.unshift(h('section', { class: 'card' }, h('h2', {}, 'Company'), cForm));
       // team
       const team = h('div', {});
+      const linkOut = h('div', { 'aria-live': 'polite' });
       const drawTeam = async () => {
         const users = await api('/api/users');
+        const owner = can.owner();
+        const act = (u) => {
+          if (!owner || u.id === me.user.id) return null;
+          const btn = (label, aria, fn) => { const b = h('button', { type: 'button', class: 'btn ghost small', 'aria-label': `${aria} for ${u.email}`, onclick: () => fn(b) }, label); return b; };
+          if (!u.last_login) {
+            return h('div', { class: 'row' },
+              btn('New invite link', 'New invite link', async (b) => { busy(b, true, 'Making…'); try { showInvite(linkOut, await api(`/api/users/${u.id}/invite`, { method: 'POST' })); } catch (e) { toast(e.message, true); } busy(b, false); }),
+              btn('Cancel invite', 'Cancel invite', async (b) => {
+                if (!confirm(`Cancel the invite for ${u.email}? Their invite link stops working.`)) return;
+                busy(b, true, 'Canceling…');
+                try { await api(`/api/users/${u.id}`, { method: 'DELETE' }); fill(linkOut); toast(`Invite for ${u.email} canceled`); drawTeam(); } catch (e) { toast(e.message, true); busy(b, false); }
+              }));
+          }
+          return h('div', { class: 'row' },
+            btn('Reset link', 'Make a password reset link', async (b) => { busy(b, true, 'Making…'); try { showResetLink(linkOut, await api(`/api/users/${u.id}/reset-link`, { method: 'POST' })); } catch (e) { fill(linkOut, bannerText('error', e.message)); } busy(b, false); }),
+            h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Remove ${u.email}?`)) { await api(`/api/users/${u.id}`, { method: 'DELETE' }); drawTeam(); } } }, 'Remove'));
+        };
         team.replaceChildren(table([
           { label: 'Person', bare: true, render: (u) => h('div', {}, h('strong', {}, u.name || u.email, u.id === me.user.id ? ' (you)' : ''), u.name ? h('div', { class: 'small muted' }, u.email) : null) },
-          { label: 'Role', render: (u) => can.owner() && u.id !== me.user.id ? (() => { const s = select('role', [['owner', 'Owner'], ['office', 'Office'], ['field', 'Field']], u.role, { 'aria-label': `Role for ${u.email}` }); s.addEventListener('change', async () => { try { await api(`/api/users/${u.id}`, { method: 'PATCH', body: { role: s.value } }); toast('Role updated'); } catch (e) { toast(e.message, true); } }); return s; })() : humanize(u.role) },
-          { label: 'Last login', render: (u) => fmtDateTime(u.last_login) },
-          { label: 'Actions', bare: true, render: (u) => can.owner() && u.id !== me.user.id ? h('button', { type: 'button', class: 'btn ghost small', onclick: async () => { if (confirm(`Remove ${u.email}?`)) { await api(`/api/users/${u.id}`, { method: 'DELETE' }); drawTeam(); } } }, 'Remove') : null }], users));
+          { label: 'Role', render: (u) => owner && u.id !== me.user.id ? (() => { const s = select('role', [['owner', 'Owner'], ['office', 'Office'], ['field', 'Field']], u.role, { 'aria-label': `Role for ${u.email}` }); s.addEventListener('change', async () => { try { await api(`/api/users/${u.id}`, { method: 'PATCH', body: { role: s.value } }); toast('Role updated'); } catch (e) { toast(e.message, true); } }); return s; })() : humanize(u.role) },
+          { label: 'Last login', render: (u) => (u.last_login ? fmtDateTime(u.last_login) : u.id === me.user.id ? '—' : h('span', { class: 'pill amber' }, 'Invited')) },
+          { label: 'Actions', bare: true, render: act }], users));
       };
       await drawTeam();
       let invite = null;
       if (can.owner()) {
         const out = h('div', { 'aria-live': 'polite' });
+        const iErr = h('div', { role: 'alert' });
+        const iBtn = h('button', { type: 'submit', class: 'btn secondary' }, 'Invite');
         const iForm = h('form', { onsubmit: async (e) => {
-          e.preventDefault(); out.replaceChildren();
+          e.preventDefault(); fill(out); fill(iErr); busy(iBtn, true, 'Inviting…');
           try {
             const r = await api('/api/users', { method: 'POST', body: formData(iForm) });
-            out.append(h('div', { class: 'secret' }, h('p', {}, h('strong', {}, `Temporary password for ${r.email}`), ` (${humanize(r.role)}). ${r.message}`), copyBox(r.temporary_password, 'temporary password')));
-            iForm.reset(); drawTeam();
-          } catch (ex) { out.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); }
-        } }, h('div', { class: 'form-grid' }, field('Email', input('email', { type: 'email' }), { required: true }),
+            iForm.reset();
+            await drawTeam().catch(() => {});
+            showInvite(out, r);
+          } catch (ex) { iErr.append(bannerText('error', ex.message)); }
+          busy(iBtn, false);
+        } }, h('div', { class: 'form-grid' }, field('Email', input('email', { type: 'email', inputmode: 'email' }), { required: true }),
+          field('Name', input('name', { autocomplete: 'off' })),
           field('Role', select('role', [['field', 'Field (logs only)'], ['office', 'Office (everything but billing)'], ['owner', 'Owner (everything)']], 'field'))),
-        h('button', { type: 'submit', class: 'btn secondary' }, 'Invite'));
-        invite = h('div', {}, h('h3', {}, 'Invite someone'), iForm, out);
+        iErr, iBtn);
+        invite = h('div', {}, h('h3', {}, 'Invite someone'),
+          h('p', { class: 'small muted' }, emailLinks ? 'They get an email with a link to set their own password. You also get the link to send yourself.' : 'You get a link to send them (text or email). They use it to set their own password.'),
+          iForm, out);
       }
-      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Team'), team, invite));
+      sections.push(h('section', { class: 'card' }, h('h2', {}, 'Team'), team, linkOut, invite));
+      if (can.owner()) sections.push(emailSection(), assistantSection());
       // AI + keys
       const keys = h('div', {});
       const drawKeys = async () => {
@@ -3358,7 +3708,7 @@
         const moreBtn = all.length > auditShown ? h('button', { type: 'button', class: 'btn secondary small', onclick: () => { auditShown += 25; loadAudit(); } }, `Show more (${all.length - auditShown} older)`) : null;
         auditSlot.replaceChildren(...[rows.length ? table([
           { label: 'When', render: (r) => fmtDateTime(r.created) }, { label: 'Who', key: 'user' }, { label: 'Check', render: (r) => humanize(r.tool) },
-          { label: 'Via', render: (r) => r.source === 'mcp' ? 'AI assistant' : 'Web/API' },
+          { label: 'Via', render: (r) => ({ mcp: 'AI assistant', assistant: 'Ask TradeComply' }[r.source] || 'Web/API') },
           { label: 'Result', render: (r) => r.ok ? (r.verified === true ? h('span', { class: 'pill green' }, 'Verified') : r.verified === false ? h('span', { class: 'pill amber' }, 'Not yet verified') : h('span', { class: 'pill gray' }, 'Done')) : h('span', { class: 'pill red' }, 'Error') }], rows) : h('p', { class: 'muted' }, 'No checks run yet.'), moreBtn].filter(Boolean));
       };
       sections.push(h('section', { class: 'card' }, h('div', { class: 'card-head' }, h('h2', {}, 'Activity log'), h('button', { type: 'button', class: 'btn ghost small', onclick: loadAudit }, 'Refresh')), auditSlot));
@@ -3387,6 +3737,190 @@
     return h('div', {}, h('div', { class: 'page-head' }, h('h1', {}, 'Settings')), jump, h('div', { class: 'stack' }, sections));
   };
 
+  // ======================================================================== Ask TradeComply (the AI helper)
+  // The Ask button in the top bar opens a sheet beside the page (full screen on phones) for questions in plain words.
+  // Answers come from Claude through /api/assistant (app/assistant.py), which runs the same checks as the Tools page
+  // as the person signed in. What the person typed is shown as text and answers go through md() (escaped first).
+  // Nothing opens by itself; Esc or Close returns to the button. Only the open page's name is sent, never its data.
+  // On phones the panel is full screen: a modal dialog (the page behind is inert) that the Back button closes.
+  const ask = { conv: null, chats: null, ctrl: null, parts: null, who: null, pushed: false, after: null, rows: new Map() };
+  const askAvailable = () => !!(state.me && state.me.assistant && state.me.assistant.available);
+  const narrowScreen = () => { try { return window.matchMedia('(max-width: 899px)').matches; } catch (e) { return false; } };
+  function syncAsk() {
+    const btn = $('#ask-open');
+    if (!btn) return;
+    const who = state.me && state.me.user && state.me.user.id ? `${state.me.tenant.id}|${state.me.user.id}` : null;
+    if (who !== ask.who) {          // someone else signed in on this device: nothing of the last person's stays
+      closeAsk(false);
+      ask.who = who; ask.conv = null; ask.chats = null;
+      if (ask.parts) { ask.parts.ta.value = ''; fill(ask.parts.status); askDraw(); }
+    }
+    btn.hidden = !askAvailable();
+    if (btn.hidden) { closeAsk(false); ask.conv = null; ask.chats = null; }
+  }
+  const askLog = () => h('div', { class: 'ask-log', role: 'log', 'aria-live': 'polite', 'aria-label': 'Conversation' });
+  function askParts() {
+    if (ask.parts) return ask.parts;
+    const log = askLog();
+    const status = h('div', { class: 'ask-status', role: 'status' });
+    const ta = h('textarea', { name: 'question', rows: '2', maxlength: '2000', 'aria-label': 'Your question', placeholder: 'Ask about a rule, a deadline or where to find something' });
+    const send = h('button', { type: 'submit', class: 'btn' }, 'Send');
+    const form = h('form', { class: 'ask-form', onsubmit: (e) => { e.preventDefault(); if (ask.ctrl) askStop(); else askSend(); } }, ta, send);
+    const chats = h('details', { class: 'ask-chats', hidden: true });
+    ta.addEventListener('keydown', (e) => {           // Enter sends on a keyboard; Shift+Enter (and Enter on phones) is a new line
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !narrowScreen()) { e.preventDefault(); if (!ask.ctrl) askSend(); }
+    });
+    const panel = $('#ask-panel');
+    panel.addEventListener('click', (e) => {          // an app page linked in an answer: on a phone, show the page
+      const a = e.target.closest && e.target.closest('.ask-log a[href^="#/"]');
+      if (a && narrowScreen()) { e.preventDefault(); closeAsk(false, a.getAttribute('href')); }
+    });
+    panel.replaceChildren(
+      h('div', { class: 'ask-head' }, h('h2', { id: 'ask-title' }, 'Ask TradeComply'),
+        h('button', { type: 'button', class: 'btn ghost small', onclick: () => { if (ask.ctrl) return; ask.conv = null; fill(status); askDraw(); ta.focus(); } }, 'New chat'),
+        h('button', { type: 'button', class: 'btn ghost small', onclick: () => closeAsk() }, 'Close')),
+      h('p', { class: 'ask-note' }, 'Answers come from Claude by Anthropic and can be wrong. What you type and tool results are sent to Anthropic.'),
+      chats, log, status, form);
+    ask.parts = { log, status, ta, send, chats };
+    return ask.parts;
+  }
+  const askAnswer = (t) => {
+    const checked = (t.checked || []).filter((c) => c && c.title);
+    return [checked.length ? h('p', { class: 'ask-checked' }, 'Checked: ', checked.map((c) => c.title + (c.ok ? '' : ' (could not run)')).join(', ')) : null,
+      h('div', { class: 'ask-a md' + (t.outcome === 'refused' ? ' muted' : ''), html: md(t.reply) }),
+      t.outcome === 'cut_off' ? h('p', { class: 'small muted' }, 'This answer was cut short. Ask about one part at a time for the rest.') : null];
+  };
+  const askTurnEl = (t) => h('div', { class: 'ask-turn' }, h('p', { class: 'ask-q' }, t.prompt), askAnswer(t));
+  // A whole chat goes into a new log element: a live region reads out whatever is added to it, so refilling the old
+  // one would read the whole conversation again. A new answer is added to the log on its own (askSend).
+  function askDraw() {
+    const p = askParts();
+    const turns = ask.conv ? ask.conv.turns : [];
+    const log = fill(askLog(), turns.length ? turns.map(askTurnEl) : h('p', { class: 'ask-empty' }, 'Ask about a California rule, a deadline, a license, or where something is in TradeComply. It checks with the same tools as the Tools page.'));
+    p.log.replaceWith(log);
+    p.log = log;
+    log.scrollTop = log.scrollHeight;
+    drawAskChats();
+  }
+  function drawAskChats() {
+    const { chats, ta } = askParts();
+    const list = (ask.chats || []).filter((c) => c.turns > 0);
+    chats.hidden = !list.length;
+    ask.rows = new Map();
+    const row = (c, i) => {
+      const li = h('li', {});
+      const open = h('button', { type: 'button', class: 'btn ghost small ask-chat-title', 'aria-current': ask.conv && ask.conv.id === c.id ? 'true' : null, onclick: () => askOpenChat(c.id) }, c.title);
+      const del = h('button', { type: 'button', class: 'btn ghost small', 'aria-label': `Delete chat: ${c.title}`, onclick: () => {
+        const keep = h('button', { type: 'button', class: 'btn ghost small', onclick: () => { drawAskChats(); const r = ask.rows.get(c.id); if (r) r.del.focus(); } }, 'Keep');
+        fill(li, h('span', { class: 'small' }, 'Delete this chat?'),
+          h('button', { type: 'button', class: 'btn danger small', onclick: async () => {
+            try {
+              await api(`/api/assistant/conversations/${c.id}`, { method: 'DELETE' });
+              const next = list[i + 1] || list[i - 1];
+              ask.chats = ask.chats.filter((x) => x.id !== c.id);
+              if (ask.conv && ask.conv.id === c.id) ask.conv = null;
+              askDraw();
+              const to = next && ask.rows.get(next.id);       // keyboard users keep their place in the list
+              (to ? to.open : chats.hidden ? ta : chats.querySelector('summary')).focus();
+            } catch (e) { toast(e.message, true); }
+          } }, 'Delete'), keep);
+        keep.focus();
+      } }, 'Delete');
+      ask.rows.set(c.id, { open, del });
+      return append(li, [open, del]);
+    };
+    fill(chats, h('summary', {}, `Earlier chats (${list.length})`), h('ul', { class: 'ask-chat-list' }, list.map(row)));
+  }
+  async function askLoadChats() {
+    try { ask.chats = (await api('/api/assistant/conversations')).conversations; } catch (e) { ask.chats = ask.chats || []; }
+    drawAskChats();
+  }
+  async function askOpenChat(id) {
+    if (ask.ctrl) return;
+    const { status, ta } = askParts();
+    try { ask.conv = await api(`/api/assistant/conversations/${id}`); fill(status); askDraw(); ta.focus(); } catch (e) { fill(status, h('p', { class: 'ask-error', role: 'alert' }, e.message)); }
+  }
+  async function askSend() {
+    const p = askParts();
+    const text = p.ta.value.trim();
+    if (!text || ask.ctrl) return;
+    const ctrl = ask.ctrl = new AbortController();
+    p.send.textContent = 'Stop'; p.send.classList.add('secondary');
+    fill(p.status, 'Working on it…');
+    if (!ask.conv || !ask.conv.turns.length) fill(p.log);
+    const pending = h('div', { class: 'ask-turn' }, h('p', { class: 'ask-q' }, text));
+    p.log.append(pending);
+    p.log.scrollTop = p.log.scrollHeight;
+    let note = '', answered = null;
+    try {
+      if (!ask.conv) ask.conv = await api('/api/assistant/conversations', { method: 'POST', body: {}, signal: ctrl.signal });
+      const page = parseHash().name;
+      const r = await api(`/api/assistant/conversations/${ask.conv.id}/messages`, { method: 'POST', body: { text, page }, signal: ctrl.signal });
+      if (r.turn) {
+        ask.conv.turns.push(r.turn);
+        ask.conv.title = r.title;
+        answered = r.turn;
+        p.ta.value = '';
+        if (r.messages_left_today <= 5) note = r.messages_left_today ? `${plural(r.messages_left_today, 'question')} left today.` : 'That was your last question for today.';
+        askLoadChats();
+      } else note = 'Stopped. Nothing was saved.';
+    } catch (e) {
+      note = ctrl.signal.aborted ? 'Stopped. Nothing was saved.' : h('p', { class: 'ask-error', role: 'alert' }, e.message);
+    }
+    ask.ctrl = null;
+    p.send.textContent = 'Send'; p.send.classList.remove('secondary');
+    if (answered) { append(pending, askAnswer(answered)); drawAskChats(); }   // only the answer is new to the log
+    else if (ask.conv && ask.conv.turns.length) pending.remove();
+    else askDraw();
+    fill(p.status, note);
+    p.log.scrollTop = p.log.scrollHeight;           // the note takes room from the conversation: keep its end in view
+  }
+  function askStop() {
+    const ctrl = ask.ctrl;
+    if (!ctrl) return;
+    if (ask.conv) api(`/api/assistant/conversations/${ask.conv.id}/stop`, { method: 'POST' }).catch(() => {});
+    ctrl.abort();
+  }
+  // Full screen (phones): a modal dialog with the page behind it inert. Beside the page (wide screens): a side panel.
+  function askModal() {
+    const panel = $('#ask-panel');
+    const modal = !panel.hidden && narrowScreen();
+    panel.setAttribute('role', modal ? 'dialog' : 'complementary');
+    if (modal) panel.setAttribute('aria-modal', 'true'); else panel.removeAttribute('aria-modal');
+    $('.app').inert = modal;
+  }
+  function openAsk() {
+    if (!askAvailable()) return;
+    const { ta } = askParts();
+    $('#ask-panel').hidden = false;
+    $('#ask-open').setAttribute('aria-expanded', 'true');
+    document.body.classList.add('ask-on');
+    askModal();
+    if (narrowScreen() && !ask.pushed) { history.pushState({ askPanel: true }, ''); ask.pushed = true; }   // Back closes it
+    askDraw();
+    if (ask.chats === null) askLoadChats();
+    if (ask.conv && !ask.ctrl) {      // an answer saved after the signal dropped shows up here
+      api(`/api/assistant/conversations/${ask.conv.id}`).then((c) => { if (!ask.ctrl) { ask.conv = c; askDraw(); } })
+        .catch((e) => { if (e.status === 404) { ask.conv = null; askDraw(); } });
+    }
+    ta.focus();
+  }
+  // `then`: an app page to show once closed (a link in an answer, on a phone)
+  function closeAsk(focusButton = true, then = null) {
+    const panel = $('#ask-panel');
+    if (!panel || panel.hidden) return;
+    panel.hidden = true;
+    $('#ask-open').setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('ask-on');
+    askModal();
+    if (ask.pushed) {                  // take back the history entry opening it added, then go on
+      ask.pushed = false;
+      if (history.state && history.state.askPanel) { ask.after = then; history.back(); then = null; }
+    }
+    if (then) location.hash = then;
+    if (focusButton) $('#ask-open').focus();
+  }
+
   // ======================================================================== boot
   function setOnline(on) {
     state.online = on;
@@ -3396,6 +3930,17 @@
   window.addEventListener('online', () => setOnline(true));
   window.addEventListener('offline', () => setOnline(false));
   window.addEventListener('hashchange', render);
+  $('#ask-open').addEventListener('click', () => ($('#ask-panel').hidden ? openAsk() : closeAsk()));
+  window.addEventListener('popstate', () => {
+    if (ask.pushed && !(history.state && history.state.askPanel)) closeAsk();     // Back on a phone closes the panel
+    if (ask.after) { const to = ask.after; ask.after = null; location.hash = to; }
+  });
+  document.addEventListener('keydown', (e) => {       // Esc closes the panel wherever focus is (not over a dialog)
+    if (e.key !== 'Escape' || e.defaultPrevented || $('#ask-panel').hidden || document.querySelector('dialog[open]')) return;
+    e.preventDefault();
+    closeAsk();
+  });
+  try { window.matchMedia('(max-width: 899px)').addEventListener('change', askModal); } catch (e) { /* old browser */ }
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }

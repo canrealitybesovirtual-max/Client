@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 import anyio
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
@@ -448,7 +448,7 @@ def license_digits(value: str | None) -> str | None:
 
 
 @router.post("/signup")
-async def signup(body: SignupIn, request: Request):
+async def signup(body: SignupIn, request: Request, background: BackgroundTasks):
     platform = platform_of(request)
     ip = client_ip(request)
     wait = max(platform.signup_limiter.retry_after(ip), platform.signup_global_limiter.retry_after("all"))
@@ -471,7 +471,9 @@ async def signup(body: SignupIn, request: Request):
             name=(body.name or "").strip() or None))
     except IntegrityError:    # the same email signed up a moment ago (it passed the check above at the same time)
         raise HTTPException(409, "An account with this email already exists. Log in instead.")
-    resp = JSONResponse({"ok": True, "tenant_id": tenant["id"], "trial_ends": trial_ends})
+    from . import auth_links       # local import: app.auth_links imports this module
+    background.add_task(auth_links.after_signup, platform, user)     # the email confirmation link, if set up
+    resp = JSONResponse({"ok": True, "tenant_id": tenant["id"], "trial_ends": trial_ends}, background=background)
     set_session(resp, request, user)
     return resp
 
@@ -525,7 +527,8 @@ async def logout(request: Request):
 
 
 @router.post("/password")
-async def change_password(body: PasswordIn, request: Request, p: Principal = Depends(get_principal)):
+async def change_password(body: PasswordIn, request: Request, background: BackgroundTasks,
+                          p: Principal = Depends(get_principal)):
     if p.via != "cookie":
         raise HTTPException(403, "Log in with your password to change it")
     platform = platform_of(request)
@@ -545,7 +548,10 @@ async def change_password(body: PasswordIn, request: Request, p: Principal = Dep
     # counter just bumped, so they would stop working anyway; this records it.)
     await anyio.to_thread.run_sync(platform.store.revoke_user_oauth_grants, p.tenant_id, p.user_id,
                                  "password_changed")
-    resp = JSONResponse({"ok": True})
+    # One-time links (app/auth_links.py) were bound to the old session counter, so they no longer work either.
+    from . import auth_links
+    background.add_task(auth_links.notify_password_changed, platform, user)    # confirmed addresses only
+    resp = JSONResponse({"ok": True}, background=background)
     set_session(resp, request, user)          # this device stays logged in, every other session ends
     return resp
 

@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from .auth import RateLimiter, Signer, load_secret_key
 from .crypto import SecretBox
+from .mailer import Mailer
 from .store import Store, database_url_from_env, default_data_dir
 
 log = logging.getLogger("tradecomply.config")
@@ -169,6 +170,20 @@ class Platform:
         self.tool_cache: tuple[float, list] | None = None
         self.anon_audit_writes = 0
         self.integration_test_limiter = RateLimiter(limit=30, window_s=10 * 60)   # test sends/checks per tenant
+        # One-time links by email (app/auth_links.py, app/mailer.py)
+        self.forgot_ip_limiter = RateLimiter(limit=10, window_s=15 * 60)        # password reset requests per IP
+        self.forgot_global_limiter = RateLimiter(limit=300, window_s=60 * 60)   # all of them (IPs can be spoofed)
+        self.forgot_email_limiter = RateLimiter(limit=3, window_s=15 * 60)      # emails per address: over it, none
+        self.link_limiter = RateLimiter(limit=60, window_s=10 * 60)             # link checks and uses per IP
+        self.mail_tenant_limiter = RateLimiter(limit=50, window_s=60 * 60)      # invite emails a company sends
+        self.mail_user_limiter = RateLimiter(limit=5, window_s=60 * 60)         # confirm emails per person
+        # Ask TradeComply (app/assistant.py): the SDK client (made on first use; tests set assistant_client), the
+        # person whose answer is being written now -> (chat id, cancel scope for Stop), and the last retention purge.
+        # In memory, like the limiters: one instance.
+        self.assistant_client = None
+        self.assistant_sdk: tuple[str, object] | None = None
+        self.assistant_running: dict[tuple[str, int], tuple[int, object]] = {}
+        self.assistant_purged_at = float("-inf")
         # Integrations: operator env (tests replace it with a dict), and the outbound HTTP hooks tests swap for an
         # httpx.MockTransport and a fake resolver (see tests/support.py). Production: None = the guarded transport
         # and system DNS.
@@ -176,6 +191,7 @@ class Platform:
         self.http_transport = None
         self.http_resolver = None
         self.http_allow_localhost = False
+        self.mailer = Mailer(self)                       # reads self.env when it sends (tests replace env)
         self.events = events.EventBus(self, background=settings.events_background)
         events.set_default(self.events)
 

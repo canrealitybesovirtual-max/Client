@@ -34,7 +34,7 @@ from app.connectors import schedule_import as si
 from app.connectors.calendar_feed import CalendarFeedConnector
 from app.connectors.schedule_import import ScheduleError, ScheduleImportConnector
 from tradecomply import logic, payments
-from tests.support import backend, login, make_app, mock_http, signup  # noqa: F401 (backend: autouse)
+from tests.support import backend, join, make_app, mock_http, signup  # noqa: F401 (backend: autouse)
 
 FIX = Path(__file__).parent / "fixtures" / "schedules"
 MSPDI = (FIX / "harbor_lofts_mspdi.xml").read_bytes()
@@ -100,10 +100,8 @@ def other(app, owner):
 
 
 def user_client(app, owner, role):
-    r = owner.post("/api/users", json={"email": f"{role}@acme.test", "role": role})
-    assert r.status_code == 200, r.text
     c = TestClient(app)
-    login(c, f"{role}@acme.test", r.json()["temporary_password"])
+    join(c, owner, f"{role}@acme.test", role)
     return c
 
 

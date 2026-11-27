@@ -34,7 +34,7 @@ from app.auth import RateLimiter
 from app.connectors import ConnectorContext, NotConnected, validate_connector_class
 from app.connectors import docusign
 from app.connectors.docusign import DocusignConnector, clean_base_uri, parse_time, render_html, verify_connect_hmac
-from tests.support import backend, json_response, login, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
 
 IK = "7c2b8d7e-0000-4000-8000-cda8a50dd73f"            # made-up integration key (GUID like the docs' example)
 SECRET = "d7014634-0000-4000-8000-6842b7aa8861"        # made-up secret key
@@ -838,9 +838,7 @@ def test_field_role_cannot_send_or_poll(app, platform, fake):
     with TestClient(app) as owner_c, TestClient(app) as crew:
         tid = signup(owner_c)["tenant_id"]
         connect(owner_c, fake)
-        r = owner_c.post("/api/users", json={"email": "crew@acme.test", "role": "field"})
-        assert r.status_code == 200, r.text
-        login(crew, "crew@acme.test", r.json()["temporary_password"])
+        join(crew, owner_c, "crew@acme.test", "field")
         pid = new_project(platform, tid)
         eid = owner_c.post("/api/integrations/docusign/envelopes",
                            json=send_body(pid)).json()["envelope"]["envelope_id"]

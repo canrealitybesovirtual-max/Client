@@ -36,6 +36,15 @@ services:
                               # whoever runs this TradeComply server". Use a business address, not a personal one
       - key: SUPPORT_URL
         sync: false           # the operator's support or contact page (https://...); blank = none
+      - key: MAIL_FROM
+        sync: false           # sender of invites, password reset links and email confirmations, e.g.
+                              # "TradeComply <no-reply@your-company.example>"; blank = no email (owners copy links)
+      - key: POSTMARK_SERVER_TOKEN
+        sync: false           # Postmark server token (HTTPS). Render's free plan blocks SMTP ports 25/465/587; on a
+                              # paid plan SMTP_HOST/SMTP_PORT/SMTP_SECURITY/SMTP_USERNAME/SMTP_PASSWORD work instead
+      - key: ANTHROPIC_API_KEY
+        sync: false           # Ask TradeComply, the in-app AI helper (docs/ai-helper.md); blank = helper hidden.
+                              # Never set ANTHROPIC_LOG=debug here: the SDK would log what people type
       - key: CSLB_AUTO_DOWNLOAD
         value: "1"
       - key: SECRET_KEY

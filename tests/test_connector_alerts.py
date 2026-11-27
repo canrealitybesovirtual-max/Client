@@ -27,7 +27,7 @@ from app.connectors import alerts, twilio_sms
 from app.connectors.alerts import SignedWebhookAlerts, SlackAlerts, TeamsAlerts
 from app.connectors.twilio_sms import TwilioSmsConnector
 from app.events import EVENTS
-from tests.support import backend, json_response, login, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
 from tradecomply import integrations_guide
 
 # Built at runtime so secret scanners do not mistake this fake URL for a real Slack webhook.
@@ -501,9 +501,8 @@ def test_scan_routes_preview_and_run_for_staff_only(app, owner, platform, rx):
     assert any(r["kind"] == "coi_expiry" for r in pre["reminders"])
     assert owner.post("/api/integrations/deadline-reminders/scan").json()["emitted"] >= 1
     assert owner.post("/api/integrations/deadline-reminders/scan").json()["emitted"] == 0      # no duplicates
-    temp = owner.post("/api/users", json={"email": "field@acme.test", "role": "field"}).json()["temporary_password"]
     with TestClient(app) as field:
-        login(field, "field@acme.test", temp)
+        join(field, owner, "field@acme.test", "field")
         assert field.get("/api/integrations/deadline-reminders/preview").status_code == 403
     no_csrf = owner.headers.pop("x-csrf-token")
     assert owner.post("/api/integrations/deadline-reminders/scan").status_code == 403

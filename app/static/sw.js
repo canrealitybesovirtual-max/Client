@@ -6,10 +6,14 @@
    sign-in pages, codes and consent requests are never cached or answered from a stale copy. The script and styles
    now live under a per-release path (/static/v5/...: the one index.html names, bumped with SHELL_CACHE), so the
    first page after a deploy, still run by the previous worker, gets this release's code: that worker only has the
-   old /static/app.js. Install fetches past the browser's HTTP cache, so this cache never starts with old files. */
-const SHELL_CACHE = 'tc-shell-v5';
+   old /static/app.js. Install fetches past the browser's HTTP cache, so this cache never starts with old files.
+   v6: one-time links by email (forgot password, invite links, email confirmation). Their calls are POSTs, which this
+   worker never handles.
+   v7: Ask TradeComply, the in-app AI helper. /api/assistant/* is network only: never cached, never answered from an
+   old copy or with the offline JSON. */
+const SHELL_CACHE = 'tc-shell-v7';
 const API_CACHE = 'tc-api-v1';
-const SHELL = ['/', '/static/v5/app.js', '/static/v5/styles.css', '/manifest.webmanifest', '/icon.svg'];
+const SHELL = ['/', '/static/v7/app.js', '/static/v7/styles.css', '/manifest.webmanifest', '/icon.svg'];
 const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog', '/api/professionals/types'];
 
 self.addEventListener('install', (event) => {
@@ -87,6 +91,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname === '/mcp' || url.pathname.startsWith('/mcp/') || url.pathname === '/api/calendar.ics'
     || url.pathname === '/api/integrations/calendar_feed/calendar.ics' || url.pathname === '/api/tenant/export') return;      // downloads: never a cached or JSON copy
   if (url.pathname.startsWith('/oauth/') || url.pathname.startsWith('/.well-known/') || url.pathname.startsWith('/api/oauth/')) return;   // sign-in: network only
+  if (url.pathname.startsWith('/api/assistant/')) return;      // the AI helper: network only, never a stored answer
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstApi(request));
   } else if (request.mode === 'navigate') {

@@ -530,18 +530,34 @@ def _audit(store, tenant_id: str, who: str, tool: str, args: dict, ok: bool = Tr
         log.exception("sso audit write failed")
 
 
+SSO_REQUIRED = ("Your company signs in with single sign-on (SSO). Choose “Sign in with SSO” and use your company "
+                "account; your TradeComply password can't be used.")
+
+
+def sso_required(platform, tenant_id: str) -> bool:
+    cfg = platform.store.get_sso_config(tenant_id)
+    return bool(cfg and cfg.get("enforced"))
+
+
+def password_refused(platform, user: dict) -> str | None:
+    """The refusal message when this person's company requires SSO and they aren't an owner (owners keep the
+    password as their break-glass way in), else None. No side effects: one-time links (app/auth_links.py) use it
+    when they compose an email or check a link."""
+    if user.get("role") == "owner" or not sso_required(platform, user["tenant_id"]):
+        return None
+    return SSO_REQUIRED
+
+
 def password_login_refusal(platform, user: dict) -> str | None:
     """Called by the password login (app/auth.py) after the password checked out. A message = refuse."""
-    cfg = platform.store.get_sso_config(user["tenant_id"])
-    if not cfg or not cfg.get("enforced"):
+    if not sso_required(platform, user["tenant_id"]):
         return None
     if user.get("role") == "owner":
         _audit(platform.store, user["tenant_id"], user["email"], "sso.break_glass_login",
                {"user_id": user["id"]})
         log.info("sso: owner break-glass password sign-in for tenant %s", user["tenant_id"])
         return None
-    return ("Your company signs in with single sign-on (SSO). Choose “Sign in with SSO” and use your company "
-            "account; your TradeComply password can't be used.")
+    return SSO_REQUIRED
 
 
 def _end_non_owner_sessions(store, tenant_id: str) -> int:

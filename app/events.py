@@ -239,6 +239,8 @@ class EventBus:
                 if time.monotonic() - self._last_purge > 3600:
                     self._last_purge = time.monotonic()
                     self.platform.store.purge_outbound(datetime.now(timezone.utc) - timedelta(days=PURGE_AFTER_DAYS))
+                    from . import assistant         # local import: app.assistant imports the API, which imports this
+                    assistant.retention(self.platform)     # Ask TradeComply chats, also when nobody uses the helper
             except Exception:      # noqa: BLE001 - e.g. the database is briefly down; try again next round
                 log.exception("event delivery round failed")
                 n = 0

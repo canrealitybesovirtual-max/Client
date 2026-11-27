@@ -97,6 +97,15 @@ SECTIONS = (
                                        "last used, and whether it was disconnected."),
     ("connected_app_tokens", "oauth_tokens", "When each sign-in token of a connected app was issued, used and when "
                                              "it expires. Not the tokens."),
+    ("one_time_links", "auth_links", "Invite, password reset and email confirmation links that are still open: who "
+                                     "each is for, where it was emailed, who made it and when it expires. Not the "
+                                     "links."),
+    ("ask_tradecomply_chats", "assistant_conversations", "Chats with Ask TradeComply, the in-app AI helper: whose chat "
+                                                         "it is, its title, and when it was started and last used."),
+    ("ask_tradecomply_messages", "assistant_turns", "Each question asked in those chats, the answer shown, which "
+                                                    "checks it ran and when. Not the AI model's raw messages."),
+    ("ask_tradecomply_usage", "assistant_usage", "AI helper usage per message: who asked, the model, and the input, "
+                                                 "output and cache tokens counted."),
 )
 FRIENDLY = {table: key for key, table, _ in SECTIONS} | {"tenants": "company"}
 
@@ -104,7 +113,7 @@ ABOUT = {
     "what": "Every record your company has in TradeComply on this server, as of the time above.",
     "left_out": "Passwords, password and API key hashes, session counters and stored credentials (integration "
                 "sign-ins and keys, webhook addresses and signing secrets, the SSO client secret, private calendar "
-                "links, connected apps' token hashes). They only protect your account on this server and are of no "
+                "links, connected apps' token hashes, one-time link hashes). They only protect your account on this server and are of no "
                 "use anywhere else.",
     "keep_it_safe": "This file can include names, emails, phone numbers, IP addresses and signatures of your staff, "
                     "subcontractors and customers. Store it somewhere safe and share it only with people who need it.",

@@ -20,7 +20,7 @@ from app.connectors import (ConfigField, Connector, OAuth2Spec, TestResult, code
                             validate_connector_class)
 from app.connectors._template import ExampleApiKeyConnector, ExampleOAuthConnector
 from app.crypto import connection_context, webhook_context
-from tests.support import backend, json_response, login, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
 
 OAUTH_ENV = {"EXAMPLE_CLIENT_ID": "cid-123", "EXAMPLE_CLIENT_SECRET": "csecret-456"}
 SLACK_URL = "https://hooks.slack.com/services/" + "T0000/B0000/" + "X" * 24  # built at runtime for secret scanners
@@ -111,10 +111,8 @@ def vendor(platform):
 def field_and_office_clients(app, owner):
     out = {}
     for role in ("field", "office"):
-        r = owner.post("/api/users", json={"email": f"{role}@acme.test", "role": role})
-        assert r.status_code == 200, r.text
         c = TestClient(app)
-        login(c, f"{role}@acme.test", r.json()["temporary_password"])
+        join(c, owner, f"{role}@acme.test", role)
         out[role] = c
     return out
 

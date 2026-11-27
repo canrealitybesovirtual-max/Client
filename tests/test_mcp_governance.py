@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from app import mcp_governance as gov
 from app.auth import MCPGate, RateLimiter
-from tests.support import PW, backend, login, make_app, signup  # noqa: F401  (backend is an autouse fixture)
+from tests.support import PW, backend, join, make_app, signup  # noqa: F401  (backend is an autouse fixture)
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MCP_HEADERS = {"accept": "application/json, text/event-stream", "content-type": "application/json"}
@@ -336,9 +336,8 @@ def test_owner_changes_a_keys_access_and_every_change_is_logged(owner, app):
 
 def test_field_users_cannot_manage_keys_and_other_companies_keys_are_invisible(owner, app):
     key = new_key(owner)
-    tmp = owner.post("/api/users", json={"email": "crew@acme.test", "role": "field"}).json()["temporary_password"]
     with TestClient(app) as field, TestClient(app) as other:
-        login(field, "crew@acme.test", tmp)
+        join(field, owner, "crew@acme.test", "field")
         assert field.patch(f"/api/keys/{key['id']}", json={"name": "x"}).status_code == 403
         assert field.get("/api/mcp/policy").status_code == 403
         signup(other, email="b@other.test", company="Other Co")
@@ -530,10 +529,9 @@ def test_owner_views_and_filters_the_mcp_log_only_for_their_company(owner, app):
 
 
 def test_only_owners_see_the_mcp_log(owner, app):
-    tmp = owner.post("/api/users", json={"email": "pat@acme.test", "role": "office"}).json()["temporary_password"]
-    key = new_key(owner)
     with TestClient(app) as office, TestClient(app) as bot, TestClient(app) as anon:
-        login(office, "pat@acme.test", tmp)
+        join(office, owner, "pat@acme.test", "office")
+        key = new_key(owner)
         assert office.get("/api/mcp/audit").status_code == 403
         assert office.get("/api/mcp/audit/export").status_code == 403
         assert office.get("/api/mcp/policy").status_code == 200
@@ -713,7 +711,7 @@ def test_upgrade_from_version_5_keeps_keys_with_the_default_policy(tmp_path):
         else:
             con.execute("update schema_version set version = 5")
     s.migrate()
-    assert s.schema_version() == SCHEMA_VERSION == 7          # 7: OAuth tables (app/oauth.py) run after 6 too
+    assert s.schema_version() == SCHEMA_VERSION == 9          # 7 (OAuth), 8 (one-time links), 9 (AI helper) too
     k = s.get_api_key(tid, kid)
     assert (k["name"], k["scopes"], k["rate_limit_per_min"], k["expires_at"]) == ("old key", None, None, None)
     s.migrate()                                       # running it again changes nothing
