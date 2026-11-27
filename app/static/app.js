@@ -2209,15 +2209,17 @@
       filled = new Map(); job = null; if (jobSel) jobSel.value = '';
       fill(jobLine); jobChips(null); errBox.replaceChildren(); result.replaceChildren(); sync(); drawLast();
       if (dui) dui.done();
+      if (unfold) unfold();
       if (pages) toStep(0);
     });
     const summary = h('p', { class: 'form-summary', hidden: true });
+    let unfold = null;                                       // phones, after Run: puts the folded answers back
     f.addEventListener('submit', async (e) => {
       e.preventDefault();
       if (pages && at < pages.length) { next.click(); return; }
       errBox.replaceChildren();
       const { values, errors } = form.values(applies);
-      if (errors.length) { showErrors(errors); return; }
+      if (errors.length) { if (unfold) unfold(); showErrors(errors); return; }
       busy(run, true, 'Checking…');
       result.replaceChildren(h('p', { class: 'loading', role: 'status' }, 'Checking…'));
       try {
@@ -2225,9 +2227,11 @@
         const card = renderToolResult(spec, out, { projectId: job ? job.id : null });
         result.replaceChildren(card);
         if (dui) dui.done();
-        if (narrowScreen()) {           // phones: the answers fold into one line, the answer comes into view
-          f.hidden = true;
-          fill(summary, `${plural(Object.keys(values).length, 'answer')} · `, h('button', { type: 'button', class: 'btn quiet small', onclick: () => { f.hidden = false; summary.hidden = true; const t = focusOf(F[0]); if (t) t.focus(); } }, icon('edit'), 'Edit'));
+        if (narrowScreen() && !unfold) {     // phones: the answers fold into one line (Run stays), the answer comes into view
+          const folded = [stepper, stepHead, errBox, body, review, back].map((el) => [el, el.hidden]);
+          folded.forEach(([el]) => { el.hidden = true; });
+          unfold = () => { folded.forEach(([el, was]) => { el.hidden = was; }); summary.hidden = true; unfold = null; };
+          fill(summary, `${plural(Object.keys(values).length, 'answer')} · `, h('button', { type: 'button', class: 'btn quiet small', onclick: () => { unfold(); const t = focusOf(F[0]); if (t) t.focus(); } }, icon('edit'), 'Edit'));
           summary.hidden = false;
         }
         const hl = card.querySelector('.result-headline');

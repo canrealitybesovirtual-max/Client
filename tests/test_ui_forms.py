@@ -254,7 +254,8 @@ const path = require('path');
   await mp.click('main form button[type=submit]');
   await mp.waitForSelector('.result-headline');
   await mp.waitForTimeout(300);
-  out.phoneAfterRun = { form: await mp.$eval('main form.tool-form', (f) => f.hidden), summary: await mp.textContent('.form-summary'),
+  out.phoneAfterRun = { form: await mp.$eval('main form.tool-form', (f) => [...f.querySelectorAll('.field[data-field]')].every((x) => x.offsetParent === null)), summary: await mp.textContent('.form-summary'),
+    run: await mp.isVisible('main form button[type=submit]'),
     focus: await mp.evaluate(() => document.activeElement.className) };
   await mc.close();
   process.stdout.write(JSON.stringify(out));
@@ -331,5 +332,5 @@ def test_check_forms_in_a_real_browser(tmp_path, playwright_env, live_server):
     assert out["loggedOut"] == [] and out["join"] == 200 and out["otherPerson"] == 0
     # phone
     assert out["phoneBar"] == "sticky"
-    assert out["phoneAfterRun"]["form"] is True and "answers · Edit" in out["phoneAfterRun"]["summary"]
+    assert out["phoneAfterRun"]["form"] is True and "answers · Edit" in out["phoneAfterRun"]["summary"] and out["phoneAfterRun"]["run"]
     assert out["phoneAfterRun"]["focus"] == "result-headline"
