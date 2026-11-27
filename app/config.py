@@ -76,6 +76,7 @@ class Settings:
     trial_days: int = 14
     max_body_bytes: int = 8 * 1024 * 1024
     events_background: bool = True        # deliver integration events on a background thread (EVENTS_WORKER=0)
+    search_warm: bool = True              # build the search index at startup, in the background (SEARCH_WARM=0)
 
     @classmethod
     def from_env(cls, **overrides) -> "Settings":
@@ -101,6 +102,7 @@ class Settings:
             trusted_proxy_hops=_proxy_hops(os.getenv("TRUSTED_PROXY_HOPS")),
             events_background=(os.getenv("EVENTS_WORKER") or "1").strip().lower() not in ("0", "false", "no",
                                                                                          "off"),
+            search_warm=(os.getenv("SEARCH_WARM") or "1").strip().lower() not in ("0", "false", "no", "off"),
         )
         for k, v in overrides.items():
             setattr(s, k, v)
@@ -168,6 +170,7 @@ class Platform:
         self.local_login_token: str | None = None                        # one-time link printed by app.local
         self.local_user_id: int | None = None
         self.tool_cache: tuple[float, list] | None = None
+        self.tool_view: tuple[list, list] | None = None      # (specs it was made from, /api/tools view)
         self.anon_audit_writes = 0
         self.integration_test_limiter = RateLimiter(limit=30, window_s=10 * 60)   # test sends/checks per tenant
         # One-time links by email (app/auth_links.py, app/mailer.py)
@@ -180,6 +183,12 @@ class Platform:
         self.people_hour_limiter = RateLimiter(limit=100, window_s=60 * 60)     # any company, an hour
         self.trial_people_day_limiter = RateLimiter(limit=60, window_s=24 * 3600)   # a company on its free trial
         self.mail_user_limiter = RateLimiter(limit=5, window_s=60 * 60)         # confirm emails per person
+        # Quick help and search (app/quickhelp.py, app/search.py): people only. Search and suggestions share three
+        # limits (sign-up is open, so one person, one company and the whole server are each bounded).
+        self.help_user_limiter = RateLimiter(limit=60, window_s=60)             # Quick help questions per person
+        self.search_user_limiter = RateLimiter(limit=900, window_s=60)          # search + suggest calls per person
+        self.search_tenant_limiter = RateLimiter(limit=1800, window_s=60)       # ... per company
+        self.search_global_limiter = RateLimiter(limit=12000, window_s=60)      # ... for the whole server
         # Ask TradeComply (app/assistant.py): the SDK client (made on first use; tests set assistant_client), the
         # person whose answer is being written now -> (chat id, cancel scope for Stop), and the last retention purge.
         # In memory, like the limiters: one instance.

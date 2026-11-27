@@ -23,7 +23,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, ValidationEr
 
 from tradecomply import integrations_guide, logic, professionals
 
-from . import auth_links, dashboard
+from . import auth_links, catalog, dashboard
 from . import mcp_governance as governance
 from .auth import (EMAIL_RE, Principal, anyone, get_principal, hash_password, license_digits, new_api_key, office_up,
                    owner_only, platform_of, refuse_cross_site)
@@ -607,16 +607,31 @@ async def tool_specs(platform, refresh: bool = False) -> list[dict]:
     return specs
 
 
+def tool_view(platform, specs: list[dict]) -> list[dict]:
+    """The /api/tools view of the specs: catalog title, summary, group, hidden flag, layout and x-label field labels
+    (app/catalog.py) on deep copies, made once per tool_specs() refresh. The cached specs themselves are never
+    changed: Ask TradeComply sends them to Anthropic and authorize_tool reads them."""
+    cached = platform.tool_view
+    if cached and cached[0] is specs:
+        return cached[1]
+    view = [catalog.annotate(s) for s in specs]
+    platform.tool_view = (specs, view)
+    return view
+
+
 @router.get("/tools")
 async def list_tools(request: Request, p: Principal = Depends(anyone)):
-    specs = await tool_specs(_p(request))
+    platform = _p(request)
+    view = tool_view(platform, await tool_specs(platform))
     if p.via == "key":                                     # a key sees only the tools it may call
-        index = await governance.tool_index(_p(request))
-        specs = [s for s in specs if governance.scope_allows(p.scopes, s["name"], index)]
+        index = await governance.tool_index(platform)
+        view = [s for s in view if governance.scope_allows(p.scopes, s["name"], index)]
     modules: dict[str, dict] = {}
-    for s in specs:
+    for s in view:
         modules.setdefault(s["module"], {"id": s["module"], "label": s["module_label"], "tools": []})["tools"].append(s)
-    return {"count": len(specs), "modules": list(modules.values()), "tools": specs}
+    names = {s["name"] for s in view}
+    return {"count": len(view), "modules": list(modules.values()), "tools": view,
+            "groups": catalog.groups_payload(names), "common": catalog.common_payload(names)}
 
 
 def _summarize(args):
