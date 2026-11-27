@@ -1578,14 +1578,24 @@
       wide = true;
       if (kind === 'object') {
         const group = makeGroup();
-        el = h('fieldset', { class: 'field wide' }, legend(), hint, h('div', { class: 'form-grid' }, group.map((f) => f.el)), err);
+        const inner = h('div', { class: 'form-grid' }, group.map((f) => f.el));
+        // a long checklist (a contract's 45 required parts): folded, with how many are answered, so the step stays short
+        let body = inner;
+        if (group.length > 12) {
+          const count = h('span', { class: 'count small muted' });
+          const recount = () => { count.textContent = `${group.filter((f) => !f.isEmpty()).length} of ${group.length} answered`; };
+          body = h('details', { class: 'more-details', onchange: recount, oninput: recount }, h('summary', {}, `All ${group.length} items `, count), inner);
+          recount();
+          body.recount = recount;
+        }
+        el = h('fieldset', { class: 'field wide' }, legend(), hint, body, err);
         get = () => {
           if (blank(group)) return { value: undefined, error: required ? fail('Fill in this section') : ok() };
           ok(); return collect(group);
         };
         isEmpty = () => blank(group);
         raw = () => rawGroup(group);
-        set = (x) => { setGroup(group, x); return true; };
+        set = (x) => { setGroup(group, x); if (body.recount) body.recount(); return true; };
       } else {
         const rows = [];
         const list = h('div', {});
@@ -3690,7 +3700,7 @@
     // (POST /api/suggest, never in the address) when no kind is chosen
     const pickType = (id) => { if (types.some((t) => t.id === id)) { typeSel.value = id; showDesc(); } };
     const need = combobox({ name: 'need', label: 'Describe what you need (optional)', source: 'need', wide: true,
-      hint: 'In your own words, for example "retaining wall over 4 feet". Picking a suggestion chooses the kind below.', onPick: (it) => pickType(it.type_id) });
+      hint: 'In your own words, for example "asbestos survey" or "stamped plans". Picking a suggestion chooses the kind below.', onPick: (it) => pickType(it.type_id) });
     // The "doesn't recommend" note sits under the form until results show; then the results' own (fuller) note
     // replaces it, so it isn't said twice on one screen.
     const formNote = h('p', { class: 'small muted pf-note' }, OFFICIAL_NOTE);
@@ -4584,7 +4594,7 @@
         : [h('p', { class: 'row' }, h('span', { class: 'pill gray' }, 'No link yet'), h('span', {}, 'Make a link, then add it to your calendar app.')), h('div', { class: 'row' }, make)]);
     };
     const el = h('div', { class: 'cal-links' }, box, out,
-      h('p', { class: 'small muted' }, 'In Google Calendar, Outlook or Apple Calendar, add a calendar from a URL (Outlook calls it subscribing from the web) and paste the link. Each calendar app decides how often it checks for changes, often every few hours and sometimes longer.'),
+      h('details', { class: 'more small' }, h('summary', {}, 'How to add it to your calendar'), h('p', { class: 'small muted' }, 'In Google Calendar, Outlook or Apple Calendar, add a calendar from a URL (Outlook calls it subscribing from the web) and paste the link. Each calendar app decides how often it checks for changes, often every few hours and sometimes longer.')),
       h('p', { class: 'small' }, h('a', { href: '/api/integrations/calendar_feed/calendar.ics', download: 'tradecomply.ics' }, 'Download today\'s deadlines once (.ics file)'), ' (a one-time copy that won\'t update).'));
     return { el, draw };
   }
@@ -5089,8 +5099,8 @@
         items.push(h('div', { class: 'row' }, test), out);
       } else {
         items.push(h('p', {}, h('span', { class: 'pill gray' }, 'Not set up'), ' Invites and reset links aren\'t emailed. You can still copy them in Team and send them yourself.'));
-        // the server settings, for whoever runs it (open: it is what an owner passes on)
-        items.push(h('details', { class: 'more', open: true }, h('summary', {}, 'For whoever runs this server'),
+        // the server settings, for whoever runs it: one tap away for the owner who passes them on (spec 1.5)
+        items.push(h('details', { class: 'more' }, h('summary', {}, 'For whoever runs this server'),
           h('p', { class: 'small' }, 'Whoever runs this TradeComply server sets these environment variables: ', h('code', {}, 'MAIL_FROM'), ', and either ',
             h('code', {}, 'POSTMARK_SERVER_TOKEN'), ' (Postmark) or ', names(st.env.smtp), ' (SMTP). ', h('code', {}, 'APP_URL'), ' must be this server\'s https address.'),
           st.missing && st.missing.length ? h('p', { class: 'small' }, 'Missing or not valid: ', names(st.missing), '.') : null,
@@ -5261,7 +5271,7 @@
       sections.push(h('section', { class: 'card', 'data-section': 'calendar', 'aria-labelledby': 'calendar-h' }, h('h2', { id: 'calendar-h' }, 'Calendar'), h('p', { class: 'muted' }, 'Your deadlines as a private calendar link for Google Calendar, Outlook or Apple Calendar. Reminders and extra dates: ', h('a', { href: '#/integrations?integration=calendar-feed' }, 'Integrations → Calendar feed'), '.'), cal));
       // activity log
       const auditSlot = h('div', {});
-      let auditShown = narrowScreen() ? 5 : 10;        // phones: each row is a card
+      let auditShown = narrowScreen() ? 3 : 10;        // phones: each row is a card
       const loadAudit = async () => {
         const all = await api('/api/audit?limit=200');
         const rows = all.slice(0, auditShown);
@@ -5366,7 +5376,7 @@
   }
   const palRole = () => (fieldRole() ? 'field' : state.me.user.role === 'office' ? 'office' : 'owner');
   const askRow = (q) => [navigator.onLine ? { title: `Ask Quick help: “${q}”`, detail: 'Built into TradeComply: answers from its rulebook, checks and pages.', icon: 'help', kind: 'Action', hand: 'ask', run: () => qhAsk(q) } : null,
-    askAvailable() ? { title: `Ask TradeComply: “${q}”`, detail: 'Claude by Anthropic. Opens with your words typed in; nothing is sent until you press Send.', icon: 'claude', kind: 'Action', hand: 'ask', run: () => askToClaude(q) } : null].filter(Boolean);
+    navigator.onLine && askAvailable() ? { title: `Ask TradeComply: “${q}”`, detail: 'Claude by Anthropic. Opens with your words typed in; nothing is sent until you press Send.', icon: 'claude', kind: 'Action', hand: 'ask', run: () => askToClaude(q) } : null].filter(Boolean);
   const note = (text) => ({ note: text });
   function palDraw(groups, say) {
     const list = $('#pal-list');

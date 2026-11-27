@@ -898,5 +898,6 @@ details.int-section > .int-grid { padding-bottom: 12px; }
 }
 .print-only { display: none; }
 @media (max-width: 999px) { .tool-layout.has-tool > .tool-list { display: none; } }   /* phones: "← Checks" goes back */
+@media (max-width: 1419px) { body.ask-on .tool-layout.has-tool { display: block; } body.ask-on .tool-layout.has-tool > .tool-list { display: none; } }   /* Help open: the form keeps its width */
 @media (max-width: 640px) { .int-card .int-lead { display: none; } }      /* phones: a built-in card's lead is under Read more */
 details > summary { padding-top: 10px; padding-bottom: 10px; }
