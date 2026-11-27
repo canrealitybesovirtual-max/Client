@@ -354,7 +354,9 @@ const path = require('path');
   await page.waitForSelector('input[name=contract_price]');
   out.priceHint = await page.evaluate(() => document.getElementById(document.querySelector('input[name=contract_price]').getAttribute('aria-describedby')).textContent);
   out.lastHint = await page.evaluate(() => document.getElementById(document.querySelector('input[name=last_furnishing_date]').getAttribute('aria-describedby')).textContent);
-  out.countyList = await page.$$eval('#ca-counties option', (o) => o.length);
+  // County suggests from the vocabulary's county list (spec 3.6; it replaced the <datalist>)
+  out.countyList = await page.evaluate(async () => (document.querySelector('input[name=county]').getAttribute('role') === 'combobox'
+    ? (await (await fetch('/api/suggest/vocab')).json()).sources.county.items.length : 0));
 
   // ---- Settings: Account and data (owner only)
   let exportMode = '404';
