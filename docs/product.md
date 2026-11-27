@@ -58,6 +58,18 @@ keys with per-key tool scope, rate limit and expiry; MCP call audit log with exp
 integrations (Slack and Teams alerts, signed webhooks, Twilio text alerts, calendar feeds, Procore, Docusign,
 Primavera P6 / Microsoft Project schedule import, Splunk) plus a 36-product integrations catalog.
 
+Help in the web app is part of the same front door, not a fourth one. **Quick help** (one Help button on every page,
+for everyone signed in; `POST /api/help`) is built into the server: no model, no outside call, nothing stored. It
+matches a question in plain words to a tool, a rule, a page or a kind of licensed professional, and answers only with
+the rulebook's own text (citation, official source, verification status, the verifier's correction), a
+`professionals.json` requirement with its legal basis when the question fits it better than every exception, fixed
+sentences, and buttons that open a tool with what it understood filled in (the person checks it and presses Run, so
+Quick help never runs a tool), go to a page or find a professional. It refuses to help skip a requirement and says
+plainly when it doesn't know. Where the operator has set up Claude, the same panel has an **Ask TradeComply** tab
+(docs/ai-helper.md) that runs the same tools as the person; the panel always opens on Quick help and the Send button
+says where the words go. Search (Ctrl+K / Cmd+K) and the type-ahead in forms use the same index. Details:
+docs/quick-help.md.
+
 ### 3.2 The 71 tools, grouped by job
 
 In the web app (Checks) people see the tools as 12 job groups with plain titles and one-line summaries, from

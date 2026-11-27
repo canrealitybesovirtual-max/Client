@@ -55,8 +55,8 @@ Print / PDF), Documents, **Field log** (toolbox talks, inspections, incident rep
 to IndexedDB offline and synced via `/api/field_logs/sync`), Integrations, Settings (grouped: You, Company, Help and
 AI, Reminders and connections, Records, Account and data; `#/settings?section=<key>` opens at a section). Signed out:
 log in, sign up, Forgot password, and the pages one-time links open (set a new password, join your team, confirm your
-email). An **Ask** button in the top bar opens Ask TradeComply, the AI helper (see below), when the server has it set
-up. The service worker caches the app shell plus `/api/tools`, `/api/me`, `/api/config`, `/api/projects` and
+email). A **Help** button in the top bar, for everyone signed in, opens one help panel: Quick help (built in,
+always; see below) and, when the server has Claude set up, an Ask TradeComply tab (the AI helper, see below). The service worker caches the app shell plus `/api/tools`, `/api/me`, `/api/config`, `/api/projects` and
 `/api/suggest/vocab` (network first) so the Field log and Today's tiles open offline; `/api/dashboard` is never
 cached (an old copy would show the wrong "days left").
 
@@ -98,6 +98,21 @@ professionals, integrations, pages, actions and the company's own projects, subs
 with nothing typed it shows drafts and what was opened last, this page's actions and the role's common checks.
 Offline it searches the checks, pages and projects kept on the device. A rule opens on its own page (`#/rule/<id>`):
 plain English, the verifier's correction right under it when the rule was corrected, the official text and source.
+
+Help: the top bar's Help button, More > Help, `#/help`, a page's "What is this page? > Ask Quick help", a check's "Not
+sure what to enter? Ask Quick help" and Search's "Ask Quick help: …" all open the same panel, always on the Quick help
+tab (nothing remembers the Claude tab), with the open page's starter questions (on a check, its group's). One box
+serves both tabs and its Send button names where the words go: "Ask Quick help" (the words stay in TradeComply) or
+"Send to Claude" (Claude's note sits right above the box on that tab). A Quick help answer shows what it understood,
+the rules word for word (the verifier's correction right under the plain English, the citation linked to the
+official source, Verified or Not yet verified), requirement cards (Confirmed or Not yet confirmed), and buttons:
+"Open <check>" opens that check with what was understood filled in and tagged "From Quick help" (nothing runs until
+Run; the fill is for that check only, once), go to a page, find a professional, or "Ask TradeComply (Claude)", which
+puts the words in the Claude tab without sending them. Three misses in a row point to a person; offline it says it
+needs a connection and offers Search; while a Claude answer is running, Quick help waits and says why. Turns live in
+memory only (New question, Log out, a reload or another person signing in clears them). A check field whose label
+or hint uses a term the rulebook explains (NOC, prelim, DIR, CASp...) gets a "(?)" named "What does NOC mean?": it
+shows the term and that rule in the rulebook's own words, fetched from `GET /api/rules/{id}`.
 
 Roles: **owner** (everything, incl. billing, team and keys), **office** (projects, subs, documents, tools, keys),
 **field** (read projects/subs/documents, run tools, create field logs). API keys act with the office role, limited to
@@ -280,12 +295,12 @@ owner. Design notes and sources: [docs/email-links.md](docs/email-links.md).
 
 ### Ask TradeComply (the AI helper)
 
-With `ANTHROPIC_API_KEY` set, an **Ask** button in the top bar opens a panel where anyone signed in asks questions in
-plain words: beside the page on wide screens (the page narrows), full screen on phones (a modal dialog that the Back
-button and Esc close). Claude (Anthropic's Messages API, `claude-opus-5-5` by default) answers and
+With `ANTHROPIC_API_KEY` set, the Help panel (the **Help** button in the top bar) gets an **Ask TradeComply** tab where
+anyone signed in asks questions in plain words: beside the page on wide screens (the page narrows), full screen on
+phones (a modal dialog that the Back button and Esc close). The panel opens on Quick help; the tab is one click away. Claude (Anthropic's Messages API, `claude-opus-5-5` by default) answers and
 runs TradeComply's own read-only checks through the same path as `POST /api/tools/{name}`, as that person: the same
 subscription check, activity-log rows (Via "Ask TradeComply") and licensed-professional handoffs. Each answer shows
-"Checked: ..." with the checks it ran. The panel says on every screen: "Answers come from Claude by Anthropic and can
+"Checked: ..." with the checks it ran. The tab says, right above the box: "Answers come from Claude by Anthropic and can
 be wrong. What you type and tool results are sent to Anthropic." It helps licensed people and never replaces them.
 
 - Sent to Anthropic: the (non-secret) system prompt, the tool list, the chat so far with today's date and the open
@@ -323,7 +338,7 @@ Data flow, every setting and the design decisions with their sources: [docs/ai-h
 | `POSTMARK_SERVER_TOKEN`, `POSTMARK_MESSAGE_STREAM` | unset, `outbound` | Send through Postmark's HTTPS API (works on Render's free plan). Wins over SMTP when both are set |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USERNAME`, `SMTP_PASSWORD` | unset, 587 / 465, `starttls` | Send by SMTP with required TLS (`starttls` or `ssl`; anything else turns email off). Render's free plan blocks SMTP ports |
 | `MAIL_BACKEND=outbox`, `MAIL_OUTBOX_FILE` | unset | Development and tests only (ignored on Render): keep messages in memory and, with `MAIL_OUTBOX_FILE`, append them to that file as JSON lines |
-| `ANTHROPIC_API_KEY` | unset (no AI helper) | The operator's Anthropic API key for Ask TradeComply. Unset: the Ask button is hidden and owners see "AI helper is not set up". Never per company, never logged or sent to a browser |
+| `ANTHROPIC_API_KEY` | unset (no AI helper) | The operator's Anthropic API key for Ask TradeComply. Unset: the Help panel has no Ask TradeComply tab (Quick help still works; the browser never calls `/api/assistant`) and owners see "AI helper is not set up". Never per company, never logged or sent to a browser |
 | `ASSISTANT_MODEL`, `ASSISTANT_EFFORT` | `claude-opus-5-5`, `medium` | The model and effort (`low`, `medium`, `high`) for Ask TradeComply |
 | `ASSISTANT_DAILY_MESSAGES`, `ASSISTANT_MONTHLY_TOKENS` | 30, 5000000 | Questions per person per California day; tokens per company per month (input + cache writes + output + cache reads / 10) |
 | `ASSISTANT_MAX_CONVERSATIONS`, `ASSISTANT_MAX_TURNS`, `ASSISTANT_RETENTION_DAYS`, `ASSISTANT_TURN_TIMEOUT_S` | 50, 40, 90, 120 | Chats per person, questions per chat, days an unused chat is kept, seconds per answer. See [docs/ai-helper.md](docs/ai-helper.md) |
