@@ -70,7 +70,9 @@ Migration 9 (`app/store.py`), on SQLite and PostgreSQL (row level security on, n
 | `assistant_usage` | one row per question, written before the first call to Anthropic (so a stopped, timed-out or failed question still counts toward the daily limit): model and input, output, cache-read and cache-write tokens, added after each call, including what a call that broke off or was stopped had reported | yes | after 400 days; with the company. When a person is removed, their rows stay (the month's count) with no person |
 
 Every chat query filters by company and person: a chat is visible only to the person who started it (404 for
-everyone else, owners included). Checks run by the helper are in the activity log with Via "Ask TradeComply".
+everyone else, owners included). Checks run by the helper are in the activity log with Via "Ask TradeComply", with
+the argument names and their SHA-256 only (`{"fields": ["need"], "args_sha256": "..."}`, as for /mcp): what the person
+typed into a chat never reaches the company-wide log that owners and office staff read, so it goes when the chat does.
 
 ## Limits and errors
 

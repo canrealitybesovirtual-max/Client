@@ -10,10 +10,12 @@
    v6: one-time links by email (forgot password, invite links, email confirmation). Their calls are POSTs, which this
    worker never handles.
    v7: Ask TradeComply, the in-app AI helper. /api/assistant/* is network only: never cached, never answered from an
-   old copy or with the offline JSON. */
-const SHELL_CACHE = 'tc-shell-v7';
+   old copy or with the offline JSON.
+   v8: final pre-launch fixes (skip link, sign-in messages from a cookie, the API cache cleared when the server ends
+   a session, field-role wording, phone stepper). */
+const SHELL_CACHE = 'tc-shell-v8';
 const API_CACHE = 'tc-api-v1';
-const SHELL = ['/', '/static/v7/app.js', '/static/v7/styles.css', '/manifest.webmanifest', '/icon.svg'];
+const SHELL = ['/', '/static/v8/app.js', '/static/v8/styles.css', '/manifest.webmanifest', '/icon.svg'];
 const API_CACHEABLE = ['/api/tools', '/api/me', '/api/config', '/api/projects', '/api/integrations/catalog', '/api/professionals/types'];
 
 self.addEventListener('install', (event) => {

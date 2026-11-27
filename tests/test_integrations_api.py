@@ -20,7 +20,7 @@ from app.connectors import (ConfigField, Connector, OAuth2Spec, TestResult, code
                             validate_connector_class)
 from app.connectors._template import ExampleApiKeyConnector, ExampleOAuthConnector
 from app.crypto import connection_context, webhook_context
-from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, json_response, join, make_app, mock_http, redirect_query, signup  # noqa: F401
 
 OAUTH_ENV = {"EXAMPLE_CLIENT_ID": "cid-123", "EXAMPLE_CLIENT_SECRET": "csecret-456"}
 SLACK_URL = "https://hooks.slack.com/services/" + "T0000/B0000/" + "X" * 24  # built at runtime for secret scanners
@@ -335,7 +335,7 @@ def result_of(r) -> dict:
     assert r.status_code == 303, r.text
     loc = r.headers["location"]
     assert loc.startswith("/#/settings?")
-    return {k: v[0] for k, v in parse_qs(loc.split("?", 1)[1]).items()}
+    return redirect_query(r)
 
 
 def test_oauth_needs_the_operator_app_credentials(owner, platform):

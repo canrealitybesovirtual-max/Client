@@ -38,8 +38,14 @@ Setup for operators is in the README ("Email: invites, password resets and email
   used at the same moment can't deadlock): the second of two simultaneous uses waits, then finds the link gone. The new password is hashed before the lock (scrypt
   is slow) but after a lookup (an unknown token costs no hashing).
 - Reset: new password, session counter + 1, every link of that person deleted, connected apps ended
-  (`oauth.revoked` rows, reason `password_reset`), activity row `auth.password_reset`, the login lockout for that
-  email cleared, and a "password was changed" notice to a confirmed address.
+  (`oauth.revoked` rows, reason `password_reset`), the API keys that person made revoked (`api_key.revoke`, reason
+  `password_reset`: a key made with a stolen session must not outlive the recovery; a password change in Settings
+  does the same), activity row `auth.password_reset`, the login lockout for that email cleared, and a "password was
+  changed" notice to a confirmed address.
+- Invites hold an address only until someone else needs it: a person a company added who never joined (never signed
+  in, address unconfirmed, no temporary password) gives way when that address signs up or another company invites it
+  (`Store.release_pending_invitee`, under the same row lock as using the invite link, activity row
+  `user.invite_released` in the first company). A company can add 100 people an hour, 60 a day while on its trial.
 - Expired rows are deleted whenever a new link is made. Up to three open reset links per person, one invite (an
   emailed and a copied link) and two confirmations for the same address (sending a new one leaves the one sent a
   moment ago, at sign-up say, working).
@@ -51,10 +57,11 @@ Setup for operators is in the README ("Email: invites, password resets and email
 - Link checks and uses: 60 failed ones per IP per 10 minutes (a good link never counts, so a valid link from a busy
   shared network still works). Invite emails: 50 per company per hour (over it, the owner still gets the link to
   copy). Confirmation emails and email changes: 5 per person per hour.
-- The per-IP limits here key on the whole `X-Forwarded-For` chain unless `TRUSTED_PROXY_HOPS` is set (`ip_key`, as
-  OAuth does): a caller writes the first entries, not the ones Render's proxy appends, so a forged header never lands
-  in another network's bucket. Set `TRUSTED_PROXY_HOPS` on Render once the header is checked, so a caller can't start
-  a fresh bucket with each forged entry either.
+- The per-IP limits here key on the address `TRUSTED_PROXY_HOPS` points at (`ip_key`, as OAuth does). On Render it
+  is `2` (render.yaml): the client address Cloudflare appends, which no caller can set, so neither a forged header nor
+  Render's own proxy address (the last entry, which changes with every request) moves a caller to a fresh bucket.
+  Without it (`0`) they key on the whole `X-Forwarded-For` chain: a forged header never lands in another network's
+  bucket, but on Render the changing last entry means the count never adds up.
 - Joining with a copied invite link (texted by the owner) doesn't confirm the address, so a confirmation email is
   sent then, as at sign-up; joining with the emailed link confirms it.
 - Unauthenticated link routes take JSON bodies only (FastAPI refuses a form or `text/plain` body with 422), so no

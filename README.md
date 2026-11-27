@@ -198,7 +198,7 @@ the dashboard, which "Not now" hides for good; or Settings > Your account, which
 
 | Link | Lasts | Made by | Notes |
 |---|---|---|---|
-| Reset (emailed) | 30 minutes | Forgot password | Only to a **confirmed** address. Signs the person out everywhere, disconnects their connected apps, ends their other links, clears a login lockout, emails a "your password was changed" notice; it doesn't sign anyone in |
+| Reset (emailed) | 30 minutes | Forgot password | Only to a **confirmed** address. Signs the person out everywhere, disconnects their connected apps, turns off the API keys they made, ends their other links, clears a login lockout, emails a "your password was changed" notice; it doesn't sign anyone in. A password change in Settings does the same (except the lockout), so a key someone made with a stolen session doesn't outlive the recovery |
 | Reset (owner) | 24 hours | Settings > Team | Shown to the owner to send themselves; nothing on the account changes until it is used |
 | Invite | 7 days | Settings > Team | Emailed (when set up) and shown to the owner. Using one ends the other. The emailed one also confirms the address |
 | Confirm email | 24 hours | Sign-up, Settings | Must be opened while signed in as that person (the login shows in its place). A new address replaces the old one only when confirmed; the old address gets a notice first |
@@ -278,7 +278,7 @@ Data flow, every setting and the design decisions with their sources: [docs/ai-h
 | `ASSISTANT_DAILY_MESSAGES`, `ASSISTANT_MONTHLY_TOKENS` | 30, 5000000 | Questions per person per California day; tokens per company per month (input + cache writes + output + cache reads / 10) |
 | `ASSISTANT_MAX_CONVERSATIONS`, `ASSISTANT_MAX_TURNS`, `ASSISTANT_RETENTION_DAYS`, `ASSISTANT_TURN_TIMEOUT_S` | 50, 40, 90, 120 | Chats per person, questions per chat, days an unused chat is kept, seconds per answer. See [docs/ai-helper.md](docs/ai-helper.md) |
 | Connector app credentials (e.g. `PROCORE_CLIENT_ID`) | unset | Each connector lists its own `required_env`; it shows as "not set up on this server" until they are set |
-| `TRUSTED_PROXY_HOPS` | `0` | How many proxies in front of the app each append the address they saw to `X-Forwarded-For`. `0`: per-IP limits use the first entry, which a client can set. `N`: the N-th entry from the right, which it can't. How Render fills the header is not confirmed, so check (for example log the header of a request you send with a made-up `X-Forwarded-For`) before setting it: a wrong value makes many people share one address's limits |
+| `TRUSTED_PROXY_HOPS` | `0` (`2` in render.yaml) | How many proxies in front of the app each append the address they saw to `X-Forwarded-For`. `0`: per-IP limits use the first entry, which a client can set. `N`: the N-th entry from the right, which it can't. On Render use `2` (render.yaml sets it): measured on the live service on 2026-11-27, the app receives `<whatever the client sent>, <the client address Cloudflare saw>, <a Render proxy address that changes with every request>`. With `0` the per-IP limits keyed on the first entry could be dodged by sending a made-up header, and those keyed on the whole chain (forgot password, link checks, OAuth) never added up, because the last entry changes on every request. `1` would key every limit on Render's proxy addresses, shared by many customers. Behind another host, check first (log the header of a request you send with a made-up `X-Forwarded-For`): a wrong value makes many people share one address's limits. Re-check on Render after it changes its network |
 | `COOKIE_SECURE` | auto | `1` forces the Secure cookie flag (it is set automatically when the request is https / `X-Forwarded-Proto: https`) |
 | `CSLB_AUTO_DOWNLOAD` | off | `1`: build CSLB data from the bundled snapshot on boot and refresh it daily |
 | `LICENSE_DB` | `data/cslb.sqlite` | CSLB SQLite path |
@@ -359,12 +359,18 @@ transaction vanishing at commit. Database calls never run on the event loop.
 scrypt password hashes; HMAC-signed HttpOnly, SameSite=Lax session cookies with a 14-day expiry, bound to the exact
 user row (a removed user's cookie can't log in as a later user who gets the same id) and revoked server-side on
 logout (a password change ends every other session); double-submit CSRF token on cookie-authenticated writes; API
-keys shown once and stored as SHA-256, revoked automatically when their creator is removed or moved to the field
-role; rate limits on login (5 failures per IP+email, 20 per email in 15 minutes; lockouts survive key flooding),
+keys shown once and stored as SHA-256, revoked automatically when their creator is removed, moved to the field
+role, or changes or resets their password; rate limits on login (5 failures per IP+email, 20 per email in 15 minutes; lockouts survive key flooding),
 password changes, sign-ups and `/mcp` tool calls; every query is scoped by tenant; Stripe signatures checked with a
 5-minute tolerance and constant-time compare, events de-duplicated and applied in order (a late, older event can't
 undo a cancellation; an old subscription ending can't cancel the current one); request bodies capped at 8 MB by
-bytes actually received (chunked uploads included); CSP (no inline script, no CDN), HSTS over https and other
+bytes actually received (chunked uploads included); a JSON body holding a lone UTF-16 surrogate (`"\ud800"`) or a
+non-finite number (NaN, Infinity, 1e400) is refused with 422 before any route runs, because one such stored value made
+every later page, download and export that included it fail, and anything stored before that is repaired on the way
+out (`app/safe_json.py`); 422 replies say which field and why, never what was sent (a password, say); downloads
+signed in with the session cookie (company data, activity log, MCP call log, calendar) are refused when the browser
+says another site started them (Sec-Fetch-Site); sign-in errors reach the login and integrations pages in a short-lived
+cookie only the server sets, never as text in the URL; CSP (no inline script, no CDN), HSTS over https and other
 security headers; gzip only on public, secret-free responses (app shell, static files, the tool list), never on
 account data or keys; the markdown renderer never emits markup from input; "Verified" on a saved document only comes
 from a tool result signed by this server, and editing the text drops it; dates outside 1900-2200 are rejected;
@@ -372,7 +378,8 @@ calendar and login tokens are redacted from the access log; local mode rejects a
 `127.0.0.1`/`localhost` (DNS rebinding). `/mcp` tool calls are logged in `mcp_audit_log` with the SHA-256 of the
 arguments, never the arguments, and their activity-log rows keep only the argument names and that hash; rows are
 written after the response has been sent. Tool runs from the web app (`/api/tools/{name}`) keep arguments in
-summarized form (long strings such as a payroll CSV are stored as length + hash). Anonymous rows are capped at the
+summarized form (long strings such as a payroll CSV are stored as length + hash); checks Ask TradeComply runs keep only
+the argument names and their hash, like `/mcp`, so a private chat's words never reach the shared activity log. Anonymous rows are capped at the
 newest 50,000 in each log. Connected apps (OAuth for Claude and other MCP clients): PKCE S256 required, single-use
 60-second codes, access tokens for 1 hour, rotating refresh tokens with reuse detection, only SHA-256 hashes stored,
 tokens bound to `<APP_URL>/mcp`, the consent screen shows the address the app returns to (plain-ASCII hosts only, so
@@ -394,19 +401,33 @@ self-assessment): [docs/mcp-security.md](docs/mcp-security.md).
   (`DATABASE_URL`), but scaling out also needs shared rate limits (e.g. Redis). Database calls run on worker
   threads (up to `DATABASE_POOL_MAX` connections at once), but each is still a network round trip, so keep Postgres
   in or near the service's region.
-- Per-IP limits use the first `X-Forwarded-For` entry, which a client can spoof, unless `TRUSTED_PROXY_HOPS` is set;
-  per-email and global limits back them up. (OAuth's per-IP limits and the email-link and forgot-password limits key
-  on the whole chain, so a caller can't aim them at someone else's address, such as Claude's or an office's; it can still bypass them, and then one caller can use up the
-  global cap of 2,000 app registrations an hour, which blocks new connections until it resets.) Sessions are stateless signed cookies (revoked on logout); API keys expire only when given an expiry date.
+- Per-IP limits use the address `TRUSTED_PROXY_HOPS` points at (on Render, `2`: the client address Cloudflare saw,
+  which a client can't set); per-email and global limits back them up. Without it (`0`, the default off Render) they
+  use the first `X-Forwarded-For` entry, which a client can spoof, and OAuth's per-IP limits and the email-link and
+  forgot-password limits key on the whole chain: a caller can't aim them at someone else's address, such as Claude's
+  or an office's, but it can bypass them, and then one caller can use up the global cap of 2,000 app registrations an
+  hour, which blocks new connections until it resets. On Render that chain also ends in an address that changes with
+  every request, so with `0` those limits never add up at all. Sessions are stateless signed cookies (revoked on logout); API keys expire only when given an expiry date.
 - People added before invite links have "must change password", but the server doesn't force the change before
   other use (an owner can send them an invite link instead).
 - Any company on a trial can make this server email an invite to any address, with a company name it chose. Invite
   emails are capped at 50 per company per hour, names are cut to 80 characters, bodies are plain text and links only
-  ever point at `APP_URL`; watch the mail provider's bounce and complaint reports.
+  ever point at `APP_URL`; watch the mail provider's bounce and complaint reports. A company can add at most 100
+  people an hour (60 a day on the free trial).
+- One email address is one account on the whole server. Someone a company added who never joined doesn't keep the
+  address: a sign-up with it, or another company's invite, removes that pending person (their company sees
+  `user.invite_released` in its activity log, and the invite link stops working). But an account someone signed up
+  with, or joined with a copied invite link, keeps its address even if it was never confirmed, so a stranger can still
+  hold an address that isn't theirs that way. Nothing on the server proves who owns a mailbox without email; the fix
+  today is the operator removing that company (`python -m app.account delete --tenant <id>`) after checking.
+- Sign-up says whether an address already has an account ("Log in instead"); every attempt counts toward the sign-up
+  limits (10 an hour per address, 500 an hour in total), so asking costs as much as signing up. Forgot password never
+  says.
 - Passwords need 10 characters, as before. NIST SP 800-63B-4 asks 15 for a password used alone; raising it is one
   constant (`MIN_PASSWORD`) and the web app's hints.
 - No sign-in link by email (see Email above). Without email set up, someone who forgot their password needs an
-  owner's reset link, and a company's only owner needs whoever runs the server.
+  owner's reset link, and a company's only owner needs whoever runs the server (the Forgot password page says so and
+  shows `SUPPORT_EMAIL` / `SUPPORT_URL` when set: set one before launch).
 - Ask TradeComply's "one answer at a time" and Stop are in memory too (one instance). Its answers come from an AI
   model and can be wrong; token budgets are estimates until real usage is seen (docs/ai-helper.md).
 - Toolbox-talk cadence counts Monday-Friday and ignores holidays. Lien items for public projects are not computed

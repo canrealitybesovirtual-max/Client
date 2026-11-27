@@ -30,7 +30,7 @@ from starlette.routing import Mount
 from app import sso
 from app.connectors import splunk
 from app.connectors.splunk import SplunkHECConnector
-from tests.support import PW, backend, json_response, join, login, make_app, mock_http, signup  # noqa: F401
+from tests.support import PW, backend, json_response, join, login, make_app, mock_http, redirect_query, signup  # noqa: F401,E501
 
 APP_URL = "https://tc.example.com"
 HEC_HOST = "http-inputs-acme.splunkcloud.com"
@@ -336,8 +336,8 @@ def sso_login(app, idp: FakeIdP, email: str, client: TestClient | None = None, c
 def error_of(r) -> str:
     assert r.status_code == 303, r.text
     loc = r.headers["location"]
-    assert loc.startswith("/#/login?"), loc
-    return parse_qs(loc.split("?", 1)[1])["message"][0]
+    assert loc.startswith("/#/login?sso=error"), loc
+    return redirect_query(r)["message"]
 
 
 def audit_rows(platform, tenant_id, tool):
@@ -1156,3 +1156,25 @@ def test_changing_the_hec_url_needs_the_token_again(owner, platform, world):
     r = owner.put("/api/integrations/splunk/config", json={"config": {"hec_url": "https://splunk.example.com:8088",
                                                                       "hec_token": HEC_TOKEN}})
     assert r.status_code == 200
+
+
+
+def test_a_stored_lone_surrogate_never_stalls_the_feed(owner, platform, world):
+    """Final review web-01: a tool argument with a lone UTF-16 surrogate ("\\ud800", valid JSON) stored in the
+    activity log made every export round fail on that row, so nothing after it (nor the MCP log) ever reached
+    Splunk. New requests are refused at the edge (422); a row stored before that is sent repaired."""
+    connect_splunk(owner)
+    platform.store.audit(owner.tenant_id, "olivia@acme.com", "search_california_rules", {"query": "lien \ud800"},
+                         None, source="api")
+    seed_logs(platform, owner.tenant_id, 2, 1)
+    r = splunk.export_tenant(platform, owner.tenant_id, now=LATER())
+    assert "error" not in r and not r.get("skipped_rows"), r
+    activity = [e["event"] for e in world.hec.events if e["event"]["log"] == "activity"]
+    assert any(e["args"] == {"query": "lien \ufffd"} for e in activity)
+    assert {e["id"] for e in activity} == {a["id"] for a in platform.store.list_audit(owner.tenant_id, 1000)}
+    assert [e for e in world.hec.events if e["event"]["log"] == "mcp"]
+    download = owner.get("/api/audit-export?log=activity&format=json")
+    rows = json.loads(download.text)["rows"]               # the whole file: valid JSON to the end
+    assert download.status_code == 200 and {"query": "lien \ufffd"} in [r["args"] for r in rows]
+    csv_text = owner.get("/api/audit-export?log=activity&format=csv").text
+    assert "lien \ufffd" in csv_text and len(list(csv.reader(io.StringIO(csv_text)))) == len(rows) + 2   # header, this download's own row

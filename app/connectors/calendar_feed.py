@@ -75,7 +75,7 @@ from fastapi.responses import Response
 from tradecomply import business_ops, logic, payments
 
 from .. import dashboard
-from ..auth import Principal, RateLimiter, anyone, client_ip, office_up, platform_of
+from ..auth import Principal, RateLimiter, anyone, client_ip, office_up, platform_of, refuse_cross_site
 from ..billing import base_url, entitlement, require_entitled
 from . import ConfigField, Connector, ConnectorContext, ConnectorError, TestResult
 
@@ -779,6 +779,8 @@ def list_events(request: Request, p: Principal = Depends(anyone)):
 @router.get(f"{PREFIX}/calendar.ics")
 def download_ics(request: Request, p: Principal = Depends(anyone)):
     """The same calendar, signed in (session or API key): for a one-time download or import."""
+    if p.via == "cookie":
+        refuse_cross_site(request, "Download the calendar from TradeComply itself, not from a link on another site.")
     platform = platform_of(request)
     require_entitled(platform, p)
     body, _ = _instance(request, p).render(platform.settings.app_url or base_url(request))

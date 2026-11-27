@@ -26,7 +26,7 @@ from tradecomply import integrations_guide, logic, professionals
 from . import auth_links, dashboard
 from . import mcp_governance as governance
 from .auth import (EMAIL_RE, Principal, anyone, get_principal, hash_password, license_digits, new_api_key, office_up,
-                   owner_only, platform_of)
+                   owner_only, platform_of, refuse_cross_site)
 from .billing import PRICE_USD_MONTH, base_url, entitlement, require_entitled
 from .mailer import valid_recipient
 from .store import FIELD_LOG_KINDS, IntegrityError
@@ -279,6 +279,7 @@ def update_tenant(body: TenantIn, request: Request, p: Principal = Depends(offic
         fields["company_name"] = body.company_name
     if body.cslb_license is not None:
         fields["cslb_license"] = license_digits(body.cslb_license)
+    changed = sorted(fields)
     if body.settings is not None:
         mine = {str(k)[:100]: v for k, v in body.settings.items() if k not in RESERVED_SETTINGS}
 
@@ -288,7 +289,11 @@ def update_tenant(body: TenantIn, request: Request, p: Principal = Depends(offic
                 raise HTTPException(413, "settings too large")
             return merged
         store.modify_tenant_settings(p.tenant_id, merge)
-    return _tenant_public(store.update_tenant(p.tenant_id, **fields))
+        changed += [f"settings.{k}"[:100] for k in sorted(mine)][:50]
+    tenant = store.update_tenant(p.tenant_id, **fields)
+    if changed:          # the names of what changed (company name, license number, settings), not the values
+        store.audit(p.tenant_id, p.label, "tenant.update", {"fields": changed}, None, source="api")
+    return _tenant_public(tenant)
 
 
 @router.get("/users")
@@ -305,7 +310,12 @@ async def invite_user(body: UserIn, request: Request, p: Principal = Depends(own
     email = body.email.strip().lower()
     if not EMAIL_RE.match(email) or not valid_recipient(email):
         raise HTTPException(422, "Enter a valid email address")
-    if await anyio.to_thread.run_sync(store.user_by_email, email):
+    await anyio.to_thread.run_sync(_people_limit, request, p)
+    existing = await anyio.to_thread.run_sync(store.user_by_email, email)
+    # Someone another company added who never joined doesn't keep the address from everyone else (app/store.py
+    # release_pending_invitee): that pending row gives way. Anyone who joined or confirmed it keeps it.
+    if existing and (existing["tenant_id"] == p.tenant_id or not await anyio.to_thread.run_sync(
+            store.release_pending_invitee, email, p.tenant_id, "invited_by_another_company")):
         raise HTTPException(409, "That email already has an account")
     # a real hash of a secret nobody knows: a pending invitee's login takes the same time as anyone's, and fails
     pw_hash = await anyio.to_thread.run_sync(hash_password, secrets.token_urlsafe(32))
@@ -316,6 +326,26 @@ async def invite_user(body: UserIn, request: Request, p: Principal = Depends(own
     except IntegrityError:      # created a moment ago, after the check above (unique email index)
         raise HTTPException(409, "That email already has an account")
     return await auth_links.invite(request, p, u, "user.invite")
+
+
+def _people_limit(request: Request, p: Principal) -> None:
+    """Blocking. Count one person added to the company, refused with a 429 over the limits: anyone can start a trial,
+    and each person added holds an email address until they join or are removed."""
+    platform = _p(request)
+    hourly = platform.people_hour_limiter
+    wait = hourly.claim(p.tenant_id)
+    if wait:
+        raise HTTPException(429, f"Your company added a lot of people in the last hour. Try again in "
+                                 f"{max(1, wait // 60)} minute(s).", headers={"Retry-After": str(wait)})
+    tenant = platform.store.get_tenant(p.tenant_id) or {}
+    if tenant.get("status") == "trialing":
+        wait = platform.trial_people_day_limiter.claim(p.tenant_id)
+        if wait:
+            hourly.release(p.tenant_id)
+            raise HTTPException(429, f"During the free trial a company can add up to "
+                                     f"{platform.trial_people_day_limiter.limit} people a day. Try again in "
+                                     f"{max(1, wait // 3600)} hour(s), or subscribe to add more today.",
+                                headers={"Retry-After": str(wait)})
 
 
 async def _member(request: Request, p: Principal, user_id: int) -> dict:
@@ -357,11 +387,21 @@ def patch_user(user_id: int, body: UserPatch, request: Request, p: Principal = D
     store = _store(request)
     if user_id == p.user_id and body.role and body.role != "owner":
         raise HTTPException(422, "You can't remove your own owner role")
+    before = store.user_by_id(user_id)
+    if not before or before["tenant_id"] != p.tenant_id:
+        _not_found("User")
     u = store.update_user(p.tenant_id, user_id, **body.model_dump(exclude_none=True))
     if not u:
         _not_found("User")
     if u["role"] == "field":           # keys act with the office role; a field user can't keep one
         store.revoke_user_api_keys(p.tenant_id, user_id)
+    if u["role"] != before["role"]:    # permission changes are in the activity log (promotion to owner above all)
+        store.audit(p.tenant_id, p.label, "user.role_change", {"user_id": user_id, "email": u["email"],
+                                                               "from": before["role"], "to": u["role"]}, None,
+                    source="api")
+    if (u["name"] or None) != (before["name"] or None):
+        store.audit(p.tenant_id, p.label, "user.update", {"user_id": user_id, "fields": ["name"]}, None,
+                    source="api")
     return {k: u[k] for k in ("id", "email", "name", "role")}
 
 
@@ -370,7 +410,7 @@ def delete_user(user_id: int, request: Request, p: Principal = Depends(owner_onl
     if user_id == p.user_id:
         raise HTTPException(422, "You can't delete your own account here")
     store = _store(request)
-    if not store.delete_user(p.tenant_id, user_id):
+    if not store.delete_user(p.tenant_id, user_id, audit_by=p.label):
         _not_found("User")
     store.revoke_user_api_keys(p.tenant_id, user_id)      # their agents lose access with them
     return {"ok": True}
@@ -691,7 +731,10 @@ async def run_authorized_tool(request: Request, p: Principal, name: str, args, s
         integrations_guide.SERVER_MCP_URL.reset(url_token)
     sc = out["structured"] if isinstance(out["structured"], dict) else {}
     verified = sc.get("verified") if isinstance(sc.get("verified"), bool) else None
-    await anyio.to_thread.run_sync(lambda: platform.store.audit(p.tenant_id, p.label, name, _summarize(args), verified,
+    # A check Ask TradeComply ran repeats the person's private chat (docs/ai-helper.md), which the owner and office
+    # can't read and which is deleted with the chat: its row keeps the argument names and a fingerprint, as /mcp does.
+    logged = governance.activity_args(args) if source == "assistant" else _summarize(args)
+    await anyio.to_thread.run_sync(lambda: platform.store.audit(p.tenant_id, p.label, name, logged, verified,
                                                                 ok=not out["is_error"], source=source))
     if out["is_error"]:
         raise HTTPException(422, friendly_tool_error(out["text"]))
@@ -833,7 +876,7 @@ def patch_project(project_id: int, body: ProjectIn, request: Request, p: Princip
 
 @router.delete("/projects/{project_id}")
 def delete_project(project_id: int, request: Request, p: Principal = Depends(office_up)):
-    if not _store(request).delete("projects", p.tenant_id, project_id):
+    if not _store(request).delete("projects", p.tenant_id, project_id, audit_by=p.label):
         _not_found("Project")
     return {"ok": True}
 
@@ -911,7 +954,7 @@ def patch_sub(sub_id: int, body: SubIn, request: Request, p: Principal = Depends
 
 @router.delete("/subs/{sub_id}")
 def delete_sub(sub_id: int, request: Request, p: Principal = Depends(office_up)):
-    if not _store(request).delete("subs", p.tenant_id, sub_id):
+    if not _store(request).delete("subs", p.tenant_id, sub_id, audit_by=p.label):
         _not_found("Subcontractor")
     return {"ok": True}
 
@@ -1335,7 +1378,7 @@ def patch_document(doc_id: int, body: DocumentIn, request: Request, p: Principal
 
 @router.delete("/documents/{doc_id}")
 def delete_document(doc_id: int, request: Request, p: Principal = Depends(office_up)):
-    if not _store(request).delete("documents", p.tenant_id, doc_id):
+    if not _store(request).delete("documents", p.tenant_id, doc_id, audit_by=p.label):
         _not_found("Document")
     return {"ok": True}
 
@@ -1393,7 +1436,7 @@ def get_field_log(log_id: int, request: Request, p: Principal = Depends(anyone))
 
 @router.delete("/field_logs/{log_id}")
 def delete_field_log(log_id: int, request: Request, p: Principal = Depends(office_up)):
-    if not _store(request).delete("field_logs", p.tenant_id, log_id):
+    if not _store(request).delete("field_logs", p.tenant_id, log_id, audit_by=p.label):
         _not_found("Field log")
     return {"ok": True}
 
@@ -1459,6 +1502,7 @@ def rotate_feed(request: Request, p: Principal = Depends(office_up)):
     platform = _p(request)
     tenant = platform.store.modify_tenant_settings(     # locked: a settings save at the same moment can't undo it
         p.tenant_id, lambda current: {**current, "ics_gen": _ics_gen({"settings": current}) + 1})
+    platform.store.audit(p.tenant_id, p.label, "calendar.feed_rotate", {}, None, source="api")
     return {"url": f"{base_url(request)}/api/calendar.ics?tenant={tenant['id']}&token={feed_token(platform, tenant)}"}
 
 
@@ -1474,6 +1518,9 @@ async def calendar_ics(request: Request, tenant: Optional[str] = None, token: Op
         tid = t["id"]
     else:
         p = await get_principal(request)
+        if p.via == "cookie":       # the private link (above) is for calendar apps and works from anywhere
+            refuse_cross_site(request, "Download the calendar from TradeComply itself, not from a link on another "
+                                       "site.")
         tid = p.tenant_id
     t = await anyio.to_thread.run_sync(platform.store.get_tenant, tid)
     if not entitlement(t)["ok"]:

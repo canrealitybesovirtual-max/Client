@@ -176,6 +176,9 @@ class Platform:
         self.forgot_email_limiter = RateLimiter(limit=3, window_s=15 * 60)      # emails per address: over it, none
         self.link_limiter = RateLimiter(limit=60, window_s=10 * 60)             # link checks and uses per IP
         self.mail_tenant_limiter = RateLimiter(limit=50, window_s=60 * 60)      # invite emails a company sends
+        # People a company adds (POST /api/users): each holds an email address until they join or are removed
+        self.people_hour_limiter = RateLimiter(limit=100, window_s=60 * 60)     # any company, an hour
+        self.trial_people_day_limiter = RateLimiter(limit=60, window_s=24 * 3600)   # a company on its free trial
         self.mail_user_limiter = RateLimiter(limit=5, window_s=60 * 60)         # confirm emails per person
         # Ask TradeComply (app/assistant.py): the SDK client (made on first use; tests set assistant_client), the
         # person whose answer is being written now -> (chat id, cancel scope for Stop), and the last retention purge.

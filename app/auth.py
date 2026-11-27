@@ -16,6 +16,7 @@ import hashlib
 import hmac
 import json
 import logging
+import math
 import os
 import re
 import secrets
@@ -30,6 +31,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
+from . import safe_json
 from .store import IntegrityError
 
 log = logging.getLogger("tradecomply.auth")
@@ -263,9 +265,10 @@ def forwarded_ip(settings, fwd: str | None, peer: str) -> str:
     """The caller's address. Hosted, the app sits behind a proxy that adds to X-Forwarded-For. With
     TRUSTED_PROXY_HOPS = N (the proxies in front of the app that each append the address they saw), it is the N-th
     entry from the right, which no client can set; a shorter header didn't pass through them, so the peer is used.
-    With 0 (the default: how Render fills the header is not confirmed) it is the first entry, which a client can
-    set itself, so per-IP limits are best effort; per-email and global limits back them up, and OAuth's per-IP
-    limits use ip_key. Locally there is no proxy, so the header is ignored."""
+    On Render it is 2 (render.yaml): the header arrives as "<client-sent entries>, <client address Cloudflare saw>,
+    <a Render proxy address that changes per request>". With 0 (the default elsewhere) it is the first entry, which a
+    client can set itself, so per-IP limits are best effort; per-email and global limits back them up, and OAuth's
+    per-IP limits use ip_key. Locally there is no proxy, so the header is ignored."""
     if not fwd or settings.local_mode:
         return peer
     hops, n = fwd.split(","), settings.trusted_proxy_hops
@@ -288,6 +291,28 @@ def ip_key(request: Request) -> str:
     if settings.trusted_proxy_hops or settings.local_mode or not fwd:
         return client_ip(request)
     return ",".join(h.strip() for h in fwd.split(","))[-256:]
+
+
+NOTICE_COOKIE = "tc_notice"
+
+
+def set_notice(response, request: Request, message: str) -> None:
+    """A message for the next page of the web app (a single sign-on or an integration sign-in that failed), in a
+    short-lived cookie that only this server can set. Carried in the URL, anyone could make a link that shows their
+    own words in the red banner of the real login or integrations page."""
+    from urllib.parse import quote
+    response.set_cookie(NOTICE_COOKIE, quote(safe_json.fix_str(str(message))[:300], safe=""), max_age=300,
+                        httponly=False, samesite="lax", secure=is_https(request), path="/")
+
+
+def refuse_cross_site(request: Request, message: str) -> None:
+    """For a GET download that the session cookie authenticates. The cookie is SameSite=Lax, so it is sent when
+    another site navigates the browser here: the file never reaches that site, but each visit would use up one of
+    the company's downloads, write an activity-log row and leave a copy in the Downloads folder. The app's own
+    buttons and links are same-origin; browsers say where a request came from in Sec-Fetch-Site (API clients send
+    no such header, so they are unaffected)."""
+    if request.headers.get("sec-fetch-site", "").lower() in ("cross-site", "same-site"):
+        raise HTTPException(403, message)
 
 
 def is_https(request: Request) -> bool:
@@ -451,17 +476,27 @@ def license_digits(value: str | None) -> str | None:
 async def signup(body: SignupIn, request: Request, background: BackgroundTasks):
     platform = platform_of(request)
     ip = client_ip(request)
-    wait = max(platform.signup_limiter.retry_after(ip), platform.signup_global_limiter.retry_after("all"))
+    # Every attempt that gets as far as the "already has an account" answer counts, not only sign-ups that work:
+    # otherwise asking whether an address has an account would be free and unlimited (forgot password never says).
+    wait = platform.signup_limiter.claim(ip)
+    if not wait:
+        wait = platform.signup_global_limiter.claim("all")
+        if wait:
+            platform.signup_limiter.release(ip)
     if wait:
         raise HTTPException(429, "Too many sign-ups from this network. Try again later.",
                             headers={"Retry-After": str(wait)})
     email = body.email.strip().lower()
     if not EMAIL_RE.match(email):
+        platform.signup_limiter.release(ip)
+        platform.signup_global_limiter.release("all")
         raise HTTPException(422, "Enter a valid email address")
     if await anyio.to_thread.run_sync(platform.store.user_by_email, email):
-        raise HTTPException(409, "An account with this email already exists. Log in instead.")
-    platform.signup_limiter.hit(ip)
-    platform.signup_global_limiter.hit("all")
+        # Someone a company added who never joined doesn't keep the address from its owner (app/store.py
+        # release_pending_invitee); anyone who has signed in or confirmed it does.
+        released = await anyio.to_thread.run_sync(platform.store.release_pending_invitee, email, None, "signed_up")
+        if not released:
+            raise HTTPException(409, "An account with this email already exists. Log in instead.")
     pw_hash = await anyio.to_thread.run_sync(hash_password, body.password)
     trial_ends = (datetime.now(timezone.utc) + timedelta(days=platform.settings.trial_days)).replace(
         microsecond=0).isoformat()
@@ -548,10 +583,15 @@ async def change_password(body: PasswordIn, request: Request, background: Backgr
     # counter just bumped, so they would stop working anyway; this records it.)
     await anyio.to_thread.run_sync(platform.store.revoke_user_oauth_grants, p.tenant_id, p.user_id,
                                  "password_changed")
+    await anyio.to_thread.run_sync(lambda: platform.store.audit(p.tenant_id, p.label, "auth.password_changed",
+                                                                {"user_id": p.user_id}, None, source="api"))
+    # So are the API keys they made: one made with a stolen session must not outlive "change your password".
+    keys = await anyio.to_thread.run_sync(lambda: platform.store.revoke_user_api_keys(
+        p.tenant_id, p.user_id, "password_changed", p.label))
     # One-time links (app/auth_links.py) were bound to the old session counter, so they no longer work either.
     from . import auth_links
     background.add_task(auth_links.notify_password_changed, platform, user)    # confirmed addresses only
-    resp = JSONResponse({"ok": True}, background=background)
+    resp = JSONResponse({"ok": True, "api_keys_revoked": keys}, background=background)
     set_session(resp, request, user)          # this device stays logged in, every other session ends
     return resp
 
@@ -578,11 +618,15 @@ def _is_mcp(path: str) -> bool:
 
 
 def _summarize_args(args, depth: int = 0):
-    """Audit rows keep arguments small and avoid storing bulk data (e.g. a payroll CSV) verbatim."""
+    """Audit rows keep arguments small and avoid storing bulk data (e.g. a payroll CSV) verbatim. Text and numbers
+    that can't be written out again (a lone surrogate, infinity: app/safe_json.py) are repaired first."""
     if isinstance(args, str):
+        args = safe_json.fix_str(args)
         return args if len(args) <= 300 else f"<{len(args)} chars, sha256 {hashlib.sha256(args.encode()).hexdigest()[:12]}>"
+    if isinstance(args, float) and not math.isfinite(args):
+        return None
     if isinstance(args, dict) and depth < 4:
-        return {str(k)[:80]: _summarize_args(v, depth + 1) for k, v in list(args.items())[:50]}
+        return {safe_json.fix_str(str(k))[:80]: _summarize_args(v, depth + 1) for k, v in list(args.items())[:50]}
     if isinstance(args, list) and depth < 4:
         out = [_summarize_args(v, depth + 1) for v in args[:20]]
         if len(args) > 20:

@@ -340,7 +340,7 @@ def test_reset_link_flow(app, platform, owner, backend, monkeypatch):
     assert anon.post("/api/auth/link", json={"token": token, "purpose": "invite"}).status_code == 404
     assert reset(anon, token, "short").status_code == 422
     r = reset(anon, token)
-    assert r.status_code == 200 and r.json() == {"ok": True, "email": "owner@acme.test"}
+    assert r.status_code == 200 and r.json() == {"ok": True, "email": "owner@acme.test", "api_keys_revoked": 0}
     assert "tc_session" not in r.headers.get("set-cookie", "")                       # nobody is signed in by it
     assert reset(anon, token).status_code == 404 and reset(anon, token).json()["detail"] == auth_links.GONE
     assert owner.get("/api/me").status_code == 401 and other_device.get("/api/me").status_code == 401
@@ -725,7 +725,7 @@ def test_made_up_addresses_cant_use_up_password_reset_for_everyone(app, platform
     before = len(mails(platform, "owner@acme.test"))
     r = TestClient(app).post("/api/auth/forgot", json={"email": "owner@acme.test"},
                              headers={"x-forwarded-for": "192.0.2.77"})
-    assert r.status_code == 200 and r.json()["message"] == auth_links.FORGOT_SENT
+    assert r.status_code == 200 and r.json()["message"] == auth_links.forgot_sent(platform)
     assert len(mails(platform, "owner@acme.test")) == before + 1
     # over the cap of real emails: the same reply, and nothing sent
     for _ in range(platform.forgot_global_limiter.limit):
@@ -733,7 +733,7 @@ def test_made_up_addresses_cant_use_up_password_reset_for_everyone(app, platform
     platform.forgot_email_limiter.reset("owner@acme.test")
     r = TestClient(app).post("/api/auth/forgot", json={"email": "owner@acme.test"},
                              headers={"x-forwarded-for": "192.0.2.78"})
-    assert r.status_code == 200 and r.json()["message"] == auth_links.FORGOT_SENT
+    assert r.status_code == 200 and r.json()["message"] == auth_links.forgot_sent(platform)
     assert len(mails(platform, "owner@acme.test")) == before + 1
 
 

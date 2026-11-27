@@ -98,7 +98,8 @@ from fastapi.responses import StreamingResponse
 
 from . import ConfigError, ConfigField, Connector, ConnectorContext, ConnectorError, NotConnected, PermanentError, \
     TestResult
-from ..auth import Principal, RateLimiter, office_up, owner_only, platform_of
+from ..auth import Principal, RateLimiter, office_up, owner_only, platform_of, refuse_cross_site
+from .. import safe_json
 from ..billing import entitlement, require_entitled
 from ..events import EVENTS
 from ..safe_http import ResponseTooLarge, SafeHTTPError, UnsafeURLError, check_url, retry_after_seconds
@@ -253,7 +254,8 @@ def _epoch(created) -> float:
 
 
 def _dumps(obj) -> bytes:
-    return json.dumps(obj, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")
+    # safe_json: a row stored with a lone surrogate or a non-finite number is sent repaired, never stalls the feed
+    return safe_json.dumps(obj, separators=(",", ":"), default=str).encode("utf-8")
 
 
 def _row_event(log_name: str, row: dict, tenant_id: str, company: str | None) -> dict:
@@ -822,6 +824,8 @@ def audit_export(request: Request, p: Principal = Depends(owner_only),
                  fmt: str = Query("csv", alias="format", pattern="^(csv|json)$"),
                  start: Optional[str] = Query(None, max_length=40), end: Optional[str] = Query(None, max_length=40)):
     """Download this company's activity log or MCP call log (owner only). [start, end) in UTC; oldest first."""
+    refuse_cross_site(request, "Download the activity log from Settings in TradeComply, not from a link on another "
+                               "site.")
     platform = platform_of(request)
     start_s, end_s = _parse_bound(start, "start"), _parse_bound(end, "end")
     if start_s and end_s and start_s >= end_s:
@@ -839,7 +843,7 @@ def audit_export(request: Request, p: Principal = Depends(owner_only),
         w.writerow(columns)
         n = 0
         for row in _rows_between(store, log_name, tid, start_s, end_s):
-            d = _download_row(log_name, row)
+            d = safe_json.clean(_download_row(log_name, row))
             w.writerow([csv_safe(d.get(c)) for c in columns])
             n += 1
             if n % 200 == 0:
@@ -852,8 +856,8 @@ def audit_export(request: Request, p: Principal = Depends(owner_only),
         yield json.dumps({"log": log_name, "start": start_s, "end": end_s, "generated": now_iso()})[:-1] + ',"rows":['
         n = 0
         for row in _rows_between(store, log_name, tid, start_s, end_s):
-            yield ("," if n else "") + json.dumps(_download_row(log_name, row), separators=(",", ":"),
-                                                  ensure_ascii=False, default=str)
+            yield ("," if n else "") + safe_json.dumps(_download_row(log_name, row), separators=(",", ":"),
+                                                       default=str)
             n += 1
         yield f'],"row_count":{n},"truncated":{"true" if n >= MAX_DOWNLOAD_ROWS else "false"}}}'
 

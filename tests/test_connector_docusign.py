@@ -34,7 +34,7 @@ from app.auth import RateLimiter
 from app.connectors import ConnectorContext, NotConnected, validate_connector_class
 from app.connectors import docusign
 from app.connectors.docusign import DocusignConnector, clean_base_uri, parse_time, render_html, verify_connect_hmac
-from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, json_response, join, make_app, mock_http, redirect_query, signup  # noqa: F401
 
 IK = "7c2b8d7e-0000-4000-8000-cda8a50dd73f"            # made-up integration key (GUID like the docs' example)
 SECRET = "d7014634-0000-4000-8000-6842b7aa8861"        # made-up secret key
@@ -238,7 +238,7 @@ def connect(c, fake=None, code="code-1") -> dict:
         fake.expect_challenge = q["code_challenge"]
     r = c.get(f"/api/integrations/docusign/oauth/callback?code={code}&state={q['state']}", follow_redirects=False)
     assert r.status_code == 303
-    return {k: v[0] for k, v in parse_qs(r.headers["location"].split("?", 1)[1]).items()}
+    return redirect_query(r)
 
 
 def inst(platform, tenant_id) -> DocusignConnector:

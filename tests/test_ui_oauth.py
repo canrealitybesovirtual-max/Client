@@ -297,12 +297,17 @@ const path = require('path');
   await sso.click('main button:has-text("Sign in with SSO")');
   await sso.waitForSelector('.connect-host');
   out.sso = await consentState(sso);
-  // a failed SSO sign-in comes back as #/login?sso=error&message=... (app/sso.py): shown as text
+  // a failed SSO sign-in comes back as #/login?sso=error with the message in the tc_notice cookie (app/sso.py):
+  // shown as text. A message in the URL is anyone's words: never shown (a generic line instead).
   await call(sso, '/api/auth/logout', { method: 'POST' });
-  await sso.goto(base + '/#/login?sso=error&message=' + encodeURIComponent('Test failure <b>bold</b>'));
+  await sso.goto(base + '/#/login?sso=error&message=' + encodeURIComponent('Your subscription lapsed. Call 1-800-555-0199'));
+  await sso.evaluate(() => { document.cookie = 'tc_notice=' + encodeURIComponent('Test failure <b>bold</b>') + '; path=/'; });
   await sso.reload();
   await sso.waitForSelector('main [role=alert] .banner.error');
-  out.ssoError = await sso.evaluate(() => ({ text: document.querySelector('main [role=alert]').textContent, b: document.querySelectorAll('main b').length }));
+  out.ssoError = await sso.evaluate(() => ({ text: document.querySelector('main [role=alert]').textContent, b: document.querySelectorAll('main b').length, cookie: document.cookie.includes('tc_notice=') }));
+  await sso.goto(base + '/#/login?sso=error&message=' + encodeURIComponent('Your subscription lapsed. Call 1-800-555-0199') + '&x=1');
+  await sso.waitForSelector('main [role=alert] .banner.error');
+  out.ssoSpoof = await sso.evaluate(() => document.querySelector('main [role=alert]').textContent);
   await ssoCtx.close();
 
   // ---- "Use another account" on the consent: signs out and shows the login for the same request
@@ -441,6 +446,8 @@ def test_connect_flow_in_a_real_browser(tmp_path, playwright_env, live_server):
     assert out["sso"]["host"] == "claude.ai" and out["sso"]["hash"].startswith("#/connect?request=")
     assert "as owner@example.test" in out["sso"]["text"]
     assert out["ssoError"]["text"] == "Test failure <b>bold</b>" and out["ssoError"]["b"] == 0
+    assert out["ssoError"]["cookie"] is False                 # read once, then cleared
+    assert "1-800" not in out["ssoSpoof"] and "Signing in with SSO didn't work" in out["ssoSpoof"]
 
     # someone else's session on this computer: "Use another account" signs out, same request
     assert out["otherEmail"].startswith("Not office@example.test?")

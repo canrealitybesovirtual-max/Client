@@ -106,6 +106,19 @@ def join(c, owner, email: str, role: str = "field", password: str = PW, name: st
     return invite
 
 
+def redirect_query(r) -> dict:
+    """The query of a redirect into the web app (#/login?..., #/settings?...) plus "message", the text the server
+    left for that page in the tc_notice cookie (auth.set_notice: never in the URL, where anyone could write it)."""
+    from urllib.parse import parse_qs, unquote
+    loc = r.headers["location"]
+    out = {k: v[0] for k, v in parse_qs(loc.split("?", 1)[1]).items()} if "?" in loc else {}
+    assert "message" not in out, "a message in the URL could be anyone's words"
+    notice = r.cookies.get("tc_notice")
+    if notice:
+        out["message"] = unquote(notice.strip('"'))
+    return out
+
+
 def fake_resolver(hosts: dict | None = None, default: str | None = PUBLIC_TEST_IP):
     """DNS for tests: hosts maps a name to an address or a list; other names get `default` (None = NXDOMAIN)."""
     def resolve(host: str, port: int) -> list[str]:

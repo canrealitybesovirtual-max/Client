@@ -54,6 +54,12 @@
     return [`${what}, contact support: `, links.map((l, k) => (k ? [' or ', l] : l)), '.'];
   }
 
+  function supportPlain(what) {        // supportText as one line of text (a toast)
+    const sc = (state.config && state.config.support_contact) || {};
+    const where = sc.email || (sc.url && /^https?:\/\//i.test(sc.url) ? sc.url : null);
+    return where ? `${what}, contact support: ${where}.` : `${what}, ask whoever runs this TradeComply server.`;
+  }
+
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const WORDS = { cal: 'Cal', usd: '($)', cslb: 'CSLB', coi: 'COI', noc: 'NOC', wc: "workers' comp", dir: 'DIR', osha: 'OSHA', ccr: 'CCR',
     id: 'ID', iipp: 'IIPP', hers: 'HERS', pto: 'PTO', ca: 'CA', url: 'link', w9: 'W-9', ecpr: 'eCPR', ppe: 'PPE', smip: 'SMIP',
@@ -123,6 +129,14 @@
   function cookie(name) {
     const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
     return m ? decodeURIComponent(m[1]) : '';
+  }
+  // A message the server left for this page (a failed SSO or integration sign-in) in the tc_notice cookie, which
+  // only the server can set: never text from the URL, which anyone can write. Read once, then kept for this page.
+  const notice = { hash: null, text: null };
+  function takeNotice() {
+    const v = cookie('tc_notice');
+    if (v) { document.cookie = 'tc_notice=; Max-Age=0; path=/'; notice.hash = location.hash; notice.text = v.slice(0, 300); }
+    return notice.hash === location.hash ? notice.text : null;
   }
   function uuid() {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -196,7 +210,7 @@
       const err = new ApiError(res.status, errMessage(data, res.status), data);
       // keepSession: a 401 that means "wrong password" (closing the account) must not sign the person out
       if (res.status === 401 && !keepSession && !path.startsWith('/api/auth/') && state.me) {
-        state.me = null;
+        signedOut();        // the server ended the session (password changed elsewhere, removed, expired): no cached data stays
         if (parseHash().name === 'connect') render(); else go('login');   // the consent shows the login and keeps its request
       }
       if (res.status === 402 && state.me) { state.me.entitlement = { ...(state.me.entitlement || {}), ok: false, message: err.message }; renderBanner(); }
@@ -218,6 +232,7 @@
       const [me, config] = await Promise.all([api('/api/me'), state.config ? state.config : api('/api/config')]);
       state.me = me; state.config = config;
     } catch (e) {
+      if (e.status === 401) signedOut();      // signed out by the server: the offline copy of /api/me and the lists goes too
       state.me = null;
       if (!state.config) { try { state.config = await api('/api/config'); } catch (e2) { /* offline */ } }
     }
@@ -276,7 +291,9 @@
   // ======================================================================== banners + billing
   async function subscribe(btn) {
     busy(btn, true, 'Opening checkout…');
-    try { const r = await api('/api/billing/checkout', { method: 'POST' }); location.href = r.url; } catch (e) { toast(e.message, true); busy(btn, false); }
+    try { const r = await api('/api/billing/checkout', { method: 'POST' }); location.href = r.url; } catch (e) {
+      toast(e.status === 503 ? `${e.message} ${supportPlain('To subscribe')}` : e.message, true); busy(btn, false);
+    }
   }
   async function billingPortal(btn) {
     busy(btn, true, 'Opening…');
@@ -287,7 +304,9 @@
       h('h1', {}, 'Subscribe to keep your compliance checks running'),
       h('p', {}, message || 'Your free trial has ended.'),
       h('p', { class: 'muted' }, `TradeComply Core is $${((state.config && state.config.price_usd_month) || 1000).toLocaleString('en-US')}/month: license and sub monitoring, lien calendar, Cal/OSHA programs, payroll checks, field logs and AI-agent access. Your projects, subs and documents stay available.`),
-      can.owner() ? h('button', { class: 'btn', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe now') : h('p', {}, 'Ask your account owner to subscribe.'));
+      can.owner() ? (state.config && state.config.stripe_enabled === false
+        ? h('p', {}, 'Online billing is not set up on this server yet. ', ...supportText('To subscribe'))
+        : h('button', { class: 'btn', type: 'button', onclick: (e) => subscribe(e.currentTarget) }, 'Subscribe now')) : h('p', {}, 'Ask your account owner to subscribe.'));
   }
   function renderBanner() {
     const slot = $('#banner');
@@ -1178,7 +1197,7 @@
     const connecting = parseHash().name === 'connect';
     const confirming = parseHash().name === 'confirm-email';     // a confirmation link opened while signed out
     if (connecting) pendingConnect.save(query.get('request'));
-    const ssoError = query && query.get('sso') === 'error' ? query.get('message') || 'Signing in with SSO didn\'t work. Try again.' : null;
+    const ssoError = query && query.get('sso') === 'error' ? takeNotice() || 'Signing in with SSO didn\'t work. Try again.' : null;
     const err = h('div', { role: 'alert' }, ssoError ? h('div', { class: 'banner error' }, h('p', {}, ssoError)) : null);
     const btn = h('button', { type: 'submit', class: 'btn block' }, 'Log in');
     const sso = h('button', { type: 'button', class: 'btn secondary block', onclick: async () => {
@@ -1289,7 +1308,8 @@
     const back = h('p', { class: 'small muted link-note' }, h('a', { href: '#/login' }, 'Back to log in'));
     if (off) {
       card.append(h('p', {}, 'Email isn\'t set up on this server, so we can\'t email you a reset link.'),
-        h('p', {}, 'Ask your company\'s owner to make you a reset link in Settings > Team. They can text it to you.'), back);
+        h('p', {}, 'Ask your company\'s owner to make you a reset link in Settings > Team. They can text it to you.'),
+        h('p', {}, ...supportText('If you are the owner')), back);
     } else {
       const err = h('div', { role: 'alert' });
       const btn = h('button', { type: 'submit', class: 'btn block' }, 'Email me a reset link');
@@ -1297,15 +1317,15 @@
         e.preventDefault(); err.replaceChildren(); busy(btn, true, 'Sending…');
         try {
           const r = await api('/api/auth/forgot', { method: 'POST', body: formData(form) });
-          card.replaceChildren(h('div', { class: 'banner info', role: 'status' }, h('p', {}, r.message)), back);
+          card.replaceChildren(h('div', { class: 'banner info', role: 'status' }, h('p', {}, r.message)), back);   // r.message has the owner line
         } catch (ex) { err.append(bannerText(isOffline(ex) ? 'warn' : 'error', ex.message)); busy(btn, false); }
       } },
       field('Work email', input('email', { type: 'email', autocomplete: 'username', inputmode: 'email' }), { required: true }),
       err, btn);
-      card.append(form, back);
+      card.append(form, h('p', { class: 'small muted' }, ...supportText('If you are the company\'s owner and no email comes')), back);
     }
     return h('div', { class: 'auth-wrap' },
-      h('div', { class: 'auth-hero' }, h('h1', {}, 'Forgot your password?'), h('p', {}, off ? 'Your company\'s owner can help.' : 'We\'ll email you a link to set a new one.')),
+      h('div', { class: 'auth-hero' }, h('h1', {}, 'Forgot your password?'), h('p', {}, off ? 'Your company\'s owner can help, or whoever runs this server if you are the owner.' : 'We\'ll email you a link to set a new one.')),
       card);
   };
 
@@ -1332,7 +1352,7 @@
         const r = await api('/api/auth/reset', { method: 'POST', body: { token, new_password: pw } });
         if (state.me && state.me.user.email === r.email) await signedOut();     // that session just ended too
         page.show(h('div', { class: 'card', role: 'status' }, h('h1', { tabindex: '-1' }, 'Password changed'),
-          h('p', {}, `Log in as ${r.email} with your new password. You were signed out on every other device, and apps you connected were disconnected.`),
+          h('p', {}, `Log in as ${r.email} with your new password. You were signed out on every other device, and apps you connected were disconnected.${r.api_keys_revoked ? ` ${plural(r.api_keys_revoked, 'API key')} you made ${r.api_keys_revoked === 1 ? 'was' : 'were'} turned off: make new ones in Settings if you still need them.` : ''}`),
           h('a', { class: 'btn', href: '#/login' }, 'Log in')));
       } catch (ex) {
         if (ex.status === 404) { page.gone(ex.message, again); return; }
@@ -1632,7 +1652,7 @@
       return el;
     }
     if (!lic) {
-      el.append(h('ul', { class: 'bullets' }, card.problems.map((p) => h('li', {}, p))), can.write() ? h('a', { class: 'btn secondary small', href: '#/settings' }, 'Add license number') : null);
+      el.append(h('ul', { class: 'bullets' }, (can.write() ? card.problems : ['Your company\'s CSLB license number isn\'t in TradeComply yet. Your owner or office adds it in Settings.']).map((p) => h('li', {}, p))), can.write() ? h('a', { class: 'btn secondary small', href: '#/settings' }, 'Add license number') : null);
       return el;
     }
     el.append(h('dl', { class: 'kv' },
@@ -1744,15 +1764,18 @@
     if (!entitled()) return subscribeCard(state.me.entitlement.message);
     const [d, facts] = await Promise.all([api('/api/dashboard'), gettingStartedFacts()]);
     const filter = { rag: null };
+    const licenseInGroup = () => !!(filter.rag && d.company && d.company.rag === filter.rag);   // the boxes count it too
+    const licCard = licenseCardView(d.company);
     const listSlot = h('div', {});
     const subSlot = h('div', {});
     const draw = () => {
       const items = filter.rag ? d.items.filter((i) => i.rag === filter.rag) : d.items;
       const subs = filter.rag ? d.subs.filter((s) => s.rag === filter.rag) : d.subs;
-      listSlot.replaceChildren(alertList(items, { empty: filter.rag ? 'Nothing in this group.' : 'No deadlines or alerts. Add projects and subs to fill this in.' }));
+      listSlot.replaceChildren(alertList(items, { empty: filter.rag ? (licenseInGroup() ? 'Nothing else in this group. Your license is in it: see Your license health.' : 'Nothing in this group.') : (can.write() ? 'No deadlines or alerts. Add projects and subs to fill this in.' : 'No deadlines or alerts yet. They show here once your office adds projects and subs.') }));
       subSlot.replaceChildren(d.subs.length ? (subs.length ? subRiskTable(subs) : h('p', { class: 'empty' }, 'No subs in this group.')) :
         h('div', { class: 'empty' }, h('p', {}, 'No subcontractors yet.'), can.write() ? h('a', { class: 'btn secondary', href: '#/subs' }, 'Import your sub list') : null));
       tiles.forEach((t) => t.setAttribute('aria-pressed', String(t.dataset.rag === filter.rag)));
+      licCard.classList.toggle('picked', licenseInGroup());
     };
     const tiles = ['red', 'amber', 'green'].map((rag) => h('button', { type: 'button', class: `tile ${rag}`, 'data-rag': rag, 'aria-pressed': 'false',
       onclick: () => { filter.rag = filter.rag === rag ? null : rag; draw(); } },
@@ -1766,7 +1789,7 @@
       h('div', { class: 'tiles', role: 'group', 'aria-label': 'Filter by status' }, tiles),
       h('div', { class: 'grid grid-2' },
         h('section', { class: 'card', 'aria-labelledby': 'dl-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'dl-h' }, 'Deadlines and alerts'), h('span', { class: 'small muted' }, `${d.counts.red} act now · ${d.counts.amber} coming up`)), listSlot),
-        h('div', {}, licenseCardView(d.company),
+        h('div', {}, licCard,
           h('section', { class: 'card' }, h('h2', {}, 'Projects'), d.projects.length ? h('ul', { class: 'clean' }, d.projects.map((p) => h('li', { class: 'row' }, h('a', { href: `#/project/${p.id}` }, p.name), h('span', { class: 'pill gray' }, humanize(p.status)), p.public_or_private === 'public' ? h('span', { class: 'pill blue' }, 'Public') : null))) :
             h('div', { class: 'empty' }, h('p', {}, 'No projects yet.'), can.write() ? h('a', { class: 'btn secondary', href: '#/project/new' }, 'Add a project') : null)))),
       h('section', { class: 'card', 'aria-labelledby': 'subs-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'subs-h' }, 'Subcontractors'), h('span', { class: 'small muted' }, `${d.sub_counts.red} high risk · ${d.sub_counts.amber} need documents · ${d.sub_counts.green} clear`)), subSlot));
@@ -1827,7 +1850,7 @@
         h('p', { class: 'muted small' }, [p.address, p.city, p.county].filter(Boolean).join(', ') || 'No address yet'),
         h('div', { class: 'row small' }, h('span', { class: 'pill blue' }, p.public_or_private === 'public' ? 'Public' : 'Private'),
           h('span', {}, ((state.config && state.config.claimant_roles) || {})[(p.extra || {}).claimant_role || 'direct_contractor'] || ''))))) :
-        h('div', { class: 'card empty' }, h('p', {}, 'No projects yet. Add one to build its lien calendar.'), can.write() ? h('a', { class: 'btn', href: '#/project/new' }, 'Add a project') : null));
+        h('div', { class: 'card empty' }, h('p', {}, can.write() ? 'No projects yet. Add one to build its lien calendar.' : 'No projects yet. Your office adds them; each one gets a lien calendar.'), can.write() ? h('a', { class: 'btn', href: '#/project/new' }, 'Add a project') : null));
   };
 
   routes.project = async ({ args }) => {
@@ -1950,7 +1973,7 @@
     ];
     const tableSlot = h('section', { class: 'card', 'aria-label': 'Subcontractor list' });
     const drawTable = (list) => tableSlot.replaceChildren(list.length ? table(cols, worstFirst(list, (x) => x.check && x.check.overall_risk, (x) => x.check && x.check.rag))
-      : h('div', { class: 'empty' }, h('p', {}, 'No subcontractors yet.'), h('p', { class: 'small' }, 'Import your list above, or add them one at a time.')));
+      : h('div', { class: 'empty' }, h('p', {}, 'No subcontractors yet.'), h('p', { class: 'small' }, can.write() ? 'Import your list above, or add them one at a time.' : 'Your office adds subcontractors. Ask them to add your list.')));
     drawTable(rows);
     return h('div', {},
       h('div', { class: 'page-head' }, h('div', {}, h('h1', {}, 'Subcontractors'), h('p', {}, 'License, classification, insurance, workers\' comp and bond, checked against CSLB data.')),
@@ -2423,7 +2446,7 @@
       local: JSON.stringify({ mcpServers: { tradecomply: { command: 'python', args: ['/path/to/TradeComply/server.py'] } } }, null, 2),
     };
   }
-  function agentConnect() {
+  function agentConnect({ keysBelow = true } = {}) {     // keysBelow: Settings shows the API keys list under it
     const url = (state.me && state.me.mcp_url) || (state.config && state.config.mcp_url) || location.origin + '/mcp';
     const snippetSlot = h('div', {});
     const keySlot = h('div', { 'aria-live': 'polite' });
@@ -2458,7 +2481,7 @@
       h('div', { class: 'field' }, h('span', { class: 'label' }, 'Server address (MCP URL)'), copyBox(url, 'MCP URL')),
       h('details', { class: 'snippet', id: 'claude-connector', open: true }, h('summary', {}, 'Claude on the web, desktop or phone: log in, no key'), claudeConnector(url)),
       can.write() ? h('div', { class: 'key-create' }, h('h3', {}, '1. Create a key for your assistant'),
-        h('p', { class: 'small muted' }, (state.config && state.config.mcp_require_key ? 'An API key is required. ' : 'With a key, your assistant\'s checks count toward your account and show in your logs. ') + 'A new key can run every read-only check and acts with office permissions. Use one key per assistant or gateway, then narrow its tools, rate and lifetime with Edit access under API keys below. Revoke it any time.'),
+        h('p', { class: 'small muted' }, (state.config && state.config.mcp_require_key ? 'An API key is required. ' : 'With a key, your assistant\'s checks count toward your account and show in your logs. ') + 'A new key can run every read-only check and acts with office permissions. Use one key per assistant or gateway, then narrow its tools, rate and lifetime with Edit access under API keys ' + (keysBelow ? 'below' : 'in Settings > AI assistant (MCP)') + '. Revoke it any time.', keysBelow ? null : [' ', h('a', { href: '#/settings' }, 'Open Settings')]),
         h('div', { class: 'field' }, h('label', { for: nameIn.id }, 'Name this key (so you know where it is used)'), h('div', { class: 'row' }, nameIn, expIn, btn))) : null,
       keySlot, snippetSlot);
   }
@@ -2666,7 +2689,7 @@
           pick.length > 1 ? h('p', { class: 'small' }, 'Also available: ', pick.slice(1).map((t, k) => [k ? ', ' : '', h('a', { href: `#/tools/${t.name}` }, t.title)])) : null,
           toolPanel(pick[0], { onResult: () => gate.open() })];
       },
-      5: async () => [h('h2', {}, 'Step 5: Connect your AI assistant'), agentConnect()],
+      5: async () => [h('h2', {}, 'Step 5: Connect your AI assistant'), agentConnect({ keysBelow: false })],
     };
     const draw = async () => {
       drawStepper();
@@ -3297,7 +3320,7 @@
     const focusId = query.get('integration');
     const focusEntry = focusId ? cat.entries.find((e) => e.id === focusId || (e.builtin && e.builtin.providers.includes(focusId))) || null : null;
     if (result === 'connected') top.push(msgBox('info', `${focusEntry ? focusEntry.name.split(' (')[0] : 'The integration'} is connected.`));
-    else if (result === 'error') top.push(msgBox('error', `Couldn't connect ${focusEntry ? focusEntry.name.split(' (')[0] : 'the integration'}: `, query.get('message') || 'sign-in was not completed.'));
+    else if (result === 'error') top.push(msgBox('error', `Couldn't connect ${focusEntry ? focusEntry.name.split(' (')[0] : 'the integration'}: `, takeNotice() || 'sign-in was not completed.'));
     if (can.write() && intState.loadErrors.length) top.push(msgBox('warn', `Some built-in connections failed to load on this server: ${intState.loadErrors.join(', ')}. The server log has the details.`));
     if (intState.providersError) top.push(msgBox('warn', `Connection status is unavailable right now: ${String(intState.providersError).replace(/\.?$/, '.')} You can still browse the catalog.`));
 
@@ -3594,10 +3617,11 @@
       e.preventDefault(); pwErr.replaceChildren();
       const d = formData(pwForm);
       if ((d.new_password || '').length < 10) { pwErr.append(h('div', { class: 'banner error' }, h('p', {}, 'Use at least 10 characters.'))); return; }
-      try { await api('/api/auth/password', { method: 'POST', body: d }); toast('Password changed. Other devices were logged out.'); pwForm.reset(); await loadMe(); renderBanner(); } catch (ex) { pwErr.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); }
+      try { const r = await api('/api/auth/password', { method: 'POST', body: d }); toast(r && r.api_keys_revoked ? `Password changed. Other devices were logged out, and ${plural(r.api_keys_revoked, 'API key')} you made ${r.api_keys_revoked === 1 ? 'was' : 'were'} turned off.` : 'Password changed. Other devices were logged out.'); pwForm.reset(); await loadMe(); renderBanner(); } catch (ex) { pwErr.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); }
     } },
     h('div', { class: 'form-grid' }, field('Current password', input('current_password', { type: 'password', autocomplete: 'current-password' }), { required: true }),
       field('New password', input('new_password', { type: 'password', autocomplete: 'new-password', minlength: '10' }), { required: true, hint: 'At least 10 characters.' })),
+    h('p', { class: 'small muted' }, 'Changing it signs you out on your other devices, disconnects apps you connected and turns off API keys you made.'),
     pwErr, h('button', { type: 'submit', class: 'btn secondary' }, 'Change password'));
     const logout = async () => {
       await api('/api/auth/logout', { method: 'POST' }).catch(() => {});
@@ -3663,7 +3687,7 @@
           busy(iBtn, false);
         } }, h('div', { class: 'form-grid' }, field('Email', input('email', { type: 'email', inputmode: 'email' }), { required: true }),
           field('Name', input('name', { autocomplete: 'off' })),
-          field('Role', select('role', [['field', 'Field (logs only)'], ['office', 'Office (everything but billing)'], ['owner', 'Owner (everything)']], 'field'))),
+          field('Role', select('role', [['field', 'Field (field logs and checks; views projects, subs, docs)'], ['office', 'Office (everything but billing and the team)'], ['owner', 'Owner (everything)']], 'field'), { hint: 'Field can see every project (contract prices and owners too), sub and document, but not change them.' })),
         iErr, iBtn);
         invite = h('div', {}, h('h3', {}, 'Invite someone'),
           h('p', { class: 'small muted' }, emailLinks ? 'They get an email with a link to set their own password. You also get the link to send yourself.' : 'You get a link to send them (text or email). They use it to set their own password.'),
@@ -3888,6 +3912,7 @@
     panel.setAttribute('role', modal ? 'dialog' : 'complementary');
     if (modal) panel.setAttribute('aria-modal', 'true'); else panel.removeAttribute('aria-modal');
     $('.app').inert = modal;
+    $('.skip-link').inert = modal;           // outside .app: without this, Tab leaves the dialog for it
   }
   function openAsk() {
     if (!askAvailable()) return;
@@ -3929,7 +3954,19 @@
   }
   window.addEventListener('online', () => setOnline(true));
   window.addEventListener('offline', () => setOnline(false));
-  window.addEventListener('hashchange', render);
+  // "Skip to content" moves focus to the page. As a plain #main link it changed the address, which the router read as
+  // an unknown page and replaced with the dashboard (losing anything typed). Any other in-page anchor is ignored too.
+  $('.skip-link').addEventListener('click', (e) => { e.preventDefault(); $('#main').focus(); });
+  let routeHash = location.hash;
+  window.addEventListener('hashchange', () => {
+    if (location.hash && !location.hash.startsWith('#/')) {
+      history.replaceState(history.state, '', routeHash || '#/');
+      $('#main').focus();
+      return;
+    }
+    routeHash = location.hash;
+    render();
+  });
   $('#ask-open').addEventListener('click', () => ($('#ask-panel').hidden ? openAsk() : closeAsk()));
   window.addEventListener('popstate', () => {
     if (ask.pushed && !(history.state && history.state.askPanel)) closeAsk();     // Back on a phone closes the panel

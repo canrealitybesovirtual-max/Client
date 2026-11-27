@@ -780,3 +780,21 @@ def test_unanswered_chats_never_block_a_new_chat(app, owner, fake):
     listed = owner.get("/api/assistant/conversations").json()["conversations"]
     assert [c["turns"] for c in listed] == [0, 1]
     assert owner.post("/api/assistant/conversations", json={}).status_code == 201
+
+
+def test_what_a_private_chat_passes_to_a_check_is_not_copied_into_the_activity_log(app, owner, fake):
+    """Final review data-private-chat-in-activity-log: the check's row in the company-wide activity log keeps the
+    argument names and a fingerprint (as /mcp does), never the words from a chat only its person can read."""
+    need = "attorney for Juan Perez who fell off our scaffold at 12 Oak St and wants to sue us"
+    fake.add(search_then_tool("attorney", "find_licensed_professional", {"need": need}), reply_text("Here."))
+    with TestClient(app) as crew, TestClient(app) as office:
+        join(crew, owner, "crew@acme.test", "field")
+        join(office, owner, "office@acme.test", "office")
+        chat = new_chat(crew)
+        assert ask(crew, chat, need).status_code == 200
+        (row,) = [a for a in office.get("/api/audit").json() if a["tool"] == "find_licensed_professional"]
+        from app import mcp_governance as governance
+        assert row["source"] == "assistant" and row["args"] == governance.activity_args({"need": need})
+        assert crew.delete(f"/api/assistant/conversations/{chat}").status_code == 204
+    everything = json.dumps(owner.get("/api/audit").json()) + owner.get("/api/tenant/export").text
+    assert "Juan Perez" not in everything and "scaffold" not in everything

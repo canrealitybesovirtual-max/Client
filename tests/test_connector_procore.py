@@ -24,7 +24,7 @@ from app.connectors import ConnectorContext, ConnectorError, NotConnected, valid
 from app.connectors import procore
 from app.connectors.procore import ProcoreAPI, ProcoreConnector, cslb_number
 from app.crypto import DecryptError, connection_context
-from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, json_response, join, make_app, mock_http, redirect_query, signup  # noqa: F401
 
 CLIENT_ID = "test-procore-client-id"
 CLIENT_SECRET = "test-procore-client-secret"
@@ -223,7 +223,7 @@ def connect(c, code="code-u1") -> dict:
     q = start(c)
     r = c.get(f"/api/integrations/procore/oauth/callback?code={code}&state={q['state']}", follow_redirects=False)
     assert r.status_code == 303
-    return {k: v[0] for k, v in parse_qs(r.headers["location"].split("?", 1)[1]).items()}
+    return redirect_query(r)
 
 
 def inst(platform, tenant_id) -> ProcoreConnector:

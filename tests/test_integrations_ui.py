@@ -93,7 +93,9 @@ const { chromium } = require('playwright');
   out.config = JSON.parse(await page.textContent('#int-assistant pre.code'));
   out.nullText = await page.evaluate(() => document.querySelector('main').innerText.split('\n').filter((l) => l.trim() === 'null').length);
   await page.screenshot({ path: shot });
-  await page.goto(base + '/#/settings?integration=slack&result=error&message=' + encodeURIComponent('denied <img src=x onerror=alert(1)>'));
+  // the server leaves the message in the tc_notice cookie (auth.set_notice); text in the URL is never shown
+  await page.evaluate(() => { document.cookie = 'tc_notice=' + encodeURIComponent('denied <img src=x onerror=alert(1)>') + '; path=/'; });
+  await page.goto(base + '/#/settings?integration=slack&result=error&message=' + encodeURIComponent('Call billing at 1-800-555-0199'));
   await page.waitForSelector('.banner.error');
   out.oauthHash = await page.evaluate(() => location.hash);
   out.oauthText = await page.textContent('.banner.error');
@@ -208,6 +210,7 @@ def test_integrations_page_in_a_real_browser(tmp_path, playwright_env, live_serv
     assert out["config"]["mcpServers"]["tradecomply"]["url"] == base + "/mcp"
     assert out["nullText"] == 0
     assert out["oauthHash"] == "#/integrations" and "denied <img src=x onerror=alert(1)>" in out["oauthText"]
+    assert "1-800" not in out["oauthText"]
     assert out["oauthImg"] == 0
     assert out["offlineCards"] == len(entries) and "Connection status is unavailable" in out["offlineWarn"]
     assert out["phoneOverflow"] is False and out["phoneNav"] == []

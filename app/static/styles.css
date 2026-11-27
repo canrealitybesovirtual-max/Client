@@ -192,6 +192,7 @@ fieldset > legend { padding: 0 .35rem; font-weight: 600; }
 .tile.amber { border-color: var(--amber-line); color: var(--amber); }
 .tile.green { border-color: #a9dcb9; color: var(--green); }
 .tile[aria-pressed=true] { box-shadow: 0 0 0 3px var(--navy) inset; }
+.card.picked { box-shadow: 0 0 0 3px var(--navy); }      /* the license card, when the selected box counts it */
 .alerts { list-style: none; margin: 0; padding: 0; }
 .alert-item { display: grid; grid-template-columns: 4.6rem 1fr; gap: .25rem .75rem; padding: .75rem 0; border-top: 1px solid var(--line); }
 .alert-item:first-child { border-top: 0; }
@@ -281,6 +282,8 @@ table.data tr:last-child td { border-bottom: 0; }
 .stepper button .num { display: block; font-weight: 800; font-size: .95rem; }
 .stepper .done button { border-top-color: var(--green); color: var(--green); }
 .stepper button[aria-current=step] { border-top-color: var(--navy); color: var(--navy); font-weight: 700; }
+/* phones: the five steps share the width (at 375 px the fifth was cut off: "AI assistar") */
+@media (max-width: 400px) { .stepper { gap: .25rem; } .stepper li { min-width: 0; } .stepper button { overflow-wrap: anywhere; } }
 
 /* ---------- field / signatures */
 .sig-row { border: 1px solid var(--line); border-radius: 10px; padding: .75rem; margin-bottom: .75rem; background: #fff; }

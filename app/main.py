@@ -12,13 +12,16 @@ The MCP app is created with path="/mcp" and mounted at the root (after every oth
 exactly /mcp with no redirect, and custom routes registered on the MCP server keep working. Its lifespan (the MCP
 session manager) is combined with the API's lifespan.
 """
+import json
 import logging
+import math
 import os
 import re
 from contextlib import AsyncExitStack, asynccontextmanager
 
 import anyio
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -27,7 +30,7 @@ from starlette.staticfiles import StaticFiles
 from tradecomply import cslb
 
 from . import (account, api, assistant, auth, auth_links, billing, connectors, integrations_api, mcp_governance, oauth,
-               sso)
+               safe_json, sso)
 from .connectors import alerts, calendar_feed, docusign, procore, schedule_import, splunk, twilio_sms
 from .config import Platform, Settings
 
@@ -91,6 +94,98 @@ class SecurityHeaders:
                 message = {**message, "headers": headers}
             await send(message)
         await self.app(scope, receive, wrapped)
+
+
+class StrictJSONBodies:
+    """Answers 422 to a JSON request body holding a lone UTF-16 surrogate ("\\ud800") or a non-finite number (NaN,
+    Infinity, 1e400), before any route sees it. Python parses both from valid JSON, but neither can be written out
+    again, so one stored value broke every later page and export that included it (app/safe_json.py). Every path but
+    /mcp (its own JSON-RPC, arguments stored only as a hash) and the signed callbacks from Stripe, DocuSign and
+    Twilio; form uploads and CSV bodies are not JSON and pass through untouched. Inside SecurityHeaders, so the body
+    is already size-capped while it is read here."""
+    SKIP = ("/api/billing/webhook", "/api/integrations/docusign/connect-listener/", twilio_sms.INBOUND_PATH)
+    NOT_JSON = ("multipart/", "application/x-www-form-urlencoded", "text/csv")
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope.get("method") not in ("POST", "PUT", "PATCH", "DELETE"):
+            return await self.app(scope, receive, send)
+        path = scope.get("path", "")
+        ctype = dict(scope.get("headers", [])).get(b"content-type", b"").decode("latin-1").lower().strip()
+        if auth._is_mcp(path) or path.startswith(self.SKIP) or ctype.startswith(self.NOT_JSON):
+            return await self.app(scope, receive, send)
+        chunks, more = [], True
+        try:
+            while more:
+                message = await receive()
+                if message["type"] != "http.request":       # the client went away: let the app see it
+                    return await self.app(scope, _replay([message], receive), send)
+                chunks.append(message.get("body", b""))
+                more = message.get("more_body", False)
+        except HTTPException as e:                          # SecurityHeaders' body cap (413), raised while reading
+            return await JSONResponse({"detail": e.detail}, status_code=e.status_code)(scope, receive, send)
+        body = b"".join(chunks)
+        if body.strip() and _unsafe_json(body):
+            response = JSONResponse({"detail": safe_json.PROBLEM}, status_code=422)
+            return await response(scope, receive, send)
+        await self.app(scope, _replay([{"type": "http.request", "body": body, "more_body": False}], receive), send)
+
+
+def _unsafe_json(body: bytes) -> bool:
+    """True only for a body that is valid JSON and holds a value that can't be written out again. Anything that
+    isn't JSON is left for the route to answer as it always has."""
+    def finite(s):
+        v = float(s)
+        if not math.isfinite(v):
+            raise _NotFinite
+        return v
+
+    def constant(_s):
+        raise _NotFinite
+    try:
+        value = json.loads(body, parse_float=finite, parse_constant=constant)
+    except _NotFinite:
+        return True
+    except (ValueError, RecursionError):
+        return False
+    return safe_json.problem(value)
+
+
+class _NotFinite(Exception):
+    pass
+
+
+def _replay(messages, receive):
+    pending = list(messages)
+
+    async def replay():
+        return pending.pop(0) if pending else await receive()
+    return replay
+
+
+class SafeJSONResponse(JSONResponse):
+    """The default JSON response. If a value stored before StrictJSONBodies existed can't be encoded (a lone
+    surrogate, a non-finite number), it is repaired for the reply (app/safe_json.py) instead of failing with a 500,
+    so the activity log, /api/me and the lists stay readable."""
+
+    def render(self, content) -> bytes:
+        try:
+            return super().render(content)
+        except (UnicodeEncodeError, ValueError):
+            return json.dumps(safe_json.clean(content), ensure_ascii=False, allow_nan=False, indent=None,
+                              separators=(",", ":")).encode("utf-8")
+
+
+def _validation_errors(exc: RequestValidationError) -> list:
+    """422 details without the submitted values: FastAPI's default echoes each field's input (a password among
+    them) in the reply. Location, message and type are enough to show what to fix."""
+    out = []
+    for e in exc.errors():
+        out.append({"loc": [str(x) if not isinstance(x, int) else x for x in e.get("loc", ())],
+                    "msg": safe_json.fix_str(str(e.get("msg", ""))), "type": str(e.get("type", ""))})
+    return out
 
 
 class GZipPublic:
@@ -206,8 +301,15 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
             store.close()
 
     app = FastAPI(title="TradeComply CA", version="1.0", lifespan=combine_lifespans(api_lifespan, mcp_app.lifespan),
-                  docs_url=None, openapi_url="/api/openapi.json", redoc_url=None)
+                  docs_url=None, openapi_url="/api/openapi.json", redoc_url=None,
+                  default_response_class=SafeJSONResponse)
     app.state.platform = platform
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(_request: Request, exc: RequestValidationError):
+        return SafeJSONResponse({"detail": _validation_errors(exc)}, status_code=422)
+
+    app.add_middleware(StrictJSONBodies)                   # inner: runs after SecurityHeaders capped the body
     app.add_middleware(SecurityHeaders, max_body=settings.max_body_bytes)
     app.add_middleware(GZipPublic)
     if settings.local_mode:      # DNS-rebinding guard for a server bound to 127.0.0.1

@@ -50,7 +50,9 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from . import connectors as registry
-from .auth import SESSION_COOKIE, Principal, RateLimiter, clear_session, get_principal, platform_of, verify_password
+from . import safe_json
+from .auth import (SESSION_COOKIE, Principal, RateLimiter, clear_session, get_principal, platform_of,
+                   refuse_cross_site, verify_password)
 from .connectors import Connector, ConnectorContext
 from .store import TENANT_EXPORT_OMITTED, now_iso
 
@@ -191,8 +193,8 @@ def support_phrase(settings) -> str:
 def export_chunks(store, tenant_id: str, company: dict, exported_by: str | None):
     """The export file as text chunks (a generator: StreamingResponse runs it on a worker thread, so the database
     reads never block the event loop). Pages through each table by id, so memory stays small."""
-    def dump(value) -> str:
-        return json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str)
+    def dump(value) -> str:     # safe_json: a stored lone surrogate or infinity can't break the file mid-download
+        return safe_json.dumps(value, separators=(",", ":"), default=str)
 
     left_out = {FRIENDLY[t]: {c: why for c, why in cols.items() if c != "tenant_id"}
                 for t, cols in TENANT_EXPORT_OMITTED.items()}
@@ -222,11 +224,8 @@ def export_chunks(store, tenant_id: str, company: dict, exported_by: str | None)
 @router.get("/export")
 async def export_company_data(request: Request, p: Principal = Depends(owner_session)):
     """Download every record of this company as one JSON file (owner only, session only; rate limited; logged)."""
-    # A GET carries the session cookie (SameSite=Lax) when another site navigates the browser here. The file never
-    # reaches that site, but each visit would use up one of the owner's downloads, write an activity-log entry and
-    # leave a copy of the company's records in the Downloads folder. The app fetches it from its own page.
-    if request.headers.get("sec-fetch-site", "").lower() in ("cross-site", "same-site"):
-        raise HTTPException(403, "Download your company data from Settings > Account and data in TradeComply.")
+    # Not from a link on another site (auth.refuse_cross_site); the app fetches it from its own page.
+    refuse_cross_site(request, "Download your company data from Settings > Account and data in TradeComply.")
     platform = platform_of(request)
     store = platform.store
     lim = _limiter(platform, "account_export_limiter", EXPORT_LIMIT, EXPORT_WINDOW_S)

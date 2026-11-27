@@ -1698,13 +1698,28 @@ class Store:
                             "and id = ?", [*values.values(), tenant_id, row_id])
             return self._row(table, con.execute(f"select * {where}", (tenant_id, row_id)).fetchone())
 
-    def delete(self, table: str, tenant_id: str, row_id) -> bool:
+    # what the activity-log row of a deleted record names (never its body, notes or signatures)
+    DELETE_AUDIT = {"projects": ("project.delete", ("name", "status")), "subs": ("sub.delete", ("name", "license_number")),
+                    "documents": ("document.delete", ("title", "kind")),
+                    "field_logs": ("field_log.delete", ("kind", "date", "project_id"))}
+
+    def delete(self, table: str, tenant_id: str, row_id, audit_by: str | None = None) -> bool:
+        """Delete one row. With audit_by (the person's label), the activity-log row is written in the same
+        transaction, so a record can't disappear without a trace."""
         _check_table(table)
         if not _id_ok(row_id):
             return False
         with self.connect() as con:
-            return con.execute(f"delete from {table} where tenant_id = ? and id = ?",
+            row = con.execute(f"select * from {table} where tenant_id = ? and id = ?",
+                              (tenant_id, row_id)).fetchone() if audit_by else None
+            gone = con.execute(f"delete from {table} where tenant_id = ? and id = ?",
                                (tenant_id, row_id)).rowcount > 0
+            if gone and audit_by and table in self.DELETE_AUDIT:
+                action, cols = self.DELETE_AUDIT[table]
+                row = dict(row) if row else {}
+                self._audit_row(con, tenant_id, audit_by, action, {"id": row_id, **{c: row.get(c) for c in cols}},
+                                None)
+            return gone
 
     # ------------------------------------------------------------------ tenants
     def create_tenant(self, company_name: str, cslb_license: str | None, trial_ends: str | None,
@@ -1862,26 +1877,65 @@ class Store:
             row = con.execute("select * from users where tenant_id = ? and id = ?", (tenant_id, user_id)).fetchone()
             return dict(row) if row else None
 
-    def delete_user(self, tenant_id: str, user_id: int) -> bool:
+    def delete_user(self, tenant_id: str, user_id: int, audit_by: str | None = None) -> bool:
         """Removes the person and, in the same transaction, ends every app connection they approved: SQLite can
         give the next new user the same id, who must never inherit a live grant. The row goes first: on Postgres
-        that waits for an approval holding it (approve_oauth_request), whose grant is then ended here too."""
+        that waits for an approval holding it (approve_oauth_request), whose grant is then ended here too. With
+        audit_by, the "user.remove" activity row is written in the same transaction."""
         if not _id_ok(user_id):
             return False
         with self.connect() as con:
-            gone = con.execute("delete from users where tenant_id = ? and id = ?", (tenant_id, user_id)).rowcount > 0
-            self._end_oauth_grants(con, "tenant_id = ? and user_id = ?", (tenant_id, user_id), "person_removed")
-            # their links, and the invite and reset links they made for others as an owner
-            con.execute("delete from auth_links where tenant_id = ? and (user_id = ? or created_by = ?)",
-                        (tenant_id, user_id, user_id))
-            # their Ask TradeComply chats go too (a new person given the same id must not see them); usage rows stay
-            # for the company's monthly count, no longer naming anyone
-            con.execute("delete from assistant_turns where tenant_id = ? and conversation_id in (select id from "
-                        "assistant_conversations where tenant_id = ? and user_id = ?)", (tenant_id, tenant_id, user_id))
-            con.execute("delete from assistant_conversations where tenant_id = ? and user_id = ?", (tenant_id, user_id))
-            con.execute("update assistant_usage set user_id = null where tenant_id = ? and user_id = ?",
-                        (tenant_id, user_id))
+            before = con.execute("select email, role, last_login from users where tenant_id = ? and id = ?",
+                                 (tenant_id, user_id)).fetchone() if audit_by else None
+            gone = self._delete_user_rows(con, tenant_id, user_id)
+            if gone and audit_by and before:
+                before = dict(before)
+                self._audit_row(con, tenant_id, audit_by, "user.remove", {
+                    "user_id": user_id, "email": before["email"], "role": before["role"],
+                    "was_pending": not before["last_login"]}, None)
             return gone
+
+    def release_pending_invitee(self, email: str, except_tenant: str | None, reason: str) -> dict | None:
+        """An address held only by someone a company added who never joined (never signed in, address never
+        confirmed, no temporary password) doesn't reserve it for good: a sign-up with that address, or another
+        company's invite, removes that pending row (with a "user.invite_released" activity row in its company, and
+        its invite links), and the caller then creates the account. Anyone else (joined, confirmed, or in
+        `except_tenant`) keeps the address: returns None. In one locked transaction with the person's row, the lock
+        use_auth_link takes, so an invite accepted at the same moment either wins (the row is no longer pending)
+        or finds its link gone."""
+        email = (email or "").strip().lower()
+        with self.connect() as con:
+            if self.backend == "sqlite":
+                con.execute("begin immediate")
+                row = con.execute(f"select * from users where {self._email_eq}", (email,)).fetchone()
+            else:
+                row = con.execute(f"select * from users where {self._email_eq} for update", (email,)).fetchone()
+            if row is None:
+                return None
+            u = dict(row)
+            if u["tenant_id"] == except_tenant or u["last_login"] or u["email_confirmed_at"] \
+                    or u["must_change_password"]:
+                return None
+            self._delete_user_rows(con, u["tenant_id"], u["id"])
+            self._audit_row(con, u["tenant_id"], self.OAUTH_ACTOR, "user.invite_released",
+                            {"user_id": u["id"], "email": u["email"], "role": u["role"], "reason": reason}, None)
+            return u
+
+    def _delete_user_rows(self, con, tenant_id: str, user_id: int) -> bool:
+        """delete_user's work, in the caller's transaction."""
+        gone = con.execute("delete from users where tenant_id = ? and id = ?", (tenant_id, user_id)).rowcount > 0
+        self._end_oauth_grants(con, "tenant_id = ? and user_id = ?", (tenant_id, user_id), "person_removed")
+        # their links, and the invite and reset links they made for others as an owner
+        con.execute("delete from auth_links where tenant_id = ? and (user_id = ? or created_by = ?)",
+                    (tenant_id, user_id, user_id))
+        # their Ask TradeComply chats go too (a new person given the same id must not see them); usage rows stay
+        # for the company's monthly count, no longer naming anyone
+        con.execute("delete from assistant_turns where tenant_id = ? and conversation_id in (select id from "
+                    "assistant_conversations where tenant_id = ? and user_id = ?)", (tenant_id, tenant_id, user_id))
+        con.execute("delete from assistant_conversations where tenant_id = ? and user_id = ?", (tenant_id, user_id))
+        con.execute("update assistant_usage set user_id = null where tenant_id = ? and user_id = ?",
+                    (tenant_id, user_id))
+        return gone
 
     # ------------------------------------------------------------------ API keys
     # Governance fields (schema 6, docs/mcp-security.md). The store checks types and sizes only; which tool names
@@ -1977,13 +2031,24 @@ class Store:
             return con.execute("update api_keys set revoked = 1, revoked_at = ? where tenant_id = ? and id = ? "
                                "and revoked = 0", (now_iso(), tenant_id, key_id)).rowcount > 0
 
-    def revoke_user_api_keys(self, tenant_id: str, user_id: int) -> int:
-        """Keys act for the company, not the person; when someone leaves (or loses office access) their keys go."""
+    def revoke_user_api_keys(self, tenant_id: str, user_id: int, reason: str | None = None,
+                             audit_by: str | None = None) -> int:
+        """Keys act for the company, not the person; when someone leaves (or loses office access) their keys go.
+        So do they when the person changes or resets their password (reason, with an activity row): a key made with a
+        stolen session must not outlive the recovery."""
         if not _id_ok(user_id):
             return 0
         with self.connect() as con:
-            return con.execute("update api_keys set revoked = 1, revoked_at = ? where tenant_id = ? and created_by = ? "
-                               "and revoked = 0", (now_iso(), tenant_id, user_id)).rowcount
+            return self._revoke_user_keys(con, tenant_id, user_id, reason, audit_by)
+
+    def _revoke_user_keys(self, con, tenant_id: str, user_id: int, reason: str | None = None,
+                          audit_by: str | None = None) -> int:
+        n = con.execute("update api_keys set revoked = 1, revoked_at = ? where tenant_id = ? and created_by = ? "
+                        "and revoked = 0", (now_iso(), tenant_id, user_id)).rowcount
+        if n and reason:
+            self._audit_row(con, tenant_id, audit_by or self.OAUTH_ACTOR, "api_key.revoke",
+                            {"user_id": user_id, "keys": n, "reason": reason}, None)
+        return n
 
     def api_key_by_hash(self, key_hash: str) -> dict | None:
         with self.connect() as con:
@@ -2100,7 +2165,7 @@ class Store:
         then on the link), so two requests with the same link can't both succeed: the second waits, then finds it gone.
         `user_id`: only for that person (an email confirmation needs the person's own session). By purpose:
           reset    new password, session counter + 1 (every session ends), all their links deleted, connected apps
-                   ended (oauth.revoked rows), activity row auth.password_reset
+                   ended (oauth.revoked rows), the API keys they made revoked, activity row auth.password_reset
           invite   their password and name, session counter + 1, signed in now (last_login), the address confirmed
                    when the link came by email, all their links deleted, activity row user.joined
           confirm  the address the link was emailed to becomes confirmed; if it isn't their current email, it
@@ -2133,7 +2198,7 @@ class Store:
             link = dict(row)
             tid, uid, email, ts = link["tenant_id"], link["user_id"], link["email"], now_iso()
             emailed_here = (link["sent_to"] or "") == email.lower()
-            who, previous = (tid, uid), None
+            who, previous, keys_revoked = (tid, uid), None, 0
             if purpose == "reset":
                 con.execute("update users set pw_hash = ?, session_gen = session_gen + 1, must_change_password = 0, "
                             "email_confirmed_at = coalesce(email_confirmed_at, ?) where tenant_id = ? and id = ?",
@@ -2142,6 +2207,7 @@ class Store:
                 self._end_oauth_grants(con, "tenant_id = ? and user_id = ?", who, "password_reset")
                 self._audit_row(con, tid, email, "auth.password_reset",
                                 {"user_id": uid, "via": "email" if link["sent_to"] else "owner_link"}, None)
+                keys_revoked = self._revoke_user_keys(con, tid, uid, "password_reset", email)
             elif purpose == "invite":
                 con.execute("update users set pw_hash = ?, name = coalesce(?, name), session_gen = session_gen + 1, "
                             "must_change_password = 0, last_login = ?, email_confirmed_at = "
@@ -2165,7 +2231,8 @@ class Store:
                                                                              "to": target}, None)
                     previous = email
             user = dict(con.execute("select * from users where tenant_id = ? and id = ?", who).fetchone())
-        return {**user, "previous_email": previous, "company_name": link["company_name"]}
+        return {**user, "previous_email": previous, "company_name": link["company_name"],
+                "api_keys_revoked": keys_revoked}
 
     # ------------------------------------------------------------------ audit
     def _tenant_alive(self, con, tenant_id: str | None) -> bool:

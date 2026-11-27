@@ -72,7 +72,7 @@ Every `tools/call` that reaches the gate gets one row in `mcp_audit_log`:
 | `args_sha256` | SHA-256 of the arguments as canonical JSON: `json.dumps(args, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`, UTF-8 |
 | `status` | `ok`, `error` (the tool or server returned an error), `denied` (outside the key's scope, not run), `rate_limited` (not run) |
 | `duration_ms` | from the gate passing the request on to the last byte of the answer (NULL for denied and rate-limited calls) |
-| `ip` | the client address (first `X-Forwarded-For` entry behind Render's proxy, or the trusted hop with `TRUSTED_PROXY_HOPS`; behind a gateway this is the gateway) |
+| `ip` | the client address: the `X-Forwarded-For` entry `TRUSTED_PROXY_HOPS` points at (on Render `2`, the address Cloudflare saw, which the caller can't set); with `0` the first entry, which the caller chooses; behind a gateway this is the gateway |
 | `created` | when the row was written (at most moments after the call) |
 
 The arguments themselves are never stored: assistants pass payroll CSVs, employee names and wages through them. The
@@ -223,9 +223,10 @@ every customer, 160.79.104.0/21), so a tight per-IP limit would throttle every c
 trusted hop): a caller chooses the first entries, not the ones the proxies append, so it can't fill the bucket of
 another address such as Claude's. The per-app limit counts only tokens actually issued (a client_id is no secret,
 so failed attempts naming it count against the sender's address instead). Discovery is never limited (the SDK gives
-up on a 429 there). Known limit: without `TRUSTED_PROXY_HOPS` a caller can still start a fresh per-IP bucket by
-changing its own part of the chain, so one caller can use up the 2,000-an-hour registration cap and block new
-connections until it resets; what that costs in storage is bounded (5 short redirect URIs per registration,
+up on a 429 there). On Render `TRUSTED_PROXY_HOPS` is `2` (render.yaml; README has the measurement). Known limit
+without it: a caller can still start a fresh per-IP bucket by changing its own part of the chain (and on Render the
+chain's last entry changes with every request anyway), so one caller can use up the 2,000-an-hour registration cap
+and block new connections until it resets; what that costs in storage is bounded (5 short redirect URIs per registration,
 deleted after an hour or a day).
 
 Storage (schema 7): `oauth_clients` and `oauth_requests` are shared tables (no company yet); `oauth_grants` (one per
@@ -244,8 +245,7 @@ Not done, and why: Client ID Metadata Documents (the spec's SHOULD in 2025-11-25
 in 2026-07-28 but kept for at least 12 months, and it is what Claude uses when CIMD isn't advertised); refresh tokens
 bound to the client by DPoP; a per-person "consent once" memory (every new connection asks again). Unconfirmed:
 whether Claude's server-side calls send an `Origin` header (claude.ai's and claude.com's are allowed; another one is
-named in the server log: add it to `MCP_ALLOWED_ORIGINS`), how Render fills `X-Forwarded-For` (so
-`TRUSTED_PROXY_HOPS` is off by default), whether Claude's callback ties `state` to the browser session (the
+named in the server log: add it to `MCP_ALLOWED_ORIGINS`), whether Claude's callback ties `state` to the browser session (the
 browser binding here stops a shared consent link, not an authorize URL an attacker sends someone), and
 the `https://claude.com/api/mcp/auth_callback` callback some pages mention (with dynamic registration nothing is
 hard-coded: the server matches whatever Claude registers).
@@ -260,7 +260,7 @@ Status: **Met** (done in code or configuration), **Partial** (done in part, or o
 | Check (from OWASP MCP01) | Status | What TradeComply does / plan |
 |---|---|---|
 | No hard-coded tokens or keys in configuration | Met | `SECRET_KEY` and `INTEGRATIONS_KEY` come from the environment (render.yaml generates them); integration secrets are AES-256-GCM encrypted per company (`app/crypto.py`); tests use fake values |
-| Logs and telemetry don't record full prompts, arguments or secrets | Met | MCP arguments are stored only as SHA-256; tokens, keys and OAuth `code`/`state` are redacted from the access log. Web-app tool runs (`/api/tools`) still keep summarized arguments (strings up to 300 characters); plan: the same fingerprint there |
+| Logs and telemetry don't record full prompts, arguments or secrets | Met | MCP arguments are stored only as SHA-256; tokens, keys and OAuth `code`/`state` are redacted from the access log. Ask TradeComply's checks keep the same fingerprint. Web-app tool runs (`/api/tools`) still keep summarized arguments (strings up to 300 characters); plan: the same fingerprint there |
 | API keys are not stored in a readable form | Met | Shown once, stored as SHA-256 only |
 | Short-lived, scoped tokens; renewal per session | Partial | Connected apps (OAuth, "Sign in with TradeComply") get 1-hour access tokens and rotating refresh tokens. API keys are long-lived bearer tokens with a tool scope and an optional expiry; nothing forces their renewal |
 | Tokens bound to the agent or session | Partial | OAuth tokens are bound to one app registration, one person and this server's `/mcp` (audience). An API key works from anywhere until revoked or expired. Plan: optional IP allow-list per key |
@@ -274,7 +274,7 @@ Status: **Met** (done in code or configuration), **Partial** (done in part, or o
 | Least privilege per agent, fine-grained scopes | Met | Per-key allow-list of tools or categories; tool-calls-only keys (`rest_api: false`); default limited to read-only tools |
 | Runtime enforcement of disallowed tool calls | Met | The gate checks every `tools/call`; `/api/tools/{name}` checks the same scope |
 | No path for an agent to widen its own access | Met | API keys can't create, change or revoke keys |
-| Every permission change tracked | Met | `api_key.create/update/revoke` rows in the activity log, with the scope before and after |
+| Every permission change tracked | Met | `api_key.create/update/revoke` rows in the activity log, with the scope before and after; `user.role_change` (from, to), `user.remove`, `user.invite_released`, `auth.password_changed` and `api_key.revoke` (a person's keys ended by a password change or reset); company edits (`tenant.update`, field names), `calendar.feed_rotate`, and every deleted project, sub, document and field log (`*.delete`, written in the same transaction) |
 | Expiry-based access | Partial | Optional expiry per key; no company-wide maximum lifetime yet. Plan: an owner setting "keys expire after N days" |
 | Per-agent identity, no shared accounts | Partial | One key per assistant or gateway is the advice, and the log attributes every call to a key; nothing stops a company sharing one key. A gateway in shared-token mode is one identity for all its users (see the gateway section) |
 | Automated entitlement reviews and drift alerts | Not met | Plan: a monthly owner summary of keys (scope, last used, unused for 90 days) through the event bus |

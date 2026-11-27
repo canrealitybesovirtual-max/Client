@@ -43,7 +43,8 @@ import anyio
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
-from .auth import Principal, anyone, office_up, owner_only, platform_of
+from . import safe_json
+from .auth import Principal, anyone, office_up, owner_only, platform_of, refuse_cross_site
 from .store import MCP_AUDIT_STATUSES, now_iso, to_store_time
 
 log = logging.getLogger("tradecomply.mcp_governance")
@@ -72,7 +73,9 @@ def canonical_args(args) -> str:
 
 
 def args_sha256(args) -> str:
-    return hashlib.sha256(canonical_args(args).encode("utf-8")).hexdigest()
+    # surrogatepass: arguments holding a lone surrogate ("\ud800", valid JSON) still get a row; every other value
+    # hashes exactly as before
+    return hashlib.sha256(canonical_args(args).encode("utf-8", "surrogatepass")).hexdigest()
 
 
 def arg_fields(args) -> list[str]:
@@ -456,6 +459,8 @@ def mcp_audit_export(request: Request, p: Principal = Depends(owner_only),
                      tool: Optional[str] = Query(None, max_length=200)):
     """Download this company's MCP call log (owner only), oldest first, with the same filters as the view, at most
     MAX_EXPORT_ROWS rows."""
+    refuse_cross_site(request, "Download the MCP call log from Settings > AI assistant (MCP) in TradeComply, not from "
+                               "a link on another site.")
     platform = platform_of(request)
     f = _filters(start, end, key_id, status, tool)
     lim = platform.mcp_export_limiter
@@ -486,6 +491,7 @@ def mcp_audit_export(request: Request, p: Principal = Depends(owner_only),
         w = csv.writer(buf)
         w.writerow(EXPORT_COLUMNS)
         for i, r in enumerate(rows(), 1):
+            r = safe_json.clean(r)
             w.writerow([csv_cell(r.get(c)) for c in EXPORT_COLUMNS])
             if i % 500 == 0:
                 yield buf.getvalue()
@@ -498,7 +504,7 @@ def mcp_audit_export(request: Request, p: Principal = Depends(owner_only),
         yield json.dumps(head)[:-1] + ',"rows":['
         n = 0
         for r in rows():
-            yield ("," if n else "") + json.dumps(r, separators=(",", ":"), ensure_ascii=False)
+            yield ("," if n else "") + safe_json.dumps(r, separators=(",", ":"))
             n += 1
         yield f'],"row_count":{n},"truncated":{"true" if n >= MAX_EXPORT_ROWS else "false"}}}'
 

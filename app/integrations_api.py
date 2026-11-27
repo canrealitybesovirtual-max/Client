@@ -22,7 +22,7 @@ from tradecomply import integrations_guide
 
 from . import connectors as registry
 from . import webhooks
-from .auth import SESSION_COOKIE, Principal, anyone, office_up, platform_of, principal_from_session
+from .auth import SESSION_COOKIE, Principal, anyone, office_up, platform_of, principal_from_session, set_notice
 from .billing import base_url, require_entitled
 from .connectors import (OAUTH_SECRET_KEY, ConfigError, ConnectorContext, ConnectorError, NotConnected, OAuthError,
                          TestResult, code_challenge, issue_oauth_state, verify_oauth_state)
@@ -482,11 +482,13 @@ def oauth_start(provider: str, request: Request, p: Principal = Depends(office_u
     return {"authorize_url": url, "redirect_uri": redirect_uri}
 
 
-def _back(provider: str, result: str, message: str | None = None) -> RedirectResponse:
-    q = {"integration": provider, "result": result}
+def _back(request: Request, provider: str, result: str, message: str | None = None) -> RedirectResponse:
+    """Into the app's settings page. A message goes in a cookie only this server can set (auth.set_notice), never
+    in the URL, so a link can't put its own words on the page as if TradeComply said them."""
+    resp = RedirectResponse("/#/settings?" + urlencode({"integration": provider, "result": result}), status_code=303)
     if message:
-        q["message"] = message[:300]
-    return RedirectResponse("/#/settings?" + urlencode(q), status_code=303)
+        set_notice(resp, request, message)
+    return resp
 
 
 @router.get("/{provider}/oauth/callback")
@@ -494,27 +496,27 @@ def oauth_callback(provider: str, request: Request, code: Optional[str] = Query(
                    state: Optional[str] = Query(None, max_length=8192),
                    error: Optional[str] = Query(None, max_length=200)):
     """Where the provider sends the browser back. Always answers with a redirect into the app's settings page
-    (?integration=<provider>&result=connected|error&message=...)."""
+    (?integration=<provider>&result=connected|error; a message in the tc_notice cookie)."""
     platform = platform_of(request)
     cls = registry.get(provider)
     if cls is None or not cls.oauth:
-        return _back(provider, "error", "Unknown integration")
+        return _back(request, provider, "error", "Unknown integration")
     p, _ = principal_from_session(platform, request.cookies.get(SESSION_COOKIE))
     if p is None:
         return RedirectResponse("/#/login", status_code=303)
     if p.role not in STAFF:
-        return _back(provider, "error", "Only the owner or office staff can connect integrations")
+        return _back(request, provider, "error", "Only the owner or office staff can connect integrations")
     try:
         st = verify_oauth_state(platform, state, tenant_id=p.tenant_id, user_id=p.user_id, provider=provider)
     except OAuthError as e:
         _audit(request, p, "oauth_callback", {"provider": provider, "error": e.code}, ok=False)
-        return _back(provider, "error", str(e))
+        return _back(request, provider, "error", str(e))
     inst = _instance(request, p, cls)
     if error or not code:
         reason = error if error and error.replace("_", "").isalnum() else "no authorization code"
         inst.save(status="error", last_error=f"Sign-in was not completed ({reason})")
         _audit(request, p, "oauth_callback", {"provider": provider, "error": reason}, ok=False)
-        return _back(provider, "error", f"{cls.display_name} sign-in was not completed ({reason})")
+        return _back(request, provider, "error", f"{cls.display_name} sign-in was not completed ({reason})")
     try:
         inst.complete_oauth(code, st["redirect_uri"], st["code_verifier"])
     except Exception as e:      # noqa: BLE001 - every failure becomes a message on the settings page
@@ -523,6 +525,6 @@ def oauth_callback(provider: str, request: Request, code: Optional[str] = Query(
         message = str(e) if isinstance(e, (ConnectorError, SafeHTTPError)) else "Connecting failed unexpectedly"
         inst.save(status="error", last_error=message)
         _audit(request, p, "oauth_callback", {"provider": provider}, ok=False)
-        return _back(provider, "error", message)
+        return _back(request, provider, "error", message)
     _audit(request, p, "oauth_callback", {"provider": provider})
-    return _back(provider, "connected")
+    return _back(request, provider, "connected")

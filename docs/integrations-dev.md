@@ -136,7 +136,7 @@ The flow, end to end (you write none of it):
 3. The callback checks the session cookie, the role, and the state (signature, expiry, same tenant and same user,
    not used before), exchanges the code at `token_url` with the verifier, stores the tokens encrypted, calls
    `on_connected()`, marks the connection `connected`, and redirects to
-   `/#/settings?integration=<provider>&result=connected` (or `result=error&message=...`).
+   `/#/settings?integration=<provider>&result=connected` (or `result=error`, with the message in the short-lived `tc_notice` cookie that only the server can set: text in the URL is never shown, so nobody can link to the page with their own words in its error banner).
 
 **Operator setup** for an OAuth connector: register one OAuth app with the vendor with redirect URI
 `<APP_URL>/api/integrations/<provider>/oauth/callback` (set `APP_URL`, or rely on Render's `RENDER_EXTERNAL_URL`, so
@@ -362,7 +362,7 @@ All need a session cookie (plus `X-CSRF-Token` on writes) or an API key. "staff"
 | `POST /api/integrations/{provider}/test` | staff, subscribed | `{"ok", "message", "account", "details", "connection"}`; flips connected/error |
 | `POST /api/integrations/{provider}/disconnect` | staff | Revoke best-effort, wipe secrets |
 | `POST /api/integrations/{provider}/oauth/start` | staff (a signed-in user, not an API key), subscribed | `{"authorize_url", "redirect_uri"}` |
-| `GET /api/integrations/{provider}/oauth/callback` | the user who started | Redirects to `/#/settings?integration=..&result=connected|error&message=..` |
+| `GET /api/integrations/{provider}/oauth/callback` | the user who started | Redirects to `/#/settings?integration=..&result=connected|error` (an error's message in the `tc_notice` cookie) |
 | `GET /api/integrations/webhooks` | staff | List (`url_hint`, never the URL) |
 | `POST /api/integrations/webhooks` | staff, subscribed | `{"name", "url", "kind": slack|teams|generic, "events": [...|"*"], "enabled"}`; generic returns `signing_secret` once |
 | `GET/PATCH/DELETE /api/integrations/webhooks/{id}` | staff | Read / change (name, url, kind, events, enabled) / delete |

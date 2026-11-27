@@ -102,7 +102,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
-from .auth import EMAIL_RE, Principal, RateLimiter, client_ip, is_https, owner_only, platform_of, set_session
+from .auth import (EMAIL_RE, Principal, RateLimiter, client_ip, is_https, owner_only, platform_of, set_notice,
+                   set_session)
 from .billing import require_entitled
 from .connectors import code_challenge, new_code_verifier
 from .crypto import DecryptError, pkce_context, sso_context
@@ -677,9 +678,12 @@ def _http(e: SSOError) -> HTTPException:
     return HTTPException(e.status, str(e))
 
 
-def _back_to_login(message: str) -> RedirectResponse:
-    resp = RedirectResponse(LOGIN_PATH + "?" + urlencode({"sso": "error", "message": message[:300]}), status_code=303)
+def _back_to_login(request: Request, message: str) -> RedirectResponse:
+    """To the login page with ?sso=error; the message itself goes in a cookie only this server can set
+    (auth.set_notice), never in the URL, so a link can't put its own words in the login page's error banner."""
+    resp = RedirectResponse(LOGIN_PATH + "?" + urlencode({"sso": "error"}), status_code=303)
     resp.delete_cookie(COOKIE, path=COOKIE_PATH)
+    set_notice(resp, request, message)
     return resp
 
 
@@ -895,7 +899,7 @@ def start_for_company(request: Request, company: str = Query(..., min_length=3, 
             return _confirm_page(request, company, cfg, hint)
         url, binding = _start(request, company, cfg, hint)
     except SSOError as e:
-        return _back_to_login(str(e))
+        return _back_to_login(request, str(e))
     resp = _with_cookie(RedirectResponse(url, status_code=303), request, binding)
     resp.delete_cookie(GO_COOKIE, path=COOKIE_PATH)          # single use
     return resp
@@ -906,14 +910,14 @@ def callback(request: Request, code: Optional[str] = Query(None, max_length=4096
              state: Optional[str] = Query(None, max_length=8192), error: Optional[str] = Query(None, max_length=200),
              iss: Optional[str] = Query(None, max_length=500)):
     """Where the identity provider sends the browser back. Always answers with a redirect: into the app when the
-    sign-in worked, to the login page with ?sso=error&message=... when it didn't."""
+    sign-in worked, to the login page with ?sso=error (the message in a cookie: auth.set_notice) when it didn't."""
     platform = platform_of(request)
     store = platform.store
     try:
         _rate_limit(request, "callback", 100, 600)
         st = verify_state(platform, state, request.cookies.get(COOKIE))
     except SSOError as e:
-        return _back_to_login(str(e))
+        return _back_to_login(request, str(e))
     tid = st["t"]
     try:
         if error:
@@ -942,11 +946,11 @@ def callback(request: Request, code: Optional[str] = Query(None, max_length=4096
     except SSOError as e:
         _audit(store, tid, "sso", "sso.login", {"error": e.code}, ok=False)
         log.info("sso sign-in refused for tenant %s (%s)", tid, e.code)
-        return _back_to_login(str(e))
+        return _back_to_login(request, str(e))
     except Exception as e:      # noqa: BLE001 - a browser redirect, never a 500 page; logged without tokens
         log.error("sso sign-in failed unexpectedly for tenant %s (%s)", tid, type(e).__name__)
         _audit(store, tid, "sso", "sso.login", {"error": "unexpected"}, ok=False)
-        return _back_to_login("Signing in with SSO failed unexpectedly. Try again.")
+        return _back_to_login(request, "Signing in with SSO failed unexpectedly. Try again.")
     store.update_user(tid, user["id"], last_login=now_iso())
     _audit(store, tid, user["email"], "sso.login", {"user_id": user["id"], "issuer": cfg["issuer"],
                                                     "client_id": cfg["client_id"]})

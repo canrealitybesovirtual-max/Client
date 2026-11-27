@@ -55,6 +55,22 @@ FORGOT_OFF = ("Email isn't set up on this server, so we can't send reset links. 
               "you a reset link in Settings > Team.")
 MAIL_OFF = "Email isn't set up on this server."
 
+
+def owner_help(platform) -> str:
+    """For the company's owner, who has no owner to ask: whoever runs this server (SUPPORT_EMAIL / SUPPORT_URL)."""
+    sc = platform.settings.support_contact or {}
+    where = sc.get("email") or sc.get("url")
+    return (f"If you are the owner, contact support at {where}." if where else
+            "If you are the owner, ask whoever runs this TradeComply server.")
+
+
+def forgot_sent(platform) -> str:
+    return f"{FORGOT_SENT} {owner_help(platform)}"
+
+
+def forgot_off(platform) -> str:
+    return f"{FORGOT_OFF} {owner_help(platform)}"
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
@@ -176,8 +192,9 @@ def email_changing_email(platform, old: str, new: str, base: str) -> tuple[str, 
 
 def password_changed_email(platform, email: str, base: str) -> tuple[str, str]:
     return ("Your TradeComply password was changed",
-            f"The password for {email} on TradeComply was just changed.\n\nIf this wasn't you, reset it at "
-            f"{base}/#/forgot and tell your company's owner." + _footer(platform))
+            f"The password for {email} on TradeComply was just changed. You were signed out on every other "
+            "device, apps you connected were disconnected, and API keys you made were turned off.\n\nIf this "
+            f"wasn't you, reset it at {base}/#/forgot and tell your company's owner." + _footer(platform))
 
 
 def _send(platform, to: str, message: tuple[str, str]) -> bool:
@@ -361,11 +378,11 @@ async def forgot(body: ForgotIn, request: Request, background: BackgroundTasks):
     platform = platform_of(request)
     _limit(platform.forgot_ip_limiter, ip_key(request), "Too many reset requests from this network.")
     if not enabled(platform):
-        return {"ok": True, "emailed": False, "message": FORGOT_OFF}
+        return {"ok": True, "emailed": False, "message": forgot_off(platform)}
     email = body.email.strip().lower()
     if EMAIL_RE.match(email) and not platform.forgot_email_limiter.claim(email):
         background.add_task(_forgot_task, platform, email)
-    return {"ok": True, "emailed": True, "message": FORGOT_SENT}
+    return {"ok": True, "emailed": True, "message": forgot_sent(platform)}
 
 
 @router.post("/link")
@@ -396,7 +413,7 @@ async def reset_password(body: ResetIn, request: Request, background: Background
     platform.email_limiter.reset(f"email|{user['email']}")           # a reset works around a login lockout
     platform.login_limiter.reset(f"{client_ip(request)}|{user['email']}")
     background.add_task(notify_password_changed, platform, user)
-    return {"ok": True, "email": user["email"]}
+    return {"ok": True, "email": user["email"], "api_keys_revoked": user["api_keys_revoked"]}
 
 
 @router.post("/invite/accept")
