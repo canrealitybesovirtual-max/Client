@@ -5589,7 +5589,7 @@
     const my = ++qh.seq;
     qh.busy = true; composeSync(); p.ta.focus();
     ui.log.setAttribute('aria-busy', 'true');
-    const turn = h('div', { class: 'qh-turn' }, h('p', { class: 'qh-q' }, q));
+    const turn = h('div', { class: 'qh-turn' }, h('h3', { class: 'qh-q' }, q));        // a heading: screen readers jump answer to answer
     ui.log.append(turn);
     qh.turns.push(turn);
     if (qh.turns.length > 20) qh.turns.shift().remove();
@@ -5629,10 +5629,10 @@
   const qhLink = (url, text) => (/^https:\/\//.test(url || '') ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, text, h('span', { class: 'visually-hidden' }, ' (opens in a new tab)')) : text);
   // a rule word for word, with its correction right under the plain English when the check against the source made one
   const ruleText = (r, text) => [h('p', {}, text), r.status === 'corrected' && r.correction ? h('p', { class: 'correction' }, h('strong', {}, 'What changed when TradeComply checked the official text: '), r.correction) : null];
-  const qhRule = (b) => h('article', { class: 'qh-card' }, h('h3', {}, b.title), ruleText(b, b.text), b.quote ? h('blockquote', {}, b.quote) : null,
+  const qhRule = (b) => h('article', { class: 'qh-card' }, h('h4', {}, b.title), ruleText(b, b.text), b.quote ? h('blockquote', {}, b.quote) : null,
     h('p', { class: 'qh-meta small' }, qhLink(b.source, b.citation), ' ', qhBadge(b.verified, b.checked_on ? `Verified ${fmtDate(b.checked_on)}` : 'Verified', 'Not yet verified')),
     h('a', { href: b.href }, 'Read the rule'));
-  const qhReq = (b) => h('article', { class: 'qh-card' }, h('h3', {}, b.name), h('p', {}, b.situation),
+  const qhReq = (b) => h('article', { class: 'qh-card' }, h('h4', {}, b.name), h('p', {}, b.situation),
     h('p', { class: 'qh-meta small' }, 'Legal basis: ', qhLink(b.source_url, b.legal_basis), ' ', qhBadge(b.verified, 'Confirmed', 'Not yet confirmed')));
   const QH_ICON = { open_tool: 'checks', go: 'arrow-right', find_professional: 'find', ask_claude: 'claude' };
   function qhAct(b) {
@@ -5673,6 +5673,8 @@
         h('div', { class: 'qh-act' }, h('button', { type: 'button', class: 'btn secondary', onclick: () => openPalette({ q, types: ['rule'] }) }, icon('rule'), `Search the rulebook for “${q}”`)),
         h('div', { class: 'qh-act' }, h('button', { type: 'button', class: 'btn secondary', onclick: () => qhAct({ kind: 'go', href: '#/professionals' }) }, icon('find'), 'Find a professional'))] : null) : null,
       notes(() => true),
+      a.entitled === false ? (can.owner() ? h('div', { class: 'qh-act' }, h('button', { type: 'button', class: 'btn secondary', onclick: () => qhAct({ kind: 'go', href: '#/settings?section=billing' }) }, icon('arrow-right'), 'Billing'))
+        : h('p', { class: 'qh-line' }, 'Your account owner can renew in Settings > Billing.')) : null,         // spec 2.9: no rule text without a subscription
       more.length ? h('details', { class: 'qh-more' }, h('summary', {}, `More rules (${more.length})`), h('ul', { class: 'bullets' }, more.map((r) => h('li', {},
         h('a', { href: `#/rule/${encodeURIComponent(r.rule_id)}` }, r.title), ' ', qhBadge(r.verified, 'Verified', 'Not yet verified'))))) : null,
       (a.followups || []).length ? [h('p', { class: 'small muted' }, 'You could also ask:'), qhChips(a.followups)] : null,

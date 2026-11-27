@@ -108,7 +108,8 @@ the rules word for word (the verifier's correction right under the plain English
 official source, Verified or Not yet verified), requirement cards (Confirmed or Not yet confirmed), and buttons:
 "Open <check>" opens that check with what was understood filled in and tagged "From Quick help" (nothing runs until
 Run; the fill is for that check only, once), go to a page, find a professional, or "Ask TradeComply (Claude)", which
-puts the words in the Claude tab without sending them. Three misses in a row point to a person; offline it says it
+puts the words in the Claude tab without sending them. Without an active subscription it shows no rule text,
+says so, and points the owner to Billing. Three misses in a row point to a person; offline it says it
 needs a connection and offers Search; while a Claude answer is running, Quick help waits and says why. Turns live in
 memory only (New question, Log out, a reload or another person signing in clears them). A check field whose label
 or hint uses a term the rulebook explains (NOC, prelim, DIR, CASp...) gets a "(?)" named "What does NOC mean?": it

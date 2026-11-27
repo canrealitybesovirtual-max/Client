@@ -13,6 +13,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 
 from tests.test_integrations_ui import REPO, playwright_env  # noqa: F401  (fixture)
 from tests.test_ui_assistant import servers  # noqa: F401  (fixture: fake Claude on, no key)
@@ -44,8 +45,9 @@ def test_quick_help_builds_text_only_and_sends_nothing_in_an_address():
 SMOKE = r"""
 const { chromium } = require('playwright');
 const path = require('path');
+const { execFileSync } = require('child_process');
 (async () => {
-  const [base, offBase, shots] = process.argv.slice(2);
+  const [base, offBase, shots, offData] = process.argv.slice(2);
   const browser = await chromium.launch();
   const out = { errors: [], sizes: {} };
   const watch = (p, tag, urls) => {
@@ -78,14 +80,14 @@ const path = require('path');
       && !document.querySelector('#ask-panel .qh-log[aria-busy]'), n);
     await p.waitForTimeout(100);
     return p.$eval('#ask-panel .qh-turn:last-child', (t) => ({
-      q: t.querySelector('.qh-q').textContent,
+      q: t.querySelector('h3.qh-q').textContent,
       lead: (t.querySelector('.qh-lead') || {}).textContent || '',
       lines: [...t.querySelectorAll('.qh-line')].map((x) => x.textContent),
       understood: [...t.querySelectorAll('.qh-chip')].map((x) => x.textContent),
-      rules: [...t.querySelectorAll('.qh-card')].filter((c) => c.querySelector('a[href^="#/rule/"]')).map((c) => ({ title: c.querySelector('h3').textContent,
+      rules: [...t.querySelectorAll('.qh-card')].filter((c) => c.querySelector('a[href^="#/rule/"]')).map((c) => ({ title: c.querySelector('h4').textContent,
         meta: c.querySelector('.qh-meta').textContent, badge: (c.querySelector('.badge') || {}).textContent || '',
         correction: (c.querySelector('.correction') || {}).textContent || '', read: c.querySelector('a[href^="#/rule/"]').getAttribute('href') })),
-      reqs: [...t.querySelectorAll('.qh-card')].filter((c) => !c.querySelector('a[href^="#/rule/"]')).map((c) => ({ name: c.querySelector('h3').textContent, meta: c.querySelector('.qh-meta').textContent })),
+      reqs: [...t.querySelectorAll('.qh-card')].filter((c) => !c.querySelector('a[href^="#/rule/"]')).map((c) => ({ name: c.querySelector('h4').textContent, meta: c.querySelector('.qh-meta').textContent })),
       actions: [...t.querySelectorAll('.qh-act > button')].map((b) => ({ label: b.textContent, primary: !b.classList.contains('secondary') })),
       hints: [...t.querySelectorAll('.qh-act > p')].map((x) => x.textContent),
       followups: [...t.querySelectorAll('.qh-a > .qh-chips .chip')].map((x) => x.textContent),
@@ -261,6 +263,10 @@ const path = require('path');
     o.off = { tablists: await q.$$eval('#ask-panel [role=tablist]', (e) => e.length), send: await q.textContent('#ask-panel button[type=submit]') };
     o.offSue = await ask(q, 'Should I sue the owner for not paying me?', tag);
     await shot(q, 'help-off-server', tag);
+    // the trial ends: Quick help still finds the check, but shows no rule text, says why, and points the owner to Billing
+    execFileSync(process.env.TC_PYTHON || 'python3', ['-c', `import sqlite3,sys; con=sqlite3.connect(sys.argv[1]); con.execute("update tenants set trial_ends='2020-01-01T00:00:00+00:00' where id=(select tenant_id from users where email=?)", (sys.argv[2],)); con.commit()`,
+      path.join(offData, 'tradecomply.sqlite'), `qh-off-${tag}@example.test`]);
+    o.unpaid = await ask(q, 'When is my prelim due if I first delivered lumber on Nov 3?', tag);
     o.offAssistant = offUrls.filter(([, u]) => u.includes('/api/assistant/')).length;
     o.helpUrls = [...urls, ...offUrls].filter(([, u]) => u.includes('/api/help')).map(([m, u]) => [m, new URL(u).search]);
     await oc.close();
@@ -278,7 +284,8 @@ def test_help_panel_and_quick_help_in_a_real_browser(tmp_path, playwright_env, s
     os.makedirs(shots, exist_ok=True)
     script = tmp_path / "quickhelp.js"
     script.write_text(SMOKE)
-    r = subprocess.run([node, str(script), base, off_base, shots], env=env, capture_output=True, text=True, timeout=600)
+    r = subprocess.run([node, str(script), base, off_base, shots, str(tmp_path / "off")], env={**env, "TC_PYTHON": sys.executable},
+                       capture_output=True, text=True, timeout=600)
     assert r.returncode == 0, r.stderr[-3000:]
     out = json.loads(r.stdout)
     assert out["errors"] == []
@@ -360,5 +367,8 @@ def test_help_panel_and_quick_help_in_a_real_browser(tmp_path, playwright_env, s
         assert o["off"] == {"tablists": 0, "send": "Ask Quick help"} and o["offAssistant"] == 0
         assert "Ask TradeComply (Claude)" not in [a["label"] for a in o["offSue"]["actions"]]
         assert all(m == "POST" and qs == "" for m, qs in o["helpUrls"])     # questions only in POST bodies
+        u = o["unpaid"]
+        assert not u["rules"] and not u["reqs"] and "Rule text needs an active subscription." in u["lines"]
+        assert u["actions"][0]["label"] == "Open Calculate lien deadline" and {"label": "Billing", "primary": False} in u["actions"]
         if tag == "desk":
             assert o["turnsBefore"] > 0 and o["turnsAfter"] == 0 and o["companyB"] == "Bay Builders"
