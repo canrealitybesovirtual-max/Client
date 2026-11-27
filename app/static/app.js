@@ -1803,7 +1803,7 @@
     return JSON.stringify(v);
   }
   const isEmptyVal = (v) => v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length);
-  const moneyLabel = (key, v, ctx) => { const l = humanize(key); return typeof v === 'number' && isMoney(key, ctx) ? l.replace(/ \(\$\)$/, '') : l; };
+  const moneyLabel = (key, v, ctx) => { const l = /(^|_)expires_in_days$/.test(key) ? 'Expiry' : humanize(key); return typeof v === 'number' && isMoney(key, ctx) ? l.replace(/ \(\$\)$/, '') : l; };
   const singular = (key) => humanize(key).toLowerCase().replace(/ \(.*\)$/, '').replace(/ies$/, 'y').replace(/s$/, '');
   function cellValue(key, v, ctx) {
     if (key === 'verified' && typeof v === 'boolean') return h('span', { class: `pill ${v ? 'green' : 'amber'}` }, v ? 'Verified' : 'Not yet verified');
