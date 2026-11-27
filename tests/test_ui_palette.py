@@ -202,6 +202,15 @@ const { execFileSync } = require('child_process');
   await ph.goBack();
   await ph.waitForTimeout(500);
   out.toAsk.afterBack = { ask: await ph.$eval('#ask-panel', (a) => a.hidden), hash: await ph.evaluate(() => location.hash), length: await ph.evaluate(() => history.length) };
+  // Search -> "Ask Quick help: …": the question is asked at once on the Quick help tab; Back closes Help, same page
+  await ph.tap('#search-open');
+  await search(ph, 'when is my prelim due');
+  await ph.tap('#pal-list [role=option]:has-text("Ask Quick help")');
+  await ph.waitForSelector('#ask-panel:not([hidden]) .qh-turn .qh-a');
+  out.toQuick = { tab: await ph.$$eval('#ask-tab-qh[aria-selected=true]', (t) => t.length), q: await ph.textContent('#ask-panel .qh-turn:last-child .qh-q'), palette: await open(ph) };
+  await ph.goBack();
+  await ph.waitForTimeout(500);
+  out.toQuick.afterBack = { ask: await ph.$eval('#ask-panel', (a) => a.hidden), hash: await ph.evaluate(() => location.hash) };
   out.start = start;
   await pc.close();
   process.stdout.write(JSON.stringify(out));
@@ -249,3 +258,5 @@ def test_search_palette_in_a_real_browser(tmp_path, playwright_env, server):
     assert out["swap"]["askHidden"] and out["swap"]["afterBack"] == {"open": False, "hash": "#/projects"}
     assert out["toAsk"]["text"] == "when is my lien due" and out["toAsk"]["sent"] == 0 and not out["toAsk"]["palette"]
     assert out["toAsk"]["afterBack"]["ask"] is True and out["toAsk"]["afterBack"]["hash"] == "#/projects"
+    assert out["toQuick"]["tab"] == 1 and out["toQuick"]["q"] == "when is my prelim due" and not out["toQuick"]["palette"]
+    assert out["toQuick"]["afterBack"] == {"ask": True, "hash": "#/projects"}

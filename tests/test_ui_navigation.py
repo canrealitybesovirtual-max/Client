@@ -193,10 +193,10 @@ def test_navigation_in_a_real_browser(tmp_path, playwright_env, live_server):
     assert out["top"]["#/dashboard"][:2] == ["brand", "net"]
     # More, per role, with whose account this is
     assert out["moreOwner"]["groups"] == ["Work", "Checks", "Paperwork", "Help", "Set up"]
-    assert out["moreOwner"]["rows"] == ["Field log", "Find a professional", "Documents", "Search", "Guided setup", "Integrations", "Settings", "Display"]
+    assert out["moreOwner"]["rows"] == ["Field log", "Find a professional", "Documents", "Help", "Search", "Guided setup", "Integrations", "Settings", "Display"]
     assert out["moreOwner"]["who"] == "Signed in as Nora Owner · Nav Builders" and out["moreOwner"]["logout"] == 1
     assert out["moreOwner"]["current"] == "page"
-    assert out["moreField"]["rows"] == ["Subcontractors", "Find a professional", "Documents", "Search", "Integrations", "Settings", "Display"]
+    assert out["moreField"]["rows"] == ["Subcontractors", "Find a professional", "Documents", "Help", "Search", "Integrations", "Settings", "Display"]
     assert out["moreField"]["who"] == "Signed in as Fran Field · Nav Builders"
     # 320 px with Offline showing: the logo alone, the link keeps its name, nothing sideways
     n = out["narrow"]

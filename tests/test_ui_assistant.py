@@ -1,5 +1,6 @@
-"""The web app's side of Ask TradeComply (app/assistant.py): the Ask button, the panel, answers rendered safely, the
-"Checked:" line, Stop, the daily limit, and the owner's card in Settings (set up and not set up).
+"""The web app's side of Ask TradeComply (app/assistant.py): the Help button, the panel's Ask TradeComply tab, answers
+rendered safely, the "Checked:" line, Stop, the daily limit, and the owner's card in Settings (set up and not set up).
+The Help panel always opens on Quick help (tests/test_ui_quickhelp.py); these steps click the Ask TradeComply tab first.
 
 Static checks run everywhere. The browser test runs when Node with Playwright and its Chromium is installed (skipped
 otherwise) against two real servers started from tests/assistant_ui_app.py: one whose helper is answered by the fake
@@ -145,7 +146,7 @@ const path = require('path');
     watch(p, tag);
     o.signup = await signUp(p, base, `Ask Builders ${tag}`, `owner-${tag}@example.test`);
 
-    // ---- closed: a small button in the top bar, reachable from the keyboard
+    // ---- closed: a small button in the top bar, reachable from the keyboard; it opens on Quick help
     await p.waitForSelector('#ask-open:not([hidden])');
     o.button = { text: await text(p, '#ask-open'), expanded: await p.getAttribute('#ask-open', 'aria-expanded'), inTopbar: await p.$eval('#ask-open', (b) => !!b.closest('.topbar')) };
     o.panelHiddenAtStart = await p.$eval('#ask-panel', (e) => e.hidden);
@@ -159,7 +160,11 @@ const path = require('path');
     await p.waitForSelector('#ask-panel:not([hidden]) textarea');
     o.focusOnOpen = await p.evaluate(() => document.activeElement.getAttribute('aria-label'));
     o.expandedOpen = await p.getAttribute('#ask-open', 'aria-expanded');
+    o.openTab = await p.getAttribute('#ask-tab-qh', 'aria-selected');
+    await p.click('#ask-tab-claude');              // the Claude tab: its note right above the box, Send names Claude
     o.note = await text(p, '#ask-panel .ask-note');
+    o.noteAboveBox = await p.$eval('#ask-panel .ask-note', (n) => n.nextElementSibling && n.nextElementSibling.matches('form.ask-form'));
+    o.sendLabel = await text(p, '#ask-panel button[type=submit]');
     o.box = await p.$eval('#ask-panel', (e) => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; });
     o.role = await p.$eval('#ask-panel', (e) => [e.getAttribute('role'), e.getAttribute('aria-modal'), document.querySelector('.app').inert]);
     o.pageBeside = await p.evaluate(() => document.querySelector('main').getBoundingClientRect().right <= document.getElementById('ask-panel').getBoundingClientRect().left + 1);
@@ -180,6 +185,7 @@ const path = require('path');
 
     // ---- a question that runs a check: the "Checked:" line, and a link to an app page
     await p.click('#ask-open');
+    await p.click('#ask-tab-claude');
     await p.fill('#ask-panel textarea', 'When is my lien deadline? I last worked on Nov 1.');
     if (tag === 'desk') await p.press('#ask-panel textarea', 'Enter'); else await p.click('#ask-panel button[type=submit]');
     await answered(p, 1);
@@ -242,29 +248,40 @@ const path = require('path');
     o.afterLink = { hash: await p.evaluate(() => location.hash), panelOpen: await p.$eval('#ask-panel', (e) => !e.hidden) };
     if (o.afterLink.panelOpen) await p.click('#ask-panel .ask-head button:has-text("Close")');
 
-    // ---- the owner's card in Settings: on, this month's use; switching it off hides the button
+    // ---- the owner's card in Settings: on, this month's use; switching it off hides the Claude tab, not Help
     await p.goto(base + '/#/settings');
     await p.waitForSelector('#ask-settings input[role=switch]');
     await p.waitForSelector('#ask-settings table');
     o.card = await text(p, '#ask-settings');
     await check(p, 'settings', '#ask-settings');
     await p.click('#ask-settings label.switch');
-    await p.waitForSelector('#ask-open', { state: 'hidden' });
+    await p.waitForSelector('#ask-settings .banner');
     o.offNote = await text(p, '#ask-settings .banner');
+    o.switchedOff = await p.evaluate(() => ({ help: !document.getElementById('ask-open').hidden, claudeTab: !!document.querySelector('#ask-tab-claude') && document.querySelector('#ask-tab-claude').isConnected }));
     await p.click('#ask-settings label.switch');
-    await p.waitForSelector('#ask-open:not([hidden])');
+    await p.waitForFunction(() => !!document.querySelector('#ask-panel [role=tablist] #ask-tab-claude'));
+    o.switchedOn = await p.evaluate(() => !document.getElementById('ask-open').hidden);
     await ctx.close();
 
-    // ---- a server where the helper is not set up: no button; the owner is told which setting turns it on
+    // ---- a server where the helper is not set up: Help opens on Quick help, with no tabs and no Claude requests;
+    // the owner is told which setting turns Claude on
     const offCtx = await browser.newContext({ ...opts, viewport });
     const q = await offCtx.newPage();
     watch(q, `${tag}-off`);
+    const assistantCalls = [];
+    q.on('request', (r) => { if (r.url().includes('/api/assistant/')) assistantCalls.push(r.url()); });
     o.offSignup = await signUp(q, offBase, `No Helper ${tag}`, `owner-off-${tag}@example.test`);
     o.offButtonHidden = await q.$eval('#ask-open', (b) => b.hidden);
+    await q.click('#ask-open');
+    await q.waitForSelector('#ask-panel:not([hidden]) textarea');
+    o.offPanel = { tablists: await q.$$eval('#ask-panel [role=tablist]', (e) => e.length), quick: await q.$eval('#qh-pane', (e) => !e.hidden),
+                   send: await text(q, '#ask-panel button[type=submit]'), title: await text(q, '#ask-title') };
+    await q.click('#ask-panel .ask-head button:has-text("Close")');
     await q.goto(offBase + '/#/settings');
     await q.waitForSelector('#ask-settings');
     o.notSetUp = await text(q, '#ask-settings');
     await check(q, 'not-set-up', '#ask-settings');
+    o.offAssistantCalls = assistantCalls.length;
     await offCtx.close();
   }
   process.stdout.write(JSON.stringify(out));
@@ -288,7 +305,8 @@ def test_ask_tradecomply_in_a_real_browser(tmp_path, playwright_env, servers):
     assert not any(out["overflow"].values()), out["overflow"]
     for tag, o in out["sizes"].items():
         assert o["signup"] == 200 and o["offSignup"] == 200, tag
-        assert o["button"] == {"text": "Ask", "expanded": "false", "inTopbar": True} and o["panelHiddenAtStart"]
+        assert o["button"] == {"text": "Help", "expanded": "false", "inTopbar": True} and o["panelHiddenAtStart"]
+        assert o["openTab"] == "true" and o["noteAboveBox"] is True and o["sendLabel"] == "Send to Claude"
         assert o["focusOnOpen"] == "Your question" and o["expandedOpen"] == "true" and o["focusAfterEsc"] == "ask-open"
         assert o["tapTarget"] is True and o["inertAfterClose"] is False and o["closedBy"] == {"hash": "#/dashboard"}
         assert o["firstTurnKept"] is True and o["focusOnDelete"] == "Keep" and o["focusOnKeep"] is True
@@ -306,7 +324,7 @@ def test_ask_tradecomply_in_a_real_browser(tmp_path, playwright_env, servers):
         assert "<script>window.__pwned = 1</script>" in o["html"]["shown"] and "<img src=x" in o["html"]["shown"]
         assert o["working"] == "Working on it…"
         assert o["stopped"] == {"status": "Stopped. Nothing was saved.", "typed": "A slow question", "turns": 2,
-                                "button": "Send"}
+                                "button": "Send to Claude"}
         assert o["lastNote"] == "That was your last question for today."
         assert "daily limit" in o["limit"]["error"] and o["limit"]["typed"] == "One more question"
         assert "Ask about a California rule" in o["newChat"] and o["chats"] == "Earlier chats (1)"
@@ -314,5 +332,9 @@ def test_ask_tradecomply_in_a_real_browser(tmp_path, playwright_env, servers):
         assert o["afterLink"]["panelOpen"] is (tag == "desk")                # phones show the page
         assert "Let my team use Ask TradeComply" in o["card"] and "This month: 4 questions" in o["card"]   # Stop counts
         assert f"owner-{tag}@example.test" in o["card"] and "Ask TradeComply is off" in o["offNote"]
-        assert o["offButtonHidden"] is True
+        assert "Quick help is always on." in o["card"]
+        assert o["switchedOff"] == {"help": True, "claudeTab": False} and o["switchedOn"] is True
+        assert o["offButtonHidden"] is False                                 # Help is for everyone signed in
+        assert o["offPanel"] == {"tablists": 0, "quick": True, "send": "Ask Quick help", "title": "Help"}
+        assert o["offAssistantCalls"] == 0                                   # no Claude: /api/assistant is never asked
         assert "Not set up" in o["notSetUp"] and "ANTHROPIC_API_KEY" in o["notSetUp"]
