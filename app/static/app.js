@@ -2108,7 +2108,7 @@
       if (!review.hidden) drawReview();
       stepHead.textContent = `Step ${i + 1} of ${titles.length} · ${titles[i]}`;
       fill(stepper, titles.map((t, k) => h('li', { class: k < at ? 'done' : '' }, h('button', { type: 'button', disabled: k > reached, 'aria-current': k === at ? 'step' : null,
-        onclick: () => toStep(k) }, h('span', { class: 'num' }, String(k + 1)), t))));
+        onclick: () => toStep(k), 'aria-label': `Step ${k + 1}: ${t}` }, h('span', { class: 'num' }, String(k + 1)), h('span', { class: 'st' }, t)))));
       back.hidden = i === 0; next.hidden = i === pages.length; run.hidden = runHint.hidden = i !== pages.length;
       if (focusEl) focusEl.focus();
     }
