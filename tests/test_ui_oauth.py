@@ -413,7 +413,8 @@ def test_connect_flow_in_a_real_browser(tmp_path, playwright_env, live_server):
     assert out["apps"]["heads"] == ["App", "Person", "Connected", "Last used", "Actions"]
     assert len(out["apps"]["rows"]) == 1 and "Claude" in out["apps"]["rows"][0] and "Returns to claude.ai" in out["apps"]["rows"][0]
     assert "owner@example.test (you)" in out["apps"]["rows"][0]
-    assert out["apps"]["jump"][:2] == ["Company", "Your account"] and "Connected apps" in out["apps"]["jump"]
+    # Settings is grouped (You, Company, ...): your own account first, Connected apps among your things
+    assert out["apps"]["jump"][:4] == ["Your account", "Display", "Connected apps", "Company"]
     assert "Disconnected “Claude”" in out["afterDisconnect"]["toast"] and out["afterDisconnect"]["focus"] == "apps-h"
     assert out["mcpAfterDisconnect"] == 401 and out["refreshAfterDisconnect"] == "invalid_grant"
     assert out["aiSection"] == {"open": True, "summary": "Claude on the web, desktop or phone: log in, no key",

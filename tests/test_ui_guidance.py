@@ -675,7 +675,8 @@ def test_guidance_in_a_real_browser(tmp_path, playwright_env, live_server):
     assert out["lastDelete"] == {"body": {"confirm_company_name": "Guide Builders", "password": "correct-horse-battery"}, "csrf": True}
     d = out["deleted"]
     assert d["hash"] == "#/login?deleted=1" and "deleted" in d["banner"] and d["nav"] is True and d["company"] == ""
-    assert d["stored"] == []
+    # only this device's own display settings (Settings > Display) may stay: they belong to no company
+    assert set(d["stored"]) <= {"tc.display", "tc.contrast"}
 
     # phone: no sideways scrolling anywhere, the bottom bar fits, tap targets are big enough, motion reduced
     assert out["phone"] == {"dashboard": False, "resultClosed": False, "resultOpen": False, "finder": False, "settings": False,
