@@ -346,6 +346,7 @@
     window.scrollTo(0, 0);
     if (typeof view.afterRender === 'function') view.afterRender();      // e.g. Settings ?section=: after the scroll above
     if (then === 'help') openHelp();
+    else if (!$('#ask-panel').hidden) qhPage();          // the open Help panel's starter questions follow the page
     if (then === 'search') openPalette();
     if (state.me && !vocabP) setTimeout(() => vocab().catch(() => {}), 1500);     // field suggestions, ready before the first focus
   }
@@ -520,6 +521,7 @@
     integrations: 'Connect calendar reminders, text alerts and other apps your company uses.',
     settings: 'Your account, your company, your team and billing.',
     more: 'Everything that isn\'t in the bottom bar.',
+    rule: 'One rule from TradeComply\'s rulebook: plain English, the official text and where it comes from.',
   };
   PAGE_HELP.project = PAGE_HELP.projects;
   // One header for every page: where you are (breadcrumbs on wide screens, a back link on phones), what the page is
@@ -534,7 +536,10 @@
     head.append(h('div', { class: 'page-title' }, h('h1', {}, title), purpose ? h('p', { class: 'purpose' }, purpose) : null));
     const acts = [primary, ...[].concat(secondary || [])].filter(Boolean);
     if (acts.length) head.append(h('div', { class: 'page-actions no-print' }, acts));
-    if (help) head.append(h('details', { class: 'page-help no-print' }, h('summary', {}, icon('help'), 'What is this page?'), h('p', {}, help)));
+    if (help) {
+      head.append(h('details', { class: 'page-help no-print' }, h('summary', {}, icon('help'), 'What is this page?'), h('p', {}, help),
+        h('button', { type: 'button', class: 'btn quiet small', onclick: () => openHelp() }, icon('help'), 'Ask Quick help')));     // this page's starters on top
+    }
     return head;
   }
   // Status: icon + shape + word (colour only helps). The old .pill colours stay as aliases.
@@ -625,11 +630,6 @@
     await signedOut({ explicit: true });
     go('login');
   }
-  // Help (the top bar button). It opens the panel that is available here; More and #/help use the same door.
-  function openHelp() {
-    const b = $('#ask-open');
-    if (b && !b.hidden && $('#ask-panel').hidden) openAsk();
-  }
   // Phones: Help and Search are full-screen sheets that Back closes. One history entry is pushed for whichever is
   // open; going from one straight to the other reuses it (hand), so a later Back closes the sheet and stays here.
   const sheets = {
@@ -660,6 +660,8 @@
     recents.mem = null;
     closePalette(false);
     pal.q = ''; pal.types = null;
+    qhReset();                          // Quick help's turns
+    glossClose(false); gloss.rules.clear();
     if (accountUi) accountUi.close(false);
   }
 
@@ -1392,7 +1394,7 @@
   // One form field for a tool parameter: { el, get, isEmpty, kind, wide, set, raw, tag, chips, label }. get() checks
   // and returns { value, error }; raw()/set() read and write what is on screen (drafts, fills, Undo); tag() shows where
   // a filled value came from; chips() sets the value chips of a date or money box. ctx (top-level fields of a check):
-  // { tool, v: the vocab, few: a short form, so optional labels say "(optional)" }.
+  // { tool, v: the vocab, few: a short form, so optional labels say "(optional)", gloss: glossary terms already offered }.
   function buildField(name, schema, root, required, prefix = '', ctx = null) {
     const s = norm(schema, root);
     const kind0 = kindOf(name, s, root);
@@ -1418,17 +1420,19 @@
     const described = [hint ? id + '-h' : '', id + '-e'].filter(Boolean).join(' ');
     const star = () => [ctx && ctx.few && !required ? h('span', { class: 'opt' }, ' (optional)') : null, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null];
     const tagEl = h('span', { class: 'field-tag', hidden: true });
-    const head = () => [h('label', { for: id, id: id + '-l' }, label, star()), tagEl];
+    const gl = ctx && !prefix ? glossButtons(`${label} ${hintText}`, ctx.v, ctx.gloss) : [];       // "(?)" for a term the rulebook explains
+    const glRow = () => (gl.length ? h('div', { class: 'lbl-row' }, gl) : null);
+    const head = () => { const l = h('label', { for: id, id: id + '-l' }, label, star()); return [gl.length ? h('div', { class: 'lbl-row' }, l, gl) : l, tagEl]; };
     const def = s.default !== undefined && s.default !== null ? s.default : undefined;
     const vchips = h('div', { class: 'vchips', hidden: true });
     let el, get, isEmpty, raw, set, wide = false;
     const fail = (msg, target) => { err.textContent = msg; if (target) target.setAttribute('aria-invalid', 'true'); return msg; };
     const ok = (target) => { err.textContent = ''; if (target) target.removeAttribute('aria-invalid'); return ''; };
-    const legend = () => [h('legend', {}, label, star()), tagEl];
+    const legend = () => [h('legend', {}, label, star()), tagEl, glRow()];
 
     if (kind === 'chips') {
       const rc = radioChips({ label, options: chipOpts.concat(required ? [] : [['', 'Not sure']]), star: star() });
-      el = rc.el; rc.el.firstChild.after(tagEl); rc.el.append(hint || '', err);
+      el = rc.el; rc.el.firstChild.after(tagEl); if (gl.length) tagEl.after(glRow()); rc.el.append(hint || '', err);
       rc.group.setAttribute('aria-describedby', described);
       get = () => {
         const c = rc.get();
@@ -1724,7 +1728,7 @@
     const root = spec.input_schema || {};
     const props = root.properties || {};
     const req = new Set(root.required || []);
-    const ctx = { tool: spec.name, v, few: Object.keys(props).length <= 6 };
+    const ctx = { tool: spec.name, v, few: Object.keys(props).length <= 6, gloss: new Set() };      // gloss: terms offered once per form
     const fields = Object.entries(props).map(([n, sc]) => ({ name: n, ...buildField(n, sc, root, req.has(n), '', ctx) }));
     return {
       fields,
@@ -2254,15 +2258,19 @@
     quietly(() => F.forEach((x) => { const k = COMPANY_FIELDS[x.name]; if (k && tenant[k] && x.isEmpty() && x.set(String(tenant[k]))) x.tag('From your company', 'account'); }));
     const pre = state.prefill && state.prefill.tool === spec.name ? state.prefill : null;
     if (pre) state.prefill = null;                     // once, for this check only
-    const preLine = h('p', { class: 'small fill-line', hidden: true }, icon('help'), ' Filled in from Quick help: check these before you run it.');
+    const preLine = h('div', { class: 'small fill-line', hidden: true });
     const applyPre = () => {
       if (!pre) return;
       quietly(() => Object.entries(pre.args || {}).forEach(([k, v]) => {
         const x = byName[k];
         if (v !== null && v !== undefined && v !== '' && x && x.set && x.set(v !== null && typeof v === 'object' ? v : String(v))) x.tag(pre.from === 'quickhelp' ? 'From Quick help' : 'From your company', pre.from === 'quickhelp' ? 'help' : 'account');
       }));
-      preLine.hidden = pre.from !== 'quickhelp';
       sync();
+      const need = F.filter((x) => x.required && applies(x) && x.isEmpty());       // what Quick help couldn't fill
+      if (pre.from === 'quickhelp') {
+        fill(preLine, h('p', {}, icon('help'), ' Filled in from Quick help: check these before you run it.'), need.length ? h('p', {}, `Still needed: ${need.map((x) => x.label).join(', ')}.`) : null);
+        preLine.hidden = false;
+      }
     };
     const wantJob = projectId || (pre && pre.projectId) || null;
     const ready = (fillable.length || F.some((x) => x.name === 'cities_worked') ? api('/api/projects') : Promise.resolve([])).catch(() => []).then((list) => {
@@ -2294,6 +2302,7 @@
     return h('div', {},
       h('section', { class: (bare ? '' : 'card ') + 'no-print tool-card' },
         desc ? h('p', { class: 'tool-lead' }, lead) : null,
+        h('p', { class: 'qh-hint small' }, 'Not sure what to enter? ', h('button', { type: 'button', class: 'btn quiet small', onclick: () => openHelp() }, icon('help'), 'Ask Quick help')),
         more ? h('details', { class: 'tool-more' }, h('summary', {}, 'What this check covers'), h('p', { class: 'small muted' }, more)) : null,
         ann.readOnlyHint ? null : h('p', { class: 'small muted' }, 'This tool may create or change records.'),
         dui ? dui.el : null, fillSlot, preLine,
@@ -3132,7 +3141,7 @@
       field('Your role on this job', select('claimant_role', roles, x.claimant_role || 'direct_contractor'), { hint: 'Sets which lien and notice deadlines apply to you.' }),
       field('Public or private job', select('public_or_private', [['private', 'Private'], ['public', 'Public (government agency)']], (p && p.public_or_private) || 'private'),
         { hint: 'Public = a city, county, state agency, school or other public owner.' }),
-      field('Street address', input('address', { value: (p && p.address) || '', autocomplete: 'street-address' })),
+      field('Street address', input('address', { value: (p && p.address) || '', autocomplete: 'off' })),        // a jobsite, not the person's own address
       field('City', input('city', { value: (p && p.city) || '' })),
       field('County', input('county', { value: (p && p.county) || '' })),
       field('Property owner', input('owner_name', { value: (p && p.owner_name) || '' })),
@@ -3421,7 +3430,8 @@
       fill(results, items.length
         ? h('section', { class: 'card', 'aria-labelledby': 'bm-h' }, h('h2', { id: 'bm-h' }, 'Best matches'), h('ul', { class: 'list' }, items.map((t) => toolRow(t, t.hidden ? 'For AI assistants' : null))))
         : h('div', { class: 'card' }, emptyState({ icon: 'search', title: `No check matches “${q}”`, text: 'Try a shorter word, or another way to say it.',
-          actions: [h('button', { type: 'button', class: 'btn secondary', onclick: () => openPalette({ q, types: ['rule'] }) }, icon('rule'), `Search the rulebook for “${q}”`)] }),
+          actions: [h('button', { type: 'button', class: 'btn secondary', onclick: () => qhAsk(q) }, icon('help'), `Ask Quick help about “${q}”`),
+            h('button', { type: 'button', class: 'btn secondary', onclick: () => openPalette({ q, types: ['rule'] }) }, icon('rule'), `Search the rulebook for “${q}”`)] }),
           nearest.length ? [h('h3', {}, 'Closest checks'), h('ul', { class: 'list' }, nearest.map((t) => toolRow(t)))] : null));
       status.textContent = items.length ? `${plural(items.length, 'check')} found.` : `No check matches “${q}”.`;
     };
@@ -5095,7 +5105,8 @@
   function assistantSection() {
     const st = (state.me && state.me.assistant) || {};
     const body = h('div', {}, h('p', { class: 'loading' }, 'Loading…'));
-    const sec = h('section', { class: 'card', id: 'ask-settings', 'aria-labelledby': 'ask-set-h' }, h('h2', { id: 'ask-set-h' }, 'Ask TradeComply'), body);
+    const sec = h('section', { class: 'card', id: 'ask-settings', 'aria-labelledby': 'ask-set-h' }, h('h2', { id: 'ask-set-h' }, 'Ask TradeComply'),
+      h('p', { class: 'small' }, 'Quick help is always on. It is built in and sends nothing outside TradeComply.'), body);
     if (!st.configured) {
       fill(body, h('p', {}, h('span', { class: 'pill gray' }, 'Not set up'), ' AI helper is not set up. Whoever runs this server turns it on with the ',
         h('code', {}, st.env_var || 'ANTHROPIC_API_KEY'), ' setting.'));
@@ -5116,7 +5127,7 @@
       });
       const pct = u.budget_tokens ? Math.min(100, Math.round((100 * u.counted_tokens) / u.budget_tokens)) : 0;
       fill(body,
-        h('p', { class: 'muted' }, 'The Ask button in the top bar answers questions in plain words and runs the same checks as the Tools page. Answers come from Claude by Anthropic: what people type and the check results are sent to Anthropic.'),
+        h('p', { class: 'muted' }, 'The Help button in the top bar has an Ask TradeComply tab that answers questions in plain words and runs the same checks as the Checks page. Answers come from Claude by Anthropic: what people type and the check results are sent to Anthropic.'),
         h('label', { class: 'switch' }, sw, h('span', {}, 'Let my team use Ask TradeComply')), out,
         h('p', {}, `This month: ${plural(u.messages, 'question')}, ${num(u.counted_tokens)} of ${num(u.budget_tokens)} tokens (${pct}%).`),
         u.people.length ? table([{ label: 'Person', render: (r) => r.email || 'Someone since removed' }, { label: 'Questions', key: 'messages' },
@@ -5346,13 +5357,16 @@
       return [['Lien and prelim dates for this job', `#/tools/calculate_lien_deadline?project=${id}`, 'g-paid'], ['Setup checklist for this job', `#/tools/project_setup_checklist?project=${id}`, 'g-start'],
         ['New field log for this job', `#/field?project=${id}`, 'log']].map(([title, href, ic]) => ({ title, href, icon: ic, kind: 'Action' }));
     }
-    if (name === 'tools' && args[0]) return [{ title: 'Find a professional', href: '#/professionals', icon: 'find', kind: 'Page' }];
+    if (name === 'tools' && args[0]) {
+      return [{ title: 'Ask Quick help about this check', detail: 'Questions people ask about checks like this one', icon: 'help', kind: 'Action', hand: 'ask', run: () => openHelp() },
+        { title: 'Find a professional', href: '#/professionals', icon: 'find', kind: 'Page' }];
+    }
     if (name === 'subs' && can.write()) return palActions().filter((a) => /sub/.test(a.title));
     return [];
   }
   const palRole = () => (fieldRole() ? 'field' : state.me.user.role === 'office' ? 'office' : 'owner');
-  const askRow = (q) => (askAvailable() ? [{ title: `Ask TradeComply: “${q}”`, detail: 'Claude by Anthropic. Opens with your words typed in; nothing is sent until you press Send.', icon: 'claude', kind: 'Action', hand: 'ask',
-    run: () => { openAsk(); const p = askParts(); p.ta.value = q; p.ta.focus(); } }] : []);
+  const askRow = (q) => [navigator.onLine ? { title: `Ask Quick help: “${q}”`, detail: 'Built into TradeComply: answers from its rulebook, checks and pages.', icon: 'help', kind: 'Action', hand: 'ask', run: () => qhAsk(q) } : null,
+    askAvailable() ? { title: `Ask TradeComply: “${q}”`, detail: 'Claude by Anthropic. Opens with your words typed in; nothing is sent until you press Send.', icon: 'claude', kind: 'Action', hand: 'ask', run: () => askToClaude(q) } : null].filter(Boolean);
   const note = (text) => ({ note: text });
   function palDraw(groups, say) {
     const list = $('#pal-list');
@@ -5495,7 +5509,215 @@
   }
 
   // ======================================================================== Quick help (built in)
-  // (The built-in Help tab, spec 5.7: no html:, no innerHTML. Built with the Help panel work.)
+  // The Help panel's built-in tab (spec 5.7). The question goes to POST /api/help in the body, never the address. The
+  // answer is drawn from the server's blocks with h() only: the rulebook's own words (plain English, then what the
+  // check against the official text changed, the official quote), citation and status, and actions that open a check
+  // with what was understood filled in, for the person to check and run. Nothing is stored: this tab's turns live in
+  // memory until New question, sign-out or a reload. Also here: the glossary "(?)" on check fields (spec 5.8).
+  const QH_CAN = ['Find the right check and open it with your job\'s details filled in.',
+    'Show the California rule behind a deadline, with its official source and whether TradeComply has verified it.',
+    'Tell you which kind of licensed professional a task may need, and where the state lists them.', 'Take you to the right page.'];
+  const QH_CANT = ['Give legal advice, or tell you a licensed professional isn\'t needed.', 'Sign, stamp, file or send anything.',
+    'Run a check for you: you press Run, so you see what goes in.', 'Answer from outside TradeComply\'s California rulebook.'];
+  const QH_OFFLINE = 'Quick help needs a connection. Search still finds checks, pages and projects saved on this phone.';
+  const QH_PAGES = new Set(['dashboard', 'document', 'documents', 'field', 'integrations', 'more', 'professionals', 'project', 'projects', 'rule', 'settings', 'subs', 'tools', 'welcome']);
+  const qh = { turns: [], misses: 0, busy: false, seq: 0, pageSeq: 0, starters: [], ui: null };
+  function qhPane() {
+    if (qh.ui) return qh.ui;
+    const list = (title, items) => [h('p', {}, h('strong', {}, title)), h('ul', { class: 'bullets' }, items.map((t) => h('li', {}, t)))];
+    const box = h('details', { class: 'qh-can', open: true }, h('summary', {}, 'What Quick help can do'), list('Quick help can:', QH_CAN), list('Quick help can\'t:', QH_CANT));
+    const offline = h('div', { class: 'banner info qh-offline', hidden: true }, h('p', { id: 'qh-offline' }, QH_OFFLINE),
+      h('button', { type: 'button', class: 'btn secondary small', onclick: () => openPalette() }, icon('search'), 'Open search'));
+    const starters = h('div', { class: 'qh-starters' });
+    const log = h('div', { class: 'qh-log', 'aria-label': 'Quick help answers' });       // not a live region: the status line speaks
+    const say = h('div', { role: 'status', 'aria-atomic': 'true', class: 'visually-hidden' });
+    const el = h('div', { id: 'qh-pane', class: 'help-pane qh-pane' }, h('p', { class: 'qh-note' }, 'Quick help is built into TradeComply. It matches your words to TradeComply\'s checks, rules and pages. It is not an AI model, and what you type is not sent outside TradeComply. It can miss what you mean, and it never replaces a licensed professional.'),
+      offline, starters, box, log, say);       // the page's starter questions first: they are what people tap
+    qh.ui = { el, can: box, offline, starters, log, say, storage: h('p', { class: 'qh-storage' }, 'Quick help doesn\'t save your questions.'),
+      wait: h('p', { class: 'qh-wait', id: 'qh-wait', hidden: true }, 'Wait for Claude\'s answer, or press Stop on the Ask TradeComply tab.') };
+    return qh.ui;
+  }
+  const qhChips = (list) => h('div', { class: 'chips qh-chips' }, list.map((x) => h('button', { type: 'button', class: 'chip', onclick: () => qhSend(x.question || x) }, x.label || x)));
+  // the open page's starter questions (a check: its group's), from the server's catalog
+  async function qhPage() {
+    const ui = qhPane();
+    const my = ++qh.pageSeq;
+    const { name, args } = parseHash();
+    let list = [];
+    if (name === 'tools' && args[0]) {
+      const t = await getTools().catch(() => null);
+      const tool = t && (t.tools || []).find((x) => x.name === args[0]);
+      const g = tool && (t.groups || []).find((x) => x.id === tool.group);
+      list = (g && g.starters) || [];
+    }
+    if (!list.length) {
+      const v = await vocab().catch(() => vocabNow);
+      list = ((v && v.page_starters) || {})[{ document: 'documents', welcome: 'dashboard' }[name] || name] || [];
+    }
+    if (my !== qh.pageSeq) return;
+    qh.starters = list.slice(0, 3);
+    fill(ui.starters, qh.starters.length ? [h('p', { class: 'small muted' }, 'Try one of these:'), qhChips(qh.starters)] : null);
+  }
+  // Help opens on Quick help (the top bar button, More, #/help, a page's "Ask Quick help"); open already: that tab
+  function openHelp() {
+    if (!state.me) return;
+    if ($('#ask-panel').hidden) openAsk(); else { showTab('qh'); askParts().ta.focus(); }
+  }
+  function qhAsk(q) { openHelp(); qhSend(q); }       // Search's and Checks' "Ask Quick help: …"
+  function qhReset() {                                // New question, another person, sign-out
+    qh.seq++; qh.busy = false; qh.misses = 0;
+    qh.turns.forEach((t) => t.remove()); qh.turns = [];
+    if (qh.ui) { qh.ui.log.removeAttribute('aria-busy'); qh.ui.say.textContent = ''; qh.ui.can.open = true; }
+    composeSync();
+  }
+  async function qhSend(text) {
+    const p = askParts();
+    const q = String(text === undefined ? p.ta.value : text).trim();
+    if (!q || qh.busy || ask.ctrl || !navigator.onLine) { composeSync(); return; }
+    if (ask.tab !== 'qh') showTab('qh');
+    const ui = qhPane();
+    const my = ++qh.seq;
+    qh.busy = true; composeSync(); p.ta.focus();
+    ui.log.setAttribute('aria-busy', 'true');
+    const turn = h('div', { class: 'qh-turn' }, h('p', { class: 'qh-q' }, q));
+    ui.log.append(turn);
+    qh.turns.push(turn);
+    if (qh.turns.length > 20) qh.turns.shift().remove();
+    turn.scrollIntoView({ block: 'nearest' });
+    const { name, args, query } = parseHash();
+    const pid = name === 'project' ? args[0] : query.get('project');
+    let a = null, err = null;
+    try {
+      a = await api('/api/help', { method: 'POST', body: defined({ question: q.slice(0, 2000), page: QH_PAGES.has(name) ? name : undefined,
+        tool: name === 'tools' && args[0] ? args[0] : undefined, project_id: /^\d+$/.test(pid || '') ? Number(pid) : undefined }) });
+    } catch (e) { err = e; }
+    if (my !== qh.seq) return;                      // New question (or another person) since: not wanted any more
+    qh.busy = false;
+    ui.log.removeAttribute('aria-busy');
+    if (a) {
+      qh.misses = a.intent === 'not_found' || a.route === 'search' ? qh.misses + 1 : 0;
+      turn.append(qhAnswerEl(a, q));
+      if (text === undefined || p.ta.value.trim() === q) p.ta.value = '';
+      ui.can.open = false;
+      ui.say.textContent = qhSay(a);
+    } else {
+      const msg = err.status === 429 ? 'That\'s a lot of questions in a minute. Wait a moment and try again.' : err.status === 0 ? QH_OFFLINE : err.message;
+      turn.append(h('p', { class: 'ask-error', role: 'alert' }, msg));
+    }
+    composeSync();
+    turn.scrollIntoView({ block: 'start' });
+  }
+  // what the status line says: the lead (or the answer's first line) and how much came back, nothing more
+  function qhSay(a) {
+    const B = a.blocks || [];
+    const n = (t) => B.filter((b) => b.type === t).length;
+    const first = a.lead || (B.find((b) => b.type === 'note') || {}).text || '';
+    const counts = [[n('rule'), 'rule'], [n('requirement'), 'requirement'], [(a.choices || []).length, 'choice'], [n('action'), 'action']].filter(([k]) => k).map(([k, w]) => plural(k, w));
+    return [first, counts.length ? `${counts.join(', ')}.` : ''].filter(Boolean).join(' ');
+  }
+  const qhBadge = (ok, yes, no) => (ok ? badge('verified', yes) : badge(no === 'Not yet confirmed' ? 'unconfirmed' : 'unverified', no));
+  const qhLink = (url, text) => (/^https:\/\//.test(url || '') ? h('a', { href: url, target: '_blank', rel: 'noopener noreferrer' }, text, h('span', { class: 'visually-hidden' }, ' (opens in a new tab)')) : text);
+  // a rule word for word, with its correction right under the plain English when the check against the source made one
+  const ruleText = (r, text) => [h('p', {}, text), r.status === 'corrected' && r.correction ? h('p', { class: 'correction' }, h('strong', {}, 'What changed when TradeComply checked the official text: '), r.correction) : null];
+  const qhRule = (b) => h('article', { class: 'qh-card' }, h('h3', {}, b.title), ruleText(b, b.text), b.quote ? h('blockquote', {}, b.quote) : null,
+    h('p', { class: 'qh-meta small' }, qhLink(b.source, b.citation), ' ', qhBadge(b.verified, b.checked_on ? `Verified ${fmtDate(b.checked_on)}` : 'Verified', 'Not yet verified')),
+    h('a', { href: b.href }, 'Read the rule'));
+  const qhReq = (b) => h('article', { class: 'qh-card' }, h('h3', {}, b.name), h('p', {}, b.situation),
+    h('p', { class: 'qh-meta small' }, 'Legal basis: ', qhLink(b.source_url, b.legal_basis), ' ', qhBadge(b.verified, 'Confirmed', 'Not yet confirmed')));
+  const QH_ICON = { open_tool: 'checks', go: 'arrow-right', find_professional: 'find', ask_claude: 'claude' };
+  function qhAct(b) {
+    if (b.kind === 'ask_claude') { askToClaude(b.question); return; }
+    let href = b.href;
+    if (b.kind === 'open_tool') {      // the check opens with these filled in (memory only, for that check, once)
+      state.prefill = { tool: b.tool, args: b.args || {}, from: 'quickhelp', projectId: b.project_id || null };
+      href = `#/tools/${encodeURIComponent(b.tool)}${b.project_id ? `?project=${b.project_id}` : ''}`;
+    }
+    if (!/^#\/[a-z]/.test(href || '')) return;
+    if (!narrowScreen()) { if (location.hash === href) render(); else location.hash = href; return; }
+    if (location.hash === href) { closeAsk(false); render(); } else closeAsk(false, href);      // phones: show the page
+  }
+  // One answer card, in the order of spec 5.7. Every sentence in it is the server's (fixed lines, the rulebook's own
+  // words, the person's own question) except the few fixed lines here.
+  function qhAnswerEl(a, q) {
+    const B = a.blocks || [];
+    const used = new Set();
+    const notes = (test) => B.filter((b) => b.type === 'note' && !used.has(b) && test(b.code)).map((b) => { used.add(b); return b.text === a.lead ? null : h('p', { class: 'qh-line' }, b.text); });
+    const top = notes((c) => /^(GUARD|ROUTE_|NOT_FOUND$|INDEX_WARMING|ROLE_|SUBSCRIBE|TOO_LONG)/.test(c));
+    const acts = B.filter((b) => b.type === 'action');
+    const firstTool = acts.find((b) => b.kind === 'open_tool');
+    const actEl = (b) => [b.kind === 'ask_claude' ? notes((c) => c === 'CLAUDE_CAN') : null,
+      h('div', { class: 'qh-act' }, h('button', { type: 'button', class: b === firstTool ? 'btn' : 'btn secondary', onclick: () => qhAct(b) }, icon(QH_ICON[b.kind] || 'arrow-right'), b.label),
+        b.kind === 'open_tool' && b.hint && Object.keys(b.args || {}).length ? h('p', { class: 'small muted' }, b.hint) : null, b === firstTool ? notes((c) => c === 'MISSING') : null)];
+    const lost = a.intent === 'not_found';
+    const more = a.more_rules || [];
+    const card = h('div', { class: 'qh-a' },
+      a.lead ? h('p', { class: 'qh-lead' }, a.lead) : null, top,
+      (a.understood || []).length ? h('div', { class: 'qh-understood' }, h('span', { class: 'small muted' }, 'I understood:'), a.understood.map((u) => h('span', { class: 'qh-chip' }, `${u.label}: ${u.display}`))) : null,
+      notes((c) => c === 'READ_DATE'),
+      (a.choices || []).length ? qhChips(a.choices) : null,
+      B.filter((b) => b.type === 'rule').map(qhRule), B.filter((b) => b.type === 'requirement').map(qhReq),
+      notes((c) => /^UN(VERIFIED|CONFIRMED)_SOME$/.test(c)),
+      B.filter((b) => b.type === 'maybe_professional').map((b) => h('p', { class: 'qh-line' }, h('strong', {}, 'May need a licensed person: '), `${b.name}. ${b.note}`)),
+      notes((c) => c === 'NOT_FOUND_TRY'),
+      acts.length || lost ? h('div', { class: 'qh-acts' }, acts.map(actEl), lost ? [
+        h('div', { class: 'qh-act' }, h('button', { type: 'button', class: 'btn secondary', onclick: () => openPalette({ q, types: ['rule'] }) }, icon('rule'), `Search the rulebook for “${q}”`)),
+        h('div', { class: 'qh-act' }, h('button', { type: 'button', class: 'btn secondary', onclick: () => qhAct({ kind: 'go', href: '#/professionals' }) }, icon('find'), 'Find a professional'))] : null) : null,
+      notes(() => true),
+      more.length ? h('details', { class: 'qh-more' }, h('summary', {}, `More rules (${more.length})`), h('ul', { class: 'bullets' }, more.map((r) => h('li', {},
+        h('a', { href: `#/rule/${encodeURIComponent(r.rule_id)}` }, r.title), ' ', qhBadge(r.verified, 'Verified', 'Not yet verified'))))) : null,
+      (a.followups || []).length ? [h('p', { class: 'small muted' }, 'You could also ask:'), qhChips(a.followups)] : null,
+      lost && qh.starters.length ? [h('p', { class: 'small muted' }, 'Or try one of these:'), qhChips(qh.starters)] : null,
+      ['medium', 'low'].includes(a.confidence) && !lost && !String(a.intent).startsWith('route:') ? h('p', { class: 'small muted' }, 'Not what you meant? Try other words.') : null,
+      qh.misses >= 3 ? h('p', { class: 'qh-human' }, can.owner() ? supportText('For help with TradeComply') : 'Ask your office or your account owner.') : null,
+      a.disclaimer ? h('p', { class: 'small muted qh-disc' }, a.disclaimer) : null);
+    return card;
+  }
+
+  // Glossary "(?)" (spec 5.8): after a check field's label when its label or hint uses a term TradeComply has a rule
+  // for. The button names only the term ("What does NOC mean?"), never the field. Its popover shows the term, what it
+  // stands for, and that rule in the rulebook's words (fetched on first open and kept for this page load).
+  const gloss = { rules: new Map(), open: null };
+  const glossHit = (text, form) => {         // whole words; a form with two capitals (NOC, CASp, eCPR) only in capitals
+    const word = form.replace(/[.*+?^$()|[\]\\/{}]/g, '\\$&');
+    return new RegExp('(^|[^A-Za-z0-9])' + word + '($|[^A-Za-z0-9])', /[A-Z].*[A-Z]/.test(form) ? '' : 'i').test(text);
+  };
+  function glossButtons(text, v, seen = new Set()) {      // seen: terms the form already explains (once per form)
+    const out = [];
+    for (const g of (v && v.glossary) || []) {
+      if (out.length === 2 || !g.rule_id || seen.has(g.term) || ![g.term, ...(g.aliases || [])].some((f) => glossHit(text, f))) continue;
+      seen.add(g.term);
+      const term = /[A-Z].*[A-Z]|\d/.test(g.term) ? g.term : g.term.charAt(0).toLowerCase() + g.term.slice(1);
+      const b = h('button', { type: 'button', class: 'gloss-btn', 'aria-label': `What does ${term} mean?`, 'aria-haspopup': 'dialog', 'aria-expanded': 'false', onclick: () => glossOpen(b, g) }, icon('help'));
+      out.push(b);
+    }
+    return out;
+  }
+  function glossClose(back) {
+    const o = gloss.open;
+    if (!o) return;
+    gloss.open = null;
+    o.pop.remove();
+    o.btn.setAttribute('aria-expanded', 'false');
+    if (back && o.btn.isConnected) o.btn.focus();
+  }
+  function glossOpen(btn, g) {
+    const again = gloss.open && gloss.open.btn === btn;
+    glossClose(false);
+    if (again) return;
+    const body = h('div', {}, h('p', { class: 'muted' }, 'Loading the rule…'));
+    const pop = h('div', { class: 'gloss-pop', role: 'dialog', 'aria-label': g.term, tabindex: '-1' }, h('p', {}, h('strong', {}, g.term), g.expansion ? `: ${g.expansion}` : ''), body,
+      h('button', { type: 'button', class: 'btn quiet small', onclick: () => glossClose(true) }, icon('close'), 'Close'));
+    pop.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); glossClose(true); } });
+    (btn.closest('.lbl-row') || btn).after(pop);
+    gloss.open = { btn, pop };
+    btn.setAttribute('aria-expanded', 'true');
+    pop.focus();
+    if (!gloss.rules.has(g.rule_id)) gloss.rules.set(g.rule_id, api(`/api/rules/${encodeURIComponent(g.rule_id)}`).catch((e) => { gloss.rules.delete(g.rule_id); throw e; }));
+    gloss.rules.get(g.rule_id).then((r) => fill(body, ruleText(r, r.plain_english), h('p', { class: 'small' }, r.citation, ' ', qhBadge(r.verified, 'Verified', 'Not yet verified')),
+      h('a', { href: `#/rule/${encodeURIComponent(r.id)}` }, 'Read the rule')))
+      .catch((e) => fill(body, h('p', {}, e.status === 402 ? 'Rule text needs an active subscription.' : e.status === 0 ? 'The rule needs a connection.' : e.message)));
+  }
+  document.addEventListener('pointerdown', (e) => { if (gloss.open && !gloss.open.pop.contains(e.target) && !gloss.open.btn.contains(e.target)) glossClose(false); });
 
   // ======================================================================== more page
   // Phones: everything that isn't in the bottom bar, by group, with whose account is open (a shared tablet).
@@ -5504,14 +5726,13 @@
     const row = (href, ic, label, detail, onclick) => h('li', {}, h(onclick ? 'button' : 'a', onclick ? { type: 'button', class: 'list-row', onclick } : { class: 'list-row', href },
       icon(ic), h('span', { class: 'lr-text' }, h('span', { class: 'lr-title' }, label), detail ? h('span', { class: 'lr-meta' }, detail) : null), h('span', {}), icon('chevron-right', 'icon lr-chev')));
     const setupDone = (((state.me.tenant.settings || {}).onboarding || {}).done || []).length >= 3;
-    const helpReady = !$('#ask-open').hidden;
     const searchReady = !$('#search-open').hidden;
     const groups = [
       ['Work', [field ? row('#/subs', 'subs', 'Subcontractors', 'Who is on your jobs and whether their license is OK')
         : row('#/field', 'log', 'Field log', 'Toolbox talks, inspections and incident reports')]],
       ['Checks', [row('#/professionals', 'find', 'Find a professional', 'Official lookups for engineers, attorneys, CASp, HERS raters and more')]],
       ['Paperwork', [row('#/documents', 'docs', 'Documents', 'Saved results, notes and safety programs')]],
-      ['Help', [helpReady ? row(null, 'claude', 'Ask TradeComply', 'Questions in plain words, answered by Claude (Anthropic)', () => openHelp()) : null,
+      ['Help', [row(null, 'help', 'Help', 'Ask in your own words. Quick help is built into TradeComply.', () => openHelp()),
         searchReady ? row(null, 'search', 'Search', 'Find any check, rule, project or sub', () => $('#search-open').click()) : null,
         !field && !setupDone ? row('#/welcome', 'checklist', 'Guided setup', 'Your license, sub list, first project, safety programs') : null]],
       ['Set up', [row('#/integrations', 'plug', 'Integrations', 'Calendar reminders, text alerts and other apps'),
@@ -5541,7 +5762,7 @@
     const src = /^https:\/\//.test(r.source || '') ? [h('a', { href: r.source, target: '_blank', rel: 'noopener noreferrer' }, r.source), ' (official site, opens in a new tab)'] : r.source;
     const related = (r.related_tools || []).filter((t) => t && t.name);
     return h('div', {},
-      pageHead({ title: r.title, purpose: r.citation, crumbs: [{ label: 'Checks', href: '#/tools' }, { label: r.title }], back: { href: '#/tools', label: 'Checks' } }),
+      pageHead({ title: r.title, purpose: r.citation, crumbs: [{ label: 'Checks', href: '#/tools' }, { label: r.title }], back: { href: '#/tools', label: 'Checks' }, help: PAGE_HELP.rule }),
       h('article', { class: 'card rule-page' },
         h('div', { class: 'row' }, r.verified ? badge('verified', 'Verified') : badge('unverified', 'Not yet verified'), r.checked_on ? h('span', { class: 'small muted' }, `Checked on ${fmtDate(r.checked_on)}`) : null),
         sec('Plain English', h('p', { class: 'prose' }, r.plain_english)),
@@ -5554,12 +5775,15 @@
   };
 
   // ======================================================================== Ask TradeComply (the AI helper)
-  // The Ask button in the top bar opens a sheet beside the page (full screen on phones) for questions in plain words.
-  // Answers come from Claude through /api/assistant (app/assistant.py), which runs the same checks as the Tools page
-  // as the person signed in. What the person typed is shown as text and answers go through md() (escaped first).
-  // Nothing opens by itself; Esc or Close returns to the button. Only the open page's name is sent, never its data.
-  // On phones the panel is full screen: a modal dialog (the page behind is inert) that the Back button closes.
-  const ask = { conv: null, chats: null, ctrl: null, parts: null, who: null, rows: new Map() };
+  // The Help button in the top bar opens one panel beside the page (full screen on phones), for everyone signed in. It
+  // has the Quick help tab (built in, the section above) and, only where Claude is available, the Ask TradeComply tab.
+  // Every open starts on Quick help; nothing remembers the Claude tab. One box and one Send button serve both tabs:
+  // the button names where the words go, and on the Claude tab Claude's note sits right above it. Claude's answers come
+  // through /api/assistant (app/assistant.py), which runs the same checks as the Checks page as the person signed in;
+  // /api/assistant is never asked unless Claude is available. What the person typed is shown as text and answers go
+  // through md() (escaped first). Nothing opens by itself; Esc or Close returns to the button. Only the open page's
+  // name is sent, never its data. On phones the panel is a modal dialog (the page behind is inert) that Back closes.
+  const ask = { conv: null, chats: null, ctrl: null, parts: null, who: null, rows: new Map(), tab: 'qh' };
   const askAvailable = () => !!(state.me && state.me.assistant && state.me.assistant.available);
   const narrowScreen = () => { try { return window.matchMedia('(max-width: 899px)').matches; } catch (e) { return false; } };
   function syncAsk() {
@@ -5572,8 +5796,10 @@
       ask.who = who; ask.conv = null; ask.chats = null;
       if (ask.parts) { ask.parts.ta.value = ''; fill(ask.parts.status); askDraw(); }
     }
-    btn.hidden = !askAvailable();
-    if (btn.hidden) { closeAsk(false); ask.conv = null; ask.chats = null; }
+    btn.hidden = !state.me;
+    if (btn.hidden) closeAsk(false);
+    if (!askAvailable()) { ask.conv = null; ask.chats = null; }
+    helpTabs();
   }
   const askLog = () => h('div', { class: 'ask-log', role: 'log', 'aria-live': 'polite', 'aria-label': 'Conversation' });
   function askParts() {
@@ -5581,25 +5807,97 @@
     const log = askLog();
     const status = h('div', { class: 'ask-status', role: 'status' });
     const ta = h('textarea', { name: 'question', rows: '2', maxlength: '2000', 'aria-label': 'Your question', placeholder: 'Ask about a rule, a deadline or where to find something' });
-    const send = h('button', { type: 'submit', class: 'btn' }, 'Send');
-    const form = h('form', { class: 'ask-form', onsubmit: (e) => { e.preventDefault(); if (ask.ctrl) askStop(); else askSend(); } }, ta, send);
+    const send = h('button', { type: 'submit', class: 'btn' });
+    const form = h('form', { class: 'ask-form', onsubmit: (e) => { e.preventDefault(); if (ask.tab === 'qh') qhSend(); else if (ask.ctrl) askStop(); else askSend(); } }, ta, send);
     const chats = h('details', { class: 'ask-chats', hidden: true });
     ta.addEventListener('keydown', (e) => {           // Enter sends on a keyboard; Shift+Enter (and Enter on phones) is a new line
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !narrowScreen()) { e.preventDefault(); if (!ask.ctrl) askSend(); }
+      if (e.key !== 'Enter' || e.shiftKey || e.isComposing || narrowScreen()) return;
+      e.preventDefault();
+      if (ask.tab === 'qh') qhSend(); else if (!ask.ctrl) askSend();
     });
     const panel = $('#ask-panel');
     panel.addEventListener('click', (e) => {          // an app page linked in an answer: on a phone, show the page
-      const a = e.target.closest && e.target.closest('.ask-log a[href^="#/"]');
+      const a = e.target.closest && e.target.closest('.ask-log a[href^="#/"], .qh-log a[href^="#/"]');
       if (a && narrowScreen()) { e.preventDefault(); closeAsk(false, a.getAttribute('href')); }
     });
-    panel.replaceChildren(
-      h('div', { class: 'ask-head' }, h('h2', { id: 'ask-title' }, 'Ask TradeComply'),
-        h('button', { type: 'button', class: 'btn ghost small', onclick: () => { if (ask.ctrl) return; ask.conv = null; fill(status); askDraw(); ta.focus(); } }, 'New chat'),
-        h('button', { type: 'button', class: 'btn ghost small', onclick: () => closeAsk() }, 'Close')),
-      h('p', { class: 'ask-note' }, 'Answers come from Claude by Anthropic and can be wrong. What you type and tool results are sent to Anthropic.'),
-      chats, log, status, form);
-    ask.parts = { log, status, ta, send, chats };
+    const note = h('p', { class: 'ask-note' }, 'Answers come from Claude by Anthropic and can be wrong. What you type and tool results are sent to Anthropic.');
+    const reset = h('button', { type: 'button', class: 'btn ghost small', onclick: () => {         // the open tab's own fresh start
+      if (ask.tab === 'qh') { qhReset(); ta.focus(); return; }
+      if (ask.ctrl) return; ask.conv = null; fill(status); askDraw(); ta.focus();
+    } });
+    const tab = (id, pane, label, sub) => h('button', { type: 'button', role: 'tab', id, 'aria-controls': pane, 'aria-selected': 'false', tabindex: '-1',
+      onclick: () => showTab(id === 'ask-tab-claude' ? 'claude' : 'qh') }, label, sub);
+    const tabs = h('div', { role: 'tablist', class: 'help-tabs', 'aria-label': 'Help' },
+      tab('ask-tab-qh', 'qh-pane', 'Quick help', h('span', { class: 'badge badge-neutral' }, 'Built in')),
+      tab('ask-tab-claude', 'claude-pane', 'Ask TradeComply', h('span', { class: 'tab-sub' }, 'Claude by Anthropic')));
+    tabs.addEventListener('keydown', (e) => {         // tabs: the arrows, Home and End move and select
+      const to = { ArrowLeft: 'other', ArrowRight: 'other', Home: 'qh', End: 'claude' }[e.key];
+      if (!to) return;
+      e.preventDefault();
+      showTab(to === 'other' ? (ask.tab === 'qh' ? 'claude' : 'qh') : to, true);
+    });
+    const qhp = qhPane();
+    const claudePane = h('div', { id: 'claude-pane', class: 'help-pane claude-pane', hidden: true }, chats, log, status);
+    const head = h('div', { class: 'ask-head' }, h('h2', { id: 'ask-title' }, 'Help'), reset,
+      h('button', { type: 'button', class: 'btn ghost small', onclick: () => closeAsk() }, 'Close'));
+    panel.replaceChildren(head, qhp.el, claudePane, h('div', { class: 'help-compose' }, qhp.wait, note, qhp.storage, form));
+    ask.parts = { log, status, ta, send, form, chats, note, reset, tabs, head, claudePane, qhp };
+    helpTabs();
+    showTab('qh');
     return ask.parts;
+  }
+  // The Claude tab only where Claude is available here (no tab list at all otherwise: just Quick help)
+  function helpTabs() {
+    const p = ask.parts;
+    if (!p) return;
+    const on = askAvailable();
+    if (on && !p.tabs.isConnected) p.head.after(p.tabs); else if (!on) p.tabs.remove();
+    [[p.qhp.el, 'ask-tab-qh'], [p.claudePane, 'ask-tab-claude']].forEach(([pane, id]) => {
+      if (on) { pane.setAttribute('role', 'tabpanel'); pane.setAttribute('aria-labelledby', id); } else { pane.removeAttribute('role'); pane.removeAttribute('aria-labelledby'); }
+    });
+    if (!on && ask.tab === 'claude') showTab('qh');
+  }
+  function showTab(name, focusTab = false) {
+    const p = askParts();
+    const claude = name === 'claude' && askAvailable();
+    ask.tab = claude ? 'claude' : 'qh';
+    [['#ask-tab-qh', !claude], ['#ask-tab-claude', claude]].forEach(([sel, on]) => { const t = p.tabs.querySelector(sel); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
+    p.qhp.el.hidden = claude; p.claudePane.hidden = !claude;
+    p.note.hidden = !claude; p.qhp.storage.hidden = claude;
+    p.form.before(claude ? p.note : p.qhp.storage);              // right above the box: where the words go
+    p.reset.textContent = claude ? 'New chat' : 'New question';
+    if (claude && !ask.ctrl) {        // (a running answer keeps its log: it lands there when it comes)
+      askDraw();
+      if (ask.chats === null) askLoadChats();
+      if (ask.conv) {                 // an answer saved after the signal dropped shows up here
+        api(`/api/assistant/conversations/${ask.conv.id}`).then((c) => { if (!ask.ctrl) { ask.conv = c; askDraw(); } })
+          .catch((e) => { if (e.status === 404) { ask.conv = null; askDraw(); } });
+      }
+    }
+    composeSync();
+    if (focusTab) p.tabs.querySelector(claude ? '#ask-tab-claude' : '#ask-tab-qh').focus();
+  }
+  // The Send button names where the words go. On Quick help it waits while Claude answers (that request stays with
+  // the Claude tab, and its Stop with it) or while there is no connection, and says why.
+  function composeSync() {
+    const p = ask.parts;
+    if (!p) return;
+    const claude = ask.tab === 'claude';
+    const off = !navigator.onLine, wait = !claude && !!ask.ctrl;
+    p.qhp.offline.hidden = !off;
+    p.qhp.wait.hidden = !wait;
+    p.send.replaceChildren(...(claude && ask.ctrl ? ['Stop'] : [icon('send'), claude ? 'Send to Claude' : 'Ask Quick help']));
+    p.send.classList.toggle('secondary', claude && !!ask.ctrl);
+    p.send.disabled = !claude && (wait || off || qh.busy);
+    if (!claude && (wait || off)) p.send.setAttribute('aria-describedby', wait ? 'qh-wait' : 'qh-offline'); else p.send.removeAttribute('aria-describedby');
+  }
+  // "Ask TradeComply" from Quick help or Search: the Claude tab with the words typed in; nothing is sent
+  function askToClaude(text) {
+    if ($('#ask-panel').hidden) openAsk();
+    showTab('claude');
+    const { ta } = askParts();
+    if (text !== undefined) ta.value = text;
+    ta.focus();
   }
   const askAnswer = (t) => {
     const checked = (t.checked || []).filter((c) => c && c.title);
@@ -5613,7 +5911,7 @@
   function askDraw() {
     const p = askParts();
     const turns = ask.conv ? ask.conv.turns : [];
-    const log = fill(askLog(), turns.length ? turns.map(askTurnEl) : h('p', { class: 'ask-empty' }, 'Ask about a California rule, a deadline, a license, or where something is in TradeComply. It checks with the same tools as the Tools page.'));
+    const log = fill(askLog(), turns.length ? turns.map(askTurnEl) : h('p', { class: 'ask-empty' }, 'Ask about a California rule, a deadline, a license, or where something is in TradeComply. It checks with the same tools as the Checks page.'));
     p.log.replaceWith(log);
     p.log = log;
     log.scrollTop = log.scrollHeight;
@@ -5662,7 +5960,7 @@
     const text = p.ta.value.trim();
     if (!text || ask.ctrl) return;
     const ctrl = ask.ctrl = new AbortController();
-    p.send.textContent = 'Stop'; p.send.classList.add('secondary');
+    composeSync();                     // the button turns into Stop (and Quick help waits for this answer)
     fill(p.status, 'Working on it…');
     if (!ask.conv || !ask.conv.turns.length) fill(p.log);
     const pending = h('div', { class: 'ask-turn' }, h('p', { class: 'ask-q' }, text));
@@ -5685,7 +5983,7 @@
       note = ctrl.signal.aborted ? 'Stopped. Nothing was saved.' : h('p', { class: 'ask-error', role: 'alert' }, e.message);
     }
     ask.ctrl = null;
-    p.send.textContent = 'Send'; p.send.classList.remove('secondary');
+    composeSync();
     if (answered) { append(pending, askAnswer(answered)); drawAskChats(); }   // only the answer is new to the log
     else if (ask.conv && ask.conv.turns.length) pending.remove();
     else askDraw();
@@ -5708,19 +6006,16 @@
     $('.skip-link').inert = modal;           // outside .app: without this, Tab leaves the dialog for it
   }
   function openAsk() {
-    if (!askAvailable()) return;
+    if (!state.me) return;
     const { ta } = askParts();
     $('#ask-panel').hidden = false;
     $('#ask-open').setAttribute('aria-expanded', 'true');
     document.body.classList.add('ask-on');
     askModal();
     sheets.open('ask');                // phones: Back closes it
-    askDraw();
-    if (ask.chats === null) askLoadChats();
-    if (ask.conv && !ask.ctrl) {      // an answer saved after the signal dropped shows up here
-      api(`/api/assistant/conversations/${ask.conv.id}`).then((c) => { if (!ask.ctrl) { ask.conv = c; askDraw(); } })
-        .catch((e) => { if (e.status === 404) { ask.conv = null; askDraw(); } });
-    }
+    helpTabs();
+    showTab('qh');                     // every open starts on Quick help
+    qhPage();
     ta.focus();
   }
   // `then`: an app page to show once closed (a link in an answer, on a phone)
@@ -5735,10 +6030,12 @@
     if (focusButton) $('#ask-open').focus();
   }
 
+
   // ======================================================================== boot
   function setOnline(on) {
     state.online = on;
     $('#net').hidden = on;
+    composeSync();                     // Quick help needs a connection, and says so
     if (on) syncOutbox({ quiet: true });
   }
   window.addEventListener('online', () => setOnline(true));
@@ -5756,6 +6053,7 @@
     routeHash = location.hash;
     render();
   });
+  $('#ask-open').classList.add('top-btn');
   $('#ask-open').addEventListener('click', () => ($('#ask-panel').hidden ? openAsk() : closeAsk()));
   sheets.closers = { ask: () => closeAsk(), palette: () => closePalette() };
   // Search: the button, or Ctrl+K (Cmd+K on a Mac, where Ctrl+K in a text box must keep deleting to the line's end)
