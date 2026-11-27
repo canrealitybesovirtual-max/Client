@@ -200,6 +200,7 @@ const path = require('path');
       env: { common: ['MAIL_FROM', 'MAIL_REPLY_TO'], postmark: ['POSTMARK_SERVER_TOKEN', 'POSTMARK_MESSAGE_STREAM'], smtp: ['SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURITY', 'SMTP_USERNAME', 'SMTP_PASSWORD'] } }) }));
     await op.reload();
     await op.waitForSelector('#email .pill');
+    await op.click('#email details.more > summary:has-text("For whoever runs this server")');      // folded (spec 1.5)
     o.emailOff = await text(op, '#email');
     await check(op, 'settings-email-off', '#email');
     await op.unroute('**/api/auth/email-status');

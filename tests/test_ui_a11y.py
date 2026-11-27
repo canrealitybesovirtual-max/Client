@@ -1,8 +1,10 @@
-"""Accessibility checks of spec 7.1 that no other UI test makes: input purpose tokens only on the person's own details
+"""Accessibility checks of spec 7.1 that no other UI test makes, and the phone page-height budgets of spec 7.2: input purpose tokens only on the person's own details
 (1.3.5), no single-character shortcuts (2.1.4), focus never hidden under the top bar, the bottom bar or a form's
 action bar while tabbing through Today and a check on a phone with its keyboard up (2.4.11; 375 x 420 px), and no
-sideways scrolling with the WCAG text-spacing overrides applied (1.4.12) at 375 and 1280 px. The browser test runs
-when Node with Playwright and its Chromium is installed (skipped otherwise)."""
+sideways scrolling with the WCAG text-spacing overrides applied (1.4.12) at 375 and 1280 px; at 375 px the Checks
+index stays within 2,600 px with its groups closed, Integrations within 8,000 px with nothing searched, and each step
+or section of the hand-made form layouts within 1,800 px. The browser test runs when Node with Playwright and its
+Chromium is installed (skipped otherwise)."""
 import json
 import os
 import re
@@ -90,6 +92,29 @@ const { chromium } = require('playwright');
     out.spacing[`${w}#help`] = await q.evaluate(() => { const a = document.getElementById('ask-panel'); return a.scrollWidth > a.clientWidth || document.documentElement.scrollWidth > document.documentElement.clientWidth; });
     await c.close();
   }
+  // ---- 7.2 page heights at 375 px
+  const hc = await browser.newContext({ viewport: { width: 375, height: 812 }, deviceScaleFactor: 1, serviceWorkers: 'block', storageState: state });
+  const hp = await hc.newPage();
+  out.heights = {};
+  for (const [hash, sel] of [['#/tools', '.tool-list details'], ['#/integrations', '.int-card']]) {
+    await hp.goto(base + '/' + hash);
+    await hp.waitForSelector(sel);
+    await hp.waitForTimeout(700);
+    out.heights[hash] = await hp.evaluate(() => document.documentElement.scrollHeight);
+  }
+  out.steps = {};
+  for (const t of ['validate_home_improvement_contract', 'permit_required', 'generate_safety_programs', 'project_setup_checklist', 'project_risk_score', 'accessibility_field_check']) {
+    await hp.goto(base + '/#/tools/' + t);
+    await hp.waitForSelector('main form.tool-form');
+    await hp.waitForTimeout(300);
+    out.steps[t] = await hp.evaluate(() => {      // each step shown on its own (or each section opened), as people see it
+      const steps = [...document.querySelectorAll('.form-step:not(.review)')];
+      const one = (el, show) => { const was = show(true); const hgt = Math.round(el.getBoundingClientRect().height); show(was); return hgt; };
+      if (steps.length) return steps.map((s) => one(s, (on) => { const w = s.hidden; s.hidden = !on; return !w; }));
+      return [...document.querySelectorAll('details.form-sec')].map((d) => one(d, (on) => { const w = d.open; d.open = on; return w; }));
+    });
+  }
+  await hc.close();
   process.stdout.write(JSON.stringify(out));
   await browser.close();
 })().catch((e) => { console.error(e); process.exit(1); });
@@ -106,3 +131,5 @@ def test_focus_stays_in_view_and_text_spacing_does_not_break_layout(tmp_path, pl
     assert out["signup"] == 200 and out["errors"] == []
     assert out["hidden"] == {"#/dashboard": [], "#/tools/calculate_lien_deadline": []}
     assert not any(out["spacing"].values()), out["spacing"]
+    assert out["heights"]["#/tools"] <= 2600 and out["heights"]["#/integrations"] <= 8000, out["heights"]
+    assert len(out["steps"]) == 6 and all(s and max(s) <= 1800 for s in out["steps"].values()), out["steps"]
