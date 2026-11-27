@@ -77,10 +77,27 @@ Tool descriptions and parameter docs are written for AI agents as well as people
 the screen: the first sentence of a description shows (the rest under "What this check covers"), hints use the form's
 labels instead of `snake_case` names, JSON shapes and "ISO date" are dropped, "as of" dates fold away, clock times get
 a time picker, and results hide rule ids (they're listed under Sources), format money, dates and enum values, and fold
-long item-by-item detail. Saved documents get the same treatment (`result_to_markdown`). A tool whose inputs match a
+long item-by-item detail. Saved documents get the same treatment (`result_to_markdown`). A check whose inputs match a
 project's details (name, city, county, address, owner, contract price, furnishing/completion dates, claimant role) gets
-a "Fill in from a project" picker (a link that names the project, from its page or a Today tile with that job
-picked, fills it at once), and the saved result is linked to that project.
+a "For job" picker: only an explicit choice fills it (picked there, a link that names the project from its page or a
+Today tile with that job picked, or a Quick help button); the last job used on this device is offered as a "Last
+used" chip, never applied by itself. Filled fields are tagged "From job: ..." with a lasting Undo, a value the person
+typed is never replaced, and the saved result is linked to that project.
+
+Forms: fields with a known list suggest as you type (counties, CSLB classes, crafts, hazards, equipment, the
+company's own projects, subs, license numbers and crew names; `POST /api/suggest`, the typed words only ever in the
+request body); a short strict list shows as chips; dates and times use the device's pickers with Today / Now chips;
+a number box takes "813 mm" or "8,000 sq ft" as typed where the check reads units. The six longest checks go step by
+step with a Review page (only the answers that apply; a skipped field says what the check uses instead); other long
+forms fold the rest under "More details". Results answer first: a headline from the check's own result, the next
+step, then the details. Drafts of what was typed are kept on this device for 14 days, per person and form (never
+for the injury reporting check, an incident report, passwords or signatures), and are gone after Log out.
+
+Search: the top bar's Search button or Ctrl+K (Cmd+K on a Mac) opens one search over checks, rules, CSLB classes,
+professionals, integrations, pages, actions and the company's own projects, subs and documents (`POST /api/search`);
+with nothing typed it shows drafts and what was opened last, this page's actions and the role's common checks.
+Offline it searches the checks, pages and projects kept on the device. A rule opens on its own page (`#/rule/<id>`):
+plain English, the verifier's correction right under it when the rule was corrected, the official text and source.
 
 Roles: **owner** (everything, incl. billing, team and keys), **office** (projects, subs, documents, tools, keys),
 **field** (read projects/subs/documents, run tools, create field logs). API keys act with the office role, limited to

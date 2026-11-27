@@ -273,6 +273,7 @@
     $('#company').textContent = state.me ? state.me.tenant.company_name : '';
     $('#nav').hidden = !state.me;
     $('#account-open').hidden = !state.me;
+    $('#search-open').hidden = !state.me;
     syncAsk();
     syncNav();
     return state.me;
@@ -289,7 +290,7 @@
   const routes = {};
   const PUBLIC = new Set(['login', 'signup', 'forgot']);
   const OPEN = new Set(['reset', 'invite']);         // one-time links: work signed in or out (#/reset/<token>)
-  const TITLES = { dashboard: 'Today', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Checks', documents: 'Documents', document: 'Document', field: 'Field log', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', more: 'More', login: 'Log in', signup: 'Start free trial', connect: 'Connect an app',
+  const TITLES = { dashboard: 'Today', projects: 'Projects', project: 'Project', subs: 'Subcontractors', tools: 'Checks', documents: 'Documents', document: 'Document', field: 'Field log', integrations: 'Integrations', professionals: 'Find a professional', settings: 'Settings', welcome: 'Get set up', more: 'More', rule: 'Rule', login: 'Log in', signup: 'Start free trial', connect: 'Connect an app',
     forgot: 'Forgot password', reset: 'Set a new password', invite: 'Join your team', 'confirm-email': 'Confirm your email' };
   // New names people type or share. The routes themselves never change (bookmarks, emailed and calendar links keep
   // working); an alias is swapped for its route before the page is drawn, so Back doesn't bounce.
@@ -317,6 +318,7 @@
     if (!routes[name]) name = state.me ? 'dashboard' : 'login';
     // what Quick help asked for applies only to the check it named, once: any other route forgets it
     if (state.prefill && !(name === 'tools' && args[0] === state.prefill.tool)) state.prefill = null;
+    if (name !== 'subs') state.pageAction = null;
     syncAsk();
     syncNav(name);
     renderBanner();
@@ -344,6 +346,8 @@
     window.scrollTo(0, 0);
     if (typeof view.afterRender === 'function') view.afterRender();      // e.g. Settings ?section=: after the scroll above
     if (then === 'help') openHelp();
+    if (then === 'search') openPalette();
+    if (state.me && !vocabP) setTimeout(() => vocab().catch(() => {}), 1500);     // field suggestions, ready before the first focus
   }
 
   // §2.9: a missing record says so and points to its list; anything else says what the server said, with Try again
@@ -580,12 +584,11 @@
     // phones: a page that lives under More marks More as containing it ("true", not "page": More isn't that page)
     if (phone && (UNDER_MORE.has(name) || name === (role === 'field' ? 'subs' : 'field'))) links.more.setAttribute('aria-current', 'true');
   }
-  // The account menu (wide screens): Settings, Display, Log out. APG menu button: Enter, Space or Down opens on the
-  // first item, Up on the last; arrows move; Esc closes and goes back to the button; Tab closes.
+  // Menus (APG menu button): the account menu (wide screens: Settings, Display, Log out) and a result's "More
+  // actions". Enter, Space or Down opens on the first item, Up on the last; arrows move; Esc closes and goes back to
+  // the button; Tab closes.
   let accountUi = null;
-  function accountMenu() {
-    const btn = $('#account-open');
-    const menu = $('#account-menu');
+  function wireMenu(btn, menu) {
     const items = () => [...menu.querySelectorAll('[role=menuitem]')];
     const open = (where = 'first') => { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); const it = items(); (where === 'last' ? it[it.length - 1] : it[0]).focus(); };
     const close = (back = true) => { if (menu.hidden) return; menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); };
@@ -600,14 +603,21 @@
       else if (e.key === 'Tab') close(false);
       else if (e.key === ' ' && document.activeElement && document.activeElement.tagName === 'A') { e.preventDefault(); document.activeElement.click(); }
     });
-    menu.addEventListener('click', (e) => {
-      const it = e.target.closest('[role=menuitem]');
-      if (!it) return;
-      close(false);
-      if (it.classList.contains('menu-logout')) logOut();
-    });
-    document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !e.target.closest('.account')) close(false); });
+    menu.addEventListener('click', (e) => { if (e.target.closest('[role=menuitem]')) close(false); });
+    document.addEventListener('pointerdown', (e) => { if (!menu.hidden && !btn.parentNode.contains(e.target)) close(false); });
     return { close };
+  }
+  function accountMenu() {
+    const ui = wireMenu($('#account-open'), $('#account-menu'));
+    $('#account-menu .menu-logout').addEventListener('click', () => logOut());
+    return ui;
+  }
+  function menuButton(label, items) {
+    const id = `mn-${++fieldSeq}`;
+    const btn = h('button', { type: 'button', class: 'btn quiet', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'aria-controls': id }, label, icon('chevron-down'));
+    const menu = h('div', { class: 'menu', role: 'menu', id, hidden: true, 'aria-label': label }, items.map(([text, ic, run]) => h('button', { type: 'button', role: 'menuitem', tabindex: '-1', onclick: run }, icon(ic), text)));
+    wireMenu(btn, menu);
+    return h('div', { class: 'menu-wrap' }, btn, menu);
   }
   // Every Log out button: the server ends the session, and this person's things kept on this device go too.
   async function logOut() {
@@ -620,10 +630,36 @@
     const b = $('#ask-open');
     if (b && !b.hidden && $('#ask-panel').hidden) openAsk();
   }
+  // Phones: Help and Search are full-screen sheets that Back closes. One history entry is pushed for whichever is
+  // open; going from one straight to the other reuses it (hand), so a later Back closes the sheet and stays here.
+  const sheets = {
+    cur: null, then: null, closers: {},
+    open(name) {
+      if (!narrowScreen()) return;
+      if (this.cur) history.replaceState({ sheet: name }, ''); else history.pushState({ sheet: name }, '');
+      this.cur = name;
+    },
+    hand(from, to) { if (this.cur === from) { this.cur = to; history.replaceState({ sheet: to }, ''); } },
+    close(name, then = null) {          // `then`: an app page to show once closed
+      if (this.cur === name) {
+        this.cur = null;
+        if (history.state && history.state.sheet === name) { this.then = then; history.back(); return; }
+      }
+      if (then) location.hash = then;
+    },
+    pop() {                             // Back
+      if (this.cur && !(history.state && history.state.sheet === this.cur)) { const n = this.cur; this.cur = null; this.closers[n](); }
+      if (this.then) { const t = this.then; this.then = null; location.hash = t; }
+    },
+  };
   // Someone else signed in (or nobody is): nothing the last person had in memory stays on screen.
   function resetUserState() {
     state.prefill = null;
     state.todayJob = '';
+    sugCache.clear();
+    recents.mem = null;
+    closePalette(false);
+    pal.q = ''; pal.types = null;
     if (accountUi) accountUi.close(false);
   }
 
@@ -656,17 +692,17 @@
 
   // ======================================================================== combobox and chips
   // Choice chips (spec 2.4): a radio group. Arrow keys move and pick; Tab enters and leaves the group; never
-  // pre-picked unless the value is already set. (The type-ahead combobox and projectFormExtras come with the form work.)
-  function radioChips({ label, options, value = '', onChange }) {
+  // pre-picked unless the value is already set. A pick tells the form ("input"), so drafts and show-if follow it.
+  function radioChips({ label, options, value = '', onChange, star = null }) {
     const lid = `rc-${++fieldSeq}`;
-    let cur = value;
-    const btns = options.map(([v, text]) => h('button', { type: 'button', class: 'chip', role: 'radio', 'data-value': v, 'aria-checked': String(v === value), tabindex: v === value ? '0' : '-1' },
-      icon('check', 'icon icon-on'), text));
-    if (!btns.some((b) => b.tabIndex === 0)) btns[0].tabIndex = 0;
+    let cur = String(value ?? '');
+    const btns = options.map(([v, text]) => h('button', { type: 'button', class: 'chip', role: 'radio', 'data-value': v, 'aria-checked': 'false' }, icon('check', 'icon icon-on'), text));
+    const group = h('div', { class: 'chips', role: 'radiogroup', 'aria-labelledby': lid }, btns);
     const pick = (b, focus) => {
-      btns.forEach((x) => { x.setAttribute('aria-checked', String(x === b)); x.tabIndex = x === b ? 0 : -1; });
-      if (focus) b.focus();
-      if (b.dataset.value !== cur) { cur = b.dataset.value; if (onChange) onChange(cur); }
+      btns.forEach((x) => { x.setAttribute('aria-checked', String(x === b)); x.tabIndex = x === (b || btns[0]) ? 0 : -1; });
+      if (focus && b) b.focus();
+      const nv = b ? b.dataset.value : '';
+      if (nv !== cur) { cur = nv; if (onChange) onChange(cur); group.dispatchEvent(new Event('input', { bubbles: true })); }
     };
     btns.forEach((b, i) => {
       b.addEventListener('click', () => pick(b, false));
@@ -675,14 +711,330 @@
         if (step) { e.preventDefault(); pick(btns[(i + step + btns.length) % btns.length], true); }
       });
     });
-    return { el: h('div', { class: 'field' }, h('span', { class: 'label', id: lid }, label), h('div', { class: 'chips', role: 'radiogroup', 'aria-labelledby': lid }, btns)), get: () => cur };
+    const find = (v) => (v === '' || v == null ? null : btns.find((b) => b.dataset.value === String(v)) || null);     // '' : none picked
+    pick(find(cur), false);
+    return { el: h('div', { class: 'field' }, h('span', { class: 'label', id: lid }, label, star), group), group, get: () => cur,
+      set: (v) => { const b = find(v); if (!b && v !== '' && v != null) return false; pick(b, false); return true; } };
   }
-  // GET /api/suggest/vocab: the same for every person (no rule text, no company data); revalidated by the browser
-  // with its ETag, kept by the service worker for offline use, and in memory for this page load.
+  // GET /api/suggest/vocab: the same for every person (no rule text, no company data). The server sends it with an
+  // ETag and "no-cache", so the browser asks again on each page load and gets a 304 while it hasn't changed; the
+  // service worker keeps a copy for offline use; and it is kept in memory for this page load (vocabNow).
   let vocabP = null;
+  let vocabNow = null;
   function vocab() {
-    if (!vocabP) vocabP = api('/api/suggest/vocab').catch((e) => { vocabP = null; throw e; });
+    if (!vocabP) vocabP = api('/api/suggest/vocab').then((v) => (vocabNow = v)).catch((e) => { vocabP = null; throw e; });
     return vocabP;
+  }
+  // ---- type-ahead (spec 3): one combobox for every field with a source. Static lists come from the vocab and are
+  // filtered here, with no request; the company's own values come from POST /api/suggest (the words in the body,
+  // never in the address), 150 ms after the last key, the older request stopped. A fill by the app never opens a list
+  // or asks the server: suggestions come only while the field itself has the focus.
+  const sugCache = new Map();           // 50 most recent (source, words) answers, this page load only
+  function sugMemo(key, val) {
+    if (val === undefined) { const x = sugCache.get(key); if (x) { sugCache.delete(key); sugCache.set(key, x); } return x; }
+    sugCache.set(key, val);
+    if (sugCache.size > 50) sugCache.delete(sugCache.keys().next().value);
+    return val;
+  }
+  const fold = (s) => String(s ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  // best first: the value or one of its names exactly ("c 10" = "C-10"), then the start of a word, then anywhere
+  function matchItems(items, q) {
+    const k = fold(q);
+    if (!k) return items.slice();
+    const kc = k.replace(/[\s-]+/g, '');
+    const out = [];
+    items.forEach((it, i) => {
+      const names = [it.value, it.label, ...(it.aliases || [])].map(fold);
+      const s = names.some((n) => n === k || n.replace(/[\s-]+/g, '') === kc) ? 0 : names.some((n) => (' ' + n).includes(' ' + k)) ? 1 : names.some((n) => n.includes(k)) ? 2 : -1;
+      if (s >= 0) out.push([s, i, it]);
+    });
+    return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).map((x) => x[2]);
+  }
+  // the item a strict field's text names: its value or one of its other names, case and accents aside
+  const strictItem = (items, text) => { const k = fold(text); return k ? items.find((it) => [it.value, it.label, ...(it.aliases || [])].some((n) => fold(n) === k)) || null : null; };
+  function editDist(a, b) {            // Levenshtein, for "Did you mean" on a mistyped strict value
+    let row = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      const next = [i];
+      for (let j = 1; j <= b.length; j++) next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      row = next;
+    }
+    return row[b.length];
+  }
+  const nearItem = (items, text) => {
+    const k = fold(text);
+    const best = items.map((it) => [editDist(k, fold(it.value)), it]).sort((x, y) => x[0] - y[0])[0];
+    return best && best[0] <= Math.max(1, Math.floor(k.length / 4)) ? best[1] : null;
+  };
+  const OFFLINE_SRC = { project: 'name', project_city: 'city', project_county: 'county', project_address: 'address', owner_name: 'owner_name', lender_name: 'lender_name' };
+  function sourceParts(source, v) {     // [{ remote, min } | { items, label }], the company's own values first
+    const out = [];
+    const remote = source === 'city_tenant' ? 'project_city' : [...(v.company_sources || Object.keys(OFFLINE_SRC)), ...(v.remote_sources || [])].includes(source) ? source : null;
+    if (remote) out.push({ remote, min: (v.remote_sources || []).includes(remote) ? 2 : 0 });
+    const st = (v.sources || {})[source];
+    if (st) out.push({ items: st.items || [], label: st.label });
+    if (source === 'field_topic') out.push({ items: TOPICS.map((t) => ({ value: t, label: t })), label: 'Common topics' });
+    return out;
+  }
+  async function remoteItems(src, q, ctx, signal) {
+    const key = [src, fold(q), ctx.tool || '', ctx.field || ''].join('\u0001');
+    const hit = sugMemo(key);
+    if (hit) return hit;
+    try {
+      const r = await api('/api/suggest', { method: 'POST', body: defined({ source: src, q: q.slice(0, 100), limit: 8, tool: ctx.tool, field: ctx.field }), signal });
+      return sugMemo(key, r.items || []);
+    } catch (e) {
+      if (e.status !== 0 || (signal && signal.aborted)) throw e;
+      // offline: the saved project list still answers for project names, places, owners and lenders
+      const col = OFFLINE_SRC[src];
+      const rows = col ? await api('/api/projects').catch(() => []) : [];
+      const vals = [...new Set(rows.map((p) => p[col]).filter(Boolean))].map((x) => ({ value: String(x), label: String(x), source_label: 'Your projects' }));
+      return Object.assign(matchItems(vals, q).slice(0, 8), { offline: true });
+    }
+  }
+  function cbxSay(text) {               // one status line for the whole page
+    let el = document.getElementById('cbx-status');
+    if (!el) { el = h('div', { id: 'cbx-status', class: 'visually-hidden', role: 'status', 'aria-atomic': 'true' }); document.body.append(el); }
+    el.textContent = text;
+  }
+  // Attaches suggestions to an <input> (APG editable combobox with list autocomplete). Focus stays in the box; arrows
+  // move, Enter picks, Escape closes and keeps the text, Tab moves on without picking; nothing changes on blur.
+  function attachCombobox(inp, { source, strict = false, multiple = false, context = {}, onPick, labelId } = {}) {
+    const id = inp.id || (inp.id = `cb-${++fieldSeq}`);
+    const list = h('ul', { class: 'cbx-list', role: 'listbox', id: `${id}-list`, hidden: true, 'aria-labelledby': labelId || null, 'aria-label': labelId ? null : 'Suggestions' });
+    const dym = h('p', { class: 'cbx-dym', hidden: true });
+    const tokens = [];
+    const tokBox = multiple ? h('div', { class: 'cbx-tokens' }) : null;
+    let flat = [], active = -1, want = false, seq = 0, ctrl = null, timer = null, sayTimer = null, offline = false, quiet = false;
+    Object.entries({ role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': 'false', 'aria-controls': list.id, autocomplete: 'off', spellcheck: 'false' })
+      .forEach(([k, x]) => inp.setAttribute(k, x));
+    if (!document.getElementById('cbx-howto')) document.body.append(h('div', { id: 'cbx-howto', class: 'visually-hidden' }, 'Suggestions appear as you type. Use the up and down arrows to review and Enter to pick.'));
+    inp.setAttribute('aria-describedby', [inp.getAttribute('aria-describedby'), 'cbx-howto'].filter(Boolean).join(' '));
+    const staticItems = () => ((vocabNow && (vocabNow.sources || {})[source]) || {}).items || [];
+    const fit = () => {                  // above the phone's keyboard: no taller than the room under the box
+      const vv = window.visualViewport;
+      const room = (vv ? vv.height + vv.offsetTop : window.innerHeight) - inp.getBoundingClientRect().bottom - 16;
+      list.style.maxHeight = `${Math.max(132, Math.min(320, room))}px`;
+    };
+    const show = (on) => {
+      on = on && !!flat.length && document.activeElement === inp;
+      list.hidden = !on; inp.setAttribute('aria-expanded', String(on));
+      if (on) fit(); else { active = -1; inp.removeAttribute('aria-activedescendant'); }
+    };
+    const mark = (i) => {
+      active = i;
+      flat.forEach((o, k) => { o.li.setAttribute('aria-selected', String(k === i)); });
+      if (i < 0) { inp.removeAttribute('aria-activedescendant'); return; }
+      inp.setAttribute('aria-activedescendant', flat[i].li.id);
+      flat[i].li.scrollIntoView({ block: 'nearest' });
+    };
+    const draw = (groups) => {
+      const shown = groups.filter((g) => g.items.length);
+      const mixed = shown.length > 1;
+      flat = [];
+      let room = 50;
+      const opt = (it) => {
+        const li = h('li', { role: 'option', id: `${id}-o${flat.length}`, class: 'cbx-opt', 'aria-selected': 'false' }, icon('check', 'icon cbx-tick'),
+          h('span', { class: 'cbx-text' }, h('span', {}, it.label || it.value), it.detail || (mixed && it.source_label) ? h('span', { class: 'cbx-detail' }, it.detail || it.source_label) : null));
+        flat.push({ it, li });
+        return li;
+      };
+      const kids = shown.map((g, gi) => {
+        const items = g.items.slice(0, room);
+        room -= items.length;
+        if (!items.length) return null;
+        if (!mixed) return items.map(opt);
+        const gid = `${id}-g${gi}`;
+        return h('li', { role: 'presentation' }, h('ul', { role: 'group', 'aria-labelledby': gid }, h('li', { role: 'presentation', id: gid, class: 'opt-group' }, g.label), items.map(opt)));
+      });
+      const more = shown.reduce((n, g) => n + g.items.length, 0) - flat.length;
+      list.replaceChildren(...kids.flat(Infinity).filter(Boolean), ...(more > 0 ? [h('li', { role: 'presentation', class: 'cbx-more' }, `${more} more — keep typing`)] : []));
+      active = -1;
+      show(want);
+    };
+    const say = () => {
+      clearTimeout(sayTimer);
+      sayTimer = setTimeout(() => { if (document.activeElement === inp) cbxSay(offline ? 'Showing saved suggestions, you\'re offline' : flat.length ? plural(flat.length, 'suggestion') : 'No match'); }, 1400);
+    };
+    const refresh = async () => {
+      const v = (await vocab().catch(() => vocabNow)) || {};       // offline before the lists ever loaded: the company's own still work
+      if (document.activeElement !== inp) return;
+      const q = inp.value.trim();
+      const my = ++seq;
+      const groups = sourceParts(source, v).map((p) => (p.items ? { label: p.label, items: matchItems(p.items, q) } : { remote: p, label: '', items: [] }));
+      offline = false;
+      draw(groups);                      // the lists kept here: at once
+      const rem = groups.find((g) => g.remote);
+      clearTimeout(timer);
+      if (!rem || q.length < rem.remote.min) return;
+      timer = setTimeout(async () => {
+        if (ctrl) ctrl.abort();
+        const c = ctrl = new AbortController();
+        try { rem.items = await remoteItems(rem.remote.remote, q, context, c.signal); } catch (e) { return; }
+        if (my !== seq || document.activeElement !== inp) return;
+        offline = !!rem.items.offline;
+        rem.label = (rem.items[0] && rem.items[0].source_label) || 'Yours';
+        draw(groups);
+      }, 150);
+    };
+    const tell = () => { quiet = true; inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); quiet = false; };
+    const addToken = (val, focus) => {
+      val = String(val).trim();
+      if (!val || tokens.some((t) => t.value === val)) return;
+      const t = { value: val };
+      t.el = h('span', { class: 'token' }, val, h('button', { type: 'button', class: 'token-x', 'aria-label': `Remove ${val}`, onclick: () => { tokens.splice(tokens.indexOf(t), 1); t.el.remove(); tell(); if (focus !== false) inp.focus(); } }, icon('close')));
+      tokens.push(t); tokBox.append(t.el);
+    };
+    const accept = (it) => {
+      if (multiple) { addToken(it.value); inp.value = ''; } else { inp.value = it.value; inp.setSelectionRange(inp.value.length, inp.value.length); }
+      want = false; show(false); dym.hidden = true;
+      tell();
+      if (onPick) onPick(it);
+    };
+    list.addEventListener('pointerdown', (e) => e.preventDefault());       // the box keeps the focus
+    list.addEventListener('click', (e) => { const li = e.target.closest('[role=option]'); const o = li && flat.find((x) => x.li === li); if (o) accept(o.it); });
+    inp.addEventListener('input', () => {
+      if (quiet) return;
+      const d = (inp.getAttribute('aria-describedby') || '').replace(/\s*cbx-howto/, '').trim();       // the how-to: until the first key
+      if (d) inp.setAttribute('aria-describedby', d); else inp.removeAttribute('aria-describedby');
+      if (document.activeElement !== inp) return;       // a fill by the app: no list, no request
+      want = true; dym.hidden = true; refresh(); say();
+    });
+    inp.addEventListener('focus', () => { want = false; refresh(); });
+    inp.addEventListener('blur', () => {
+      want = false; show(false);
+      if (!strict || multiple || !inp.value.trim()) return;
+      const items = staticItems();
+      const text = inp.value.trim();
+      const it = strictItem(items, text) || (source === 'county' ? strictItem(items, countyMatch(text)) : null);
+      // same meaning, other words ("San Diego County", "city of san diego"): the field shows the stored value
+      if (it && (fold(text).length > 3 || fold(text) === fold(it.value))) { if (inp.value !== it.value) { inp.value = it.value; tell(); } return; }
+      if (!dym.hidden && dym.dataset.for === text) return;      // already offered (a click on its button blurs the box first)
+      dym.dataset.for = text;
+      const asks = it ? [it.value] : (((vocabNow && vocabNow.sources[source]) || {}).ask_which || {})[text.toUpperCase()] || [];
+      const picks = [...new Set(asks.map((x) => (strictItem(items, x) || strictItem(items, countyMatch(x)) || {}).value).filter(Boolean))];
+      const guess = picks.length ? null : matchItems(items, text)[0] || nearItem(items, text);
+      const best = picks.length ? picks : guess ? [guess.value] : [];
+      if (!best.length) return;
+      dym.replaceChildren(best.length > 1 ? 'Which one? ' : 'Did you mean ', ...best.flatMap((b, k) => [k ? ' or ' : '', h('strong', {}, b)]), best.length > 1 ? ' ' : '? ',
+        ...best.map((b) => h('button', { type: 'button', class: 'btn quiet small', onclick: () => { inp.value = b; dym.hidden = true; tell(); inp.focus(); } }, `Use ${b}`)));
+      dym.hidden = false;
+    });
+    inp.addEventListener('keydown', (e) => {
+      const open = !list.hidden;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (e.altKey) { want = e.key === 'ArrowDown'; if (want) refresh(); else show(false); return; }
+        if (!open) { want = true; show(true); }
+        if (flat.length) mark(active < 0 ? (e.key === 'ArrowDown' ? 0 : flat.length - 1) : (active + (e.key === 'ArrowDown' ? 1 : -1) + flat.length) % flat.length);
+      } else if (e.key === 'Enter' && !e.isComposing) {
+        if (open && active >= 0) { e.preventDefault(); e.stopPropagation(); accept(flat[active].it); } else if (multiple && inp.value.trim()) { e.preventDefault(); e.stopPropagation(); addToken(inp.value); inp.value = ''; tell(); }
+      } else if (e.key === 'Escape') {
+        if (open) { e.preventDefault(); e.stopPropagation(); want = false; show(false); }
+      } else if (e.key === 'Tab') { want = false; show(false); } else if (e.key === 'Backspace' && multiple && !inp.value && tokens.length) tokens[tokens.length - 1].el.querySelector('button').click();
+    });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => { if (!list.hidden) fit(); });
+    const btn = h('button', { type: 'button', class: 'cbx-btn', tabindex: '-1', 'aria-label': 'Show suggestions', onpointerdown: (e) => e.preventDefault(),
+      onclick: () => { inp.focus(); want = true; refresh(); } }, icon('chevron-down'));
+    const box = h('div', { class: 'cbx' + (multiple ? ' cbx-multi' : '') });
+    inp.replaceWith(box);
+    append(box, [tokBox, inp, btn, list]);
+    box.after(dym);
+    return {
+      box, input: inp,
+      values: () => [...tokens.map((t) => t.value), ...(inp.value.trim() ? [inp.value.trim()] : [])],
+      setValues(vals) { tokens.splice(0).forEach((t) => t.el.remove()); [].concat(vals || []).forEach((x) => addToken(x, false)); inp.value = ''; tell(); },
+      strictCheck: (text) => { const items = staticItems(); return !items.length ? { value: text } : (strictItem(items, text) || (source === 'county' ? strictItem(items, countyMatch(text)) : null)); },
+    };
+  }
+  // A tag under a field's label saying where a value came from, with Undo (it puts back what was there).
+  function fillTag(inp, text, before) {
+    const fieldEl = inp.closest('.field');
+    let tag = fieldEl && fieldEl.querySelector('.field-tag');
+    if (!fieldEl) return;
+    if (!tag) { tag = h('span', { class: 'field-tag' }); fieldEl.querySelector('label').after(tag); }
+    tag.hidden = false;
+    fill(tag, icon('check'), text, ' · ', h('button', { type: 'button', class: 'btn quiet small', onclick: () => { inp.value = before; inp.dispatchEvent(new Event('input', { bubbles: true })); tag.hidden = true; inp.focus(); } }, 'Undo'));
+  }
+  // The project form's type-ahead (spec 3.6), kept out of projectForm() itself: city (the company's own cities, then
+  // the cities TradeComply has rules for), county (one of the 58), street address, owner and lender (the company's
+  // own). A city one of the company's projects already has fills an empty County from that project (tagged, Undo);
+  // an owner that reads like a public agency offers "Set to public" (never set by itself). Drafts too.
+  function projectFormExtras(form, p) {
+    const el = (n) => form.querySelector(`[name=${n}]`);
+    [['city', 'city_tenant'], ['county', 'county', true], ['address', 'project_address'], ['owner_name', 'owner_name'], ['lender_name', 'lender_name']]
+      .forEach(([n, source, strict]) => { if (el(n)) attachCombobox(el(n), { source, strict: !!strict }); });
+    const city = el('city'), county = el('county'), owner = el('owner_name'), pub = el('public_or_private');
+    let known = null;
+    city.addEventListener('change', async () => {
+      if (county.value.trim() || !city.value.trim()) return;
+      known = known || await api('/api/projects').catch(() => []);
+      const same = known.find((x) => x.id !== (p && p.id) && fold(x.city) === fold(city.value) && countyMatch(x.county));
+      if (!same || county.value.trim()) return;
+      county.value = countyMatch(same.county);
+      county.dispatchEvent(new Event('input', { bubbles: true }));
+      fillTag(county, `Filled from city (your project ${same.name})`, '');
+    });
+    const pubHint = h('p', { class: 'callout small', hidden: true }, 'Is this a public job? Public owners usually mean a public job. ',
+      h('button', { type: 'button', class: 'btn secondary small', onclick: () => { pub.value = 'public'; pub.dispatchEvent(new Event('change', { bubbles: true })); pubHint.hidden = true; pub.focus(); } }, 'Set to public'));
+    owner.closest('.field').after(pubHint);
+    let touched = false;
+    pub.addEventListener('change', (e) => { if (e.isTrusted) touched = true; pubHint.hidden = true; });
+    owner.addEventListener('input', () => { pubHint.hidden = touched || pub.value === 'public' || !/\b(city of|county of|school district|unified|state of|department of)\b/i.test(owner.value); });
+    const drafts = formDrafts(form, p ? `project:${p.id}` : 'project:new');
+    return {
+      saved: () => drafts.done(),
+      // County must be one of the 58; the same county in other words ("San Diego County") is kept as its name
+      check() {
+        const t = county.value.trim();
+        if (!t) return '';
+        const c = countyMatch(t, ((vocabNow && vocabNow.sources.county && vocabNow.sources.county.items) || []).map((i) => i.value).concat(CA_COUNTIES).filter((x, i, a) => a.indexOf(x) === i));
+        if (c) { county.value = c; return ''; }
+        county.setAttribute('aria-invalid', 'true'); county.focus();
+        return 'County: pick one of California\'s 58 counties from the list.';
+      },
+    };
+  }
+  // The sub dialog (spec 3.6): company name and scope suggestions, the class the work needs from the scope picked,
+  // and the CSLB license looked up when the number is entered (status and business name, from the same data the
+  // license checks use, with its source).
+  function subFormExtras(form, s) {
+    const el = (n) => form.querySelector(`[name=${n}]`);
+    const cls = el('required_class'), name = el('name'), lic = el('license_number');
+    attachCombobox(name, { source: 'sub' });
+    attachCombobox(cls, { source: 'class_needed' });
+    attachCombobox(el('scope'), { source: 'scope_phrase', onPick: (it) => {
+      const code = String(it.detail || '').match(/^([A-Z](?:-\d+)?)\b/);
+      if (!code || cls.value.trim()) return;
+      cls.value = code[1]; cls.dispatchEvent(new Event('input', { bubbles: true }));
+      fillTag(cls, `Filled from the scope (${it.detail})`, '');
+    } });
+    const out = h('div', { class: 'lic-check small', role: 'status' });
+    lic.closest('.field').append(out);
+    let asked = '';
+    lic.addEventListener('blur', async () => {
+      const n = lic.value.replace(/\D/g, '');
+      if (!/^\d{6,8}$/.test(n) || n === asked) return;
+      asked = n;
+      fill(out, 'Looking up the license…');
+      try {
+        const card = await api(`/api/license/${n}`);
+        const l = card.license || {};
+        if (lic.value.replace(/\D/g, '') !== n) return;
+        if (!l.found) { fill(out, badge('soon', 'Not found'), ' ', sourceText(l.data_source)); return; }
+        fill(out, badge({ red: 'overdue', amber: 'soon', green: 'ok' }[card.rag] || 'info', humanize(l.status)), ' ', l.business_name || '', ' · ', sourceText(l.data_source),
+          l.business_name && fold(l.business_name) !== fold(name.value) ? h('button', { type: 'button', class: 'btn quiet small', onclick: (e) => { const before = name.value; name.value = l.business_name; name.dispatchEvent(new Event('input', { bubbles: true })); fillTag(name, 'From CSLB data', before); e.currentTarget.remove(); } }, `Use the CSLB name: ${l.business_name}`) : null);
+      } catch (e) { fill(out, e.status === 402 ? 'License lookups need an active subscription.' : e.message); }
+    });
+    return formDrafts(form, s ? `sub:${s.id}` : 'sub:new');
+  }
+  // A labelled field with suggestions, in the same shape buildField() returns, for the app's own forms.
+  function combobox({ name, label, source, strict = false, value = '', required = false, hint, context = {}, onPick, inputmode, wide = false }) {
+    const inp = h('input', { name, type: 'text', value, inputmode, enterkeyhint: 'next' });
+    const el = field(label, inp, { hint, required, wide });
+    const cb = attachCombobox(inp, { source, strict, context, onPick, labelId: null });
+    return { el, input: inp, cb, kind: 'combobox', wide, isEmpty: () => !inp.value.trim(), get: () => ({ value: inp.value.trim() || undefined, error: '' }),
+      set: (x) => { inp.value = String(x ?? ''); inp.dispatchEvent(new Event('input', { bubbles: true })); return true; } };
   }
   // A job's city "is covered" when it is one of the cities TradeComply has local rules for, or one of their names.
   function coveredCity(v, city) {
@@ -736,6 +1088,122 @@
     },
     set(id) { const w = this.who(); if (w) stored(`tc.lastJob.${w.t}.${w.u}`, id ? String(id) : null, w); },
   };
+  // What this person opened last (spec 4.5): ids and titles only, up to 8, for Search and Today's "Keep going".
+  const recents = {
+    mem: null,
+    key() { const w = lastJob.who(); return w ? [`tc.recent.${w.t}.${w.u}`, w] : [null, null]; },
+    list() {
+      const [k] = this.key();
+      if (!k) return [];
+      if (this.mem && this.mem.k === k) return this.mem.v;
+      let v = null;
+      try { v = JSON.parse(local.get(k) || '[]'); } catch (e) { v = null; }
+      this.mem = { k, v: Array.isArray(v) ? v.filter((x) => x && typeof x.href === 'string' && /^#\//.test(x.href) && x.title).slice(0, 8) : [] };
+      return this.mem.v;
+    },
+    add(type, id, title, href) {
+      const [k, w] = this.key();
+      if (!k || !title) return;
+      const v = [{ type, id: String(id), title: String(title).slice(0, 120), href }, ...this.list().filter((x) => x.href !== href)].slice(0, 8);
+      this.mem = { k, v };
+      stored(k, v, w);
+    },
+  };
+  // ---- drafts (spec 6.5): what someone typed in a form, kept on this device for 14 days for that person and form,
+  // so a dropped signal, a closed tab or an ended session loses nothing. Never passwords, keys, link tokens,
+  // signatures or anything from an incident report. At most 20,000 characters a draft (the longest text is left
+  // out), 10 a person and 200,000 on this device; over a cap the oldest go first, whoever's they are. A full storage
+  // loses the oldest draft and tries once more. Gone on Log out, after a save or run, and on Discard.
+  const DRAFT = { days: 14, max: 20000, perUser: 10, device: 200000 };
+  const draftKey = (formKey) => { const w = lastJob.who(); return w ? [`tc.draft.${w.t}.${w.u}.${formKey}`, w] : [null, null]; };
+  function allDrafts() {                // every draft on this device, oldest first
+    return Object.entries(keyIndex()).filter(([k]) => k.startsWith('tc.draft.')).map(([key, m]) => {
+      const text = local.get(key) || '';
+      let d = null;
+      try { d = JSON.parse(text); } catch (e) { d = null; }
+      return { key, m, d: d || {}, size: text.length };
+    }).sort((a, b) => String(a.d.saved || '').localeCompare(String(b.d.saved || '')));
+  }
+  function draftLoad(formKey, form) {
+    const [k, w] = draftKey(formKey);
+    if (!k) return null;
+    let d = null;
+    try { d = JSON.parse(local.get(k) || 'null'); } catch (e) { d = null; }
+    if (d && d.v === 1 && d.form === form && Date.now() - Date.parse(d.saved) < DRAFT.days * 864e5) return d;
+    if (local.get(k) !== null) stored(k, null, w);        // another version of the form, too old, or unreadable
+    return null;
+  }
+  function draftSave(formKey, form, values) {     // 'ok', 'cut' (long text left out) or 'full'
+    const [k, w] = draftKey(formKey);
+    if (!k) return 'full';
+    const vals = { ...values };
+    let cut = false;
+    const body = () => JSON.stringify({ v: 1, saved: new Date().toISOString(), form, values: vals });
+    let text = body();
+    while (text.length > DRAFT.max) {
+      const fields = vals.fields && typeof vals.fields === 'object' ? vals.fields : vals;
+      const big = Object.keys(fields).sort((a, b) => JSON.stringify(fields[b]).length - JSON.stringify(fields[a]).length)[0];
+      if (!big) break;
+      delete fields[big]; cut = true; text = body();
+    }
+    let others = allDrafts().filter((x) => x.key !== k);
+    const drop = (x) => { stored(x.key, null, x.m); others = others.filter((y) => y !== x); };
+    const mine = others.filter((x) => x.m.t === w.t && x.m.u === w.u);
+    mine.slice(0, Math.max(0, mine.length - (DRAFT.perUser - 1))).forEach(drop);
+    let total = others.reduce((n, x) => n + x.size, 0) + text.length;
+    while (total > DRAFT.device && others.length) { total -= others[0].size; drop(others[0]); }
+    if (stored(k, text, w)) return cut ? 'cut' : 'ok';
+    if (others.length) drop(others[0]);
+    return stored(k, text, w) ? (cut ? 'cut' : 'ok') : 'full';
+  }
+  const draftDrop = (formKey) => { const [k, w] = draftKey(formKey); if (k) stored(k, null, w); };
+  // The quiet "Draft kept" line, and the banner that offers a draft when its form opens.
+  function draftUi(formKey, form, { read, write }) {
+    const el = h('div', { class: 'draft-slot' });
+    let offered = null, off = false, timer = null, last = 0, said = false;
+    const clock = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const save = () => {
+      if (off || offered) return;
+      const r = draftSave(formKey, form, read());
+      if (r === 'full') { off = true; fill(el, h('p', { class: 'draft-line small muted', role: 'status' }, 'Couldn\'t keep a draft on this device.')); return; }
+      const p = h('p', { class: 'draft-line small muted' }, icon('saved'), ` Draft kept on this device · saved ${clock()}`, r === 'cut' ? ' · Long text isn\'t kept in the draft' : '', ' · ',
+        h('button', { type: 'button', class: 'btn quiet small', onclick: () => ui.done() }, 'Discard'));
+      if (!said) { p.setAttribute('role', 'status'); said = true; }
+      fill(el, p);
+    };
+    const ui = {
+      el,
+      changed() { if (off || offered) return; clearTimeout(timer); timer = setTimeout(() => { last = Date.now(); save(); }, Math.max(0, 1000 - (Date.now() - last))); },
+      done() { clearTimeout(timer); draftDrop(formKey); offered = null; fill(el); },
+      offer() {
+        const d = draftLoad(formKey, form);
+        if (!d) return;
+        offered = d;
+        fill(el, h('div', { class: 'banner info draft-offer', role: 'status' }, h('p', {}, `You have a draft from ${fmtDateTime(d.saved)}.`),
+          h('button', { type: 'button', class: 'btn small', onclick: () => { offered = null; write(d.values || {}); save(); } }, 'Continue'),
+          h('button', { type: 'button', class: 'btn small secondary', onclick: () => ui.done() }, 'Start over')));
+      },
+    };
+    return ui;
+  }
+  // a native form's own fields (no passwords, files or hidden ones), for the app's forms with drafts
+  const formRead = (form) => Object.fromEntries([...form.elements].filter((x) => x.name && !/^(password|file|hidden|submit|button)$/.test(x.type) && !NEVER_DRAFT.test(x.name))
+    .map((x) => [x.name, x.type === 'checkbox' ? x.checked : x.value]));
+  function formWrite(form, vals) {
+    for (const x of form.elements) {
+      if (!x.name || !(x.name in vals) || /^(password|file|hidden)$/.test(x.type)) continue;
+      if (x.type === 'checkbox') x.checked = !!vals[x.name]; else x.value = String(vals[x.name] ?? '');
+      x.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+  // drafts for an app form: a line above it, kept as the person types, dropped when it saves
+  function formDrafts(form, formKey, { extraRead, extraWrite } = {}) {
+    const dui = draftUi(formKey, 1, { read: () => ({ ...formRead(form), ...(extraRead ? extraRead() : {}) }), write: (v) => { formWrite(form, v); if (extraWrite) extraWrite(v); } });
+    form.prepend(dui.el);
+    form.addEventListener('input', () => dui.changed());
+    dui.offer();
+    return dui;
+  }
 
   // ======================================================================== markdown (escaped first, then a small safe subset)
   function inlineMd(s) {
@@ -834,7 +1302,10 @@
       const meta = defined({ title: s.title, description: s.description, default: s.default });
       let base;
       if (nonNull.length && nonNull.every((a) => a.const !== undefined || a.enum)) base = { type: 'string', enum: nonNull.flatMap((a) => a.enum || [a.const]) };
-      else if (nonNull.length > 1) {
+      else if (nonNull.length > 1 && nonNull.some((a) => a.type === 'string') && nonNull.every((a) => ['string', 'number', 'integer'].includes(a.type))) {
+        // a number, or words with a unit ("813 mm"): one box; a plain number goes as a number, anything else as typed
+        return { ...meta, type: 'string', 'x-num': nonNull.some((a) => a.type === 'number') ? 'number' : 'integer', nullable: nonNull.length < opts.length };
+      } else if (nonNull.length > 1) {
         // e.g. "a list of rows, or CSV text": let the user pick how to enter it
         const csvText = /\bCSV\b/.test(s.description || '');
         return { ...meta, nullable: nonNull.length < opts.length,
@@ -865,10 +1336,12 @@
       return ap && SIMPLE.includes(ap.type) ? 'map' : 'json';
     }
     if (s['x-csv']) return 'csv';
+    if (s['x-num']) return 'numtext';
     const desc = s.description || '';
+    if (s.format === 'date-time' || /(_datetime|_at)$/.test(name) || /\dT\d{2}:\d{2}/.test(desc)) return 'datetime';
     if (s.format === 'time' || (/(^|_)(start|end|time|clock_in|clock_out|time_in|time_out)$/.test(name) && /\b\d{1,2}:\d{2}\b|\bclock\b/i.test(desc))) return 'time';
-    if (s.format === 'date' || /(^|_)(date|expiry|expiration|deadline|dob)$/.test(name) || /\bISO date\b/i.test(desc)) return 'date';
-    if (s.format === 'date-time') return 'datetime';
+    if (s.format === 'date' || /(^|_)(date|expiry|expiration|deadline|dob)$/.test(name) || /\bISO date\b|\(ISO\)|YYYY-MM-DD/i.test(desc)
+      || (/(_on|expires|_start)$/.test(name) && /\bISO\b|\bdate\b/i.test(desc))) return 'date';
     if (/csv/i.test(name) || /\bCSV\b/.test(desc)) return 'csv';
     if ((s.maxLength || 0) > 300 || /(notes|text|markdown|description|body|details|comments|narrative)$/.test(name)) return 'textarea';
     return 'text';
@@ -892,7 +1365,7 @@
     const out = {};
     const visit = (s, depth) => {
       if (!s || typeof s !== 'object' || depth > 6) return;
-      for (const [k, v] of Object.entries(s.properties || {})) { if (!out[k]) out[k] = humanize(k); visit(v, depth + 1); }
+      for (const [k, v] of Object.entries(s.properties || {})) { if (!out[k]) out[k] = (v && v['x-label']) || humanize(k); visit(v, depth + 1); }
       for (const key of ['items', 'additionalProperties']) if (s[key] && typeof s[key] === 'object') visit(s[key], depth + 1);
       for (const key of ['anyOf', 'oneOf', 'allOf']) (s[key] || []).forEach((x) => visit(x, depth + 1));
     };
@@ -903,48 +1376,91 @@
   }
   const ADVANCED = /^(as_of|today|evaluation_date)$/;
 
-  function buildField(name, schema, root, required, prefix = '') {
+  // the unit shown beside a number box ("ft", "sq ft"; "$" before money)
+  const UNITS = [[/(^|_)sq_?ft$/, 'sq ft'], [/_ft$/, 'ft'], [/_in$/, 'in'], [/_acres$/, 'acres'], [/_(pct|percent)$/, '%'], [/_hours$/, 'hours'], [/_kv$/, 'kV']];
+  const unitOf = (name) => (UNITS.find(([re]) => re.test(name)) || [])[1] || '';
+  // "2.5", "1,250" and "$1,250" are numbers; "813 mm", "1/2", "3:1" or '6"' are not (those checks read the unit)
+  function plainNumber(text, name) {
+    let t = String(text).trim();
+    if (/(_pct|_percent|slope)/.test(name)) t = t.replace(/\s*%$/, '');
+    return /^-?\$?(\d{1,3}(,\d{3})+|\d+)(\.\d+)?$/.test(t) ? Number(t.replace(/[$,]/g, '')) : null;
+  }
+  const weekdayDate = (iso) => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : ''; };
+  const nowLocal = () => { const d = new Date(); return `${todayISO()}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+  const YESNO = /^(yes|no|true|false|unknown)$/i;
+
+  // One form field for a tool parameter: { el, get, isEmpty, kind, wide, set, raw, tag, chips, label }. get() checks
+  // and returns { value, error }; raw()/set() read and write what is on screen (drafts, fills, Undo); tag() shows where
+  // a filled value came from; chips() sets the value chips of a date or money box. ctx (top-level fields of a check):
+  // { tool, v: the vocab, few: a short form, so optional labels say "(optional)" }.
+  function buildField(name, schema, root, required, prefix = '', ctx = null) {
     const s = norm(schema, root);
-    const kind = kindOf(name, s, root);
+    const kind0 = kindOf(name, s, root);
+    const src = ctx && !prefix && ctx.v ? (ctx.v.fields || {})[`${ctx.tool}.${name}`] : null;
+    const srcItems = src ? (((ctx.v.sources || {})[src.source] || {}).items || []) : [];
+    // a strict list of up to six (the vocab says chips) or a JSON enum of up to five that isn't yes/no: chips
+    const chipOpts = src && src.chips && srcItems.length ? srcItems.map((i) => [String(i.value), i.label || String(i.value)])
+      : kind0 === 'enum' && s.enum.length <= 5 && !s.enum.every((x) => YESNO.test(String(x))) ? s.enum.map((x) => [String(x), enumLabel(x)]) : null;
+    const kind = chipOpts ? 'chips' : kind0;
     const id = `tf-${++fieldSeq}`;
-    const label = labelFor(name, s, kind);
+    const label = (schema && schema['x-label']) || labelFor(name, s, kind0);
     const enumValues = s.enum || (kind === 'multienum' ? (norm(s.items, root).enum || []) : []);
     let desc = cleanHint(s.description, { params: paramLabels(root), enumValues, boolean: kind === 'bool' || kind === 'tristate' });
     if (ADVANCED.test(name) && kind === 'date') desc = 'Leave blank to check as of today (California time).';
     // A field that takes "rows or CSV" describes both formats at length; the radio buttons already explain the
     // choice, so the format details go in a disclosure.
     let formatDetails = null;
-    if (kind === 'choice' && desc.length > 140) { formatDetails = desc; desc = 'Enter the rows below, or paste CSV text.'; }
-    const hintText = [desc, kind === 'list' ? 'One per line.' : '', kind === 'csv' ? 'Paste CSV text or load a .csv file.' : ''].filter(Boolean).join(' ');
+    if (kind === 'choice' && desc.length > 140) { formatDetails = desc; desc = 'Fill in the table below, or paste a list (CSV).'; }
+    const hintText = [desc, kind === 'list' && !src ? 'One per line.' : '', kind === 'csv' ? 'Paste CSV text or load a .csv file.' : ''].filter(Boolean).join(' ');
     const hint = hintText ? h(formatDetails ? 'div' : 'span', { class: 'hint', id: id + '-h' }, hintText,
       formatDetails ? h('details', { class: 'format-details' }, h('summary', {}, 'Format details'), formatDetails) : null) : null;
     const err = h('span', { class: 'error-text', id: id + '-e' });
     const described = [hint ? id + '-h' : '', id + '-e'].filter(Boolean).join(' ');
-    const lbl = () => h('label', { for: id }, label, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null);
+    const star = () => [ctx && ctx.few && !required ? h('span', { class: 'opt' }, ' (optional)') : null, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null];
+    const tagEl = h('span', { class: 'field-tag', hidden: true });
+    const head = () => [h('label', { for: id, id: id + '-l' }, label, star()), tagEl];
     const def = s.default !== undefined && s.default !== null ? s.default : undefined;
-    let el, get, isEmpty, wide = false;
+    const vchips = h('div', { class: 'vchips', hidden: true });
+    let el, get, isEmpty, raw, set, wide = false;
     const fail = (msg, target) => { err.textContent = msg; if (target) target.setAttribute('aria-invalid', 'true'); return msg; };
     const ok = (target) => { err.textContent = ''; if (target) target.removeAttribute('aria-invalid'); return ''; };
+    const legend = () => [h('legend', {}, label, star()), tagEl];
 
-    const star = () => (required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null);
-    if (kind === 'choice') {
-      const altLabel = (a) => (a['x-csv'] ? 'Paste CSV' : a.type === 'array' ? 'Enter rows' : a.type === 'object' ? 'Fill in fields'
+    if (kind === 'chips') {
+      const rc = radioChips({ label, options: chipOpts.concat(required ? [] : [['', 'Not sure']]), star: star() });
+      el = rc.el; rc.el.firstChild.after(tagEl); rc.el.append(hint || '', err);
+      rc.group.setAttribute('aria-describedby', described);
+      get = () => {
+        const c = rc.get();
+        if (!c) return { value: undefined, error: required ? fail('Choose one') : ok() };
+        ok(); const orig = (s.enum || []).find((x) => String(x) === c);
+        return { value: orig !== undefined ? orig : c, error: '' };
+      };
+      isEmpty = () => !rc.get(); raw = rc.get; set = rc.set;
+    } else if (kind === 'choice') {
+      const altLabel = (a) => (a['x-csv'] ? 'Paste a list (CSV)' : a.type === 'array' ? 'Fill in a table' : a.type === 'object' ? 'Fill in fields'
         : a.type === 'string' ? 'Type text' : humanize(a.type || 'value'));
       const subs = s.alternatives.map((a) => buildField(name, { ...a, title: altLabel(a), description: undefined }, root, required, prefix));
       let active = Math.max(0, s.alternatives.findIndex((a) => a['x-csv']));
-      const show = () => subs.forEach((f, k) => { f.el.hidden = k !== active; });
-      const radios = s.alternatives.map((a, k) => h('label', {}, h('input', { type: 'radio', name: 'alt-' + id, value: String(k), checked: k === active,
-        onchange: () => { active = k; show(); } }), altLabel(a)));
-      el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, star()), hint,
-        h('div', { class: 'checks', role: 'radiogroup', 'aria-label': `How to enter ${label}` }, radios), subs.map((f) => f.el), err);
+      const radios = s.alternatives.map((a, k) => h('input', { type: 'radio', name: 'alt-' + id, value: String(k), checked: k === active, onchange: () => { active = k; show(); } }));
+      const show = () => { subs.forEach((f, k) => { f.el.hidden = k !== active; }); radios.forEach((r, k) => { r.checked = k === active; }); };
+      el = h('fieldset', { class: 'field wide' }, legend(), hint,
+        h('div', { class: 'checks', role: 'radiogroup', 'aria-label': `How to enter ${label}` }, radios.map((r, k) => h('label', {}, r, altLabel(s.alternatives[k])))), subs.map((f) => f.el), err);
       show();
       wide = true;
       get = () => subs[active].get();
       isEmpty = () => subs[active].isEmpty();
+      raw = () => ({ alt: active, v: subs[active].raw() });
+      set = (x) => {
+        const alt = x && typeof x === 'object' && 'alt' in x ? x.alt : s.alternatives.findIndex((a) => (Array.isArray(x) ? a.type === 'array' : a.type === 'string'));
+        if (!subs[alt]) return false;
+        active = alt; show();
+        return subs[alt].set(x && typeof x === 'object' && 'alt' in x ? x.v : x);
+      };
     } else if (kind === 'tristate') {
       const cur = def === true ? 'true' : def === false ? 'false' : '';
       const sel = select(name, [['', required ? 'Choose…' : 'Not answered'], ['true', 'Yes'], ['false', 'No']], cur, { id, 'aria-describedby': described });
-      el = h('div', { class: 'field' }, lbl(), sel, hint, err);
+      el = h('div', { class: 'field' }, head(), sel, hint, err);
       get = () => {
         if (sel.value === '') return { value: undefined, error: required ? fail('Choose Yes or No', sel) : ok(sel) };
         ok(sel); return { value: sel.value === 'true', error: '' };
@@ -957,17 +1473,17 @@
       const list = h('div', {});
       const addRow = (k = '', v = '') => {
         const keyIn = h('input', { type: 'text', 'aria-label': `${label}: name`, placeholder: 'Name', value: k, autocomplete: 'off' });
-        const valIn = vs.type === 'boolean' ? h('input', { type: 'checkbox', 'aria-label': `${label}: yes or no`, checked: v === 'true' })
-          : h('input', { type: isNum ? 'number' : 'text', step: isNum ? 'any' : undefined, inputmode: isNum ? 'decimal' : undefined,
-            'aria-label': `${label}: value`, placeholder: isNum ? '0' : 'Value', value: v });
+        const valIn = vs.type === 'boolean' ? h('input', { type: 'checkbox', 'aria-label': `${label}: yes or no`, checked: v === true || v === 'true' })
+          : h('input', { type: 'text', inputmode: isNum ? 'decimal' : undefined, 'aria-label': `${label}: value`, placeholder: isNum ? '0' : 'Value', value: String(v) });
         const row = h('div', { class: 'row map-row' }, keyIn, valIn);
         const entry = { keyIn, valIn, row };
         row.append(h('button', { type: 'button', class: 'btn ghost small', onclick: () => { rows.splice(rows.indexOf(entry), 1); row.remove(); } }, 'Remove'));
         rows.push(entry); list.append(row);
+        if (src) attachCombobox(keyIn, { source: src.source, context: { tool: ctx.tool, field: name } });
         return entry;
       };
       if (def && typeof def === 'object') Object.entries(def).forEach(([k, v]) => addRow(k, String(v))); else addRow();
-      el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, star()), hint, list,
+      el = h('fieldset', { class: 'field wide' }, legend(), hint, list,
         h('button', { type: 'button', class: 'btn secondary small', onclick: () => addRow().keyIn.focus() }, '+ Add'), err);
       wide = true;
       const rawOf = (r) => (vs.type === 'boolean' ? r.valIn.checked : r.valIn.value.trim());
@@ -975,28 +1491,30 @@
         const out = {};
         for (const r of rows) {
           const k = r.keyIn.value.trim();
-          const raw = rawOf(r);
-          if (!k && (raw === '' || raw === false)) continue;
+          const x = rawOf(r);
+          if (!k && (x === '' || x === false)) continue;
           if (!k) return { value: undefined, error: fail('Each value needs a name') };
           if (isNum) {
-            const n = Number(raw);
-            if (raw === '' || !isFinite(n)) return { value: undefined, error: fail(`Enter a number for ${k}`) };
+            const n = plainNumber(x, name);
+            if (n === null) return { value: undefined, error: fail(`Enter a number for ${k}`) };
             out[k] = n;
-          } else out[k] = raw;
+          } else out[k] = x;
         }
         if (!Object.keys(out).length) return { value: undefined, error: required ? fail('Add at least one') : ok() };
         ok(); return { value: out, error: '' };
       };
       isEmpty = () => rows.every((r) => !r.keyIn.value.trim() && (rawOf(r) === '' || rawOf(r) === false));
+      raw = () => rows.map((r) => [r.keyIn.value, rawOf(r)]);
+      set = (x) => { rows.splice(0).forEach((r) => r.row.remove()); const pairs = Array.isArray(x) ? x : Object.entries(x || {}); (pairs.length ? pairs : [['', '']]).forEach(([k, v]) => addRow(k, v)); return true; };
     } else if (kind === 'bool') {
       const cb = h('input', { type: 'checkbox', id, role: 'switch', checked: def === true, 'aria-describedby': described });
-      el = h('div', { class: 'field' }, h('label', { class: 'switch', for: id }, cb, h('span', {}, label)), hint, err);
+      el = h('div', { class: 'field' }, h('label', { class: 'switch', for: id }, cb, h('span', {}, label)), tagEl, hint, err);
       get = () => ({ value: cb.checked, error: '' });
       isEmpty = () => cb.checked === (def === true);
     } else if (kind === 'enum') {
       const opts = (required && def !== undefined ? [] : [['', required ? 'Choose…' : '— Not set —']]).concat(s.enum.map((v) => [String(v), enumLabel(v)]));
       const sel = select(name, opts, def !== undefined ? String(def) : '', { id, 'aria-describedby': described });
-      el = h('div', { class: 'field' }, lbl(), sel, hint, err);
+      el = h('div', { class: 'field' }, head(), sel, hint, err);
       get = () => {
         if (sel.value === '') return { value: undefined, error: required ? fail('Choose an option', sel) : ok(sel) };
         ok(sel);
@@ -1007,7 +1525,7 @@
     } else if (kind === 'multienum') {
       const items = norm(s.items, root);
       const boxes = items.enum.map((v) => h('input', { type: 'checkbox', value: String(v), checked: Array.isArray(def) && def.includes(v) }));
-      el = h('fieldset', { class: 'field wide', 'aria-describedby': described }, h('legend', {}, label), h('div', { class: 'checks' }, boxes.map((b, k) => h('label', {}, b, enumLabel(items.enum[k])))), hint, err);
+      el = h('fieldset', { class: 'field wide', 'aria-describedby': described }, legend(), h('div', { class: 'checks' }, boxes.map((b, k) => h('label', {}, b, enumLabel(items.enum[k])))), hint, err);
       wide = true;
       get = () => {
         const vals = boxes.filter((b) => b.checked).map((b) => items.enum.find((v) => String(v) === b.value));
@@ -1015,14 +1533,21 @@
         ok(); return { value: vals, error: '' };
       };
       isEmpty = () => !boxes.some((b) => b.checked);
-    } else if (kind === 'number') {
-      const inp = h('input', { type: 'number', id, inputmode: s.type === 'integer' ? 'numeric' : 'decimal', step: s.type === 'integer' ? '1' : 'any',
-        min: s.minimum ?? (s.exclusiveMinimum !== undefined ? s.exclusiveMinimum : undefined), max: s.maximum, value: def !== undefined ? String(def) : '', 'aria-describedby': described });
-      el = h('div', { class: 'field' }, lbl(), inp, hint, err);
+      raw = () => boxes.filter((b) => b.checked).map((b) => b.value);
+      set = (x) => { const want = [].concat(x || []).map(String); boxes.forEach((b) => { b.checked = want.includes(b.value); }); return true; };
+    } else if (kind === 'number' || kind === 'numtext') {
+      const int = kind === 'number' ? s.type === 'integer' : s['x-num'] === 'integer';
+      const unit = unitOf(name);
+      const inp = h('input', { type: 'text', id, inputmode: int ? 'numeric' : 'decimal', enterkeyhint: 'next', autocomplete: 'off', value: def !== undefined ? String(def) : '', 'aria-describedby': described });
+      el = h('div', { class: 'field' }, head(), h('div', { class: 'unit-box' }, /(^|_)usd($|_)/.test(name) ? h('span', { class: 'unit' }, '$') : null, inp, unit ? h('span', { class: 'unit' }, unit) : null), vchips, hint, err);
       get = () => {
-        if (inp.value === '') return { value: undefined, error: required ? fail('Required', inp) : ok(inp) };
-        const n = Number(inp.value);
-        if (!isFinite(n) || (s.type === 'integer' && !Number.isInteger(n))) return { value: undefined, error: fail(s.type === 'integer' ? 'Enter a whole number' : 'Enter a number', inp) };
+        const t = inp.value.trim();
+        if (!t) return { value: undefined, error: required ? fail('Required', inp) : ok(inp) };
+        const n = plainNumber(t, name);
+        if (n === null || (int && !Number.isInteger(n))) {
+          if (kind === 'numtext') { ok(inp); return { value: t, error: '' }; }       // words with a unit: the check reads them
+          return { value: undefined, error: fail(int ? 'Enter a whole number' : 'Enter a number', inp) };
+        }
         if (s.exclusiveMinimum !== undefined && n <= s.exclusiveMinimum) return { value: undefined, error: fail(`Must be more than ${s.exclusiveMinimum}`, inp) };
         if (s.minimum !== undefined && n < s.minimum) return { value: undefined, error: fail(`Must be at least ${s.minimum}`, inp) };
         if (s.maximum !== undefined && n > s.maximum) return { value: undefined, error: fail(`Must be at most ${s.maximum}`, inp) };
@@ -1044,15 +1569,19 @@
         }
         return { value: Object.keys(out).length ? out : undefined, error };
       };
+      const rawGroup = (group) => Object.fromEntries(group.filter((f) => f.raw).map((f) => [f.name, f.raw()]));
+      const setGroup = (group, x) => group.forEach((f) => { if (x && x[f.name] !== undefined && f.set) f.set(x[f.name]); });
       wide = true;
       if (kind === 'object') {
         const group = makeGroup();
-        el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null), hint, h('div', { class: 'form-grid' }, group.map((f) => f.el)), err);
+        el = h('fieldset', { class: 'field wide' }, legend(), hint, h('div', { class: 'form-grid' }, group.map((f) => f.el)), err);
         get = () => {
           if (blank(group)) return { value: undefined, error: required ? fail('Fill in this section') : ok() };
           ok(); return collect(group);
         };
         isEmpty = () => blank(group);
+        raw = () => rawGroup(group);
+        set = (x) => { setGroup(group, x); return true; };
       } else {
         const rows = [];
         const list = h('div', {});
@@ -1069,7 +1598,7 @@
         const singular = humanize(name).replace(/s$/, '');
         const renumber = () => rows.forEach((r, k) => { r.title.textContent = `${singular} ${k + 1}`; });
         const addBtn = h('button', { type: 'button', class: 'btn secondary small', onclick: () => { const r = addRow(); const first = r.rowEl.querySelector('input,select,textarea'); if (first) first.focus(); } }, `+ Add ${singular.toLowerCase()}`);
-        el = h('fieldset', { class: 'field wide' }, h('legend', {}, label, required ? h('span', { class: 'req', 'aria-hidden': 'true' }, '*') : null), hint, list, addBtn, err);
+        el = h('fieldset', { class: 'field wide' }, legend(), hint, list, addBtn, err);
         addRow();
         get = () => {
           const values = []; let error = '';
@@ -1083,17 +1612,51 @@
           ok(); return { value: values, error };
         };
         isEmpty = () => rows.every((r) => blank(r.group));
+        raw = () => rows.map((r) => rawGroup(r.group));
+        set = (x) => { rows.splice(0).forEach((r) => r.rowEl.remove()); const items = Array.isArray(x) && x.length ? x : [null]; items.forEach((it) => setGroup(addRow().group, it)); return true; };
       }
     } else if (kind === 'json') {
-      const ta = h('textarea', { id, class: 'mono', rows: '5', placeholder: kind === 'json' && s.type === 'array' ? '[ ]' : '{ }', 'aria-describedby': described });
+      const ta = h('textarea', { id, class: 'mono', rows: '5', placeholder: s.type === 'array' ? '[ ]' : '{ }', 'aria-describedby': described });
       if (def !== undefined) ta.value = JSON.stringify(def, null, 2);
-      el = h('div', { class: 'field wide' }, lbl(), ta, h('span', { class: 'hint' }, 'JSON format.'), hint, err);
+      el = h('div', { class: 'field wide' }, head(), ta, h('span', { class: 'hint' }, 'JSON format.'), hint, err);
       wide = true;
       get = () => {
         if (!ta.value.trim()) return { value: undefined, error: required ? fail('Required', ta) : ok(ta) };
         try { const v = JSON.parse(ta.value); ok(ta); return { value: v, error: '' }; } catch (e) { return { value: undefined, error: fail('Not valid JSON', ta) }; }
       };
       isEmpty = () => !ta.value.trim();
+      set = (x) => { ta.value = typeof x === 'string' ? x : JSON.stringify(x, null, 2); return true; };
+    } else if (src && (kind === 'text' || kind === 'list')) {
+      // type-ahead from the field's source; a list field takes several (each one a removable token)
+      const multiple = !!src.multiple || kind === 'list';
+      const lic = src.source === 'sub_license';
+      const inp = h('input', { id, type: 'text', enterkeyhint: 'next', maxlength: s.maxLength, 'aria-describedby': described, inputmode: lic ? 'numeric' : undefined, pattern: lic ? '[0-9]*' : undefined,
+        autocapitalize: /class/.test(src.source) ? 'characters' : undefined });
+      el = h('div', { class: 'field' + (multiple ? ' wide' : '') }, head(), inp, hint, err);
+      wide = multiple;
+      const cb = attachCombobox(inp, { source: src.source, strict: !!src.strict, multiple, context: { tool: ctx.tool, field: name }, labelId: id + '-l' });
+      const check = (t) => (src.strict ? cb.strictCheck(t) : { value: t });
+      get = () => {
+        if (multiple) {
+          const vals = cb.values();
+          if (!vals.length) return { value: undefined, error: required ? fail('Add at least one', inp) : ok(inp) };
+          const bad = vals.find((x) => !check(x));
+          if (bad) return { value: undefined, error: fail(`Pick one from the list: ${bad}`, inp) };
+          ok(inp); return { value: vals.map((x) => check(x).value), error: '' };
+        }
+        const t = inp.value.trim();
+        if (!t) return { value: undefined, error: required ? fail('Required', inp) : ok(inp) };
+        const it = check(t);
+        if (!it) return { value: undefined, error: fail('Pick one from the list', inp) };     // the typed text stays
+        ok(inp); return { value: it.value, error: '' };
+      };
+      isEmpty = () => !cb.values().length;
+      raw = () => (multiple ? cb.values() : inp.value);
+      set = (x) => {
+        if (multiple) cb.setValues(Array.isArray(x) ? x : String(x ?? '').split(/\n|,\s*/).filter(Boolean));
+        else { inp.value = String(x ?? ''); inp.dispatchEvent(new Event('input', { bubbles: true })); }
+        return true;
+      };
     } else {
       let inp;
       if (kind === 'textarea' || kind === 'csv' || kind === 'list') {
@@ -1101,60 +1664,76 @@
         wide = true;
       } else {
         inp = h('input', { id, type: { date: 'date', datetime: 'datetime-local', time: 'time' }[kind] || 'text', 'aria-describedby': described,
-          maxlength: s.maxLength, autocomplete: 'off' });
+          maxlength: s.maxLength, autocomplete: 'off', enterkeyhint: 'next' });
       }
       if (def !== undefined) inp.value = Array.isArray(def) ? def.join('\n') : String(def);
-      else if (!prefix && /^(company_name|employer_name|legal_company_name|business_name_on_documents)$/.test(name) && state.me) inp.value = state.me.tenant.company_name || '';
       const extras = [];
       if (kind === 'csv') {
         const file = h('input', { type: 'file', accept: '.csv,text/csv,text/plain', class: 'visually-hidden', id: id + '-file' });
-        file.addEventListener('change', async () => { if (file.files[0]) { inp.value = await file.files[0].text(); toast(`Loaded ${file.files[0].name}`); } });
+        file.addEventListener('change', async () => { if (file.files[0]) { inp.value = await file.files[0].text(); inp.dispatchEvent(new Event('input', { bubbles: true })); toast(`Loaded ${file.files[0].name}`); } });
         extras.push(file, h('label', { for: id + '-file', class: 'btn secondary small' }, 'Load CSV file…'));
       }
-      el = h('div', { class: 'field' + (wide ? ' wide' : '') }, lbl(), inp, hint, extras.length ? h('div', { class: 'row' }, extras) : null, err);
+      let wd = null;
+      if (kind === 'date' || kind === 'datetime') {
+        // the weekday of a picked date ("Fri, Nov 20, 2026"), and Today / Now as value chips (never filled by itself)
+        wd = h('span', { class: 'weekday small muted', 'aria-live': 'polite' });
+        const showDay = () => { wd.textContent = weekdayDate(inp.value); };
+        inp.addEventListener('input', showDay); inp.addEventListener('change', showDay); showDay();
+      }
+      el = h('div', { class: 'field' + (wide ? ' wide' : '') }, head(), inp, wd, vchips, hint, extras.length ? h('div', { class: 'row' }, extras) : null, err);
       get = () => {
-        const raw = inp.value;
-        if (!raw.trim()) return { value: undefined, error: required ? fail('Required', inp) : ok(inp) };
+        const v = inp.value;
+        if (!v.trim()) return { value: undefined, error: required ? fail('Required', inp) : ok(inp) };
         if (kind === 'list') {
           const it = norm(s.items || {}, root);
-          const vals = raw.split(/\n/).map((x) => x.trim()).filter(Boolean).map((x) => (it.type === 'number' || it.type === 'integer' ? Number(x) : x));
+          const vals = v.split(/\n/).map((x) => x.trim()).filter(Boolean).map((x) => (it.type === 'number' || it.type === 'integer' ? Number(x) : x));
           ok(inp); return { value: vals, error: '' };
         }
-        if (s.minLength && raw.trim().length < s.minLength) return { value: undefined, error: fail(`At least ${s.minLength} characters`, inp) };
-        if (s.pattern && kind === 'text') { try { if (!new RegExp(s.pattern).test(raw.trim())) return { value: undefined, error: fail('Check the format', inp) }; } catch (e) { /* ignore bad pattern */ } }
-        ok(inp); return { value: kind === 'csv' || kind === 'textarea' ? raw : raw.trim(), error: '' };
+        if (s.minLength && v.trim().length < s.minLength) return { value: undefined, error: fail(`At least ${s.minLength} characters`, inp) };
+        if (s.pattern && kind === 'text') { try { if (!new RegExp(s.pattern).test(v.trim())) return { value: undefined, error: fail('Check the format', inp) }; } catch (e) { /* ignore bad pattern */ } }
+        ok(inp); return { value: kind === 'csv' || kind === 'textarea' ? v : v.trim(), error: '' };
       };
       isEmpty = () => !inp.value.trim();
     }
-    // setter for simple fields (used by "Fill in from a project")
+    // the simple fields: read and write what is in the box
     const primary = el.querySelector(`#${id}`);
-    const set = primary && ['INPUT', 'SELECT', 'TEXTAREA'].includes(primary.tagName) ? (v) => {
-      if (primary.type === 'checkbox') primary.checked = !!v;
-      else if (primary.tagName === 'SELECT') { const o = [...primary.options].find((x) => x.value === String(v)); if (!o) return false; primary.value = o.value; } else primary.value = String(v);
-      primary.dispatchEvent(new Event('input', { bubbles: true }));
-      return true;
-    } : null;
-    return { el, get: () => get(), isEmpty, kind, wide, set };
+    if (primary && ['INPUT', 'SELECT', 'TEXTAREA'].includes(primary.tagName)) raw = raw || (() => (primary.type === 'checkbox' ? primary.checked : primary.value));
+    if (!set && primary && ['INPUT', 'SELECT', 'TEXTAREA'].includes(primary.tagName)) {
+      set = (v) => {
+        if (primary.type === 'checkbox') primary.checked = v === true || v === 'true';
+        else if (primary.tagName === 'SELECT') { const o = [...primary.options].find((x) => x.value === String(v)); if (!o) return false; primary.value = o.value; } else primary.value = Array.isArray(v) ? v.join('\n') : String(v ?? '');
+        primary.dispatchEvent(new Event('input', { bubbles: true }));
+        primary.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      };
+    }
+    const chips = (list) => {
+      vchips.replaceChildren(...list.map(([t, v]) => h('button', { type: 'button', class: 'chip chip-value', onclick: () => { set(v); if (primary) primary.focus(); } }, t)));
+      vchips.hidden = !list.length;
+    };
+    if (kind === 'date') chips([['Today', todayISO()]]);
+    if (kind === 'datetime') chips([['Now', nowLocal()]]);
+    const tag = (text, ic = 'projects') => { tagEl.replaceChildren(...(text ? [icon(ic), text] : [])); tagEl.hidden = !text; };
+    el.dataset.field = name;
+    const allowed = kind === 'chips' ? chipOpts.map((o) => o[0]) : kind === 'enum' ? s.enum.map(String) : null;
+    return { el, get: () => get(), isEmpty, kind, wide, set, raw, tag, chips, label, def, allowed, required: !!required };
   }
 
-  function buildSchemaForm(spec) {
+  // The check's fields (top level), in the schema's order. toolPanel() lays them out (one page, steps or sections).
+  function buildSchemaForm(spec, v = vocabNow) {
     const root = spec.input_schema || {};
     const props = root.properties || {};
     const req = new Set(root.required || []);
-    const fields = Object.entries(props).map(([n, s]) => ({ name: n, ...buildField(n, s, root, req.has(n)) }));
-    const place = (f) => { if (f.wide) f.el.classList.add('wide'); return f.el; };
-    // "as of" dates (check against another day than today) are rarely needed: keep them out of the way
-    const advanced = fields.filter((f) => ADVANCED.test(f.name) && !req.has(f.name));
-    const grid = h('div', {}, h('div', { class: 'form-grid' }, fields.filter((f) => !advanced.includes(f)).map(place)),
-      advanced.length ? h('details', { class: 'advanced' }, h('summary', {}, 'Check as of a different date'), h('div', { class: 'form-grid' }, advanced.map(place))) : null);
+    const ctx = { tool: spec.name, v, few: Object.keys(props).length <= 6 };
+    const fields = Object.entries(props).map(([n, sc]) => ({ name: n, ...buildField(n, sc, root, req.has(n), '', ctx) }));
     return {
-      el: grid,
       fields,
-      values() {
+      values(only = () => true) {
         const out = {}; const errors = [];
         for (const f of fields) {
+          if (!only(f)) continue;
           const r = f.get();
-          if (r.error) errors.push(`${labelFor(f.name, norm(props[f.name], root), f.kind)}: ${r.error}`);
+          if (r.error) errors.push({ f, text: `${f.label}: ${r.error}` });
           else if (r.value !== undefined) out[f.name] = r.value;
         }
         return { values: out, errors };
@@ -1210,6 +1789,8 @@
   function fmtValue(key, v, ctx = false) {
     if (v === null || v === undefined || v === '') return '—';
     if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    if (typeof v === 'number' && /(^|_)expires_in_days$/.test(key)) return v < 0 ? `Expired ${(-v).toLocaleString('en-US')} days ago` : `Expires ${daysText(v)}`;
+    if (key === 'data_source' && typeof v === 'string') return sourceText(v).replace(/^Source: /, '');
     if (typeof v === 'number') return isMoney(key, ctx) ? money(v) : v.toLocaleString('en-US');
     if (typeof v === 'string') {
       if (/^https?:\/\/\S+$/.test(v)) return h('a', { href: v, target: '_blank', rel: 'noopener noreferrer', title: v }, linkText(v));
@@ -1298,7 +1879,7 @@
       if ((depth === 0 && (SKIP_KEYS.has(k) || HEADLINE_KEYS.has(k))) || mdKeys.has(prefix + k)) continue;
       if (hiddenKey(k, v) || ((k === 'disclaimer' || k === 'citations') && depth > 0)) continue;
       if (k === 'key' && typeof v === 'string' && /^[a-z0-9_-]+$/.test(v)) continue;
-      if (Array.isArray(v) && !v.length) continue;
+      if (v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length) || (typeof v === 'object' && v && !Array.isArray(v) && !Object.keys(v).length)) continue;
       if (v !== null && typeof v === 'object') complex.push([k, v]); else simple.push([k, v]);
     }
     const long = (v) => typeof v === 'string' && v.length > 80;
@@ -1318,11 +1899,41 @@
   async function projectOptions() {
     try { return (await api('/api/projects')).map((p) => [String(p.id), p.name]); } catch (e) { return []; }
   }
+  // The answer first (spec 6.6): a headline built only from the check's own keys (no new words about the law), its
+  // next step, who else it needs, then Save / Print / More actions, then the details (folded on phones, empty values
+  // left out), the documents, the sources and the disclaimer, once.
+  const notesOf = (r) => (Array.isArray(r.notes) ? r.notes.map(String) : []);
+  const HEADLINES = {
+    calculate_lien_deadline: (r) => r.next_deadline && [`Next: ${r.next_deadline} — ${fmtDate(r.next_deadline_date)} (${daysText(r.days_remaining)})`, r.lien_rule_applied, ['next_deadline', 'next_deadline_date', 'days_remaining', 'lien_rule_applied']],
+    verify_contractor_license: (r) => {
+      if (!r.found) return [notesOf(r)[0] || 'Not found', notesOf(r).slice(1).join(' '), ['notes', 'found']];
+      const src = String(r.data_source || '');
+      const exp = r.expiration_date ? ` · ${r.expires_in_days < 0 ? 'expired' : 'expires'} ${fmtDate(r.expiration_date)}` : '';
+      return [`${/demo/.test(src) ? 'Demo data, not a live CSLB record — ' : ''}${r.business_name}: ${humanize(r.status)}${exp}${/partial copy/.test(src) ? ' · from TradeComply\'s partial copy of CSLB data' : /CSLB master file/.test(src) ? ' · from CSLB\'s published data' : ''}`,
+        notesOf(r).filter((n) => !/^Demo data/.test(n)).join(' '), ['notes']];        // the demo note is in the headline already
+    },
+    check_subcontractor_compliance: (r) => r.overall_risk && [RISK_TEXT[r.overall_risk] || humanize(r.overall_risk), r.recommended_action, ['overall_risk', 'recommended_action']],
+    permit_required: (r) => r.determination && [humanize(r.determination), r.basis, ['determination', 'basis']],
+    check_cal_osha_permits: (r) => Array.isArray(r.permits_required) && [r.permits_required.length ? `${plural(r.permits_required.length, 'Cal/OSHA permit')} for what you entered${r.total_fees_usd ? ` · fees ${money(r.total_fees_usd)}` : ''}`
+      : 'No Cal/OSHA permit found for what you entered', r.fee_math, ['fee_math']],
+    validate_home_improvement_contract: (r) => typeof r.compliant === 'boolean' && [r.compliant ? 'No problems found in what was checked' : `${plural(r.violation_count, 'problem')}, ${plural(r.warning_count, 'warning')}`,
+      [].concat(r.summary || [])[0], []],
+  };
+  ['wildfire_smoke_requirements', 'construction_hours', 'lookup_safety_standard'].forEach((n) => { HEADLINES[n] = (r) => r.summary && [String(r.summary), r.next_step, ['summary', 'next_step']]; });
+  function headlineOf(spec, r) {
+    const own = HEADLINES[spec.name] && HEADLINES[spec.name](r);
+    if (own) return own;
+    if (typeof r.summary === 'string' && r.summary) return [r.summary, r.recommended_action, ['summary', 'recommended_action']];
+    if (Array.isArray(r.summary) && typeof r.summary[0] === 'string') return [r.summary[0], r.recommended_action, ['recommended_action']];
+    if (typeof r.answer === 'string' && r.answer) return [r.answer, r.recommended_action, ['answer', 'recommended_action']];
+    if (r.recommended_action) return [r.recommended_action, null, ['recommended_action']];
+    return [`Result: ${spec.title}`, null, []];
+  }
   function renderToolResult(spec, out, { projectId = null } = {}) {
     const raw = out.structured;
     const card = h('section', { class: 'card result', 'aria-label': 'Result' });
     if (!raw || typeof raw !== 'object') {
-      card.append(h('h2', {}, 'Result'), h('pre', {}, out.text || 'No output.'));
+      card.append(h('h2', { class: 'result-headline', tabindex: '-1' }, 'Result'), h('pre', {}, out.text || 'No output.'));
       return card;
     }
     const r = Object.keys(raw).length === 1 && 'result' in raw ? (raw.result && typeof raw.result === 'object' && !Array.isArray(raw.result) ? raw.result : { result: raw.result }) : raw;
@@ -1331,23 +1942,18 @@
     const proj = can.write() ? select('project_id', [['', 'No project']], '', { 'aria-label': 'Link the saved document to a project' }) : null;
     resultCtx = { spec, result: r, sig: out.result_sig, project: proj };
     proseParams = { ...resultKeyLabels(r), ...paramLabels(spec.input_schema || {}) };
-    card.append(h('div', { class: 'card-head' }, h('h2', {}, `Result: ${spec.title}`), verifiedBadge(r)));
-    const chips = riskChips(r);
+    const [head, nextStep, used] = headlineOf(spec, r);
+    used.forEach((k) => mdKeys.add(k));                   // said in the headline: not again in the details
+    card.append(h('div', { class: 'card-head' }, h('h2', { class: 'result-headline', tabindex: '-1' }, stripRuleIds(head)), verifiedBadge(r)));
+    const chips = riskChips(omit(r, ...used, ...(spec.name === 'verify_contractor_license' ? ['status', 'found'] : [])));
     if (chips.length) card.append(h('div', { class: 'row' }, chips));
-    if (r.recommended_action) card.append(h('p', { class: 'notice' }, h('strong', {}, 'What to do: '), prose(r.recommended_action)));
+    if (nextStep) card.append(h('p', { class: 'next-step' }, h('strong', {}, 'Next step: '), prose(String(nextStep))));
     // the API adds "handoffs" next to the result; a tool may also return them inside it
     const handoffs = handoffsLine(Array.isArray(out.handoffs) ? out.handoffs : (raw.handoffs || r.handoffs), { projectId });
     if (handoffs) card.append(handoffs);
-    card.append(renderObject(r, 0, mdKeys));
-    for (const m of mds) card.append(h('div', { class: 'result-section' }, h('h4', {}, m.label), h('div', { class: 'md md-paper', html: md(m.value) }),
-      mds.length > 1 ? saveFieldButton(m.key, `${m.label}`) : null));
-    resultCtx = null;
-    if (r.citations && r.citations.length) {
-      card.append(r.citations.length > 8
-        ? h('details', { class: 'result-section' }, h('summary', {}, h('strong', {}, `Sources (${r.citations.length})`)), citationList(r.citations))
-        : h('div', { class: 'result-section' }, h('h4', {}, 'Sources'), citationList(r.citations)));
-    }
-    card.append(disclaimerBox(r.disclaimer || 'Compliance information, not legal advice.'));
+    if (spec.name === 'injury_reporting_deadlines') card.append(h('p', {}, h('a', { class: 'btn secondary small no-print', href: '#/field?kind=incident' }, icon('log'), 'Write the incident report')));
+    const print = h('button', { type: 'button', class: 'btn quiet', onclick: () => window.print() }, icon('print'), 'Print / PDF');
+    const more = menuButton('More actions', [['Copy the data (for developers)', 'copy', () => copyText(JSON.stringify(raw, null, 2), 'Copied the data')]]);
     if (can.write()) {
       projectOptions().then((opts) => { opts.forEach(([v, l]) => proj.append(h('option', { value: v }, l))); if (projectId) proj.value = String(projectId); });
       const save = h('button', { type: 'button', class: 'btn', onclick: async () => {
@@ -1357,76 +1963,318 @@
           toast('Saved to Documents');
           save.replaceWith(h('a', { class: 'btn secondary', href: `#/document/${doc.id}` }, 'Open saved document'));
         } catch (e) { toast(e.message, true); busy(save, false); }
-      } }, mds.length > 1 || r.programs ? 'Save everything as one document' : 'Save as document');
+      } }, icon('saved'), mds.length > 1 || r.programs ? 'Save everything as one document' : 'Save as document');
       card.append(h('div', { class: 'save-row no-print' },
         h('div', { class: 'field' }, h('label', { for: `save-proj-${fieldSeq + 1}` }, 'Project for the saved document'), Object.assign(proj, { id: `save-proj-${++fieldSeq}` })),
-        h('div', { class: 'row' }, save,
-          h('button', { type: 'button', class: 'btn ghost', onclick: () => window.print() }, 'Print / PDF'),
-          h('button', { type: 'button', class: 'btn ghost', onclick: () => copyText(JSON.stringify(raw, null, 2), 'Result copied as JSON') }, 'Copy as JSON'))));
-    } else {
-      card.append(h('div', { class: 'row no-print' }, h('button', { type: 'button', class: 'btn ghost', onclick: () => window.print() }, 'Print / PDF')));
+        h('div', { class: 'row' }, save, print, more)));
+    } else card.append(h('div', { class: 'row no-print' }, print, more));
+    const details = renderObject(r, 0, mdKeys);
+    if (details.childNodes.length) card.append(h('details', { class: 'result-details', open: !narrowScreen() }, h('summary', {}, 'Details'), details));
+    for (const m of mds) card.append(h('div', { class: 'result-section' }, h('h4', {}, m.label), h('div', { class: 'md md-paper', html: md(m.value) }),
+      mds.length > 1 ? saveFieldButton(m.key, `${m.label}`) : null));
+    resultCtx = null;
+    if (r.citations && r.citations.length) {
+      card.append(r.citations.length > 8
+        ? h('details', { class: 'result-section' }, h('summary', {}, h('strong', {}, `Sources (${r.citations.length})`)), citationList(r.citations))
+        : h('div', { class: 'result-section' }, h('h4', {}, 'Sources'), citationList(r.citations)));
     }
+    card.append(disclaimerBox(r.disclaimer || 'Compliance information, not legal advice.'));
     return card;
   }
 
-  // tool parameter -> value from a saved project, so nobody retypes a job's details into every check
+
+  // tool parameter -> value from a saved project, picked in "For job", so nobody retypes a job into every check. A
+  // string names the project's own field (its dates and price also become value chips); an enum gets a value only
+  // when the value is one of its choices.
+  const enumOnly = (f, v) => (f.allowed && f.allowed.includes(String(v)) ? v : null);
   const PROJECT_FIELDS = {
-    project_name: (p) => p.name, city: (p) => p.city, jurisdiction: (p) => p.city, county: (p) => p.county,
-    address: (p) => p.address, site_address: (p) => p.address, project_address: (p) => p.address,
-    owner_name: (p) => p.owner_name, property_owner: (p) => p.owner_name, lender_name: (p) => p.lender_name,
-    contract_price_usd: (p) => p.contract_price, contract_value_usd: (p) => p.contract_price, contract_amount_usd: (p) => p.contract_price,
-    prime_contract_usd: (p) => p.contract_price, project_value_usd: (p) => p.contract_price,
-    start_date: (p) => p.start_date, construction_start_date: (p) => p.start_date,
-    first_furnishing_date: (p) => p.first_furnishing_date, last_furnishing_date: (p) => p.last_furnishing_date,
-    completion_date: (p) => p.completion_date, notice_of_completion_date: (p) => p.noc_date, noc_recorded_date: (p) => p.noc_date, noc_date: (p) => p.noc_date,
-    claimant_role: (p) => (p.extra || {}).claimant_role, public_or_private: (p) => p.public_or_private,
+    project_name: 'name', city: 'city', jurisdiction: 'city', county: 'county', address: 'address', site_address: 'address', project_address: 'address',
+    owner_name: 'owner_name', property_owner: 'owner_name', lender_name: 'lender_name',
+    contract_price_usd: 'contract_price', contract_value_usd: 'contract_price', contract_amount_usd: 'contract_price', prime_contract_usd: 'contract_price', project_value_usd: 'contract_price',
+    start_date: 'start_date', construction_start_date: 'start_date', first_furnishing_date: 'first_furnishing_date', last_furnishing_date: 'last_furnishing_date',
+    completion_date: 'completion_date', notice_of_completion_date: 'noc_date', noc_recorded_date: 'noc_date', noc_date: 'noc_date',
+    claimant_role: (p, f) => enumOnly(f, (p.extra || {}).claimant_role), public_or_private: (p, f) => enumOnly(f, p.public_or_private),
+    project_type: (p, f) => (f.allowed && f.allowed.slice().sort().join() === 'private,public' ? p.public_or_private : null),
+    owner_type: (p, f) => (p.public_or_private === 'public' ? enumOnly(f, 'public_agency') : null),
+    awarding_body_name: (p) => (p.public_or_private === 'public' ? p.owner_name : null), awarding_agency: (p) => (p.public_or_private === 'public' ? p.owner_name : null),
     is_public: (p) => p.public_or_private === 'public', public_project: (p) => p.public_or_private === 'public',
   };
-  function toolPanel(spec, { onResult, projectId = null } = {}) {
+  const jobValue = (f, p) => { const m = PROJECT_FIELDS[f.name]; return typeof m === 'string' ? p[m] : m(p, f); };
+  const JOB_CHIP = { start_date: 'Start', first_furnishing_date: 'First furnished', last_furnishing_date: 'Last furnished', completion_date: 'Completed', noc_date: 'NOC', contract_price: 'Contract price' };
+  // the company's own facts, filled when a check opens (no job needed), tagged "From your company"
+  const COMPANY_FIELDS = { company_name: 'company_name', employer_name: 'company_name', legal_company_name: 'company_name', business_name_on_documents: 'company_name',
+    contractor_license_number: 'cslb_license' };
+  const activeJobs = (list) => list.filter((p) => !['closed', 'completed'].includes(p.status));
+  const jobLabel = (p) => (p.city ? `${p.name} — ${p.city}` : p.name);
+  const schemaHash = (spec) => { let x = 2166136261; for (const c of JSON.stringify(spec.input_schema || {})) x = Math.imul(x ^ c.charCodeAt(0), 16777619); return (x >>> 0).toString(36); };
+  const NEVER_DRAFT = /password|api_?key|secret|token/;
+  function reviewText(f, v) {
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    if (Array.isArray(v)) return v.every((x) => x === null || typeof x !== 'object') ? v.map((x) => (f.allowed ? enumLabel(x) : String(x))).join(', ') : plural(v.length, 'row');
+    if (v && typeof v === 'object') return plural(Object.keys(v).length, 'entry', 'entries');
+    if (typeof v === 'number') return /(^|_)usd($|_)/.test(f.name) ? money(v) : v.toLocaleString('en-US');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return weekdayDate(v);
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return fmtDateTime(v);
+    return f.allowed ? enumLabel(v) : String(v);
+  }
+
+  // One check: "For job", the fields (one page, the hand-made steps or sections, or "More details"), Run, the result.
+  function toolPanel(spec, { onResult, projectId = null, bare = false } = {}) {
     const form = buildSchemaForm(spec);
-    let filledFrom = null;
-    const fillable = form.fields.filter((x) => x.set && PROJECT_FIELDS[x.name]);
-    const fillSlot = h('div', { class: 'fill-from' });
-    if (fillable.length >= 2) {
-      api('/api/projects').then((projects) => {
-        if (!projects.length) return;
-        const sel = select('fill_project', [['', 'Choose a project…'], ...projects.map((p) => [String(p.id), p.name])], '', { id: `fill-${++fieldSeq}` });
-        sel.addEventListener('change', () => {
-          const p = projects.find((x) => String(x.id) === sel.value);
-          if (!p) return;
-          let n = 0;
-          for (const fld of fillable) { const v = PROJECT_FIELDS[fld.name](p); if (v !== null && v !== undefined && v !== '' && fld.set(v)) n++; }
-          filledFrom = p.id;
-          toast(n ? `Filled ${plural(n, 'field')} from “${p.name}”. Check them before running.` : `“${p.name}” has none of these details yet.`);
-        });
-        fillSlot.append(h('div', { class: 'field' }, h('label', { for: sel.id }, 'Fill in from a project'), sel,
-          h('span', { class: 'hint' }, 'Copies the project\'s name, address, dates and contract price into the matching fields below.')));
-        // ?project=<id> in the link (a project's own page, a Today tile with its job picked, a Needs-you-now row):
-        // that job was chosen explicitly, so fill from it as if picked here
-        if (projectId && projects.some((x) => String(x.id) === String(projectId))) { sel.value = String(projectId); sel.dispatchEvent(new Event('change')); }
-      }).catch(() => {});
+    const F = form.fields;
+    const byName = Object.fromEntries(F.map((x) => [x.name, x]));
+    const lay = spec.layout && /^(steps|sections)$/.test(spec.layout.layout) ? spec.layout : null;
+    const applies = (x) => !x.el.hidden;                      // a show-if that doesn't hold: hidden, kept, not sent
+    const place = (x) => { if (x.wide) x.el.classList.add('wide'); return x.el; };
+    const grid = (list) => h('div', { class: 'form-grid' }, list.map(place));
+    const counted = [];                                       // "3 of 7 filled" in a section's or More details' summary
+    const countBox = (fields) => { const c = h('span', { class: 'count small muted' }); counted.push([c, fields]); return c; };
+    let filling = false;                                      // a fill by the app: no draft is written for it
+    const quietly = (fn) => { filling = true; try { fn(); } finally { filling = false; } };
+    let pages = null;
+    let body;
+    if (lay) {
+      const used = new Set();
+      const groups = lay.steps.map((st) => ({ title: st.title, fields: st.fields.map((n) => byName[n]).filter((x) => x && !used.has(x) && used.add(x)) }));
+      groups[groups.length - 1].fields.push(...F.filter((x) => !used.has(x)));
+      if (lay.layout === 'steps') { pages = groups; body = h('div', {}, groups.map((g, i) => h('div', { class: 'form-step', hidden: i > 0 }, grid(g.fields)))); } else {
+        body = h('div', {}, groups.map((g, i) => h('details', { class: 'form-sec', open: i === 0 }, h('summary', {}, h('span', { class: 'fs-title' }, g.title), ' ', countBox(g.fields)), grid(g.fields))));
+      }
+    } else if (F.length > 12) {
+      // long forms without a hand-made layout: what is required or comes from the job first, the rest folded
+      const first = F.filter((x) => x.required || PROJECT_FIELDS[x.name] || COMPANY_FIELDS[x.name]);
+      const later = F.filter((x) => !first.includes(x));
+      body = h('div', {}, grid(first), later.length ? h('details', { class: 'more-details' }, h('summary', {}, 'More details (fill in what applies) ', countBox(later)), grid(later)) : null);
+    } else {
+      const advanced = F.filter((x) => ADVANCED.test(x.name) && !x.required);
+      body = h('div', {}, grid(F.filter((x) => !advanced.includes(x))),
+        advanced.length ? h('details', { class: 'advanced' }, h('summary', {}, 'Check as of a different date'), grid(advanced)) : null);
     }
+    // show_if (spec 8.2.7): "eq", "in" or "truthy" on another field of the same check
+    const condVal = (x) => {
+      const r = x.raw ? x.raw() : undefined;
+      if (x.kind === 'tristate') return r === '' ? undefined : r === 'true';
+      if (x.kind === 'number' || x.kind === 'numtext') { const n = plainNumber(r || '', x.name); return n === null ? (r || undefined) : n; }
+      return r === '' ? undefined : r;
+    };
+    const conds = Object.entries((lay && lay.show_if) || {}).map(([d, c]) => [byName[d], byName[c.field], c]).filter(([d, o]) => d && o);
+    const holds = (c, o) => {
+      const x = condVal(o);
+      if (c.op === 'eq') return String(x) === String(c.value);
+      if (c.op === 'in') return [].concat(c.value).map(String).includes(String(x));
+      return !(x === undefined || x === false || x === '' || x === 0 || (Array.isArray(x) && !x.length));
+    };
+    const sync = () => {
+      conds.forEach(([d, o, c]) => { const on = holds(c, o); d.el.hidden = !on; d.el.inert = !on; });
+      counted.forEach(([c, fields]) => { const live = fields.filter(applies); c.textContent = `${live.filter((x) => !x.isEmpty()).length} of ${live.length} filled`; });
+    };
+
     const result = h('div', { 'aria-live': 'polite' });
     const errBox = h('div', { role: 'alert' });
-    const run = h('button', { type: 'submit', class: 'btn' }, 'Run check');
-    const f = h('form', { novalidate: true, onsubmit: async (e) => {
-      e.preventDefault();
+    const run = h('button', { type: 'submit', class: 'btn' }, (lay && lay.final_button) || 'Run check');
+    const clear = h('button', { type: 'button', class: 'btn quiet' }, icon('undo'), 'Clear');
+    const focusOf = (x) => x.el.querySelector('input:not([type=hidden]):not([type=file]), select, textarea, .chips [tabindex="0"]');
+    const showErrors = (errors) => {
+      if (pages) toStep(pages.findIndex((g) => g.fields.includes(errors[0].f)), null);
+      errBox.replaceChildren(h('div', { class: 'banner error' }, h('div', {}, h('p', {}, h('strong', {}, 'Fix these first:')),
+        h('ul', { class: 'bullets' }, errors.map((e) => h('li', {}, h('button', { type: 'button', class: 'btn quiet small', onclick: () => { const t = focusOf(e.f); if (t) t.focus(); } }, e.text)))))));
+      const t = focusOf(errors[0].f);
+      if (t && !t.closest('[hidden]')) t.focus(); else errBox.scrollIntoView({ block: 'center' });
+    };
+    // ---- steps (the hand-made layouts): one step at a time, Continue checks only that step, then Review
+    let at = 0, reached = 0;
+    const back = h('button', { type: 'button', class: 'btn secondary', hidden: true }, icon('chevron-left'), 'Back');
+    const next = h('button', { type: 'button', class: 'btn' }, 'Continue', icon('chevron-right'));
+    const stepHead = h('h3', { class: 'step-title', tabindex: '-1' });
+    const stepper = h('ol', { class: 'stepper' });
+    const review = h('div', { class: 'form-step review', hidden: true });
+    const runHint = h('p', { class: 'hint run-hint', hidden: true }, 'Runs the check. Nothing is filed or sent.');
+    const titles = pages ? [...pages.map((g) => g.title), 'Review your answers'] : [];
+    const drawReview = () => {
+      const rows = [];
+      pages.forEach((g, pi) => g.fields.filter(applies).forEach((x) => {
+        const r = x.get();
+        const v = r.error ? undefined : r.value;
+        const shown = v === undefined || v === null ? (x.def !== undefined ? `Not provided — the check uses ${reviewText(x, x.def)}` : 'Not provided') : reviewText(x, v);
+        rows.push(h('div', { class: 'rv-row' }, h('dt', {}, x.label), h('dd', {}, h('span', {}, shown),
+          h('button', { type: 'button', class: 'btn quiet small', 'aria-label': `Change ${x.label}`, onclick: () => toStep(pi, focusOf(x)) }, 'Change'))));
+      }));
+      fill(review, h('dl', { class: 'review-list' }, rows));
+    };
+    function toStep(i, focusEl = stepHead) {
+      at = i; reached = Math.max(reached, i);
+      [...body.children].forEach((el, k) => { el.hidden = k !== i; });
+      review.hidden = i !== pages.length;
+      if (!review.hidden) drawReview();
+      stepHead.textContent = `Step ${i + 1} of ${titles.length} · ${titles[i]}`;
+      fill(stepper, titles.map((t, k) => h('li', { class: k < at ? 'done' : '' }, h('button', { type: 'button', disabled: k > reached, 'aria-current': k === at ? 'step' : null,
+        onclick: () => toStep(k) }, h('span', { class: 'num' }, String(k + 1)), t))));
+      back.hidden = i === 0; next.hidden = i === pages.length; run.hidden = runHint.hidden = i !== pages.length;
+      if (focusEl) focusEl.focus();
+    }
+    next.addEventListener('click', () => {
       errBox.replaceChildren();
-      const { values, errors } = form.values();
-      if (errors.length) { errBox.append(h('div', { class: 'banner error' }, h('p', {}, 'Fix these first: ' + errors.join('; ')))); const bad = f.querySelector('[aria-invalid=true]'); if (bad) bad.focus(); else errBox.scrollIntoView({ block: 'center' }); return; }
+      const { errors } = form.values((x) => applies(x) && pages[at].fields.includes(x));
+      if (errors.length) showErrors(errors); else toStep(at + 1);
+    });
+    back.addEventListener('click', () => toStep(at - 1));
+
+    // ---- "For job" (spec 6.2): only an explicit choice fills: ?project= in the link, a Quick help action, or a pick
+    const fillable = F.filter((x) => x.set && PROJECT_FIELDS[x.name]);
+    const fillSlot = h('div', { class: 'fill-from' });
+    const jobLine = h('div', { class: 'small fill-line', role: 'status' });
+    let projects = [], job = null, filled = new Map(), jobSel = null;    // filled: field -> what it held before
+    const jobChips = (p) => fillable.forEach((x) => {
+      const key = PROJECT_FIELDS[x.name];
+      const v = p && typeof key === 'string' ? p[key] : null;
+      if (x.kind === 'date') x.chips([['Today', todayISO()], ...(v && JOB_CHIP[key] ? [[`${JOB_CHIP[key]} ${fmtDate(v)}`, v]] : [])]);
+      else if (key === 'contract_price') x.chips(v != null ? [[`${JOB_CHIP[key]} ${money(Number(v))}`, String(v)]] : []);
+    });
+    const undo = () => {
+      quietly(() => filled.forEach((prev, x) => { x.set(prev); x.tag(''); }));
+      filled = new Map(); job = null;
+      if (jobSel) jobSel.value = '';
+      fill(jobLine); jobChips(null); sync(); drawLast();
+    };
+    const applyJob = (p) => {
+      const before = filled;
+      filled = new Map();
+      let n = 0;
+      const lacks = [];
+      quietly(() => fillable.forEach((x) => {
+        const ours = before.has(x);
+        if (!ours && !x.isEmpty()) return;            // the person's own value: never replaced
+        const prev = ours ? before.get(x) : x.raw();
+        const v = jobValue(x, p);
+        if (v !== null && v !== undefined && v !== '' && x.set(typeof v === 'boolean' ? v : String(v))) { filled.set(x, prev); x.tag(`From job: ${p.name}`); n++; return; }
+        if (ours) { x.set(prev); x.tag(''); }
+        if (v === null || v === undefined || v === '') lacks.push(x);
+      }));
+      job = p;
+      jobChips(p); sync();
+      const need = F.filter((x) => x.required && applies(x) && x.isEmpty());
+      // what the check still needs, and what the job doesn't have yet (optional here, it may matter)
+      const gap = lacks.filter((x) => !need.includes(x));
+      fill(jobLine, h('p', {}, `Filled ${n} of ${fillable.length} from ${p.name}`, n ? [' · ', h('button', { type: 'button', class: 'btn quiet small', onclick: undo }, icon('undo'), 'Undo')] : '.'),
+        need.length ? h('p', {}, `Still needed: ${need.map((x) => x.label).join(', ')}.`) : null,
+        gap.length ? h('p', { class: 'muted' }, `Not in the job yet: ${gap.map((x) => x.label).join(', ')}.`) : null,
+        lacks.length && can.write() ? h('button', { type: 'button', class: 'btn quiet small', onclick: () => editJob(p) }, icon('edit'), 'Add it to the job') : null);
+      if (n) toast(`Filled ${plural(n, 'field')} from ${p.name}`, { action: { label: 'Undo', run: undo } });
+    };
+    const editJob = (p) => {
+      const d = openDialog('Edit project', projectForm(p, (saved) => { d.close(); projects = projects.map((x) => (x.id === saved.id ? saved : x)); applyJob(saved); }));
+    };
+    const lastSlot = h('span', {});
+    const drawLast = () => {
+      const last = lastJob.get();
+      const lj = last && (!job || String(job.id) !== last) ? activeJobs(projects).find((p) => String(p.id) === last) : null;
+      fill(lastSlot, lj ? h('button', { type: 'button', class: 'chip', onclick: () => { jobSel.value = String(lj.id); jobSel.dispatchEvent(new Event('change')); jobSel.focus(); } }, icon('recent'), `Last used: ${lj.name} · Use it`) : null);
+    };
+    const pickJob = (id) => {
+      const p = projects.find((x) => String(x.id) === String(id));
+      if (p) { lastJob.set(p.id); applyJob(p); } else undo();
+      drawLast();
+    };
+
+    // ---- drafts (spec 6.5): never for the injury reporting check (an injured worker's details on a shared tablet)
+    const dui = spec.name === 'injury_reporting_deadlines' ? null : draftUi(`tool:${spec.name}`, schemaHash(spec), {
+      read: () => ({ job: job ? String(job.id) : '', fields: Object.fromEntries(F.filter((x) => x.raw && !NEVER_DRAFT.test(x.name)).map((x) => [x.name, x.raw()])) }),
+      write: (d) => quietly(() => {
+        if (d.job && jobSel && projects.some((p) => String(p.id) === d.job)) { jobSel.value = d.job; job = projects.find((p) => String(p.id) === d.job); jobChips(job); }
+        Object.entries(d.fields || {}).forEach(([k, v]) => { if (byName[k] && byName[k].set) byName[k].set(v); });
+        sync();
+      }),
+    });
+    const f = h('form', { novalidate: true, class: 'tool-form' }, pages ? [stepper, stepHead] : null, errBox, body, pages ? review : null,
+      h('div', { class: 'row action-bar' }, back, next, run, clear), pages ? runHint : null);
+    if (pages) toStep(0, null); else next.hidden = true;
+    const onInput = () => { sync(); if (dui && !filling) dui.changed(); };
+    f.addEventListener('input', onInput);
+    f.addEventListener('change', onInput);
+    // Enter in a one-line box goes to the next field; only the last field of the form (a step's: Continue) submits
+    f.addEventListener('keydown', (e) => {
+      const t = e.target;
+      if (e.key !== 'Enter' || e.defaultPrevented || e.isComposing || t.tagName !== 'INPUT' || /^(checkbox|radio|file|submit|button|reset)$/.test(t.type)) return;
+      e.preventDefault();
+      const scope = pages ? body.children[at] || review : body;
+      const all = [...scope.querySelectorAll('input:not([type=hidden]):not([type=file]), select, textarea, .chips [tabindex="0"]')].filter((x) => !x.disabled && x.offsetParent !== null && !x.closest('[inert]'));
+      const nx = all[all.indexOf(t) + 1];
+      if (nx) nx.focus(); else if (pages && at < pages.length) next.click(); else f.requestSubmit(run);
+    });
+    const last = [...body.querySelectorAll('input[enterkeyhint]')].pop();
+    if (last && !pages) last.setAttribute('enterkeyhint', 'go');
+    const initial = new Map(F.filter((x) => x.raw).map((x) => [x, x.raw()]));
+    clear.addEventListener('click', () => {
+      quietly(() => initial.forEach((v, x) => { x.set(v); x.tag(''); }));
+      filled = new Map(); job = null; if (jobSel) jobSel.value = '';
+      fill(jobLine); jobChips(null); errBox.replaceChildren(); result.replaceChildren(); sync(); drawLast();
+      if (dui) dui.done();
+      if (pages) toStep(0);
+    });
+    const summary = h('p', { class: 'form-summary', hidden: true });
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (pages && at < pages.length) { next.click(); return; }
+      errBox.replaceChildren();
+      const { values, errors } = form.values(applies);
+      if (errors.length) { showErrors(errors); return; }
       busy(run, true, 'Checking…');
-      result.replaceChildren(h('p', { class: 'loading' }, 'Running…'));
+      result.replaceChildren(h('p', { class: 'loading', role: 'status' }, 'Checking…'));
       try {
         const out = await api(`/api/tools/${encodeURIComponent(spec.name)}`, { method: 'POST', body: values });
-        result.replaceChildren(renderToolResult(spec, out, { projectId: filledFrom }));
-        result.firstChild.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+        const card = renderToolResult(spec, out, { projectId: job ? job.id : null });
+        result.replaceChildren(card);
+        if (dui) dui.done();
+        if (narrowScreen()) {           // phones: the answers fold into one line, the answer comes into view
+          f.hidden = true;
+          fill(summary, `${plural(Object.keys(values).length, 'answer')} · `, h('button', { type: 'button', class: 'btn quiet small', onclick: () => { f.hidden = false; summary.hidden = true; const t = focusOf(F[0]); if (t) t.focus(); } }, icon('edit'), 'Edit'));
+          summary.hidden = false;
+        }
+        const hl = card.querySelector('.result-headline');
+        if (hl) { hl.scrollIntoView({ behavior: scrollBehavior(), block: 'start' }); hl.focus({ preventScroll: true }); }
         if (onResult) onResult(out);
       } catch (err) {
         result.replaceChildren();
         if (err.status === 402) result.append(subscribeCard(err.message));
         else errBox.append(h('div', { class: 'banner error' }, h('p', {}, h('strong', {}, 'The check did not run. '), cleanHint(err.message, { params: paramLabels(spec.input_schema || {}) }))));
       } finally { busy(run, false); }
-    } }, form.el, errBox, h('div', { class: 'row' }, run, h('button', { type: 'reset', class: 'btn ghost', onclick: () => setTimeout(() => result.replaceChildren(), 0) }, 'Clear')));
+    });
+
+    // ---- what fills it when it opens: the company's own facts, then the job named by the link, then Quick help's
+    const tenant = (state.me && state.me.tenant) || {};
+    quietly(() => F.forEach((x) => { const k = COMPANY_FIELDS[x.name]; if (k && tenant[k] && x.isEmpty() && x.set(String(tenant[k]))) x.tag('From your company', 'account'); }));
+    const pre = state.prefill && state.prefill.tool === spec.name ? state.prefill : null;
+    if (pre) state.prefill = null;                     // once, for this check only
+    const preLine = h('p', { class: 'small fill-line', hidden: true }, icon('help'), ' Filled in from Quick help: check these before you run it.');
+    const applyPre = () => {
+      if (!pre) return;
+      quietly(() => Object.entries(pre.args || {}).forEach(([k, v]) => {
+        const x = byName[k];
+        if (v !== null && v !== undefined && v !== '' && x && x.set && x.set(v !== null && typeof v === 'object' ? v : String(v))) x.tag(pre.from === 'quickhelp' ? 'From Quick help' : 'From your company', pre.from === 'quickhelp' ? 'help' : 'account');
+      }));
+      preLine.hidden = pre.from !== 'quickhelp';
+      sync();
+    };
+    const wantJob = projectId || (pre && pre.projectId) || null;
+    const ready = (fillable.length || F.some((x) => x.name === 'cities_worked') ? api('/api/projects') : Promise.resolve([])).catch(() => []).then((list) => {
+      projects = list;
+      const cw = byName.cities_worked;
+      const cities = [...new Set(activeJobs(list).map((p) => String(p.city || '').trim()).filter(Boolean))];
+      if (cw && cw.isEmpty() && cities.length) quietly(() => { if (cw.set(cities)) cw.tag('From your company', 'account'); });
+      const choices = activeJobs(list).concat(list.filter((p) => String(p.id) === String(wantJob) && !activeJobs(list).includes(p)));
+      if (fillable.length && choices.length) {
+        jobSel = select('fill_project', [['', 'Pick a job'], ...choices.map((p) => [String(p.id), jobLabel(p)])], '', { id: `fill-${++fieldSeq}` });
+        jobSel.addEventListener('change', () => pickJob(jobSel.value));
+        fill(fillSlot, h('div', { class: 'job-pick' }, h('div', { class: 'field' }, h('label', { for: jobSel.id }, 'For job'), jobSel), lastSlot),
+          h('p', { class: 'hint' }, 'Fills in this job\'s details below. You can change any of them.'), jobLine);
+        if (wantJob && choices.some((p) => String(p.id) === String(wantJob))) { jobSel.value = String(wantJob); pickJob(wantJob); }
+        drawLast();
+      }
+      applyPre();
+      sync();
+    });
+    if (dui) ready.then(() => dui.offer());
+    sync();
     const ann = spec.annotations || {};
     // Tool descriptions are also read by AI agents, so they run long and list every output field. People get the
     // first sentence; the rest is one tap away.
@@ -1435,13 +2283,13 @@
     const lead = cleanHint(leadRaw, { params: paramLabels(spec.input_schema || {}) });
     const more = desc.length > leadRaw.length + 1 ? cleanHint(desc.slice(leadRaw.length).trim(), { params: paramLabels(spec.input_schema || {}) }) : '';
     return h('div', {},
-      h('section', { class: 'card no-print' },
+      h('section', { class: (bare ? '' : 'card ') + 'no-print tool-card' },
         desc ? h('p', { class: 'tool-lead' }, lead) : null,
         more ? h('details', { class: 'tool-more' }, h('summary', {}, 'What this check covers'), h('p', { class: 'small muted' }, more)) : null,
         ann.readOnlyHint ? null : h('p', { class: 'small muted' }, 'This tool may create or change records.'),
-        fillSlot,
+        dui ? dui.el : null, fillSlot, preLine,
         h('p', { class: 'small muted req-note' }, h('span', { class: 'req', 'aria-hidden': 'true' }, '*'), ' Required. Everything else is optional.'),
-        f),
+        summary, f),
       result);
   }
 
@@ -2099,7 +2947,8 @@
     if (['prelim_notice', 'lien_recording', 'lien_foreclosure'].includes(i.kind) && p) return ['Open lien check', `#/tools/calculate_lien_deadline?project=${p}`];
     if (i.kind === 'toolbox_talk' && p) return ['Start toolbox talk', `#/field?project=${p}&kind=toolbox_talk`];
     if ((i.kind === 'coi_expiry' || i.kind === 'license_expiry') && i.sub_id) return ['Open sub', `#/subs?sub=${i.sub_id}`];
-    if (i.kind === 'license_expiry') return ['Verify license', '#/tools/verify_contractor_license'];
+    // your own license: the check opens with the company's license number in it (the company's own fact, not a job)
+    if (i.kind === 'license_expiry') return ['Verify license', '#/tools/verify_contractor_license', () => { state.prefill = { tool: 'verify_contractor_license', args: { license_number: state.me.tenant.cslb_license }, from: 'company' }; }];
     if (i.kind === 'data_problem' && p && can.write()) return ['Fix dates', `#/project/${p}`];
     return null;
   }
@@ -2119,7 +2968,7 @@
       h('div', { class: 'needs-body' }, h('h3', {}, i.title),
         h('div', { class: 'row small' }, dueBadge(i), i.project_id ? h('a', { href: `#/project/${i.project_id}` }, i.project_name) : null,
           i.sub_id ? h('a', { href: `#/subs?sub=${i.sub_id}` }, i.sub_name) : null)),
-      act ? h('div', { class: 'needs-act' }, h('a', { class: 'btn secondary small', href: act[1] }, act[0])) : null);
+      act ? h('div', { class: 'needs-act' }, h('a', { class: 'btn secondary small', href: act[1], onclick: act[2] }, act[0])) : null);
   }
   routes.dashboard = async () => {
     const field = !can.write();
@@ -2240,8 +3089,13 @@
             h('div', { class: 'empty' }, h('p', {}, 'No projects yet.'), can.write() ? h('a', { class: 'btn secondary', href: '#/project/new' }, 'Add a project') : null)))),
       h('section', { class: 'card', 'aria-labelledby': 'subs-h' }, h('div', { class: 'card-head' }, h('h2', { id: 'subs-h' }, 'Subcontractors'), h('span', { class: 'small muted' }, `${d.sub_counts.red} high risk · ${d.sub_counts.amber} need documents · ${d.sub_counts.green} clear`)), subSlot));
     draw();
+    // Keep going: drafts kept on this device, then the last three things opened
+    const keep = [...myDrafts(), ...recents.list().slice(0, 3).map((r) => ({ title: r.title, href: r.href, icon: KIND_ICON[r.type] || 'recent', detail: KIND_WORD[r.type] }))];
+    const keepCard = keep.length ? h('section', { class: 'card', 'aria-labelledby': 'keep-h' }, h('h2', { id: 'keep-h' }, 'Keep going'),
+      h('ul', { class: 'list' }, keep.map((k) => h('li', {}, h(k.run ? 'button' : 'a', k.run ? { type: 'button', class: 'list-row', onclick: k.run } : { class: 'list-row', href: k.href }, icon(k.icon),
+        h('span', { class: 'lr-text' }, h('span', { class: 'lr-title' }, k.title), k.detail ? h('span', { class: 'lr-meta' }, k.detail) : null), h('span', {}), icon('chevron-right', 'icon lr-chev')))))) : null;
     // Getting started stays the second block (right after the header) until it is done or hidden
-    return h('div', {}, head, gettingStartedCard(d, facts, setupDone), nowCard, tilesCard, health);
+    return h('div', {}, head, gettingStartedCard(d, facts, setupDone), nowCard, tilesCard, keepCard, health);
   };
 
   // ======================================================================== projects
@@ -2253,11 +3107,14 @@
     const dateIn = (name) => input(name, { type: 'date', value: (p && p[name]) || '' });
     const form = h('form', { novalidate: true, onsubmit: async (e) => {
       e.preventDefault(); err.replaceChildren();
+      const bad = extras.check();
+      if (bad) { err.append(h('div', { class: 'banner error' }, h('p', {}, bad))); return; }
       const data = formData(form);
       if (!data.name) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Give the project a name.'))); return; }
       busy(btn, true, 'Saving…');
       try {
         const saved = await api(p ? `/api/projects/${p.id}` : '/api/projects', { method: p ? 'PATCH' : 'POST', body: data });
+        extras.saved();
         toast(p ? 'Project saved' : 'Project added'); onSaved(saved);
       } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
     } },
@@ -2268,8 +3125,7 @@
         { hint: 'Public = a city, county, state agency, school or other public owner.' }),
       field('Street address', input('address', { value: (p && p.address) || '', autocomplete: 'street-address' })),
       field('City', input('city', { value: (p && p.city) || '' })),
-      field('County', input('county', { value: (p && p.county) || '', list: 'ca-counties', autocomplete: 'off' })),
-      h('datalist', { id: 'ca-counties' }, CA_COUNTIES.map((c) => h('option', { value: c }))),
+      field('County', input('county', { value: (p && p.county) || '' })),
       field('Property owner', input('owner_name', { value: (p && p.owner_name) || '' })),
       field('Construction lender', input('lender_name', { value: (p && p.lender_name) || '' }), { hint: 'If there is a construction loan.' }),
       // B&P 7159.5(a)(1): the contract amount includes profit, labor and materials but not finance charges (2026 CSLB
@@ -2284,6 +3140,7 @@
       field('Notice of completion recorded on', dateIn('noc_date'), { hint: 'Shortens lien deadlines if recorded on time.' }),
       field('Status', select('status', [['active', 'Active'], ['planned', 'Planned'], ['completed', 'Completed'], ['closed', 'Closed (stop tracking)']], (p && p.status) || 'active'))),
     err, h('div', { class: 'row' }, btn));
+    const extras = projectFormExtras(form, p);
     return form;
   }
 
@@ -2323,6 +3180,7 @@
       h('div', { class: 'card' }, projectForm(null, (p) => go(`project/${p.id}`))));
     }
     const p = await api(`/api/projects/${encodeURIComponent(id)}`);
+    recents.add('project', p.id, p.name, `#/project/${p.id}`);
     const [dl, logs, docs, subs, v] = await Promise.all([
       api(`/api/projects/${p.id}/deadlines`).catch((e) => ({ error: e })),
       api(`/api/field_logs?project_id=${p.id}`).catch(() => []),
@@ -2385,13 +3243,13 @@
       data.project_id = data.project_id ? Number(data.project_id) : null;
       if (!data.name) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Enter the company name.'))); return; }
       busy(btn, true, 'Saving…');
-      try { await api(s ? `/api/subs/${s.id}` : '/api/subs', { method: s ? 'PATCH' : 'POST', body: data }); toast('Saved'); onSaved(); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+      try { await api(s ? `/api/subs/${s.id}` : '/api/subs', { method: s ? 'PATCH' : 'POST', body: data }); drafts.done(); toast('Saved'); onSaved(); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
     } },
     h('div', { class: 'form-grid' },
       field('Company name', input('name', { value: (s && s.name) || '' }), { required: true }),
       field('CSLB license number', input('license_number', { value: (s && s.license_number) || '', inputmode: 'numeric' })),
       field('Scope of work', input('scope', { value: (s && s.scope) || '' })),
-      field('License class the work needs', input('required_class', { value: (s && s.required_class) || '', placeholder: 'e.g. C-10' })),
+      field('License class the work needs', input('required_class', { value: (s && s.required_class) || '', placeholder: 'e.g. C-10', autocapitalize: 'characters' })),
       field('Insurance certificate (COI) expires', input('coi_expiry', { type: 'date', value: (s && s.coi_expiry) || '' })),
       field('DIR registration # (public works)', input('dir_number', { value: (s && s.dir_number) || '' })),
       field('Email', input('email', { type: 'email', value: (s && s.email) || '' })),
@@ -2400,6 +3258,7 @@
       h('div', { class: 'field' }, h('label', { class: 'switch' }, h('input', { type: 'checkbox', name: 'wc_required', checked: s ? s.wc_required : true }), h('span', {}, 'They will have employees on site'))),
       h('div', { class: 'field' }, h('label', { class: 'switch' }, h('input', { type: 'checkbox', name: 'w9_on_file', checked: s ? s.w9_on_file : false }), h('span', {}, 'W-9 on file')))),
     err, btn);
+    const drafts = subFormExtras(form, s);
     return form;
   }
   function importPanel(onDone) {
@@ -2468,8 +3327,14 @@
     // ?sub=<id> (from Today, a project or search): that row, marked until the next tap or key
     const want = query && query.get('sub');
     view.afterRender = () => {
+      const act = state.pageAction;          // from Search: "Add a sub", "Import a sub list"
+      state.pageAction = null;
+      if (act === 'add-sub' && can.write()) add();
+      if (act === 'import-subs' && importBox) { importBox.open = true; importBox.scrollIntoView({ block: 'start' }); importBox.querySelector('summary').focus({ preventScroll: true }); }
       const tr = want && /^\d+$/.test(want) ? document.getElementById(`sub-${want}`) : null;
       if (!tr) return;
+      const sub = rows.find((x) => String(x.id) === want);
+      if (sub) recents.add('sub', sub.id, sub.name, `#/subs?sub=${sub.id}`);
       tr.classList.add('row-highlight');
       tr.scrollIntoView({ block: 'center' });
       const clear = () => { tr.classList.remove('row-highlight'); document.removeEventListener('pointerdown', clear, true); document.removeEventListener('keydown', clear, true); };
@@ -2502,12 +3367,13 @@
     });
   }
   routes.tools = async ({ args, query }) => {
-    const data = await getTools();
+    const [data] = await Promise.all([getTools(), args[0] ? vocab().catch(() => null) : null]);
     const groups = checkGroups(data);
     const byName = Object.fromEntries(data.tools.map((t) => [t.name, t]));
     if (args[0]) {
       const current = byName[args[0]];
       if (!current) throw new ApiError(404, 'That check isn\'t in TradeComply.');
+      recents.add('tool', current.name, current.title, `#/tools/${current.name}`);
       const g = groups.find((x) => x.tools.includes(current.name)) || null;
       const side = h('aside', { class: 'card tool-list', 'aria-label': 'All checks' }, groups.map((gg) => {
         const list = gg.tools.map((nm) => byName[nm]).filter((t) => t && (!t.hidden || t === current));
@@ -2545,7 +3411,8 @@
       if (!q) { fill(results); status.textContent = ''; return; }
       fill(results, items.length
         ? h('section', { class: 'card', 'aria-labelledby': 'bm-h' }, h('h2', { id: 'bm-h' }, 'Best matches'), h('ul', { class: 'list' }, items.map((t) => toolRow(t, t.hidden ? 'For AI assistants' : null))))
-        : h('div', { class: 'card' }, emptyState({ icon: 'search', title: `No check matches “${q}”`, text: 'Try a shorter word, or another way to say it.' }),
+        : h('div', { class: 'card' }, emptyState({ icon: 'search', title: `No check matches “${q}”`, text: 'Try a shorter word, or another way to say it.',
+          actions: [h('button', { type: 'button', class: 'btn secondary', onclick: () => openPalette({ q, types: ['rule'] }) }, icon('rule'), `Search the rulebook for “${q}”`)] }),
           nearest.length ? [h('h3', {}, 'Closest checks'), h('ul', { class: 'list' }, nearest.map((t) => toolRow(t)))] : null));
       status.textContent = items.length ? `${plural(items.length, 'check')} found.` : `No check matches “${q}”.`;
     };
@@ -2800,6 +3667,11 @@
     const status = h('p', { class: 'visually-hidden', role: 'status' });
     const out = h('div', { class: 'pf-results' });
     const btn = h('button', { type: 'submit', class: 'btn' }, 'Show official lookups');
+    // "Describe what you need": a suggestion picks the kind of professional; words alone are matched the same way
+    // (POST /api/suggest, never in the address) when no kind is chosen
+    const pickType = (id) => { if (types.some((t) => t.id === id)) { typeSel.value = id; showDesc(); } };
+    const need = combobox({ name: 'need', label: 'Describe what you need (optional)', source: 'need', wide: true,
+      hint: 'In your own words, for example "retaining wall over 4 feet". Picking a suggestion chooses the kind below.', onPick: (it) => pickType(it.type_id) });
     // The "doesn't recommend" note sits under the form until results show; then the results' own (fuller) note
     // replaces it, so it isn't said twice on one screen.
     const formNote = h('p', { class: 'small muted pf-note' }, OFFICIAL_NOTE);
@@ -2810,6 +3682,12 @@
       fill(out);
       formNote.hidden = false;
       status.textContent = '';
+      const words = need.input.value.trim();
+      if (!typeSel.value && words) {
+        const r = await api('/api/suggest', { method: 'POST', body: { source: 'need', q: words.slice(0, 100), limit: 5 } }).catch(() => null);
+        const hit = r && (r.items || []).find((i) => types.some((t) => t.id === i.type_id));
+        if (hit) pickType(hit.type_id);
+      }
       if (!typeSel.value) { out.append(msgBox('error', 'Choose the kind of professional you need.')); typeSel.focus(); return; }
       const t = types.find((x) => x.id === typeSel.value);
       const q = new URLSearchParams({ type_id: typeSel.value });
@@ -2840,7 +3718,7 @@
       reveal(asked);
     };
     const form = h('form', { novalidate: true, onsubmit: (e) => { e.preventDefault(); run(true); } },
-      h('div', { class: 'form-grid' },
+      h('div', { class: 'form-grid' }, need.el,
         h('div', { class: 'field wide' }, h('label', { for: 'pf-type' }, 'What do you need?'), typeSel, typeHint),
         projSel ? h('div', { class: 'field' }, h('label', { for: 'pf-project' }, 'Job (optional)'), projSel, projHint) : null,
         h('div', { class: 'field' }, h('label', { for: 'pf-county' }, 'County of the job'), countySel, countyHint)),
@@ -2862,12 +3740,13 @@
       const data = formData(form);
       if (!data.title) { err.append(h('div', { class: 'banner error' }, h('p', {}, 'Add a title.'))); return; }
       busy(btn, true, 'Saving…');
-      try { const saved = await api(doc ? `/api/documents/${doc.id}` : '/api/documents', { method: doc ? 'PATCH' : 'POST', body: { title: data.title, body_markdown: ta.value } }); toast('Saved'); onSaved(saved); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
+      try { const saved = await api(doc ? `/api/documents/${doc.id}` : '/api/documents', { method: doc ? 'PATCH' : 'POST', body: { title: data.title, body_markdown: ta.value } }); drafts.done(); toast('Saved'); onSaved(saved); } catch (ex) { err.append(h('div', { class: 'banner error' }, h('p', {}, ex.message))); busy(btn, false); }
     } },
     field('Title', input('title', { value: (doc && doc.title) || '' }), { required: true }),
     field('Text', ta, { hint: 'Markdown: # Heading, - bullet, **bold**, | table |.' }),
     h('details', { ontoggle: () => { preview.innerHTML = md(ta.value); } }, h('summary', {}, 'Preview'), preview),
     err, h('div', { class: 'row' }, btn));
+    const drafts = formDrafts(form, doc ? `doc:${doc.id}` : 'doc:new');
     return form;
   }
   const DOC_KIND = { tool_result: 'Check result', note: 'Note', program: 'Safety program' };
@@ -2895,6 +3774,7 @@
   const stripTitle = (body, title) => String(body || '').replace(/^\s*#\s+(.+)\n+/, (m, t) => (t.trim() === String(title).trim() ? '' : m));
   routes.document = async ({ args }) => {
     const d = await api(`/api/documents/${encodeURIComponent(args[0])}`);
+    recents.add('document', d.id, d.title, `#/document/${d.id}`);
     const edit = () => { const dlg = openDialog('Edit document', docEditor(d, () => { dlg.close(); render(); })); };
     const del = async () => { if (!confirm(`Delete "${d.title}"?`)) return; await api(`/api/documents/${d.id}`, { method: 'DELETE' }); toast('Deleted'); go('documents'); };
     return h('div', {},
@@ -2951,17 +3831,19 @@
     const list = h('div', {});
     const addAttendee = (name = '') => {
       const pad = signaturePad();
-      const nameIn = h('input', { type: 'text', class: 'attendee-name', placeholder: 'e.g. Luis Ramirez', value: name, autocomplete: 'off' });
+      const nameIn = h('input', { type: 'text', class: 'attendee-name', id: `att-${++fieldSeq}`, placeholder: 'e.g. Luis Ramirez', value: name, autocapitalize: 'words', enterkeyhint: 'next' });
       const ack = h('input', { type: 'checkbox' });
       const row = h('div', { class: 'sig-row' });
       const entry = { pad, nameIn, ack, row };
       const n = attendees.length + 1;
-      row.append(h('div', { class: 'field' }, h('label', {}, `Person ${n}: full name`, nameIn)),
+      row.append(h('div', { class: 'field' }, h('label', { for: nameIn.id }, `Person ${n}: full name`), nameIn),
         h('div', { class: 'sig-label' }, h('span', { class: 'label' }, 'Signature'), h('span', { class: 'hint' }, 'Sign in the box with a finger or stylus.')),
         pad.el, h('div', { class: 'row' }, h('button', { type: 'button', class: 'btn ghost small', onclick: () => pad.clear() }, 'Clear signature'),
           h('button', { type: 'button', class: 'btn ghost small', onclick: () => { attendees.splice(attendees.indexOf(entry), 1); row.remove(); } }, 'Remove person')),
         h('label', { class: 'switch small-switch' }, ack, h('span', {}, 'Was there but can\'t sign (mark as attended)')));
       attendees.push(entry); list.append(row);
+      // names from the team and earlier talks and inspections (never incident reports); a pick goes to the next person
+      attachCombobox(nameIn, { source: 'crew_name', onPick: () => { const nx = attendees.find((a) => a !== entry && !a.nameIn.value.trim()); if (nx) nx.nameIn.focus(); } });
       return entry;
     };
     const err = h('div', { role: 'alert' });
@@ -2978,6 +3860,7 @@
       busy(btn, true, 'Saving…');
       try {
         await Outbox.put(log);
+        if (dui) dui.done();
         const res = navigator.onLine ? await syncOutbox({ quiet: true }) : null;
         toast(res && res.created ? 'Saved and synced' : 'Saved on this device. It will sync when you have signal.');
         render();
@@ -2988,13 +3871,28 @@
       field('Project', select('project_id', [['', 'No project'], ...projects.map((p) => [String(p.id), p.name])],
         query && query.get('project') && projects.some((p) => String(p.id) === query.get('project')) ? query.get('project') : projects.length === 1 ? String(projects[0].id) : '')),
       field('Date', input('date', { type: 'date', value: todayISO() }), { required: true }),
-      field('Topic', input('topic', { list: 'topic-list', autocomplete: 'off' }), { hint: 'What you covered or inspected.' }),
-      h('datalist', { id: 'topic-list' }, TOPICS.map((t) => h('option', { value: t }))),
+      field('Topic', input('topic', { enterkeyhint: 'next' }), { hint: 'What you covered or inspected.' }),
       field('Notes', h('textarea', { name: 'notes', rows: '3' }), { wide: true })),
     h('fieldset', {}, h('legend', {}, 'Attendees and signatures'), list,
       h('button', { type: 'button', class: 'btn secondary small', onclick: () => { const a = addAttendee(); a.nameIn.focus(); } }, '+ Add person')),
     err, h('div', { class: 'row' }, btn));
     addAttendee();
+    attachCombobox(form.querySelector('[name=topic]'), { source: 'field_topic' });
+    // drafts of an unsaved toolbox talk or inspection (names, no signatures); never of an incident report
+    const draftSlot = h('div', {});
+    form.prepend(draftSlot);
+    let dui = null;
+    const setDrafts = () => {
+      const k = kind.value;
+      dui = k === 'incident' ? null : draftUi(`field:${k}`, 1, {
+        read: () => ({ ...formRead(form), people: attendees.map((a) => a.nameIn.value) }),
+        write: (v) => { formWrite(form, v); (v.people || []).forEach((nm, i) => { (attendees[i] || addAttendee()).nameIn.value = nm; }); } });
+      fill(draftSlot, dui ? dui.el : null);
+      if (dui) dui.offer();
+    };
+    kind.addEventListener('change', setDrafts);
+    form.addEventListener('input', (e) => { if (dui && e.target !== kind) dui.changed(); });
+    setDrafts();
     const queue = await Outbox.all().catch(() => []);
     let recent = [];
     try { recent = await api('/api/field_logs'); } catch (e) { /* offline */ }
@@ -3268,7 +4166,7 @@
         }
         return [h('h2', {}, 'Step 4: Answer the safety questionnaire'), h('p', { class: 'muted' }, 'About 10 minutes. You get draft programs (IIPP, Code of Safe Practices, heat plan and more) to review and sign. Save them to Documents.'),
           pick.length > 1 ? h('p', { class: 'small' }, 'Also available: ', pick.slice(1).map((t, k) => [k ? ', ' : '', h('a', { href: `#/tools/${t.name}` }, t.title)])) : null,
-          toolPanel(pick[0], { onResult: () => gate.open() })];
+          (await vocab().catch(() => null), toolPanel(pick[0], { onResult: () => gate.open(), bare: true }))];
       },
       5: async () => [h('h2', {}, 'Step 5: Connect an AI assistant (optional)'), agentConnect({ keysBelow: false })],
     };
@@ -4396,9 +5294,196 @@
   };
 
   // ======================================================================== command palette
-  // (Search TradeComply, spec 4. Built with the palette work; until then #search-open stays hidden. Its
-  // <dialog id="palette"> is made on first open and placed after #ask-panel, outside .app: a closed <dialog> already
-  // in the page would be the one an existing test waits on to be removed after the key-access dialog closes.)
+  // Search TradeComply (spec 4): the top bar's Search button, or Ctrl+K (Cmd+K on a Mac) from anywhere. A native
+  // modal <dialog id="palette">, made when it opens and removed when it closes, placed after #ask-panel (outside
+  // .app, which a phone Help sheet makes inert). Typed words go to POST /api/search in the body, 120 ms after the
+  // last key, the older request stopped. Offline it searches the pages, actions, checks and projects kept here.
+  const pal = { dlg: null, q: '', types: null, seq: 0, ctrl: null, timer: null, sayTimer: null, opener: null, opts: [], active: -1 };
+  const isMac = () => /mac/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '');
+  const PAL_PAGES = [['Today', '#/dashboard', 'today'], ['Projects', '#/projects', 'projects'], ['Subcontractors', '#/subs', 'subs'], ['Checks', '#/tools', 'checks'],
+    ['Documents', '#/documents', 'docs'], ['Field log', '#/field', 'log'], ['Find a professional', '#/professionals', 'find'], ['Integrations', '#/integrations', 'plug'],
+    ['Settings', '#/settings', 'settings'], ['Display', '#/settings?section=display', 'auto'], ['More', '#/more', 'more']]
+    .map(([title, href, ic]) => ({ title, href, icon: ic, kind: 'Page' }));
+  const KIND_ICON = { project: 'projects', sub: 'subs', document: 'docs', tool: 'checks', rule: 'rule', page: 'more', professional: 'find', class: 'g-license', integration: 'plug' };
+  const KIND_WORD = { project: 'Project', sub: 'Sub', document: 'Document', tool: 'Check', rule: 'Rule' };
+  function palActions() {               // what the person's role can do here
+    const then = (act, route) => () => { state.pageAction = act; go(route); };
+    return [can.write() && ['Add a project', 'plus', () => go('project/new')], can.write() && ['Add a sub', 'plus', then('add-sub', 'subs')],
+      can.write() && ['Import a sub list', 'download', then('import-subs', 'subs')], ['New field log', 'log', () => go('field')],
+      ['Start a toolbox talk', 'log', () => go('field?kind=toolbox_talk')], can.owner() && ['Invite someone', 'subs', () => go('settings?section=team')],
+      ['Display settings', 'auto', () => go('settings?section=display')], ['Log out', 'logout', () => logOut()]]
+      .filter(Boolean).map(([title, ic, run]) => ({ title, icon: ic, run, kind: 'Action' }));
+  }
+  // drafts kept on this device for this person (newest first), as rows that open their form
+  function myDrafts() {
+    const w = lastJob.who();
+    if (!w) return [];
+    const tools = Object.fromEntries(((state.tools && state.tools.tools) || []).map((t) => [t.name, t.title]));
+    const pre = `tc.draft.${w.t}.${w.u}.`;
+    return allDrafts().filter((x) => x.key.startsWith(pre) && x.d.saved).reverse().map((x) => {
+      const [kind, id = ''] = x.key.slice(pre.length).split(/:(.*)/);
+      const at = ` · saved ${fmtDateTime(x.d.saved)}`;
+      if (kind === 'tool') return { title: `${tools[id] || humanize(id)} (draft)`, detail: `Check${at}`, href: `#/tools/${id}`, icon: 'checks' };
+      if (kind === 'field') return { title: `${id === 'inspection' ? 'Daily inspection' : 'Toolbox talk'} (draft)`, detail: `Field log${at}`, href: `#/field?kind=${id}`, icon: 'log' };
+      if (kind === 'project') return { title: `${id === 'new' ? 'New project' : 'Project changes'} (draft)`, detail: `Project${at}`, href: id === 'new' ? '#/project/new' : `#/project/${id}`, icon: 'projects' };
+      if (kind === 'sub') return { title: `${id === 'new' ? 'New subcontractor' : 'Subcontractor changes'} (draft)`, detail: `Subcontractor${at}`, ...(id === 'new' ? { run: () => { state.pageAction = 'add-sub'; go('subs'); } } : { href: `#/subs?sub=${id}` }), icon: 'subs' };
+      return { title: `${id === 'new' ? 'New document' : 'Document changes'} (draft)`, detail: `Document${at}`, href: id === 'new' ? '#/documents' : `#/document/${id}`, icon: 'docs' };
+    });
+  }
+  function pageActions() {              // "For this page"
+    const { name, args } = parseHash();
+    if (name === 'project' && /^\d+$/.test(args[0] || '')) {
+      const id = args[0];
+      return [['Lien and prelim dates for this job', `#/tools/calculate_lien_deadline?project=${id}`, 'g-paid'], ['Setup checklist for this job', `#/tools/project_setup_checklist?project=${id}`, 'g-start'],
+        ['New field log for this job', `#/field?project=${id}`, 'log']].map(([title, href, ic]) => ({ title, href, icon: ic, kind: 'Action' }));
+    }
+    if (name === 'tools' && args[0]) return [{ title: 'Find a professional', href: '#/professionals', icon: 'find', kind: 'Page' }];
+    if (name === 'subs' && can.write()) return palActions().filter((a) => /sub/.test(a.title));
+    return [];
+  }
+  const palRole = () => (fieldRole() ? 'field' : state.me.user.role === 'office' ? 'office' : 'owner');
+  const askRow = (q) => (askAvailable() ? [{ title: `Ask TradeComply: “${q}”`, detail: 'Claude by Anthropic. Opens with your words typed in; nothing is sent until you press Send.', icon: 'claude', kind: 'Action', hand: 'ask',
+    run: () => { openAsk(); const p = askParts(); p.ta.value = q; p.ta.focus(); } }] : []);
+  const note = (text) => ({ note: text });
+  function palDraw(groups, say) {
+    const list = $('#pal-list');
+    if (!list) return;
+    pal.opts = [];
+    const opt = (it) => {
+      const n = pal.opts.length;
+      const li = h('li', { role: 'option', id: `pal-o${n}`, class: 'pal-opt', 'aria-selected': 'false' }, icon(it.icon || 'search'),
+        h('span', { class: 'pal-text' }, h('span', { class: 'pal-title' }, it.title), it.detail ? h('span', { class: 'pal-detail' }, it.detail) : null),
+        it.kind ? h('span', { class: 'pal-kind' }, it.kind) : null);
+      li.addEventListener('click', (e) => palOpen(it, e.ctrlKey || e.metaKey));
+      pal.opts.push({ it, li });
+      return li;
+    };
+    list.replaceChildren(...groups.filter((g) => g.items.length).map((g, gi) => h('li', { role: 'presentation' }, h('ul', { role: 'group', 'aria-labelledby': `pal-g${gi}` },
+      h('li', { role: 'presentation', id: `pal-g${gi}`, class: 'opt-group' }, g.label), g.items.map((it) => (it.note ? h('li', { role: 'presentation', class: 'pal-note' }, it.note) : opt(it)))))));
+    palMark(pal.opts.length ? 0 : -1);
+    clearTimeout(pal.sayTimer);
+    pal.sayTimer = setTimeout(() => { const st = $('#palette [role=status]'); if (st) st.textContent = say || ''; }, 1400);
+  }
+  function palMark(i) {
+    pal.active = i;
+    pal.opts.forEach((o, k) => o.li.setAttribute('aria-selected', String(k === i)));
+    const q = $('#pal-q');
+    if (!q) return;
+    if (i < 0) q.removeAttribute('aria-activedescendant'); else { q.setAttribute('aria-activedescendant', pal.opts[i].li.id); pal.opts[i].li.scrollIntoView({ block: 'nearest' }); }
+  }
+  function palOpen(it, newTab = false) {
+    if (it.fill) { const q = $('#pal-q'); q.value = it.fill; palSearch(); q.focus(); return; }
+    if (newTab && it.href) { window.open(it.href, '_blank', 'noopener'); return; }
+    if (it.hand) sheets.hand('palette', it.hand);       // phones: the next sheet takes this one's history entry
+    closePalette(false);
+    if (it.run) it.run(); else if (it.href) location.hash = it.href;
+  }
+  // nothing typed: carry on (drafts, then what was opened last), this page's own actions, the role's common checks
+  async function palEmpty() {
+    const tools = await getTools().catch(() => null);
+    const byName = Object.fromEntries(((tools && tools.tools) || []).map((t) => [t.name, t]));
+    const common = ((tools && tools.common && tools.common[palRole()]) || []).map((n) => byName[n]).filter(Boolean).slice(0, 5)
+      .map((t) => ({ title: t.title, detail: toolSummary(t), href: `#/tools/${t.name}`, icon: GROUP_ICON[t.group] || 'checks', kind: 'Check' }));
+    const cont = [...myDrafts(), ...recents.list().map((r) => ({ title: r.title, href: r.href, icon: KIND_ICON[r.type] || 'recent', kind: KIND_WORD[r.type] || '' }))].slice(0, 5);
+    palDraw([{ label: 'Continue', items: cont }, { label: 'For this page', items: pageActions().slice(0, 4) }, { label: 'Common checks', items: common }], '');
+  }
+  // the same search on this device: pages, actions, the checks and projects kept here
+  async function palLocal(q) {
+    const words = fold(q).split(/[^a-z0-9]+/).filter(Boolean);
+    const hit = (text) => words.every((w) => fold(text).split(/[^a-z0-9]+/).some((k) => k.startsWith(w)));
+    const [tools, projects, v] = await Promise.all([getTools().catch(() => null), api('/api/projects').catch(() => []), vocab().catch(() => vocabNow)]);
+    const items = (tools ? localToolMatch(tools.tools, v, q) : []).slice(0, 5).map((t) => ({ title: t.title, detail: toolSummary(t), href: `#/tools/${t.name}`, icon: GROUP_ICON[t.group] || 'checks', kind: 'Check' }));
+    const offline = note('Needs a connection');
+    return [{ label: 'Your projects', items: projects.filter((p) => hit(`${p.name} ${p.city || ''}`)).slice(0, 3).map((p) => ({ title: p.name, detail: [p.city, p.county].filter(Boolean).join(', '), href: `#/project/${p.id}`, icon: 'projects', kind: 'Project' })) },
+      { label: 'Your subs', items: [offline] }, { label: 'Go to', items: PAL_PAGES.filter((pg) => hit(pg.title)).slice(0, 3) }, { label: 'Actions', items: palActions().filter((a) => hit(a.title)).slice(0, 3) },
+      { label: 'Checks', items }, { label: 'Licensed professionals', items: [offline] }, { label: 'Rules', items: [offline] }];
+  }
+  async function palSearch() {
+    const input = $('#pal-q');
+    if (!input) return;
+    const q = input.value.trim();
+    pal.q = q;
+    const my = ++pal.seq;
+    clearTimeout(pal.timer);
+    if (pal.ctrl) { pal.ctrl.abort(); pal.ctrl = null; }
+    const scope = $('#palette .pal-scope');
+    fill(scope, pal.types ? ['Searching rules · ', h('button', { type: 'button', class: 'btn quiet small', onclick: () => { pal.types = null; palSearch(); $('#pal-q').focus(); } }, 'Search everything')]
+      : `Searching everything · ${TITLES[parseHash().name] || 'TradeComply'}`);
+    if (!q) { palEmpty(); return; }
+    pal.timer = setTimeout(async () => {
+      const ask = { label: 'Ask', items: askRow(q) };
+      let groups = null, say = '';
+      if (navigator.onLine) {
+        const c = pal.ctrl = new AbortController();
+        const { name, args, query } = parseHash();
+        const context = defined({ page: name || undefined, tool: name === 'tools' ? args[0] : undefined, project_id: name === 'project' && /^\d+$/.test(args[0] || '') ? Number(args[0]) : (query.get('project') && /^\d+$/.test(query.get('project')) ? Number(query.get('project')) : undefined) });
+        try {
+          const r = await api('/api/search', { method: 'POST', body: defined({ q: q.slice(0, 200), types: pal.types || undefined, context }), signal: c.signal });
+          if (my !== pal.seq) return;
+          const items = (g) => g.items.map((x) => ({ title: x.title, detail: x.detail, href: x.href, icon: x.icon || KIND_ICON[x.type], kind: x.kind }));
+          groups = [];
+          if (r.did_you_mean && r.did_you_mean.q) groups.push({ label: 'Spelling', items: [{ title: `Did you mean ${r.did_you_mean.label || r.did_you_mean.q}?`, fill: r.did_you_mean.q, icon: 'search' }] });
+          for (const g of r.groups || []) {
+            if (g.type === 'tool' && !pal.types) groups.push({ label: 'Actions', items: palActions().filter((a) => fold(a.title).includes(fold(q))).slice(0, 3) });
+            groups.push({ label: g.label, items: items(g) });
+          }
+          if (!pal.types && !(r.groups || []).some((g) => g.type === 'tool')) groups.push({ label: 'Actions', items: palActions().filter((a) => fold(a.title).includes(fold(q))).slice(0, 3) });
+          if (r.entitled === false) {
+            groups.push({ label: 'Rules', items: [can.owner() ? { title: 'Rule text needs an active subscription.', detail: 'Settings > Billing', href: '#/settings?section=billing', icon: 'rule', kind: 'Page' }
+              : note('Rule text needs an active subscription. Your account owner can renew in Settings > Billing.')] });
+          }
+          if ((r.nearest || []).length) groups.push({ label: 'Closest checks', items: r.nearest.map((x) => ({ title: x.title, detail: x.detail, href: x.href, icon: x.icon, kind: x.kind })) });
+          const n = groups.reduce((k, g) => k + g.items.filter((x) => !x.note).length, 0);
+          say = n ? plural(n, 'result') : `No results for “${q}”. Showing close matches.`;
+          if (!n) groups.push({ label: `No results for “${q}”`, items: [note('Try a shorter word or another way to say it.')] });
+        } catch (e) { if (my !== pal.seq || e.status !== 0) { if (my === pal.seq) palDraw([ask], e.message); return; } }
+      }
+      if (!groups) { groups = await palLocal(q); if (my !== pal.seq) return; say = 'You\'re offline: searching checks, pages and projects saved on this device.'; }
+      palDraw([...groups, ask], say);
+    }, 120);
+  }
+  function openPalette({ q = '', types = null } = {}) {
+    if (!state.me) return;
+    pal.types = types;
+    if (pal.dlg) { $('#pal-q').value = q; palSearch(); return; }
+    if (!$('#ask-panel').hidden && narrowScreen()) { sheets.hand('ask', 'palette'); closeAsk(false); }     // phones: Search takes the Help sheet's place
+    pal.opener = document.activeElement;
+    const input = h('input', { id: 'pal-q', type: 'search', role: 'combobox', 'aria-autocomplete': 'list', 'aria-expanded': 'true', 'aria-controls': 'pal-list',
+      'aria-label': 'Search checks, rules, projects, subs and pages', enterkeyhint: 'go', autocomplete: 'off', spellcheck: 'false', value: q });
+    const dlg = h('dialog', { id: 'palette', class: 'palette', 'aria-labelledby': 'palette-title' },
+      h('h2', { id: 'palette-title', class: 'visually-hidden' }, 'Search TradeComply'),
+      h('div', { class: 'pal-field' }, icon('search'), input, h('button', { type: 'button', class: 'btn quiet pal-close', 'aria-label': 'Close', onclick: () => closePalette() }, icon('close'))),
+      h('p', { class: 'pal-scope small muted' }), h('ul', { id: 'pal-list', role: 'listbox', 'aria-label': 'Results' }),
+      h('div', { role: 'status', 'aria-atomic': 'true', class: 'visually-hidden' }),
+      h('p', { class: 'pal-foot small muted' }, `↑↓ to move · Enter to open · ${isMac() ? '⌘' : 'Ctrl'}+Enter new tab · Esc to close`));
+    input.addEventListener('input', palSearch);
+    input.addEventListener('keydown', (e) => {
+      const n = pal.opts.length;
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && n) { e.preventDefault(); palMark(pal.active < 0 ? 0 : (pal.active + (e.key === 'ArrowDown' ? 1 : -1) + n) % n); }
+      else if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); if (pal.active >= 0) palOpen(pal.opts[pal.active].it, e.ctrlKey || e.metaKey); }
+      else if (e.key === 'Escape') { e.preventDefault(); closePalette(); }       // a search box would only clear its text
+    });
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); closePalette(); });
+    dlg.addEventListener('click', (e) => { if (e.target === dlg) closePalette(); });       // outside the box
+    $('#ask-panel').after(dlg);
+    pal.dlg = dlg;
+    dlg.showModal();
+    sheets.open('palette');
+    $('#search-open').setAttribute('aria-expanded', 'true');
+    input.focus();
+    palSearch();
+  }
+  function closePalette(back = true) {
+    const dlg = pal.dlg;
+    if (!dlg) return;
+    pal.dlg = null; pal.opts = [];
+    clearTimeout(pal.timer); clearTimeout(pal.sayTimer);
+    if (pal.ctrl) { pal.ctrl.abort(); pal.ctrl = null; }
+    dlg.close(); dlg.remove();
+    $('#search-open').removeAttribute('aria-expanded');
+    sheets.close('palette');
+    if (back && pal.opener && pal.opener.isConnected) pal.opener.focus();
+  }
 
   // ======================================================================== Quick help (built in)
   // (The built-in Help tab, spec 5.7: no html:, no innerHTML. Built with the Help panel work.)
@@ -4432,7 +5517,32 @@
   };
 
   // ======================================================================== rule page
-  // (#/rule/<id>, spec 1.11: GET /api/rules/{id}. Built with the search and Quick help work.)
+  // #/rule/<id> (spec 1.11): one rule from the rulebook, word for word: the plain English and, for a corrected rule,
+  // what the check against the official text changed, directly under it; the official text; where it comes from.
+  routes.rule = async ({ args }) => {
+    let r;
+    try { r = await api(`/api/rules/${encodeURIComponent(args[0] || '')}`); } catch (e) {
+      if (e.status !== 404) throw e;
+      return h('div', {}, h('div', { class: 'card empty-state' }, icon('rule', 'icon es-icon'), h('h1', {}, 'That rule isn\'t in TradeComply\'s rulebook'),
+        h('p', {}, 'It may have been renamed, or the link is wrong.'),
+        h('button', { type: 'button', class: 'btn secondary', onclick: () => openPalette({ types: ['rule'] }) }, icon('search'), 'Search the rulebook')));
+    }
+    recents.add('rule', r.id, r.title, `#/rule/${r.id}`);
+    const sec = (title, ...kids) => [h('h2', {}, title), ...kids];
+    const src = /^https:\/\//.test(r.source || '') ? [h('a', { href: r.source, target: '_blank', rel: 'noopener noreferrer' }, r.source), ' (official site, opens in a new tab)'] : r.source;
+    const related = (r.related_tools || []).filter((t) => t && t.name);
+    return h('div', {},
+      pageHead({ title: r.title, purpose: r.citation, crumbs: [{ label: 'Checks', href: '#/tools' }, { label: r.title }], back: { href: '#/tools', label: 'Checks' } }),
+      h('article', { class: 'card rule-page' },
+        h('div', { class: 'row' }, r.verified ? badge('verified', 'Verified') : badge('unverified', 'Not yet verified'), r.checked_on ? h('span', { class: 'small muted' }, `Checked on ${fmtDate(r.checked_on)}`) : null),
+        sec('Plain English', h('p', { class: 'prose' }, r.plain_english)),
+        r.status === 'corrected' && r.correction ? h('p', { class: 'callout correction' }, h('strong', {}, 'What changed when TradeComply checked the official text: '), r.correction) : null,
+        r.quote ? sec('Official text', h('blockquote', { class: 'prose' }, r.quote)) : null,
+        r.source ? sec('Source', h('p', {}, src)) : null,
+        r.applies_to ? sec('Applies to', h('p', { class: 'prose' }, r.applies_to)) : null,
+        related.length ? sec('Related checks', h('ul', { class: 'list' }, related.map((t) => toolRow({ name: t.name, title: t.title, summary: '' })))) : null,
+        disclaimerBox(r.disclaimer)));
+  };
 
   // ======================================================================== Ask TradeComply (the AI helper)
   // The Ask button in the top bar opens a sheet beside the page (full screen on phones) for questions in plain words.
@@ -4440,7 +5550,7 @@
   // as the person signed in. What the person typed is shown as text and answers go through md() (escaped first).
   // Nothing opens by itself; Esc or Close returns to the button. Only the open page's name is sent, never its data.
   // On phones the panel is full screen: a modal dialog (the page behind is inert) that the Back button closes.
-  const ask = { conv: null, chats: null, ctrl: null, parts: null, who: null, pushed: false, after: null, rows: new Map() };
+  const ask = { conv: null, chats: null, ctrl: null, parts: null, who: null, rows: new Map() };
   const askAvailable = () => !!(state.me && state.me.assistant && state.me.assistant.available);
   const narrowScreen = () => { try { return window.matchMedia('(max-width: 899px)').matches; } catch (e) { return false; } };
   function syncAsk() {
@@ -4595,7 +5705,7 @@
     $('#ask-open').setAttribute('aria-expanded', 'true');
     document.body.classList.add('ask-on');
     askModal();
-    if (narrowScreen() && !ask.pushed) { history.pushState({ askPanel: true }, ''); ask.pushed = true; }   // Back closes it
+    sheets.open('ask');                // phones: Back closes it
     askDraw();
     if (ask.chats === null) askLoadChats();
     if (ask.conv && !ask.ctrl) {      // an answer saved after the signal dropped shows up here
@@ -4612,11 +5722,7 @@
     $('#ask-open').setAttribute('aria-expanded', 'false');
     document.body.classList.remove('ask-on');
     askModal();
-    if (ask.pushed) {                  // take back the history entry opening it added, then go on
-      ask.pushed = false;
-      if (history.state && history.state.askPanel) { ask.after = then; history.back(); then = null; }
-    }
-    if (then) location.hash = then;
+    sheets.close('ask', then);         // takes back the history entry opening it added, then goes on
     if (focusButton) $('#ask-open').focus();
   }
 
@@ -4642,9 +5748,18 @@
     render();
   });
   $('#ask-open').addEventListener('click', () => ($('#ask-panel').hidden ? openAsk() : closeAsk()));
+  sheets.closers = { ask: () => closeAsk(), palette: () => closePalette() };
+  // Search: the button, or Ctrl+K (Cmd+K on a Mac, where Ctrl+K in a text box must keep deleting to the line's end)
+  $('.top-kbd').textContent = isMac() ? '⌘ K' : 'Ctrl K';
+  $('#search-open').setAttribute('aria-keyshortcuts', isMac() ? 'Meta+K' : 'Control+K');
+  $('#search-open').addEventListener('click', () => openPalette());
+  document.addEventListener('keydown', (e) => {
+    if (!state.me || e.altKey || e.shiftKey || String(e.key).toLowerCase() !== 'k' || !(isMac() ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey)) return;
+    e.preventDefault();
+    if (pal.dlg) closePalette(); else openPalette();
+  }, true);
   window.addEventListener('popstate', () => {
-    if (ask.pushed && !(history.state && history.state.askPanel)) closeAsk();     // Back on a phone closes the panel
-    if (ask.after) { const to = ask.after; ask.after = null; location.hash = to; }
+    sheets.pop();                      // Back on a phone closes the Help panel or Search
   });
   document.addEventListener('keydown', (e) => {       // Esc closes the panel wherever focus is (not over a dialog)
     if (e.key !== 'Escape' || e.defaultPrevented || $('#ask-panel').hidden || document.querySelector('dialog[open]')) return;
