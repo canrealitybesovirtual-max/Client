@@ -461,7 +461,10 @@ def _county_items() -> tuple[list[dict], dict]:
         abbrev.setdefault(v, []).append(k.upper())
     items = [engine.option(c, c, aliases=[*abbrev.get(c, []), f"{c} County", f"County of {c}"])
              for c in professionals.counties()]
-    ask = {k.upper(): [c.strip() for c in re.split(r"\s+or\s+", v)] for k, v in ee._COUNTY_AMBIGUOUS.items()}
+    # "SJ" is "San Joaquin County or the City of San Jose" in equipment_emissions: only county names are choices here
+    names = set(professionals.counties())
+    ask = {k.upper(): [c for c in (re.sub(r"\s+County$", "", p.strip(" ,")) for p in re.split(r",?\s+or\s+", v)) if c in names]
+           for k, v in ee._COUNTY_AMBIGUOUS.items()}
     return items, ask
 
 

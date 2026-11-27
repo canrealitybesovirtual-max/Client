@@ -102,7 +102,8 @@ def test_counties_cities_and_classes(owner):
     sd = next(i for i in s["county"]["items"] if i["value"] == "San Diego")
     assert "SD" in sd["aliases"] and "San Diego County" in sd["aliases"]
     assert set(s["county"]["ask_which"]) == {"SB", "SC", "SJ", "SM"}
-    assert s["county"]["ask_which"]["SB"] == ["San Bernardino", "Santa Barbara"]
+    assert s["county"]["ask_which"] == {"SB": ["San Bernardino", "Santa Barbara"], "SC": ["Santa Clara", "Santa Cruz"],
+                                        "SJ": ["San Joaquin"], "SM": ["San Mateo"]}           # county names only
     cities = {i["value"]: i for i in s["city_covered"]["items"]}
     assert len(cities) == 8 and cities["San Diego"]["verified"] and cities["Los Angeles"]["verified"]
     assert not cities["Oakland"]["verified"] and cities["Oakland"]["detail"] == "City rules not yet verified"
