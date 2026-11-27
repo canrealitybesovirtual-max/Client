@@ -70,6 +70,20 @@ Roles: **owner** (everything, incl. billing, team and keys), **office** (project
 their tool scope (default: every read-only tool); a key with `rest_api: false` can only list and run tools. Keys
 can't create, change or revoke keys.
 
+#### Quick help and search
+
+Quick help is built into the server: no model, no outside call, nothing stored. It matches a question to a check, a
+rule, a page or a kind of licensed professional (a construction vocabulary of 76 concept groups, fixed patterns and a
+BM25F index over the rulebook, checks, pages, professionals, CSLB classes and integrations) and answers only with
+verbatim rule text (citation, official source, verification status, the verifier's correction), a
+`professionals.json` requirement with its legal basis when the question fits it better than every exception, fixed
+sentences, and buttons: open a check with the fields it understood filled in (the person presses Run), go to a page,
+find a professional, or hand the question to Ask TradeComply when that is set up. Skip and work-around questions get
+a fixed refusal and no rule text. Search (the palette and the type-ahead in forms) uses the same index for static
+lists and reads the company's own projects, subs, documents and field-log names per request, for that company only
+(never incident reports). Without a subscription both still find pages and checks but show no rule text. Details,
+measured speed and accuracy: [docs/quick-help.md](docs/quick-help.md).
+
 ### API (`/api/*`, reference at `/api/docs`, OpenAPI JSON at `/api/openapi.json`)
 
 | Area | Endpoints |
@@ -80,7 +94,8 @@ can't create, change or revoke keys.
 | Account data | `GET /api/tenant/export` (owner, signed in: one JSON file with every record of the company, no credentials), `DELETE /api/tenant` (owner, signed in: close the account; body `confirm_company_name`, `password`). See [Company data export and account deletion](#company-data-export-and-account-deletion) |
 | Connected apps (OAuth) | `GET /api/oauth/requests/{id}`, `POST /api/oauth/requests/{id}/approve`, `POST .../deny` (the consent screen, signed in), `GET /api/oauth/connections` (yours; owners see the company's), `DELETE /api/oauth/connections/{id}` (disconnect). Protocol endpoints outside `/api`: `/.well-known/oauth-protected-resource[/mcp]`, `/.well-known/oauth-authorization-server`, `POST /oauth/register`, `GET /oauth/authorize`, `POST /oauth/token`, `POST /oauth/revoke`. See [Add TradeComply to Claude](#add-tradecomply-to-claude-custom-connector) |
 | MCP governance | `GET /api/mcp/audit` (owner: MCP call log, filters, paging), `GET /api/mcp/audit/export?format=csv\|json` (owner), `GET /api/mcp/policy` (access mode, limits, tool categories), `GET /api/mcp/tool-hashes` (SHA-256 of every tool definition, for pinning). See [docs/mcp-security.md](docs/mcp-security.md) |
-| Tools | `GET /api/tools` (name, description, input schema, module), `POST /api/tools/{name}` (JSON body = arguments; runs in-process through `fastmcp.Client(server.mcp)`, writes an audit row) |
+| Tools | `GET /api/tools` (name, description, input schema, module; plus each check's plain title, summary, group, hidden flag, long-form layout and `x-label` field labels, and the display groups and common checks per role), `POST /api/tools/{name}` (JSON body = arguments; runs in-process through `fastmcp.Client(server.mcp)`, writes an audit row) |
+| Quick help and search | `POST /api/help` (`{question, page?, tool?, project_id?}`: a Quick help answer), `POST /api/search` (`{q, types?, limit?, context?}`: grouped results), `GET /api/suggest/vocab` (static suggestion lists and the field-to-source map; ETag, `private, no-cache`), `POST /api/suggest` (`{source, q, limit?, tool?, field?}`: the company's own values or a search-backed list), `GET /api/rules/{id}` (one rule; needs a subscription, 402 otherwise). People signed in only: API keys get 403, OAuth tokens 401. Typed text only in POST bodies. Limits: 60 questions a minute per person; 900 searches and suggestions a minute per person, 1,800 per company, 12,000 per server. See [docs/quick-help.md](docs/quick-help.md) |
 | AI helper | `GET /api/assistant/status`, `GET/POST /api/assistant/conversations`, `GET/DELETE /api/assistant/conversations/{id}`, `POST /api/assistant/conversations/{id}/messages` (`{text, page?}`: the answer when done), `POST /api/assistant/conversations/{id}/stop`, `GET /api/assistant/usage` and `PUT /api/assistant/settings` (owner). Signed-in people only (not API keys). See [Ask TradeComply](#ask-tradecomply-the-ai-helper) |
 | Records | `GET/POST /api/projects`, `GET/PATCH/DELETE /api/projects/{id}`, `GET /api/projects/{id}/deadlines`; `GET/POST /api/subs`, `GET/PATCH/DELETE /api/subs/{id}`, `GET /api/subs/{id}/check`, `POST /api/subs/import` (CSV: multipart `file`, `text/csv` body or JSON `{"csv": ...}`); `GET/POST /api/documents`, `POST /api/documents/from_result`, `GET/PATCH/DELETE /api/documents/{id}`; `GET/POST /api/field_logs`, `GET/DELETE /api/field_logs/{id}`, `POST /api/field_logs/sync` (idempotent by `client_uuid`) |
 | Compliance view | `GET /api/dashboard`, `GET /api/license/{number}`, `GET /api/calendar.ics` (cookie, API key, or the private feed link from `GET /api/calendar/feed`; rotate with `POST /api/calendar/feed/rotate`) |
@@ -268,6 +283,7 @@ Data flow, every setting and the design decisions with their sources: [docs/ai-h
 | `SUPPORT_EMAIL`, `SUPPORT_URL` | unset | The operator's support contact, shown to customers where they need help from whoever runs the server (billing not set up, an integration not turned on) and returned as `support_contact` by `GET /api/config`. Unset: the app says "ask whoever runs this TradeComply server". Use a business address; malformed values are ignored with a warning |
 | `INTEGRATIONS_KEY` | derived from `SECRET_KEY` (HKDF) | Base64 of 32 random bytes: the AES-256-GCM key for integration secrets at rest (OAuth tokens, API keys, webhook URLs). render.yaml generates one. Older keys go in `INTEGRATIONS_KEY_PREVIOUS` (comma-separated) during a rotation; then run `python -m app.crypto rotate`. See [docs/integrations-dev.md](docs/integrations-dev.md) |
 | `EVENTS_WORKER` | on | `0` turns off the background thread that delivers integration events (webhooks, connectors) |
+| `SEARCH_WARM` | on | Build the Quick help and search index (about 1 s, 25 MB) on a background thread at startup. `0`: the first search, suggestion or Quick help question starts the build and gets the fallback answer until it is ready. `/health` reports `"search"` (`off`, `building`, `ready`, `failed`) |
 | `MAIL_FROM` | unset (no email) | Sender of invites, reset links and confirmations, e.g. `TradeComply <no-reply@your-company.example>`. With a backend below and an https `APP_URL`, email links are on. See [Email](#email-invites-password-resets-and-email-confirmation) |
 | `MAIL_REPLY_TO` | unset | Optional Reply-To address |
 | `POSTMARK_SERVER_TOKEN`, `POSTMARK_MESSAGE_STREAM` | unset, `outbound` | Send through Postmark's HTTPS API (works on Render's free plan). Wins over SMTP when both are set |
@@ -390,7 +406,7 @@ used only by a POST after the person acts, built only from the https `APP_URL`; 
 for every address and does its lookup after the response; messages are built with Python's `EmailMessage` (no header
 injection, one recipient), SMTP needs verified TLS, and no token, link, body or key is logged. Ask TradeComply: people
 with a session only (API keys 403, OAuth tokens never on `/api`), chats readable only by their person, checks run as
-that person through the same path as the Tools page and only read-only ones, answers rendered by the same escaping
+that person through the same path as the Checks page and only read-only ones, answers rendered by the same escaping
 markdown renderer, the Anthropic key passed explicitly and never logged, and `/api/assistant/*` never cached by the
 service worker. MCP governance (scopes, limits, Origin check, OAuth, OWASP MCP Top 10
 self-assessment): [docs/mcp-security.md](docs/mcp-security.md).

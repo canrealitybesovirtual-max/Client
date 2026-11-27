@@ -324,14 +324,14 @@ def slots(q: str, today: date, counties: list[str], cities: list[dict], projects
     ft = engine.fold(q)
     for sb in subs:
         n = engine.fold(sb["name"])
-        if len(n) >= 3 and re.search(rf"(?<!\w){re.escape(n)}(?:'?s)?(?!\w)", ft):
+        if len(n) >= 3 and n in ft and re.search(rf"(?<!\w){re.escape(n)}(?:'?s)?(?!\w)", ft):
             out["sub"] = sb
             if sb.get("license_number"):
                 out.setdefault("license_number", re.sub(r"\D", "", sb["license_number"]))
             break
     for p in projects:
         n = engine.fold(p["name"])
-        if len(n) >= 3 and re.search(rf"(?<!\w){re.escape(n)}(?!\w)", ft):
+        if len(n) >= 3 and n in ft and re.search(rf"(?<!\w){re.escape(n)}(?!\w)", ft):
             out["project"] = p
             break
     for rx, r in ((r"\b(?:supplier|material (?:yard|supplier)|lumber yard|supply house)\b|\bdeliver(?:ed|ing|y)? "

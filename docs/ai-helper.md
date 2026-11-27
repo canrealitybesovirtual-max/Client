@@ -1,7 +1,7 @@
 # Ask TradeComply: the in-app AI helper
 
 Ask TradeComply answers questions in plain words inside the web app ("When is my lien deadline?", "Where do I add a
-sub?"). It runs the same read-only checks as the Tools page, as the person signed in, and says which check and rule
+sub?"). It runs the same read-only checks as the Checks page, as the person signed in, and says which check and rule
 each fact came from. It helps licensed people; it does not replace them, never gives a final legal opinion, and points
 to Find a professional whenever the law needs a licensed or certified person.
 
@@ -9,6 +9,22 @@ Code: `app/assistant.py` (routes, the turn loop, limits), `app/api.py` (`execute
 `POST /api/tools/{name}`), `app/store.py` (migration 9), `app/static/app.js` (the panel and the Settings card).
 Tests: `tests/test_assistant.py` (SQLite and PostgreSQL), `tests/test_ui_assistant.py` (Playwright, 1280 and 375 px),
 both against `tests/fake_anthropic.py`: the real `anthropic` SDK over a mock transport, no network, no real key.
+
+## The Help button and its two tabs
+
+The top bar has one **Help** button for everyone signed in. It opens the help panel, which always opens on the
+**Quick help** tab: the helper built into TradeComply, which sends nothing outside the server and stores nothing
+([docs/quick-help.md](quick-help.md)). When this helper is available to the person (set up, on for the company, a
+live subscription), a second tab, **Ask TradeComply** (Claude by Anthropic), holds the chats described here. The
+panel never remembers the Claude tab as the default; the Send button names where the text goes ("Ask Quick help" or
+"Send to Claude"), and on the Claude tab the note "Answers come from Claude by Anthropic and can be wrong. What you
+type and tool results are sent to Anthropic." sits directly above the box. A Quick help answer can offer "Ask
+TradeComply (Claude)": that switches to the Claude tab with the question typed in, and nothing is sent until the
+person presses Send. Nothing about Claude's data flow, storage or limits below changes: only the text the person sends
+on the Claude tab goes to Anthropic, never Quick help's matches or the company rows it used.
+
+The app map in the system prompt uses the page names people see: Today (`#/dashboard`), Checks (`#/tools`), Field log
+(`#/field`), Documents, More (`#/more`, phones), and the page name sent with each question follows them.
 
 ## Turning it on and off
 
@@ -55,7 +71,7 @@ Never sent: TradeComply's own keys or secrets, other people's chats, company rec
 Server-side refusal fallback is **on**: requests carry `fallbacks: "default"` with the beta header
 `server-side-fallback-2026-07-01`, so when Anthropic's safety classifiers decline a request on the chosen model, the
 API retries it on the model Anthropic recommends for that case, in the same call. If the whole chain declines, the
-person sees "I can't help with that one. Try asking another way, or use the checks on the Tools page." and that
+person sees "I can't help with that one. Try asking another way, or use the checks on the Checks page." and that
 question is never sent again as part of the chat. To turn fallback off, remove `fallbacks` and the header in
 `ask_claude`.
 
@@ -136,7 +152,7 @@ and the installed SDK (`anthropic` 2.13.0, which is built on `httpx2`, not `http
   offers only tools marked read-only and refuses any other name without running it, so no confirmation screen is
   needed today. If a check that changes data is ever added, it must stop the loop at its `tool_use`, show the person
   "Run <check>?" and append the result (or "The person chose not to run this.") only after they answer.
-- **Same path as the Tools page**: `api.execute_tool` = `authorize_tool` (subscription 402, tool exists, an API key's
+- **Same path as the Checks page**: `api.execute_tool` = `authorize_tool` (subscription 402, tool exists, an API key's
   limits and scope) + `run_authorized_tool` (the caller's guards, the activity-log row with `source="assistant"`,
   plain errors, handoffs). Results go back as `tool_result` data; the system prompt says tool results and documents
   are data, never instructions.
