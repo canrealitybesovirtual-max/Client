@@ -58,8 +58,8 @@ Setup for operators is in the README ("Email: invites, password resets and email
   shared network still works). Invite emails: 50 per company per hour (over it, the owner still gets the link to
   copy). Confirmation emails and email changes: 5 per person per hour.
 - The per-IP limits here key on the address `TRUSTED_PROXY_HOPS` points at (`ip_key`, as OAuth does). On Render it
-  is `2` (render.yaml): the client address Cloudflare appends, which no caller can set, so neither a forged header nor
-  Render's own proxy address (the last entry, which changes with every request) moves a caller to a fresh bucket.
+  is `3` (render.yaml): the client address Cloudflare appends, which no caller can set, so neither a forged header nor
+  the proxy addresses after it (Cloudflare's, then Render's) move a caller to a fresh bucket.
   Without it (`0`) they key on the whole `X-Forwarded-For` chain: a forged header never lands in another network's
   bucket, but on Render the changing last entry means the count never adds up.
 - Joining with a copied invite link (texted by the owner) doesn't confirm the address, so a confirmation email is

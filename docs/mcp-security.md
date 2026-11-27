@@ -72,7 +72,7 @@ Every `tools/call` that reaches the gate gets one row in `mcp_audit_log`:
 | `args_sha256` | SHA-256 of the arguments as canonical JSON: `json.dumps(args, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`, UTF-8 |
 | `status` | `ok`, `error` (the tool or server returned an error), `denied` (outside the key's scope, not run), `rate_limited` (not run) |
 | `duration_ms` | from the gate passing the request on to the last byte of the answer (NULL for denied and rate-limited calls) |
-| `ip` | the client address: the `X-Forwarded-For` entry `TRUSTED_PROXY_HOPS` points at (on Render `2`, the address Cloudflare saw, which the caller can't set); with `0` the first entry, which the caller chooses; behind a gateway this is the gateway |
+| `ip` | the client address: the `X-Forwarded-For` entry `TRUSTED_PROXY_HOPS` points at (on Render `3`, the address Cloudflare saw, which the caller can't set); with `0` the first entry, which the caller chooses; behind a gateway this is the gateway |
 | `created` | when the row was written (at most moments after the call) |
 
 The arguments themselves are never stored: assistants pass payroll CSVs, employee names and wages through them. The
@@ -223,7 +223,7 @@ every customer, 160.79.104.0/21), so a tight per-IP limit would throttle every c
 trusted hop): a caller chooses the first entries, not the ones the proxies append, so it can't fill the bucket of
 another address such as Claude's. The per-app limit counts only tokens actually issued (a client_id is no secret,
 so failed attempts naming it count against the sender's address instead). Discovery is never limited (the SDK gives
-up on a 429 there). On Render `TRUSTED_PROXY_HOPS` is `2` (render.yaml; README has the measurement). Known limit
+up on a 429 there). On Render `TRUSTED_PROXY_HOPS` is `3` (render.yaml; README has the measurement). Known limit
 without it: a caller can still start a fresh per-IP bucket by changing its own part of the chain (and on Render the
 chain's last entry changes with every request anyway), so one caller can use up the 2,000-an-hour registration cap
 and block new connections until it resets; what that costs in storage is bounded (5 short redirect URIs per registration,

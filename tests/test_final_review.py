@@ -147,33 +147,34 @@ class _S:
         self.trusted_proxy_hops = hops
 
 
-def test_two_trusted_hops_pick_the_address_cloudflare_saw():
-    """Render's header (measured live): '<what the client sent>, <client address Cloudflare saw>, <a Render proxy
-    address that changes per request>'. With 2 the client address wins whatever the client sends."""
+def test_three_trusted_hops_pick_the_address_cloudflare_saw():
+    """Render's header (measured live): '<what the client sent>, <client address Cloudflare saw>, <Cloudflare's
+    address>, <a Render proxy address>'. With 3 the client address wins whatever the client sends."""
     e = "203.0.113.7"
-    for v in ("10.163.118.229", "10.218.118.150"):
-        assert forwarded_ip(_S(2), f"{e}, {v}", "10.0.0.1") == e
-        assert forwarded_ip(_S(2), f"198.51.100.11, 198.51.100.12, {e}, {v}", "10.0.0.1") == e
-        assert forwarded_ip(_S(2), f"not-an-ip, {e}, {v}", "10.0.0.1") == e
-        assert forwarded_ip(_S(1), f"{e}, {v}", "10.0.0.1") == v          # why not 1: the changing proxy hop
+    for cf, v in (("162.158.1.2", "10.163.118.229"), ("172.70.9.8", "10.218.118.150")):
+        assert forwarded_ip(_S(3), f"{e}, {cf}, {v}", "10.0.0.1") == e
+        assert forwarded_ip(_S(3), f"198.51.100.11, 198.51.100.12, {e}, {cf}, {v}", "10.0.0.1") == e
+        assert forwarded_ip(_S(3), f"not-an-ip, {e}, {cf}, {v}", "10.0.0.1") == e
+        assert forwarded_ip(_S(2), f"{e}, {cf}, {v}", "10.0.0.1") == cf     # why not 2: Cloudflare's address
+        assert forwarded_ip(_S(1), f"{e}, {cf}, {v}", "10.0.0.1") == v      # why not 1: Render's proxy
     assert forwarded_ip(_S(0), f"198.51.100.11, {e}, 10.1.1.1", "10.0.0.1") == "198.51.100.11"   # why not 0
 
 
-def test_render_blueprint_trusts_two_proxy_hops():
+def test_render_blueprint_trusts_three_proxy_hops():
     blueprint = (REPO / "render.yaml").read_text()
     i = blueprint.index("- key: TRUSTED_PROXY_HOPS")
-    assert blueprint[i:i + 80].split("value:")[1].split()[0] == '"2"'
+    assert blueprint[i:i + 80].split("value:")[1].split()[0] == '"3"'
 
 
 def test_login_lockout_holds_behind_rendered_proxies(tmp_path):
-    a = make_app(tmp_path, trusted_proxy_hops=2)
+    a = make_app(tmp_path, trusted_proxy_hops=3)
     with TestClient(a) as c:
         signup(c)
         for i in range(5):
-            hdr = {"x-forwarded-for": f"198.51.100.{i}, 203.0.113.7, 10.0.{i}.9"}
+            hdr = {"x-forwarded-for": f"198.51.100.{i}, 203.0.113.7, 162.158.{i}.4, 10.0.{i}.9"}
             assert c.post("/api/auth/login", json={"email": "owner@acme.test", "password": "wrong-password"},
                           headers=hdr).status_code == 401
-        hdr = {"x-forwarded-for": "192.0.2.99, 203.0.113.7, 10.9.9.9"}           # a new forged entry
+        hdr = {"x-forwarded-for": "192.0.2.99, 203.0.113.7, 172.70.1.1, 10.9.9.9"}           # a new forged entry
         assert c.post("/api/auth/login", json={"email": "owner@acme.test", "password": "wrong-password"},
                       headers=hdr).status_code == 429
 

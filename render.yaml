@@ -52,12 +52,13 @@ services:
       - key: INTEGRATIONS_KEY
         generateValue: true   # AES-256-GCM key for integration secrets at rest (Render generates base64 of 256 bits)
       - key: TRUSTED_PROXY_HOPS
-        value: "2"            # Render's edge (Cloudflare, then one more Render proxy) appends 2 X-Forwarded-For entries:
-                              # "<what the client sent>, <client address>, <proxy address that changes per request>".
-                              # 2 = the client address, which no client can set. Not 0 (the first entry, which the
-                              # client chooses) and not 1 (a proxy address shared by many customers). Measured on the
-                              # live service on 2026-11-27 (README, TRUSTED_PROXY_HOPS); check again after Render
-                              # changes its network
+        value: "3"            # Render's edge appends 3 X-Forwarded-For entries: "<what the client sent>, <client
+                              # address Cloudflare saw>, <Cloudflare's address>, <a Render proxy address>".
+                              # 3 = the client address, which no client can set. Not 0 (the first entry, which the
+                              # client chooses), not 1 or 2 (proxy addresses shared by many customers). Measured on
+                              # the live service on 2026-11-27: at 3 the MCP call log shows the caller's own address
+                              # with or without a forged header; at 2 it showed Cloudflare addresses. Check again
+                              # after Render changes its network
       - key: MCP_PUBLIC_DEMO
         value: "0"            # On Render /mcp needs an API key unless this is "1" (anonymous demo, audited and
                               # throttled). MCP_REQUIRE_KEY=0 no longer opens it here. docs/mcp-security.md

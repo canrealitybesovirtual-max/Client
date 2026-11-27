@@ -265,8 +265,8 @@ def forwarded_ip(settings, fwd: str | None, peer: str) -> str:
     """The caller's address. Hosted, the app sits behind a proxy that adds to X-Forwarded-For. With
     TRUSTED_PROXY_HOPS = N (the proxies in front of the app that each append the address they saw), it is the N-th
     entry from the right, which no client can set; a shorter header didn't pass through them, so the peer is used.
-    On Render it is 2 (render.yaml): the header arrives as "<client-sent entries>, <client address Cloudflare saw>,
-    <a Render proxy address that changes per request>". With 0 (the default elsewhere) it is the first entry, which a
+    On Render it is 3 (render.yaml): the header arrives as "<client-sent entries>, <client address Cloudflare saw>,
+    <Cloudflare's address>, <a Render proxy address>". With 0 (the default elsewhere) it is the first entry, which a
     client can set itself, so per-IP limits are best effort; per-email and global limits back them up, and OAuth's
     per-IP limits use ip_key. Locally there is no proxy, so the header is ignored."""
     if not fwd or settings.local_mode:
