@@ -18,6 +18,7 @@ import httpx
 import pytest
 
 from tests.test_integrations_ui import REPO, _free_port, playwright_env  # noqa: F401  (fixture)
+from tests.support import server_up
 
 STATIC = os.path.join(REPO, "app", "static")
 
@@ -84,7 +85,7 @@ def mail_server(tmp_path, playwright_env):
             if proc.poll() is not None:
                 pytest.fail("server exited: " + proc.stderr.read().decode()[-2000:])
             try:
-                if httpx.get(base + "/health", timeout=2).status_code == 200:
+                if server_up(base):
                     break
             except httpx.HTTPError:
                 time.sleep(0.3)

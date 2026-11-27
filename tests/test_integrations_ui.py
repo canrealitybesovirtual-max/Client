@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tradecomply import integrations_guide
+from tests.support import server_up
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -174,7 +175,7 @@ def live_server(tmp_path, playwright_env):
             if proc.poll() is not None:
                 pytest.fail("server exited: " + proc.stderr.read().decode()[-2000:])
             try:
-                if httpx.get(base + "/health", timeout=2).status_code == 200:
+                if server_up(base):
                     break
             except httpx.HTTPError:
                 time.sleep(0.3)

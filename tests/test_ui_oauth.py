@@ -18,6 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from tests.test_integrations_ui import live_server, playwright_env  # noqa: F401  (fixtures)
+from tests.support import server_up
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STATIC = os.path.join(REPO, "app", "static")
@@ -655,7 +656,7 @@ def test_first_sign_in_after_the_deploy_shows_the_consent_even_with_the_old_serv
         while True:
             assert proc.poll() is None and time.time() < deadline, "server did not start"
             try:
-                if httpx.get(base + "/health", timeout=2).status_code == 200:
+                if server_up(base):
                     break
             except httpx.HTTPError:
                 time.sleep(0.3)

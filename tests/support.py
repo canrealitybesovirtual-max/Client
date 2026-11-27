@@ -11,6 +11,9 @@
   cookies and headers, on c's event loop. Use it for every further client of that app, never a second
   `with TestClient(app)` (app/main.py refuses to start a running app again; see browser()).
 - join(c, owner, email, role): the owner invites someone and client `c` joins through the invite link (signed in).
+- server_up(base): for a server started with uvicorn (the Playwright tests): True once /health answers and the
+  search index is ready (UI servers warm it at startup), so a test that asks Quick help right away never gets the
+  "starting up" answer. Raises if the index build failed.
 - mock_http(platform, handler, hosts=None): every outbound call of that app goes to handler(request) ->
   httpx.Response (an httpx.MockTransport); DNS answers come from `hosts` ({"name": "ip" or [ips]}, default: a public
   address for every name), so the SSRF checks still run. Returns the list of requests seen.
@@ -225,3 +228,18 @@ def oauth_connect(c, redirect_uri: str = CLAUDE_CALLBACK, client: dict | None = 
                                      "client_id": client["client_id"], "redirect_uri": redirect_uri})
     assert r.status_code == 200, r.text
     return {"client": client, "tokens": r.json(), "verifier": verifier, "code": q["code"], "iss": q["iss"]}
+
+
+def server_up(base: str) -> bool:
+    """/health answers and the search index is ready; sleeps a little while it is still building."""
+    import time
+    r = httpx.get(base + "/health", timeout=2)
+    if r.status_code != 200:
+        return False
+    state = r.json().get("search")
+    if state == "failed":
+        raise AssertionError("the server's search index failed to build")
+    if state != "ready":
+        time.sleep(0.2)
+        return False
+    return True
