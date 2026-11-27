@@ -60,6 +60,14 @@ Primavera P6 / Microsoft Project schedule import, Splunk) plus a 36-product inte
 
 ### 3.2 The 71 tools, grouped by job
 
+In the web app (Checks) people see the tools as 12 job groups with plain titles and one-line summaries, from
+`app/catalog.py`: Start a job, Get paid, Licenses and subs, Contracts and homeowners, Jobsite safety, Crew
+certifications, Pay and HR, Public and federal jobs, Permits and local rules, Accessibility, Equipment and air, Rules
+and professionals. Four tools meant for AI assistants (`mcp_client_config`, `integrations_for_task`,
+`list_professional_types`, `who_must_sign`) are not listed there; they still open by address. Each role also gets its
+common checks (8 for owners and office, 6 for field crews). The MCP tool names and titles are unchanged. The table
+below is the module view.
+
 | Job | Tools | What they do |
 |---|---|---|
 | **Licensing** (6) | `verify_contractor_license`, `check_subcontractor_compliance`, `bulk_check_subcontractors`, `classification_for_scope`, `company_license_obligations`, `unlicensed_contracting_exposure` | CSLB status, classes, workers' comp and bond from the CSLB master file; sub risk ratings (a license missing from partial data is never called unlicensed); which classes can do a scope; bonds, LLC insurance, renewal and 90-day CSLB notices; B&P 7028 / 7031 / 7048 exposure |

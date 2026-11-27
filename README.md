@@ -45,17 +45,33 @@ Local mode options: `--port`, `--data-dir`, `--company "Name"`, `--no-browser`, 
 
 Vanilla JS single-page app in `app/static` (no build step, no CDN). Mobile-first, keyboard accessible, installable
 (PWA). Screens: sign up / log in, 5-step onboarding (license health card, sub list upload with risk report, first
-project with lien calendar, Cal/OSHA questionnaire, connect an AI agent), Dashboard (red/amber/green tiles, deadlines,
-sub table, calendar download), Projects, Subcontractors (CSV import), Tools (forms generated from each tool's JSON
-schema; results show "Verified against official source on <date>" or "Not yet verified", citations, disclaimer,
-Save as document, Print / PDF), Documents, Field (toolbox talks, inspections, incident reports with on-screen
-signatures; saved to IndexedDB offline and synced via `/api/field_logs/sync`), Settings (company, password, email
-confirmation and change, team invite links and owner-made password reset links, the owner's Email status, API keys
-with per-key tool scope, rate limit and expiry, MCP config snippets, calendar feed, activity log, the owner's MCP call
-log with CSV/JSON download, billing). Signed out: log in, sign up, Forgot password, and the pages one-time links open
-(set a new password, join your team, confirm your email). An **Ask** button in the top bar opens Ask TradeComply, the
-AI helper (see below), when the server has it set up. The service worker caches the app
-shell plus `/api/tools`, `/api/me`, `/api/config` and `/api/projects` (network first) so the Field screen opens offline.
+project with lien calendar, Cal/OSHA questionnaire, connect an AI assistant), **Today** (what needs you now with one
+action each, the jobs people do most as big tiles for a job you pick, and how things stand: red/amber/green boxes,
+deadlines, license card, sub table, calendar download), Projects (each project is a hub: its deadlines and every
+check that can use its details, opened with them filled in), Subcontractors (CSV import), **Checks** (search in your
+own words, the role's common checks, 12 job groups; forms generated from each check's JSON schema; results show
+"Verified against official source on <date>" or "Not yet verified", citations, disclaimer, Save as document,
+Print / PDF), Documents, **Field log** (toolbox talks, inspections, incident reports with on-screen signatures; saved
+to IndexedDB offline and synced via `/api/field_logs/sync`), Integrations, Settings (grouped: You, Company, Help and
+AI, Reminders and connections, Records, Account and data; `#/settings?section=<key>` opens at a section). Signed out:
+log in, sign up, Forgot password, and the pages one-time links open (set a new password, join your team, confirm your
+email). An **Ask** button in the top bar opens Ask TradeComply, the AI helper (see below), when the server has it set
+up. The service worker caches the app shell plus `/api/tools`, `/api/me`, `/api/config`, `/api/projects` and
+`/api/suggest/vocab` (network first) so the Field log and Today's tiles open offline; `/api/dashboard` is never
+cached (an old copy would show the wrong "days left").
+
+Navigation: a grouped sidebar on wide screens (Today; Work: Projects, Subcontractors, Field log; Checks: All checks,
+Find a professional; Paperwork: Documents; Set up: Integrations, Settings) and, on phones, a bottom bar of five per
+role with More last (owner and office: Today, Projects, Subs, Checks, More; field: Today, Log, Checks, Projects,
+More). The route names stay as they were (`#/dashboard`, `#/tools`, `#/field`...), so every bookmark and emailed link
+still works; the new names also work as addresses (`#/today`, `#/checks/<check>`, `#/log`, `#/apps`, `#/docs`).
+
+Display: the app follows the device's light or dark setting; Settings > Display (or the account menu) overrides it on
+this device (Match this device / Light / Dark, plus Extra contrast), kept in `tc.display` / `tc.contrast` in the
+browser and never sent anywhere. Known limit: the content security policy allows no inline script, so a Light or Dark
+choice that differs from the device shows the device's theme for a moment while the page loads. Icons are Lucide
+(lucide-static 1.71.0, ISC; Feather-derived icons MIT), inlined in `index.html`; license in
+`app/static/ICONS-LICENSE.txt`.
 
 Tool descriptions and parameter docs are written for AI agents as well as people, so the web app rewrites them for
 the screen: the first sentence of a description shows (the rest under "What this check covers"), hints use the form's
@@ -63,7 +79,8 @@ labels instead of `snake_case` names, JSON shapes and "ISO date" are dropped, "a
 a time picker, and results hide rule ids (they're listed under Sources), format money, dates and enum values, and fold
 long item-by-item detail. Saved documents get the same treatment (`result_to_markdown`). A tool whose inputs match a
 project's details (name, city, county, address, owner, contract price, furnishing/completion dates, claimant role) gets
-a "Fill in from a project" picker, and the saved result is linked to that project.
+a "Fill in from a project" picker (a link that names the project, from its page or a Today tile with that job
+picked, fills it at once), and the saved result is linked to that project.
 
 Roles: **owner** (everything, incl. billing, team and keys), **office** (projects, subs, documents, tools, keys),
 **field** (read projects/subs/documents, run tools, create field logs). API keys act with the office role, limited to
