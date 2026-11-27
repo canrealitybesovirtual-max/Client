@@ -117,14 +117,14 @@ const path = require('path');
   for (const [from, h1] of [['#/checks/calculate_lien_deadline', 'Calculate lien deadline'], ['#/today', 'Today'], ['#/home', 'Today'], ['#/apps', 'Integrations'],
     ['#/log', 'Field log'], ['#/field-log', 'Field log'], ['#/docs', 'Documents'], ['#/subcontractors', 'Subcontractors'], ['#/checks', 'Checks'], ['#/help', 'Today'], ['#/search', 'Today']]) {
     await dp.goto(base + '/' + from);
-    await dp.waitForFunction((h) => document.querySelector('main h1') && document.querySelector('main h1').textContent === h, h1);
+    await dp.waitForFunction((h) => (document.querySelector('main h1') || {}).textContent === h, h1);
     out.aliases[from] = await dp.evaluate(() => location.hash);
   }
   await open(dp, '#/projects');
   await dp.goto(base + '/#/apps');
-  await dp.waitForFunction(() => location.hash === '#/integrations' && document.querySelector('main h1').textContent === 'Integrations');
+  await dp.waitForFunction(() => location.hash === '#/integrations' && (document.querySelector('main h1') || {}).textContent === 'Integrations');
   await dp.goBack();
-  await dp.waitForFunction(() => document.querySelector('main h1') && document.querySelector('main h1').textContent === 'Projects');
+  await dp.waitForFunction(() => (document.querySelector('main h1') || {}).textContent === 'Projects');
   out.back = await dp.evaluate(() => location.hash);
   // the account menu, by keyboard
   await dp.focus('#account-open');
@@ -156,7 +156,7 @@ const path = require('path');
   await dp.waitForSelector('main .skeleton');
   out.loading = await dp.evaluate(() => ({ status: document.getElementById('route-status').textContent, busy: document.getElementById('main').getAttribute('aria-busy') }));
   await dp.screenshot({ path: path.join(shots, 'nav-skeleton-d.png') });
-  await dp.waitForFunction(() => document.querySelector('main h1') && document.querySelector('main h1').textContent === 'Projects');
+  await dp.waitForFunction(() => (document.querySelector('main h1') || {}).textContent === 'Projects');
   out.loaded = await dp.evaluate(() => ({ skeleton: !!document.querySelector('main .skeleton'), status: document.getElementById('route-status').textContent, busy: document.getElementById('main').getAttribute('aria-busy') }));
   await dp.unroute('**/api/projects');
   await dc.close();
