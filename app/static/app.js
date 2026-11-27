@@ -1984,9 +1984,10 @@
 
 
   // tool parameter -> value from a saved project, picked in "For job", so nobody retypes a job into every check. A
-  // string names the project's own field (its dates and price also become value chips); an enum gets a value only
-  // when the value is one of its choices.
-  const enumOnly = (f, v) => (f.allowed && f.allowed.includes(String(v)) ? v : null);
+  // string names the project's own field (its dates and price also become value chips). A function returns the
+  // value, null when the job doesn't have it, or undefined when the mapping doesn't fit this field (an enum gets a
+  // value only when it is one of its choices).
+  const enumOnly = (f, v) => (!f.allowed ? undefined : v == null || v === '' ? null : f.allowed.includes(String(v)) ? v : undefined);
   const PROJECT_FIELDS = {
     project_name: 'name', city: 'city', jurisdiction: 'city', county: 'county', address: 'address', site_address: 'address', project_address: 'address',
     owner_name: 'owner_name', property_owner: 'owner_name', lender_name: 'lender_name',
@@ -1994,12 +1995,14 @@
     start_date: 'start_date', construction_start_date: 'start_date', first_furnishing_date: 'first_furnishing_date', last_furnishing_date: 'last_furnishing_date',
     completion_date: 'completion_date', notice_of_completion_date: 'noc_date', noc_recorded_date: 'noc_date', noc_date: 'noc_date',
     claimant_role: (p, f) => enumOnly(f, (p.extra || {}).claimant_role), public_or_private: (p, f) => enumOnly(f, p.public_or_private),
-    project_type: (p, f) => (f.allowed && f.allowed.slice().sort().join() === 'private,public' ? p.public_or_private : null),
-    owner_type: (p, f) => (p.public_or_private === 'public' ? enumOnly(f, 'public_agency') : null),
-    awarding_body_name: (p) => (p.public_or_private === 'public' ? p.owner_name : null), awarding_agency: (p) => (p.public_or_private === 'public' ? p.owner_name : null),
+    project_type: (p, f) => (f.allowed && f.allowed.slice().sort().join() === 'private,public' ? p.public_or_private : undefined),
+    owner_type: (p, f) => (p.public_or_private === 'public' ? enumOnly(f, 'public_agency') : undefined),       // a private owner: a person or a company?
+    awarding_body_name: (p) => (p.public_or_private === 'public' ? p.owner_name : undefined), awarding_agency: (p) => (p.public_or_private === 'public' ? p.owner_name : undefined),
     is_public: (p) => p.public_or_private === 'public', public_project: (p) => p.public_or_private === 'public',
   };
   const jobValue = (f, p) => { const m = PROJECT_FIELDS[f.name]; return typeof m === 'string' ? p[m] : m(p, f); };
+  // a field some job could fill (a public one, a private one)
+  const jobFits = (f) => typeof PROJECT_FIELDS[f.name] === 'string' || ['public', 'private'].some((pp) => jobValue(f, { public_or_private: pp, owner_name: 'x', extra: { claimant_role: (f.allowed || [])[0] } }) !== undefined);
   const JOB_CHIP = { start_date: 'Start', first_furnishing_date: 'First furnished', last_furnishing_date: 'Last furnished', completion_date: 'Completed', noc_date: 'NOC', contract_price: 'Contract price' };
   // the company's own facts, filled when a check opens (no job needed), tagged "From your company"
   const COMPANY_FIELDS = { company_name: 'company_name', employer_name: 'company_name', legal_company_name: 'company_name', business_name_on_documents: 'company_name',
@@ -2120,7 +2123,7 @@
     back.addEventListener('click', () => toStep(at - 1));
 
     // ---- "For job" (spec 6.2): only an explicit choice fills: ?project= in the link, a Quick help action, or a pick
-    const fillable = F.filter((x) => x.set && PROJECT_FIELDS[x.name]);
+    const fillable = F.filter((x) => x.set && PROJECT_FIELDS[x.name] && jobFits(x));
     const fillSlot = h('div', { class: 'fill-from' });
     const jobLine = h('div', { class: 'small fill-line', role: 'status' });
     let projects = [], job = null, filled = new Map(), jobSel = null;    // filled: field -> what it held before
@@ -2139,13 +2142,15 @@
     const applyJob = (p) => {
       const before = filled;
       filled = new Map();
-      let n = 0;
+      let n = 0, of = 0;
       const lacks = [];
       quietly(() => fillable.forEach((x) => {
+        const v = jobValue(x, p);
         const ours = before.has(x);
+        if (v === undefined && typeof PROJECT_FIELDS[x.name] !== 'string') { if (ours) { x.set(before.get(x)); x.tag(''); } return; }     // doesn't fit this job
+        of++;
         if (!ours && !x.isEmpty()) return;            // the person's own value: never replaced
         const prev = ours ? before.get(x) : x.raw();
-        const v = jobValue(x, p);
         if (v !== null && v !== undefined && v !== '' && x.set(typeof v === 'boolean' ? v : String(v))) { filled.set(x, prev); x.tag(`From job: ${p.name}`); n++; return; }
         if (ours) { x.set(prev); x.tag(''); }
         if (v === null || v === undefined || v === '') lacks.push(x);
@@ -2155,7 +2160,7 @@
       const need = F.filter((x) => x.required && applies(x) && x.isEmpty());
       // what the check still needs, and what the job doesn't have yet (optional here, it may matter)
       const gap = lacks.filter((x) => !need.includes(x));
-      fill(jobLine, h('p', {}, `Filled ${n} of ${fillable.length} from ${p.name}`, n ? [' · ', h('button', { type: 'button', class: 'btn quiet small', onclick: undo }, icon('undo'), 'Undo')] : '.'),
+      fill(jobLine, h('p', {}, `Filled ${n} of ${of} from ${p.name}`, n ? [' · ', h('button', { type: 'button', class: 'btn quiet small', onclick: undo }, icon('undo'), 'Undo')] : '.'),
         need.length ? h('p', {}, `Still needed: ${need.map((x) => x.label).join(', ')}.`) : null,
         gap.length ? h('p', { class: 'muted' }, `Not in the job yet: ${gap.map((x) => x.label).join(', ')}.`) : null,
         lacks.length && can.write() ? h('button', { type: 'button', class: 'btn quiet small', onclick: () => editJob(p) }, icon('edit'), 'Add it to the job') : null);

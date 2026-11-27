@@ -87,7 +87,8 @@ const path = require('path');
 
   // ---- the hand-made steps: permit_required
   await tool(p, 'permit_required');
-  out.steps = { title: await p.textContent('.step-title'), stepper: await p.$$eval('.stepper li', (l) => l.length) };
+  out.steps = { title: await p.textContent('.step-title'), stepper: await p.$$eval('.stepper li', (l) => l.length),
+    forJob: await p.$$eval('select[name=fill_project]', (x) => x.length) };      // no field of this check fits a job
   await p.click('.action-bar button:has-text("Continue")');
   out.steps.blocked = { title: await p.textContent('.step-title'), summary: await p.$$eval('.banner.error li', (l) => l.map((x) => x.textContent)) };
   await box(p, 'work_description').fill('6 ft wood fence along the back lot line');
@@ -289,7 +290,7 @@ def test_check_forms_in_a_real_browser(tmp_path, playwright_env, live_server):
     assert out["enter"] == {"ran": 0, "field": "completion_date"}
     # steps
     st = out["steps"]
-    assert st["title"] == "Step 1 of 6 · The work" and st["stepper"] == 6
+    assert st["title"] == "Step 1 of 6 · The work" and st["stepper"] == 6 and st["forJob"] == 0
     assert st["blocked"]["title"] == st["title"] and any("Work description" in x for x in st["blocked"]["summary"])
     assert st["two"]["title"].startswith("Step 2 of 6") and set(st["two"]["shown"]) == {"fence_height_ft", "is_pool_barrier"}
     rv = out["review"]
