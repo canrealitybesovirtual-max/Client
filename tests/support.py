@@ -6,6 +6,9 @@
   (skipped otherwise), exactly like tests/test_platform.py.
 - make_app(tmp_path, **settings): an app on the current backend, with the event worker off (call
   app.state.platform.events.drain() to deliver) unless events_background=True is passed.
+- browser(c): another person's browser on the app client `c` is running (`with TestClient(app) as c`): its own
+  cookies and headers, on c's event loop. Use it for every further client of that app, never a second
+  `with TestClient(app)` (app/main.py refuses to start a running app again; see browser()).
 - join(c, owner, email, role): the owner invites someone and client `c` joins through the invite link (signed in).
 - mock_http(platform, handler, hosts=None): every outbound call of that app goes to handler(request) ->
   httpx.Response (an httpx.MockTransport); DNS answers come from `hosts` ({"name": "ip" or [ips]}, default: a public
@@ -20,6 +23,7 @@ from urllib.parse import quote
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 os.environ.setdefault("DATA_DIR", tempfile.mkdtemp(prefix="tc-test-"))
 os.environ.pop("DATABASE_URL", None)       # never a real database: Postgres only through TC_TEST_DATABASE_URL
@@ -77,6 +81,44 @@ def store_for(tmp_path):
     st = Store(str(tmp_path), database_url=_db["url"])
     _db["stores"].append(st)
     return st
+
+
+class _Browser(TestClient):
+    __test__ = False
+
+    def __init__(self, running: TestClient, **kwargs):
+        kwargs.setdefault("base_url", str(running.base_url))
+        super().__init__(running.app, **kwargs)
+        self.running = running
+
+    @property
+    def portal(self):
+        """The running client's portal (one thread, one event loop): every request is served there. Never None, so
+        Starlette never starts a loop of its own for a request (TestClient._portal_factory)."""
+        if self.running.portal is None:
+            raise RuntimeError("browser(c) needs `c` running: use it inside `with TestClient(app) as c`")
+        return self.running.portal
+
+    def __enter__(self):
+        assert self.portal is not None     # raises here, not on the first request, if `c` is not running
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
+
+
+def browser(c: TestClient, **kwargs) -> TestClient:
+    """Another browser (its own cookie jar and headers) on the app client `c` is running, with c's base_url unless
+    one is given. Use it as `with browser(owner) as other:` or plainly (`anon = browser(owner)`).
+
+    Why not a second `with TestClient(app)`: each entered TestClient runs the app's lifespan on its own thread and
+    event loop. FastMCP's lifespan points the app's /mcp route at the session manager it starts, so with two of them
+    running, an MCP session opened through the other client runs on one loop inside a task group hosted on the
+    other, and the inner client's exit then waits for a wakeup sent from the wrong thread: now and then it is lost
+    and the test hangs forever. So app/main.py refuses the second entry, and extra browsers share c's loop instead.
+    (A TestClient that is never entered serves each request on a new loop of its own, which is fine for the API but
+    not for /mcp: send /mcp through `c` or a browser(c).)"""
+    return _Browser(c, **kwargs)
 
 
 def signup(c, email="owner@acme.test", company="Acme Builders", license_number="123456") -> dict:

@@ -334,6 +334,10 @@ def test_connect(tmp_path):
     assert seen[0].url.path == "/v1/me"
 ```
 
+- A second person (another company, a field user, an anonymous caller): `with browser(c) as other:` (from
+  `tests.support`), never a second `with TestClient(app)` on an app that is running. Each entered TestClient
+  starts the app on its own event loop, and an MCP session opened through one client while another's loop owns
+  /mcp can hang the test forever at exit, now and then; the app refuses the second start with a RuntimeError.
 - `mock_http(platform, handler, hosts={"name": "10.0.0.1"})` lets you prove SSRF refusals too.
 - `make_app` turns the event worker off; call `platform.events.drain()` to deliver queued events deterministically
   (`drain(now=datetime_in_the_future)` to run scheduled retries).

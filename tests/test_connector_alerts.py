@@ -27,7 +27,7 @@ from app.connectors import alerts, twilio_sms
 from app.connectors.alerts import SignedWebhookAlerts, SlackAlerts, TeamsAlerts
 from app.connectors.twilio_sms import TwilioSmsConnector
 from app.events import EVENTS
-from tests.support import backend, json_response, join, make_app, mock_http, signup  # noqa: F401
+from tests.support import backend, browser, json_response, join, make_app, mock_http, signup  # noqa: F401
 from tradecomply import integrations_guide
 
 # Built at runtime so secret scanners do not mistake this fake URL for a real Slack webhook.
@@ -78,8 +78,8 @@ def owner(app):
 
 
 @pytest.fixture
-def other(app):
-    with TestClient(app) as c:
+def other(owner):
+    with browser(owner) as c:
         c.tenant_id = signup(c, email="boss@other.test", company="Other Co")["tenant_id"]
         yield c
 
@@ -501,7 +501,7 @@ def test_scan_routes_preview_and_run_for_staff_only(app, owner, platform, rx):
     assert any(r["kind"] == "coi_expiry" for r in pre["reminders"])
     assert owner.post("/api/integrations/deadline-reminders/scan").json()["emitted"] >= 1
     assert owner.post("/api/integrations/deadline-reminders/scan").json()["emitted"] == 0      # no duplicates
-    with TestClient(app) as field:
+    with browser(owner) as field:
         join(field, owner, "field@acme.test", "field")
         assert field.get("/api/integrations/deadline-reminders/preview").status_code == 403
     no_csrf = owner.headers.pop("x-csrf-token")
@@ -587,7 +587,7 @@ def test_adding_a_phone_records_consent_and_sends_a_confirmation(owner, platform
 
 def test_api_keys_cannot_attest_consent(owner, app, platform):
     key = owner.post("/api/keys", json={"name": "zap"}).json()["key"]
-    with TestClient(app) as c:
+    with browser(owner) as c:
         r = c.post("/api/integrations/twilio_sms/recipients", headers={"authorization": f"Bearer {key}"},
                    json={"phone": "4155550100", "name": "Pat", "consent": True})
         assert r.status_code == 403

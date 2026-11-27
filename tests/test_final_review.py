@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from app import safe_json
 from app.auth import forwarded_ip
-from tests.support import PW, backend, join, login, make_app, signup  # noqa: F401  (backend: autouse)
+from tests.support import PW, backend, browser, join, login, make_app, signup  # noqa: F401  (backend: autouse)
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 JSON = {"content-type": "application/json"}
@@ -70,7 +70,7 @@ def test_unwritable_json_is_a_422_and_nothing_is_stored(owner, method, path, bod
 
 
 def test_a_field_member_cannot_break_the_owners_activity_log_and_exports(app, owner):
-    with TestClient(app) as crew:
+    with browser(owner) as crew:
         join(crew, owner, "crew@acme.test", "field")
         r = crew.post("/api/tools/search_california_rules", content=b'{"query":"lien \\ud800"}', headers=JSON)
         assert r.status_code == 422
@@ -181,7 +181,7 @@ def test_login_lockout_holds_behind_rendered_proxies(tmp_path):
 
 # ---------------------------------------------------------------------------- data-audit-gaps
 def test_team_company_and_account_changes_are_in_the_activity_log(app, owner):
-    with TestClient(app) as crew:
+    with browser(owner) as crew:
         join(crew, owner, "crew@acme.test", "field")
         uid = crew.get("/api/me").json()["user"]["id"]
     assert owner.patch(f"/api/users/{uid}", json={"role": "owner"}).status_code == 200
@@ -207,7 +207,7 @@ def test_team_company_and_account_changes_are_in_the_activity_log(app, owner):
 
 
 def test_deleting_records_leaves_a_trace(app, owner):
-    with TestClient(app) as office:
+    with browser(owner) as office:
         join(office, owner, "office@acme.test", "office")
         pid = office.post("/api/projects", json={"name": "Tower"}).json()["id"]
         sid = office.post("/api/subs", json={"name": "Acme Plumbing", "license_number": "123456"}).json()["id"]
@@ -231,7 +231,7 @@ def test_deleting_records_leaves_a_trace(app, owner):
 
 # ---------------------------------------------------------------------------- auth-api-key-survives-account-recovery
 def test_a_key_made_with_a_stolen_session_ends_with_the_password(app, owner):
-    with TestClient(app) as office, TestClient(app) as thief:
+    with browser(owner) as office, browser(owner) as thief:
         join(office, owner, "office@acme.test", "office")
         thief.cookies.update(office.cookies)
         thief.headers["x-csrf-token"] = office.headers["x-csrf-token"]
@@ -246,7 +246,7 @@ def test_a_key_made_with_a_stolen_session_ends_with_the_password(app, owner):
 
 
 def test_a_reset_link_also_turns_off_the_persons_keys(app, owner):
-    with TestClient(app) as office, TestClient(app) as anon:
+    with browser(owner) as office, browser(owner) as anon:
         inv = join(office, owner, "office@acme.test", "office")
         key = office.post("/api/keys", json={"name": "mine"}).json()["key"]
         link = owner.post(f"/api/users/{inv['id']}/reset-link").json()["reset_path"].rsplit("/", 1)[1]
@@ -260,7 +260,7 @@ def test_a_reset_link_also_turns_off_the_persons_keys(app, owner):
 def test_a_stranger_adding_someone_does_not_lock_their_address(app, owner):
     """A trial company adding someone it doesn't employ (who never joins) no longer keeps that address from their
     real employer or from signing up: the pending row gives way, and its company sees why."""
-    with TestClient(app) as stranger, TestClient(app) as employer, TestClient(app) as pat:
+    with browser(owner) as stranger, browser(owner) as employer, browser(owner) as pat:
         signup(stranger, email="boss@stranger.test", company="Stranger Co", license_number="111111")
         squat = stranger.post("/api/users", json={"email": "pat@builder.test"})
         assert squat.status_code == 200
@@ -282,7 +282,7 @@ def test_a_stranger_adding_someone_does_not_lock_their_address(app, owner):
 
 
 def test_signing_up_frees_an_address_a_stranger_added(app):
-    with TestClient(app) as stranger, TestClient(app) as ceo:
+    with TestClient(app) as stranger, browser(stranger) as ceo:
         signup(stranger, email="boss@stranger.test", company="Stranger Co", license_number="111111")
         assert stranger.post("/api/users", json={"email": "ceo@realbuilder.test"}).status_code == 200
         signup(ceo, email="ceo@realbuilder.test", company="Real Builder", license_number="333333")
@@ -290,7 +290,7 @@ def test_signing_up_frees_an_address_a_stranger_added(app):
 
 
 def test_who_keeps_an_address(app, owner):
-    with TestClient(app) as crew, TestClient(app) as other:
+    with browser(owner) as crew, browser(owner) as other:
         join(crew, owner, "crew@acme.test", "field")                   # joined: theirs
         pending = owner.post("/api/users", json={"email": "new@acme.test"})
         assert owner.post("/api/users", json={"email": "new@acme.test"}).status_code == 409   # same company
@@ -311,7 +311,7 @@ def test_a_trial_company_can_add_only_so_many_people_a_day(platform, owner):
 
 # ---------------------------------------------------------------------------- auth-signup-enumeration
 def test_asking_signup_whether_an_address_exists_counts_against_its_limit(app, platform, owner):
-    with TestClient(app) as probe:
+    with browser(owner) as probe:
         for _ in range(platform.signup_limiter.limit - 1):           # the owner's own sign-up used one
             r = probe.post("/api/auth/signup", json={"company_name": "X", "email": "owner@acme.test",
                                                      "password": PW})
@@ -348,7 +348,7 @@ def test_another_site_cannot_start_a_signed_in_download(owner, path):
 def test_the_private_calendar_link_still_opens_from_anywhere(owner):
     url = owner.post("/api/calendar/feed/rotate").json()["url"]
     path = url.split("://", 1)[1].split("/", 1)[1]
-    with TestClient(owner.app) as anon:
+    with browser(owner) as anon:
         assert anon.get("/" + path, headers={"sec-fetch-site": "cross-site"}).status_code == 200
 
 

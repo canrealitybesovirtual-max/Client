@@ -34,7 +34,8 @@ from app.auth import RateLimiter
 from app.connectors import ConnectorContext, NotConnected, validate_connector_class
 from app.connectors import docusign
 from app.connectors.docusign import DocusignConnector, clean_base_uri, parse_time, render_html, verify_connect_hmac
-from tests.support import backend, json_response, join, make_app, mock_http, redirect_query, signup  # noqa: F401
+from tests.support import (backend, browser, json_response, join, make_app, mock_http, redirect_query,  # noqa: F401
+                           signup)
 
 IK = "7c2b8d7e-0000-4000-8000-cda8a50dd73f"            # made-up integration key (GUID like the docs' example)
 SECRET = "d7014634-0000-4000-8000-6842b7aa8861"        # made-up secret key
@@ -623,7 +624,7 @@ def test_arbitration_clause_gets_initial_tabs(owner, platform, fake):
 
 
 def test_project_of_another_tenant_is_not_found(app, platform, fake):
-    with TestClient(app) as a, TestClient(app) as b:
+    with TestClient(app) as a, browser(a) as b:
         tid_a = signup(a)["tenant_id"]
         signup(b, email="owner@other.test", company="Other Co")
         connect(b, fake, code="code-2")
@@ -754,7 +755,7 @@ def test_connect_url_and_hmac_verified_events(owner, platform, fake):
     assert note["eventData"] == {"version": "restv2.1", "format": "json"}
     assert HMAC_KEY not in json.dumps(body)
     path = listener_path(platform, owner.tenant_id)
-    with TestClient(owner.app) as docusign_side:              # no cookies: Docusign calls the URL itself
+    with browser(owner) as docusign_side:                     # no cookies: Docusign calls the URL itself
         msg = sim("envelope-delivered", eid)
         r = docusign_side.post(path, content=msg, headers={"content-type": "application/json",
                                                            "X-DocuSign-Signature-1": sign(msg)})
@@ -780,7 +781,7 @@ def test_connect_refuses_bad_signatures_and_unknown_urls(owner, platform, fake):
     eid = owner.post("/api/integrations/docusign/envelopes", json=send_body(pid)).json()["envelope"]["envelope_id"]
     path = listener_path(platform, owner.tenant_id)
     msg = sim("envelope-completed", eid)
-    with TestClient(owner.app) as other:
+    with browser(owner) as other:
         assert other.post(path, content=msg).status_code == 401                                  # unsigned
         assert other.post(path, content=msg, headers={"X-DocuSign-Signature-1": sign(msg, "guess")}).status_code == 401
         tampered = msg.replace(b"envelope-completed", b"envelope-voided")
@@ -803,14 +804,14 @@ def test_connect_without_a_saved_key_is_refused(owner, platform, fake):
     pid = new_project(platform, owner.tenant_id)
     eid = owner.post("/api/integrations/docusign/envelopes", json=send_body(pid)).json()["envelope"]["envelope_id"]
     msg = sim("envelope-completed", eid)
-    with TestClient(owner.app) as other:
+    with browser(owner) as other:
         r = other.post(listener_path(platform, owner.tenant_id), content=msg,
                        headers={"X-DocuSign-Signature-1": sign(msg)})
     assert r.status_code == 401
 
 
 def test_connect_messages_stay_inside_their_tenant(app, platform, fake):
-    with TestClient(app) as a, TestClient(app) as b:
+    with TestClient(app) as a, browser(a) as b:
         tid_a = signup(a)["tenant_id"]
         tid_b = signup(b, email="owner@other.test", company="Other Co")["tenant_id"]
         connect(a, fake, code="code-1")
@@ -835,7 +836,7 @@ def test_connect_messages_stay_inside_their_tenant(app, platform, fake):
 
 # ---------------------------------------------------------------------------- roles, helpers, logs
 def test_field_role_cannot_send_or_poll(app, platform, fake):
-    with TestClient(app) as owner_c, TestClient(app) as crew:
+    with TestClient(app) as owner_c, browser(owner_c) as crew:
         tid = signup(owner_c)["tenant_id"]
         connect(owner_c, fake)
         join(crew, owner_c, "crew@acme.test", "field")
@@ -867,7 +868,7 @@ def test_logs_never_hold_tokens_secrets_or_emails(owner, platform, fake, caplog,
     pid = new_project(platform, owner.tenant_id)
     eid = owner.post("/api/integrations/docusign/envelopes", json=send_body(pid)).json()["envelope"]["envelope_id"]
     msg = sim("envelope-completed", eid)
-    with TestClient(owner.app) as other:
+    with browser(owner) as other:
         other.post(listener_path(platform, owner.tenant_id), content=msg, headers={"X-DocuSign-Signature-1": sign(msg)})
         other.post(listener_path(platform, owner.tenant_id), content=msg, headers={"X-DocuSign-Signature-1": "bad"})
     text = caplog.text

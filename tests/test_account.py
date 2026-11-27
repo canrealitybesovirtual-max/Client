@@ -20,7 +20,8 @@ from app.crypto import connection_context, sso_context, webhook_context
 from app.store import (APP_TABLES, SECRET_BLOB_COLUMNS, SHARED_TABLES, TENANT_DELETE_ORDER, TENANT_EXPORT,
                        TENANT_EXPORT_OMITTED)
 from tests import support
-from tests.support import PW, backend, login, make_app, mock_http, oauth_connect, signup  # noqa: F401 - autouse
+from tests.support import (PW, backend, browser, login, make_app, mock_http, oauth_connect,  # noqa: F401 - autouse
+                           signup)
 
 SIGNATURE = ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6"
              "kgAAAABJRU5ErkJggg==")
@@ -131,7 +132,7 @@ def app(tmp_path):
 def two(app):
     """Two companies with a row in every table: (platform, (client, tenant id, info) for Acme and for Bravo)."""
     platform = app.state.platform
-    with TestClient(app) as a, TestClient(app) as b:
+    with TestClient(app) as a, browser(a) as b:
         ta = signup(a)["tenant_id"]
         tb = signup(b, email="owner@bravo.test", company="Bravo Electric", license_number="654321")["tenant_id"]
         yield platform, (a, ta, populate(a, platform, ta, "Alpha")), (b, tb, populate(b, platform, tb, "Bravo"))
@@ -244,8 +245,7 @@ def test_export_pages_through_large_tables(app):
 
 def test_export_is_owner_session_only_and_rate_limited(two):
     platform, (a, ta, ia), _ = two
-    app = a.app
-    with TestClient(app) as office, TestClient(app) as field, TestClient(app) as anon:
+    with browser(a) as office, browser(a) as field, browser(a) as anon:
         login(office, ia["office_email"], ia["office_password"])
         login(field, ia["field_email"], ia["field_password"])
         assert office.get("/api/tenant/export").status_code == 403
@@ -274,13 +274,13 @@ def test_delete_refuses_wrong_name_wrong_password_missing_csrf_and_non_owners(tw
     assert r.status_code == 403 and "Nothing was deleted" in r.json()["detail"]
     assert delete(a, extra_field=1).status_code == 422
     assert a.request("DELETE", "/api/tenant", json={"confirm_company_name": "Acme Builders"}).status_code == 422
-    with TestClient(a.app) as no_csrf:                         # the owner's cookies, but no CSRF header
+    with browser(a) as no_csrf:                                # the owner's cookies, but no CSRF header
         no_csrf.cookies.update(a.cookies)
         r = delete(no_csrf)
         assert r.status_code == 403 and "CSRF" in r.json()["detail"]
         no_csrf.headers["x-csrf-token"] = "forged"
         assert delete(no_csrf).status_code == 403
-    with TestClient(a.app) as office, TestClient(a.app) as anon:
+    with browser(a) as office, browser(a) as anon:
         login(office, ia["office_email"], ia["office_password"])
         assert delete(office, password=ia["office_password"]).status_code == 403
         assert delete(anon).status_code == 401
@@ -304,8 +304,7 @@ def test_wrong_passwords_lock_the_deletion_out(app):
 def test_delete_removes_every_company_row_and_leaves_the_other_company(two):
     platform, (a, ta, ia), (b, tb, ib) = two
     store = platform.store
-    app = a.app
-    with TestClient(app) as office, TestClient(app) as anon:
+    with browser(a) as office, browser(a) as anon:
         login(office, ia["office_email"], ia["office_password"])
         feed = urlsplit(a.get("/api/calendar/feed").json()["url"])
         assert anon.get(f"{feed.path}?{feed.query}").status_code == 200

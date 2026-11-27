@@ -20,7 +20,8 @@ from app.connectors import (ConfigField, Connector, OAuth2Spec, TestResult, code
                             validate_connector_class)
 from app.connectors._template import ExampleApiKeyConnector, ExampleOAuthConnector
 from app.crypto import connection_context, webhook_context
-from tests.support import backend, json_response, join, make_app, mock_http, redirect_query, signup  # noqa: F401
+from tests.support import (backend, browser, json_response, join, make_app, mock_http, redirect_query,  # noqa: F401
+                           signup)
 
 OAUTH_ENV = {"EXAMPLE_CLIENT_ID": "cid-123", "EXAMPLE_CLIENT_SECRET": "csecret-456"}
 SLACK_URL = "https://hooks.slack.com/services/" + "T0000/B0000/" + "X" * 24  # built at runtime for secret scanners
@@ -311,7 +312,7 @@ def test_lapsed_subscription_blocks_new_connections_but_not_disconnect(owner, pl
 
 def test_tenants_never_see_each_others_connections(app, owner, vendor):
     owner.post("/api/integrations/example_apikey/connect", json={"config": {"api_key": "sk-test-123"}})
-    with TestClient(app) as other:
+    with browser(owner) as other:
         signup(other, email="b@two.test", company="Two")
         detail = other.get("/api/integrations/example_apikey").json()
         assert detail["connection"]["status"] == "disconnected" and detail["secrets_saved"] == []
@@ -560,7 +561,7 @@ def test_webhook_patch_rotate_delete_and_isolation(app, owner, platform):
     assert r["signed"] is False
     assert owner.patch(f"/api/integrations/webhooks/{hook['id']}",
                        json={"url": "https://receiver.example.com/x"}).status_code == 422     # not a Slack URL
-    with TestClient(app) as other:
+    with browser(owner) as other:
         signup(other, email="b@two.test", company="Two")
         hid = hook["id"]
         assert other.get(f"/api/integrations/webhooks/{hid}").status_code == 404
@@ -592,7 +593,7 @@ def test_webhooks_per_company_are_capped(app, owner, platform, monkeypatch):
     r = owner.post("/api/integrations/webhooks", json={"name": "x", "url": SLACK_URL, "kind": "slack"})
     assert r.status_code == 409 and "at most 3" in r.json()["detail"]
     assert len(owner.get("/api/integrations/webhooks").json()) == 3
-    with TestClient(app) as other:                     # the cap is per company
+    with browser(owner) as other:                      # the cap is per company
         signup(other, email="b@other.test", company="Other")
         assert other.post("/api/integrations/webhooks", json={"name": "x", "url": SLACK_URL,
                                                                "kind": "slack"}).status_code == 201
@@ -678,7 +679,7 @@ def test_ids_of_one_company_are_not_found_by_another(app, owner, platform):
     assert rec.status_code == 201, rec.text
     rid = rec.json()["recipient"]["id"]
     pid = owner.post("/api/projects", json={"name": "A job"}).json()["id"]
-    with TestClient(app) as other:
+    with browser(owner) as other:
         signup(other, email="b@two.test", company="Two")
         for method, path in (("get", f"/api/integrations/webhooks/{hook['id']}"),
                              ("patch", f"/api/integrations/webhooks/{hook['id']}"),

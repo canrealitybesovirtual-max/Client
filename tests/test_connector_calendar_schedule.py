@@ -34,7 +34,7 @@ from app.connectors import schedule_import as si
 from app.connectors.calendar_feed import CalendarFeedConnector
 from app.connectors.schedule_import import ScheduleError, ScheduleImportConnector
 from tradecomply import logic, payments
-from tests.support import backend, join, make_app, mock_http, signup  # noqa: F401 (backend: autouse)
+from tests.support import backend, browser, join, make_app, mock_http, signup  # noqa: F401 (backend: autouse)
 
 FIX = Path(__file__).parent / "fixtures" / "schedules"
 MSPDI = (FIX / "harbor_lofts_mspdi.xml").read_bytes()
@@ -92,8 +92,8 @@ def owner(app, no_network):
 
 
 @pytest.fixture
-def other(app, owner):
-    with TestClient(app) as c:
+def other(owner):
+    with browser(owner) as c:
         c.tenant_id = signup(c, email="owner@rival.test", company="Rival Electric", license_number="999999")[
             "tenant_id"]
         yield c

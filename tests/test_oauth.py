@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 from app import mcp_governance as gov
 from app import oauth
 from app.auth import RateLimiter, hash_key
-from tests.support import (CLAUDE_CALLBACK, PW, backend, join, make_app, oauth_connect, pkce,  # noqa: F401
+from tests.support import (CLAUDE_CALLBACK, PW, backend, browser, join, make_app, oauth_connect, pkce,  # noqa: F401
                            signup)
 from tests.test_mcp_governance import INIT, MCP_HEADERS, lic, mcp_rows, mcp_session, sse_json
 
@@ -324,13 +324,13 @@ def test_consent_shows_who_and_where_and_needs_a_signed_in_person(owner, app):
     lrid = request_id(authorize(owner, local, challenge, LOOPBACK_CB))
     assert owner.get(f"/api/oauth/requests/{lrid}").json()["local_only"] is True
     key = owner.post("/api/keys", json={"name": "k"}).json()["key"]
-    with TestClient(app, base_url=BASE) as anon:
+    with browser(owner) as anon:
         assert anon.get(f"/api/oauth/requests/{rid}").status_code == 401
         assert anon.post(f"/api/oauth/requests/{rid}/approve").status_code == 401
         h = {"authorization": f"Bearer {key}"}
         assert anon.get(f"/api/oauth/requests/{rid}", headers=h).status_code == 403
         assert anon.post(f"/api/oauth/requests/{rid}/approve", headers=h).status_code == 403    # never a key
-    with TestClient(app, base_url=BASE) as no_csrf:
+    with browser(owner) as no_csrf:
         no_csrf.cookies.update(owner.cookies)
         assert no_csrf.post(f"/api/oauth/requests/{rid}/approve").status_code == 403           # CSRF
     assert owner.get("/api/oauth/requests/not-a-real-request-id-at-all").status_code == 404
@@ -366,7 +366,7 @@ def test_full_flow_tokens_and_tool_call(owner, app):
     t = got["tokens"]
     assert got["iss"] == BASE and t["token_type"] == "Bearer" and t["expires_in"] == 3600
     assert t["access_token"].startswith("tco_") and t["refresh_token"].startswith("tcr_") and t["scope"] == "tradecomply"
-    with TestClient(app, base_url=BASE) as bot:
+    with browser(owner) as bot:
         h = mcp(bot, t["access_token"])
         r = lic(bot, h)
         assert r.status_code == 200 and "result" in sse_json(r.text)
@@ -555,7 +555,7 @@ def test_token_endpoint_rate_limits(owner, app):
     conf = owner.post("/oauth/register", json={"redirect_uris": [CLAUDE_CALLBACK],
                                                "token_endpoint_auth_method": "client_secret_post"}).json()
     platform.oauth_client_limiter = RateLimiter(limit=2, window_s=60)
-    with TestClient(app, base_url=BASE) as attacker:
+    with browser(owner) as attacker:
         for i in range(4):
             h = {"x-forwarded-for": f"192.0.2.{i}"}
             assert attacker.post("/oauth/token", data={"grant_type": "refresh_token", "refresh_token": "tcr_x",
@@ -581,7 +581,7 @@ def test_per_ip_limits_cant_be_aimed_at_another_address(owner, app):
     platform.oauth_ip_limiter = RateLimiter(limit=1, window_s=60)
     platform.oauth_register_limiter = RateLimiter(limit=1, window_s=60)
     claude, forged = {"x-forwarded-for": "160.79.104.10"}, {"x-forwarded-for": "160.79.104.10, 203.0.113.9"}
-    with TestClient(app, base_url=BASE) as attacker:
+    with browser(owner) as attacker:
         for _ in range(2):
             attacker.post("/oauth/token", data={"grant_type": "x"}, headers=forged)
             attacker.post("/oauth/register", json={"redirect_uris": [CLAUDE_CALLBACK]}, headers=forged)
@@ -618,7 +618,7 @@ def test_client_ip_with_trusted_proxy_hops():
 # ---------------------------------------------------------------------------- the /mcp gate
 def test_access_token_follows_the_person(owner, app):
     store = app.state.platform.store
-    with TestClient(app, base_url=BASE) as o:
+    with browser(owner) as o:
         office = join(o, owner, "office@acme.test", "office")
         t = oauth_connect(o)["tokens"]
         assert tools_call_status(owner, t["access_token"]) == 200
@@ -642,7 +642,7 @@ def test_access_token_follows_the_person(owner, app):
 def test_subscription_audience_and_limits(owner, app, monkeypatch):
     platform = app.state.platform
     t = oauth_connect(owner)["tokens"]["access_token"]
-    with TestClient(app, base_url=BASE) as bot:
+    with browser(owner) as bot:
         h = mcp(bot, t)
         platform.mcp_key_limiter = RateLimiter(limit=2, window_s=60)
         for rid in (2, 3):
@@ -678,7 +678,7 @@ def test_subscription_audience_and_limits(owner, app, monkeypatch):
 # ---------------------------------------------------------------------------- connected apps
 def test_connections_are_per_person_owners_see_the_company_and_companies_are_isolated(owner, app):
     mine = oauth_connect(owner)
-    with TestClient(app, base_url=BASE) as o, TestClient(app, base_url=BASE) as other:
+    with browser(owner) as o, browser(owner) as other:
         join(o, owner, "office@acme.test", "office")
         theirs = oauth_connect(o, redirect_uri=LOOPBACK_CB)
         signup(other, email="owner@bravo.test", company="Bravo Electric", license_number="654321")
@@ -793,7 +793,7 @@ def test_refresh_reuse_after_a_few_seconds_ends_a_thiefs_connection_too(owner, a
     assert oauth.REFRESH_GRACE_S <= 10
     got = oauth_connect(owner)
     cid, r1 = got["client"]["client_id"], got["tokens"]["refresh_token"]
-    with TestClient(app, base_url=BASE) as thief:
+    with browser(owner) as thief:
         stolen = token(thief, grant_type="refresh_token", refresh_token=r1, client_id=cid).json()
     with app.state.platform.store.connect() as con:
         con.execute("update oauth_tokens set used_at = used_at - ? where used_at is not null and kind = 'refresh'",
@@ -826,7 +826,7 @@ def test_every_ended_connection_and_denial_is_in_the_activity_log(owner, app, ca
                                              "client_id": got["client"]["client_id"]}).status_code == 200
     assert reasons() == ["code_reused", "revoked_by_app"]
     # a removed person; a password change
-    with TestClient(app, base_url=BASE) as o:
+    with browser(owner) as o:
         office = join(o, owner, "o@acme.test", "office")
         oauth_connect(o)
     assert owner.delete(f"/api/users/{office['id']}").status_code == 200
@@ -860,7 +860,7 @@ def test_pending_request_ids_never_reach_the_access_log():
 def test_a_request_can_only_be_approved_in_the_browser_that_started_it(owner, app):
     """A pending request's id alone (a link someone was sent, a log) must not let another signed-in person approve
     it as themselves and connect the waiting app to their company."""
-    with TestClient(app, base_url=BASE) as initiator, TestClient(app, base_url=BASE) as other:
+    with browser(owner) as initiator, browser(owner) as other:
         client = register(initiator)
         verifier, challenge = pkce()
         r = authorize(initiator, client, challenge)
@@ -893,7 +893,7 @@ def test_removing_a_person_while_they_approve_leaves_no_grant(owner, app, backen
     """The owner's Remove can land between the approval reading the person and writing the grant. The grant must
     not be written (on SQLite the next person invited would get the same id, and with it the connection)."""
     store = app.state.platform.store
-    with TestClient(app, base_url=BASE) as o:
+    with browser(owner) as o:
         office = join(o, owner, "leaver@acme.test", "office")
         client = register(o)
         verifier, challenge = pkce()

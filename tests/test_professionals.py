@@ -17,7 +17,7 @@ from fastmcp import Client, FastMCP
 
 from tradecomply import professionals as pro
 from tradecomply.core import all_rules
-from tests.support import backend, make_app, signup  # noqa: F401  (backend is an autouse fixture: both stores)
+from tests.support import backend, browser, make_app, signup  # noqa: F401  (backend is an autouse fixture: both stores)
 
 RULES = {r.id: r for r in all_rules()}
 CONTRACT = {"type_id": str, "name": str, "why": str, "legal_basis": str, "verified": bool, "county_filtered": bool}
@@ -673,7 +673,7 @@ def test_the_hook_never_breaks_a_tool_call(owner, monkeypatch, caplog):
 
 
 def test_professionals_routes(app, owner):
-    with TestClient(app) as anon:
+    with browser(owner) as anon:
         assert anon.get("/api/professionals/types").status_code == 401
         assert anon.get("/api/professionals/find?type=attorney").status_code == 401
     t = owner.get("/api/professionals/types")
@@ -690,10 +690,10 @@ def test_professionals_routes(app, owner):
     assert owner.get("/api/professionals/find", params={"type": "wizard"}).status_code == 422
     assert owner.get("/api/professionals/find", params={"need": "x" * 501}).status_code == 422
     key = new_key(owner)
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         assert bot.get("/api/professionals/find?type=attorney&county=Kern", headers=bearer(key)).status_code == 200
     tools_only = new_key(owner, scopes={"rest_api": False})
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         assert bot.get("/api/professionals/types", headers=bearer(tools_only)).status_code == 403
         assert bot.post("/api/tools/list_professional_types", json={}, headers=bearer(tools_only)).status_code == 200
 
@@ -702,7 +702,7 @@ def test_api_key_scope_holds_when_who_must_sign_runs_a_tool(app, owner):
     narrow = new_key(owner, scopes={"tools": ["who_must_sign"]})
     both = new_key(owner, scopes={"tools": ["who_must_sign", "calgreen_and_stormwater"]})
     body = {"tool_name": "calgreen_and_stormwater", "arguments": SWPPP}
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         r = bot.post("/api/tools/who_must_sign", json=body, headers=bearer(narrow))
         assert r.status_code == 422 and "not allowed to use the tool 'calgreen_and_stormwater'" in r.json()["detail"]
         given = {"tool_name": "calgreen_and_stormwater", "result": run("calgreen_and_stormwater", SWPPP)}
@@ -738,7 +738,7 @@ def test_api_key_scope_holds_over_mcp(app, owner):
     narrow = new_key(owner, scopes={"tools": ["who_must_sign"]})
     by_category = new_key(owner, scopes={"tools": ["who_must_sign"], "categories": ["building"]})
     default = new_key(owner)
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         refused = who(bot, session(bot, narrow), 2)["result"]
         assert refused["isError"] is True and "not allowed to use the tool" in refused["content"][0]["text"]
         for key in (by_category, default):

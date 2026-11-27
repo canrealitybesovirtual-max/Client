@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from app import mcp_governance as gov
 from app.auth import MCPGate, RateLimiter
-from tests.support import PW, backend, join, make_app, signup  # noqa: F401  (backend is an autouse fixture)
+from tests.support import PW, backend, browser, join, make_app, signup  # noqa: F401  (backend is an autouse fixture)
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MCP_HEADERS = {"accept": "application/json, text/event-stream", "content-type": "application/json"}
@@ -90,7 +90,7 @@ def all_log_text(app) -> str:
 # ---------------------------------------------------------------------------- the MCP call log
 def test_every_tool_call_is_logged_with_a_hash_of_the_arguments_never_the_arguments(owner, app):
     key = new_key(owner, name="Claude Desktop")
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         h = mcp_session(bot, bearer(key))
         args = {"hazard": f"fall protection for {EMPLOYEE}"}
         r = call(bot, h, "lookup_safety_standard", args, rid=5)
@@ -173,7 +173,7 @@ def test_a_failing_audit_write_never_breaks_the_call(owner, app, monkeypatch):
     def down(*a, **k):
         raise RuntimeError("database went away")
     monkeypatch.setattr(app.state.platform.store, "log_mcp_calls", down)
-    with TestClient(app) as c:
+    with browser(owner) as c:
         h = mcp_session(c)
         r = lic(c, h)
     assert r.status_code == 200 and sse_json(r.text)["result"]["structuredContent"]["business_name"]
@@ -210,7 +210,7 @@ def test_store_refuses_bad_rows(app):
 def test_scoped_key_runs_only_its_tools_and_refusals_are_logged(owner, app):
     key = new_key(owner, scopes={"tools": ["verify_contractor_license"], "categories": ["payments"]})
     assert key["scope"]["tool_count"] == 6 and key["scope"]["summary"] == "Liens & getting paid; 1 named tool"
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         h = mcp_session(bot, bearer(key))
         assert lic(bot, h).status_code == 200
         ok = call(bot, h, "calculate_lien_deadline", {"claimant_role": "subcontractor",
@@ -242,7 +242,7 @@ def test_default_key_sees_and_runs_every_read_only_tool(owner, app):
     key = new_key(owner)
     total = len(owner.get("/api/tools").json()["tools"])          # 68 when this was written; other work adds more
     assert key["scopes"] is None and key["scope"]["default"] is True and key["scope"]["tool_count"] == total >= 68
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         h = mcp_session(bot, bearer(key))
         listed = sse_json(bot.post("/mcp", headers=h, json={"jsonrpc": "2.0", "id": 9, "method": "tools/list"}).text)
         assert len(listed["result"]["tools"]) == total
@@ -281,7 +281,7 @@ def test_normalize_scopes():
 def test_tool_calls_only_key_cannot_read_company_data(owner, app):
     key = new_key(owner, scopes={"rest_api": False})
     assert key["scope"]["rest_api"] is False and key["scope"]["tool_count"] == len(owner.get("/api/tools").json()["tools"])
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         auth = bearer(key)
         assert bot.get("/api/projects", headers=auth).status_code == 403
         assert bot.get("/api/me", headers=auth).status_code == 403
@@ -296,7 +296,7 @@ def test_tool_calls_only_key_cannot_read_company_data(owner, app):
 
 def test_api_keys_cannot_create_change_or_revoke_keys(owner, app):
     key = new_key(owner, scopes={"tools": ["verify_contractor_license"]})
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         auth = bearer(key)
         assert bot.post("/api/keys", json={"name": "wider"}, headers=auth).status_code == 403
         assert bot.patch(f"/api/keys/{key['id']}", json={"scopes": None}, headers=auth).status_code == 403
@@ -336,7 +336,7 @@ def test_owner_changes_a_keys_access_and_every_change_is_logged(owner, app):
 
 def test_field_users_cannot_manage_keys_and_other_companies_keys_are_invisible(owner, app):
     key = new_key(owner)
-    with TestClient(app) as field, TestClient(app) as other:
+    with browser(owner) as field, browser(owner) as other:
         join(field, owner, "crew@acme.test", "field")
         assert field.patch(f"/api/keys/{key['id']}", json={"name": "x"}).status_code == 403
         assert field.get("/api/mcp/policy").status_code == 403
@@ -349,7 +349,7 @@ def test_field_users_cannot_manage_keys_and_other_companies_keys_are_invisible(o
 def test_per_key_rate_limit_and_the_company_limit(owner, app):
     slow = new_key(owner, name="slow", rate_limit_per_min=2)
     fast = new_key(owner, name="fast")
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         hs, hf = mcp_session(bot, bearer(slow)), mcp_session(bot, bearer(fast))
         codes = [lic(bot, hs, rid=10 + i).status_code for i in range(3)]
         assert codes == [200, 200, 429]
@@ -365,7 +365,7 @@ def test_per_key_rate_limit_and_the_company_limit(owner, app):
 def test_refused_calls_are_logged_at_most_30_a_minute(owner, app):
     app.state.platform.mcp_reject_log_limiter.limit = 2
     key = new_key(owner, scopes={"tools": ["verify_contractor_license"]})
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         h = mcp_session(bot, bearer(key))
         for i in range(5):
             assert call(bot, h, "lookup_safety_standard", {"hazard": "x"}, rid=30 + i).json()["error"]
@@ -382,7 +382,7 @@ def test_rate_limiter_per_key_override():
 # ---------------------------------------------------------------------------- key expiry
 def test_expired_key_is_refused_everywhere(owner, app):
     key = new_key(owner, expires_in_days=1)
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         assert bot.post("/mcp", json=INIT, headers={**MCP_HEADERS, **bearer(key)}).status_code == 200
         with app.state.platform.store.connect() as con:
             con.execute("update api_keys set expires_at = ? where id = ?", ("2026-01-01T00:00:00+00:00", key["id"]))
@@ -500,7 +500,7 @@ def test_filter_tools_list_json_and_event_stream():
 def test_owner_views_and_filters_the_mcp_log_only_for_their_company(owner, app):
     a = new_key(owner, name="A")
     b = new_key(owner, name="B", scopes={"tools": ["verify_contractor_license"]})
-    with TestClient(app) as bot, TestClient(app) as other:
+    with browser(owner) as bot, browser(owner) as other:
         ha, hb = mcp_session(bot, bearer(a)), mcp_session(bot, bearer(b))
         for i in range(3):
             assert lic(bot, ha, rid=40 + i).status_code == 200
@@ -529,7 +529,7 @@ def test_owner_views_and_filters_the_mcp_log_only_for_their_company(owner, app):
 
 
 def test_only_owners_see_the_mcp_log(owner, app):
-    with TestClient(app) as office, TestClient(app) as bot, TestClient(app) as anon:
+    with browser(owner) as office, browser(owner) as bot, browser(owner) as anon:
         join(office, owner, "pat@acme.test", "office")
         key = new_key(owner)
         assert office.get("/api/mcp/audit").status_code == 403
@@ -541,7 +541,7 @@ def test_only_owners_see_the_mcp_log(owner, app):
 
 def test_owner_downloads_the_log_as_csv_and_json(owner, app):
     key = new_key(owner, name="=cmd|' /C calc'!A0")            # a formula in a key name is neutralized
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         h = mcp_session(bot, bearer(key))
         lic(bot, h)
         call(bot, h, "lookup_safety_standard", {"hazard": EMPLOYEE}, rid=3)
@@ -578,7 +578,7 @@ def test_policy_lists_every_tool_in_a_category(owner):
 def test_tool_definition_hashes_match_what_tools_list_sends(owner, app):
     r = owner.get("/api/mcp/tool-hashes").json()
     assert r["tool_count"] == len(owner.get("/api/tools").json()["tools"]) and len(r["manifest_sha256"]) == 64
-    with TestClient(app) as c:
+    with browser(owner) as c:
         h = mcp_session(c)
         tools = sse_json(c.post("/mcp", headers=h, json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"}).text)
     for t in tools["result"]["tools"]:
@@ -672,7 +672,7 @@ def test_governance_routes_never_call_the_database_on_the_event_loop(tmp_path):
             on_loop.append(" < ".join(f.name for f in reversed(traceback.extract_stack()[-6:-1])))
         return real()
     store.connect = connect
-    with TestClient(app) as c, TestClient(app) as bot:
+    with TestClient(app) as c, browser(c) as bot:
         signup(c)
         k = new_key(c, scopes={"tools": ["verify_contractor_license"]}, rate_limit_per_min=3, expires_in_days=9)
         c.get("/api/keys")
@@ -850,7 +850,7 @@ def test_duplicate_json_keys_cannot_smuggle_a_tool_past_the_scope(owner, app):
     for text in (raw % (1, "a", "{}", "b"),):
         assert json.loads(text)["params"]["name"] == pydantic_core.from_json(text)["params"]["name"] == "b"
     key = new_key(owner, scopes={"tools": ["verify_contractor_license"]})
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         h = mcp_session(bot, bearer(key))
         sneaky = raw % (7, "verify_contractor_license", '{"hazard":"x"}', "lookup_safety_standard")
         r = bot.post("/mcp", headers=h, content=sneaky.encode())
@@ -865,7 +865,7 @@ def test_rest_tool_calls_count_against_the_keys_rate_limit(owner, app):
     """Security review: POST /api/tools/{name} with an API key used to skip the key's (and the company's) rate limit
     that /mcp enforces. Both routes now share the same counters."""
     slow = new_key(owner, name="slow", rate_limit_per_min=2)
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         codes = [bot.post("/api/tools/verify_contractor_license", json={"license_number": "123456"},
                           headers=bearer(slow)).status_code for _ in range(3)]
         assert codes == [200, 200, 429]
@@ -879,3 +879,41 @@ def test_rest_tool_calls_count_against_the_keys_rate_limit(owner, app):
         assert r.status_code == 429
     # a signed-in person in the web app is not counted against API key budgets
     assert owner.post("/api/tools/verify_contractor_license", json={"license_number": "123456"}).status_code == 200
+
+
+# ---------------------------------------------------------------------------- one running lifespan, one event loop
+def test_a_running_app_refuses_a_second_start_and_other_browsers_share_its_event_loop(owner, app):
+    """Regression (the suite hung now and then, forever): a second `with TestClient(app)` on a running app started
+    its lifespan again on a second event loop, FastMCP pointed /mcp at that loop's session manager, and an MCP session
+    opened through the other client ran on one loop inside a task group of the other. Closing the inner client then
+    waited for a wakeup sent from the wrong thread, which was sometimes lost. A second start is now refused at once
+    (app/main.py one_at_a_time) and leaves the running app as it was; extra browsers (tests/support.py browser())
+    use the running client's loop."""
+    with pytest.raises(RuntimeError, match="lifespan is already running"):
+        with TestClient(app):
+            pass
+    key = new_key(owner)
+    h = mcp_session(owner, bearer(key))                      # /mcp still belongs to the running loop
+    assert lic(owner, h).status_code == 200
+    with browser(owner) as bot, browser(owner) as other:
+        assert bot.portal is owner.portal and other.portal is owner.portal        # one thread, one event loop
+        hb = mcp_session(bot, bearer(key))                   # an MCP session opened through an inner browser
+        assert lic(bot, hb, rid=3).status_code == 200
+        signup(other, email="b@other.test", company="Other Co")                    # its own cookies
+        assert other.get("/api/me").json()["tenant"]["id"] != owner.tenant_id
+        assert owner.get("/api/me").json()["tenant"]["id"] == owner.tenant_id
+    assert lic(owner, h, rid=4).status_code == 200           # closing a browser stops nothing
+    assert [r["status"] for r in mcp_rows(app, owner.tenant_id)] == ["ok", "ok", "ok"]
+
+
+def test_the_app_starts_again_once_stopped_and_a_browser_needs_a_running_client(app):
+    with TestClient(app) as c:
+        h = mcp_session(c)
+        assert lic(c, h).status_code == 200
+    with pytest.raises(RuntimeError, match="needs `c` running"):
+        browser(c).get("/health")             # never a new event loop of its own (Starlette's default)
+    with TestClient(app) as c:                # one after the other is fine: a new lifespan, a new session manager
+        h = mcp_session(c)
+        assert lic(c, h).status_code == 200
+        with browser(c) as b:
+            assert b.get("/health").status_code == 200

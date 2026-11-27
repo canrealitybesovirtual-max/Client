@@ -26,6 +26,7 @@ from app import billing  # noqa: E402
 from app.config import Settings  # noqa: E402
 from app.main import create_app  # noqa: E402
 from tradecomply import logic  # noqa: E402
+from tests.support import browser  # noqa: E402  (another browser on a running app)
 
 PW = "correct-horse-battery"
 MCP_HEADERS = {"accept": "application/json, text/event-stream", "content-type": "application/json"}
@@ -212,7 +213,7 @@ def test_tampered_or_expired_session_rejected(client, app):
 
 
 def test_password_change_ends_other_sessions(app):
-    with TestClient(app) as a, TestClient(app) as b:
+    with TestClient(app) as a, browser(a) as b:
         signup(a)
         b.post("/api/auth/login", json={"email": "owner@acme.test", "password": PW})
         assert b.get("/api/me").status_code == 200
@@ -243,7 +244,7 @@ def test_csrf_required_for_cookie_writes(client):
 
 # ---------------------------------------------------------------------------- tenant isolation
 def test_tenant_isolation(app):
-    with TestClient(app) as a, TestClient(app) as b:
+    with TestClient(app) as a, browser(a) as b:
         signup(a, email="a@one.test", company="One")
         signup(b, email="b@two.test", company="Two")
         pid = a.post("/api/projects", json={"name": "A's job"}).json()["id"]
@@ -266,7 +267,7 @@ def test_tenant_isolation(app):
 
 
 def test_field_role_can_only_log(app):
-    with TestClient(app) as owner, TestClient(app) as field:
+    with TestClient(app) as owner, browser(owner) as field:
         signup(owner)
         pid = owner.post("/api/projects", json={"name": "Job"}).json()["id"]
         inv = owner.post("/api/users", json={"email": "crew@acme.test", "role": "field"}).json()
@@ -290,7 +291,7 @@ def test_people_added_with_a_temporary_password_before_invite_links_still_sign_i
     """Backward compatibility: someone an owner added before invite links has a temporary password and
     must_change_password. They can still log in, are asked to change it, and can be sent an invite link instead."""
     from app.auth import hash_password
-    with TestClient(app) as owner, TestClient(app) as legacy:
+    with TestClient(app) as owner, browser(owner) as legacy:
         tid = signup(owner)["tenant_id"]
         store = app.state.platform.store
         u = store.create_user(tid, "legacy@acme.test", hash_password("temp-pass-123"), "field",
@@ -311,7 +312,7 @@ def test_people_added_with_a_temporary_password_before_invite_links_still_sign_i
 # ---------------------------------------------------------------------------- API keys on /api and /mcp
 def test_api_key_auth_and_revocation(tmp_path):
     app = make_app(tmp_path, mcp_require_key=True)
-    with TestClient(app) as c, TestClient(app) as bot:
+    with TestClient(app) as c, browser(c) as bot:
         signup(c)
         made = c.post("/api/keys", json={"name": "Claude Desktop"}).json()
         key = made["key"]
@@ -950,7 +951,7 @@ def test_every_cookie_write_route_requires_csrf(app):
 
 
 def test_cross_tenant_ids_on_logs_keys_and_users(app):
-    with TestClient(app) as a, TestClient(app) as b:
+    with TestClient(app) as a, browser(a) as b:
         signup(a, email="a@one.test", company="One")
         signup(b, email="b@two.test", company="Two")
         lid = a.post("/api/field_logs", json={"kind": "toolbox_talk", "date": "2026-11-20"}).json()["id"]

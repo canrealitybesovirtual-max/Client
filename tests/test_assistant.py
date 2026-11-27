@@ -16,7 +16,7 @@ from app import assistant
 from app.store import iso_in
 from tests.fake_anthropic import (FAKE_KEY, FakeAnthropic, ask_tool, error_response, message, reply_text,
                                   search_then_tool, text, thinking, tool_use)
-from tests.support import backend, join, make_app, oauth_connect, signup  # noqa: F401  (backend: autouse)
+from tests.support import backend, browser, join, make_app, oauth_connect, signup  # noqa: F401  (backend: autouse)
 
 LIEN = {"claimant_role": "subcontractor", "last_furnishing_date": "2026-11-01"}
 
@@ -68,7 +68,7 @@ def test_not_set_up_hides_the_helper_and_tells_only_owners_the_setting(app, owne
     assert me == {"available": False, "configured": False, "enabled": True, "reason": "not_configured",
                   "env_var": "ANTHROPIC_API_KEY"}
     assert owner.post("/api/assistant/conversations", json={}).status_code == 403
-    with TestClient(app) as field:
+    with browser(owner) as field:
         join(field, owner, "crew@acme.test", "field")
         st = field.get("/api/assistant/status").json()
         assert st["available"] is False and st["reason"] == "not_configured" and "env_var" not in st
@@ -123,7 +123,7 @@ def test_system_and_tools_are_the_same_bytes_for_everyone(app, owner, fake):
     chat = new_chat(owner)
     assert ask(owner, chat, "First", page="dashboard").status_code == 200
     assert ask(owner, chat, "Second", page="nowhere").status_code == 200
-    with TestClient(app) as other:
+    with browser(owner) as other:
         signup(other, email="b@bravo.test", company="Bravo", license_number="654321")
         app.state.platform.store.update_user(other.get("/api/me").json()["tenant"]["id"],
                                              other.get("/api/me").json()["user"]["id"], role="field")
@@ -278,7 +278,7 @@ def test_long_results_are_cut_with_a_note(owner, fake, monkeypatch):
 def test_people_only_never_api_keys_or_connected_apps(app, owner):
     key = owner.post("/api/keys", json={"name": "k"}).json()["key"]
     connected = oauth_connect(owner)["tokens"]["access_token"]
-    with TestClient(app) as anon:
+    with browser(owner) as anon:
         for token, code in ((key, 403), (connected, 401)):
             h = {"authorization": f"Bearer {token}"}
             assert anon.post("/api/assistant/conversations", json={}, headers=h).status_code == code
@@ -295,7 +295,7 @@ def test_chats_are_private_to_their_person(app, owner, fake):
     fake.add(reply_text("Mine."))
     chat = new_chat(owner)
     assert ask(owner, chat, "Owner's question").status_code == 200
-    with TestClient(app) as office, TestClient(app) as stranger:
+    with browser(owner) as office, browser(owner) as stranger:
         join(office, owner, "office@acme.test", "office")
         signup(stranger, email="b@bravo.test", company="Bravo", license_number="654321")
         for c in (office, stranger):
@@ -313,7 +313,7 @@ def test_chats_are_private_to_their_person(app, owner, fake):
 
 def test_any_role_can_ask_but_only_owners_see_usage_and_switch_it(app, owner, fake):
     fake.add(reply_text("For the field."))
-    with TestClient(app) as field, TestClient(app) as office:
+    with browser(owner) as field, browser(owner) as office:
         join(field, owner, "crew@acme.test", "field")
         join(office, owner, "office@acme.test", "office")
         assert ask(field, new_chat(field), "Heat plan?").status_code == 200
@@ -567,7 +567,7 @@ def test_export_has_the_text_not_the_raw_messages_and_deletion_removes_everythin
 
 def test_removing_a_person_deletes_their_chats_and_keeps_usage_unnamed(app, owner, fake):
     fake.add(reply_text("Crew answer."))
-    with TestClient(app) as field:
+    with browser(owner) as field:
         join(field, owner, "crew@acme.test", "field")
         uid = field.get("/api/me").json()["user"]["id"]
         assert ask(field, new_chat(field), "Crew question").status_code == 200
@@ -653,7 +653,7 @@ def test_a_stopped_message_still_counts_toward_the_daily_limit(app, owner, fake)
                                          (httpx2.ReadTimeout("read timed out"), 504)])
 def test_a_connection_lost_mid_answer_is_a_plain_message_and_its_input_counts(app, owner, fake, exc, status):
     fake.add(_sse_then(reply_text("A long answer that never finishes.", input_tokens=150_000), exc))
-    with TestClient(app, raise_server_exceptions=False) as c:
+    with browser(owner, raise_server_exceptions=False) as c:
         c.cookies.update(owner.cookies)
         c.headers["x-csrf-token"] = owner.headers["x-csrf-token"]
         r = ask(c, new_chat(c))
@@ -716,7 +716,7 @@ def test_an_answer_finishing_after_its_person_was_removed_lands_nowhere(app, own
     """SQLite gives a new person the removed one's id; chat ids are never reused, so A's late answer can't reach the
     new person's chat, and the usage row (written when A asked) was un-named when A was removed."""
     arrived, release, out = threading.Event(), threading.Event(), {}
-    with TestClient(app) as a, TestClient(app) as c:
+    with browser(owner) as a, browser(owner) as c:
         join(a, owner, "a@acme.test", "field")
         a_id, a_chat = a.get("/api/me").json()["user"]["id"], new_chat(a)
         fake.add(_held(arrived, release, reply="Answer meant for A only."))
@@ -759,7 +759,7 @@ def test_people_asking_at_once_share_the_company_budget(app, owner, fake):
         return ask_tool("calculate_lien_deadline", LIEN, input_tokens=1500, output_tokens=80)
     fake.add(first, first, reply_text("Done.", input_tokens=1500, output_tokens=80),
              reply_text("Done.", input_tokens=1500, output_tokens=80))
-    with TestClient(app) as office:
+    with browser(owner) as office:
         join(office, owner, "office@acme.test", "office")
         chats, out = {"owner": new_chat(owner), "office": new_chat(office)}, {}
         threads = [threading.Thread(target=lambda who=who, c=c: out.setdefault(who, ask(c, chats[who])))
@@ -787,7 +787,7 @@ def test_what_a_private_chat_passes_to_a_check_is_not_copied_into_the_activity_l
     argument names and a fingerprint (as /mcp does), never the words from a chat only its person can read."""
     need = "attorney for Juan Perez who fell off our scaffold at 12 Oak St and wants to sue us"
     fake.add(search_then_tool("attorney", "find_licensed_professional", {"need": need}), reply_text("Here."))
-    with TestClient(app) as crew, TestClient(app) as office:
+    with browser(owner) as crew, browser(owner) as office:
         join(crew, owner, "crew@acme.test", "field")
         join(office, owner, "office@acme.test", "office")
         chat = new_chat(crew)

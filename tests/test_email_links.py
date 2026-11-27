@@ -17,8 +17,8 @@ from fastapi.testclient import TestClient
 
 from app import auth_links, mailer
 from app.mailer import MailConfig, compose, parse_address
-from tests.support import (PW, backend, join, json_response, login, make_app, mock_http, oauth_connect,  # noqa: F401
-                           signup)
+from tests.support import (PW, backend, browser, join, json_response, login, make_app, mock_http,  # noqa: F401
+                           oauth_connect, signup)
 
 APP_URL = "https://testserver"                 # https APP_URL; the TestClient's own host (connected apps need it)
 MAIL = {"MAIL_BACKEND": "outbox", "MAIL_FROM": "TradeComply <no-reply@example.com>"}
@@ -238,7 +238,7 @@ def test_without_email_owners_still_get_copy_links_and_nothing_is_sent(app, plat
     inv = owner.post("/api/users", json={"email": "crew@acme.test", "role": "field"}).json()
     assert inv["email_sent"] is False and "Email isn't set up" in inv["message"]
     assert inv["invite_path"].startswith("/#/invite/tcl_") and inv["invite_url"].startswith(APP_URL + "/#/invite/")
-    with TestClient(app) as crew:
+    with browser(owner) as crew:
         r = crew.post("/api/auth/invite/accept", json={"token": inv["invite_path"].rsplit("/", 1)[1],
                                                        "password": PW, "name": "Crew Lead"})
         assert r.status_code == 200 and crew.get("/api/me").json()["user"]["name"] == "Crew Lead"
@@ -283,7 +283,7 @@ def test_forgot_answers_the_same_for_every_address(app, platform, owner, backend
     tid2 = signup(other, email="pat@bravo.test", company="Bravo Co")["tenant_id"]
     # sso@bravo.test joins through the emailed invite (so the address is confirmed), then SSO becomes required
     inv = other.post("/api/users", json={"email": "sso@bravo.test", "role": "field"}).json()
-    with TestClient(app) as s:
+    with browser(owner) as s:
         assert s.post("/api/auth/invite/accept", json={"token": last_link(platform, "sso@bravo.test", "invite"),
                                                        "password": PW}).status_code == 200
     assert inv["email_sent"] is True
@@ -416,7 +416,7 @@ def test_invites_emailed_and_copied(app, platform, owner, backend):
     anon = TestClient(app)
     peek = anon.post("/api/auth/link", json={"token": copied, "purpose": "invite"}).json()
     assert peek["email"] == "crew@acme.test" and peek["company_name"] == "Acme Builders" and peek["name"] == "Ana"
-    with TestClient(app) as crew:
+    with browser(owner) as crew:
         assert crew.post("/api/auth/invite/accept", json={"token": emailed, "password": "short"}).status_code == 422
         r = crew.post("/api/auth/invite/accept", json={"token": emailed, "password": PW})
         assert r.status_code == 200 and "tc_session" in r.headers.get("set-cookie", "")
@@ -427,7 +427,7 @@ def test_invites_emailed_and_copied(app, platform, owner, backend):
     assert owner.post(f"/api/users/{inv['id']}/invite").status_code == 409           # already joined
     # a copied link joins too, but doesn't confirm the address
     inv2 = owner.post("/api/users", json={"email": "office@acme.test", "role": "office"}).json()
-    with TestClient(app) as office:
+    with browser(owner) as office:
         assert office.post("/api/auth/invite/accept", json={"token": inv2["invite_path"].rsplit("/", 1)[1],
                                                             "password": PW}).status_code == 200
         office.headers["x-csrf-token"] = office.cookies.get("tc_csrf")
@@ -817,7 +817,7 @@ def test_sending_a_new_confirmation_keeps_the_sign_up_link_working(app, platform
 
 def test_the_founding_owner_has_joined(app, platform, owner, backend):
     """Sign-up signs the founder in, so they are never listed as a pending invite (Team: 'Invited')."""
-    with TestClient(app) as co:
+    with browser(owner) as co:
         join(co, owner, "co@acme.test", "owner")
         rows = {u["email"]: u for u in co.get("/api/users").json()}
         assert rows["owner@acme.test"]["last_login"]

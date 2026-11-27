@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from app import connectors as registry
 from app.connectors import Connector, TestResult, validate_connector_class
 from tradecomply import integrations_guide
-from tests.support import backend, join, make_app, signup  # noqa: F401
+from tests.support import backend, browser, join, make_app, signup  # noqa: F401
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def test_every_role_and_api_keys_can_read_the_catalog(app, owner):
     assert field.get("/api/integrations/catalog").status_code == 200
     assert field.get("/api/integrations/catalog/mcp-config?ids=slack").status_code == 200
     key = owner.post("/api/keys", json={"name": "Workato"}).json()["key"]
-    with TestClient(app) as bot:
+    with browser(owner) as bot:
         r = bot.get("/api/integrations/catalog", headers={"authorization": f"Bearer {key}"})
         assert r.status_code == 200 and len(r.json()["entries"]) == len(integrations_guide.entries())
 

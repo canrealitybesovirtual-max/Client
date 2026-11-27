@@ -17,6 +17,7 @@ import logging
 import math
 import os
 import re
+import threading
 from contextlib import AsyncExitStack, asynccontextmanager
 
 import anyio
@@ -235,6 +236,29 @@ def combine_lifespans(*lifespans):
     return combined
 
 
+def one_at_a_time(lifespan):
+    """The app's lifespan runs at most once at a time; a second entry while it runs raises at once. uvicorn enters
+    it once per process, on the loop that serves every request. A second concurrent entry can only come from a
+    second event loop (in tests: a second `with TestClient(app)` while one is open; tests/support.py browser() is
+    the way to add another browser), and it would break /mcp: FastMCP's lifespan points the app's one /mcp route at
+    the session manager it starts, so the route then belongs to the loop that entered last, while sessions opened
+    through another loop run there inside that manager's task group. Stopping it then waits for a wakeup sent from
+    the wrong thread, which can be lost: the shutdown hangs forever, now and then."""
+    running = threading.Lock()
+
+    @asynccontextmanager
+    async def guarded(app):
+        if not running.acquire(blocking=False):
+            raise RuntimeError("this app's lifespan is already running (on another event loop): start it once and "
+                               "send every request through that loop (tests: tests/support.py browser())")
+        try:
+            async with lifespan(app):
+                yield
+        finally:
+            running.release()
+    return guarded
+
+
 def _static(name: str, media_type: str | None = None, cache: str = "no-cache"):
     path = os.path.join(STATIC_DIR, name)
 
@@ -300,7 +324,8 @@ def create_app(settings: Settings | None = None, mcp_server=None) -> FastAPI:
             await anyio.to_thread.run_sync(platform.events.stop)    # joins the worker: off the event loop
             store.close()
 
-    app = FastAPI(title="TradeComply CA", version="1.0", lifespan=combine_lifespans(api_lifespan, mcp_app.lifespan),
+    app = FastAPI(title="TradeComply CA", version="1.0",
+                  lifespan=one_at_a_time(combine_lifespans(api_lifespan, mcp_app.lifespan)),
                   docs_url=None, openapi_url="/api/openapi.json", redoc_url=None,
                   default_response_class=SafeJSONResponse)
     app.state.platform = platform
