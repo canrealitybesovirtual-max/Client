@@ -425,6 +425,20 @@ office_up = require_roles("owner", "office")
 anyone = get_principal
 
 
+def require_person(detail: str):
+    """Signed in with the session cookie (any role). API keys get 403 with `detail`; OAuth tokens never get here
+    (get_principal answers 401 for any bearer token that is not a tck_ key)."""
+    async def dep(p: Principal = Depends(get_principal)) -> Principal:
+        if p.via != "cookie":
+            raise HTTPException(403, detail)
+        return p
+    return dep
+
+
+PEOPLE_ONLY = "Quick help and search are for people signed in to TradeComply."
+people_only = require_person(PEOPLE_ONLY)       # Quick help, search, suggestions and the rule page
+
+
 def set_session(response, request: Request, user: dict) -> str:
     platform = platform_of(request)
     nonce = secrets.token_urlsafe(16)

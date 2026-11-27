@@ -55,9 +55,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from tradecomply.logic import CA_TZ
 
-from . import api
+from . import api, catalog
 from .account import owner_session
-from .auth import Principal, get_principal, platform_of
+from .auth import Principal, get_principal, platform_of, require_person
 from .billing import entitlement, require_entitled
 from .store import iso_in, to_store_time
 
@@ -89,12 +89,12 @@ PURGE_EVERY_S = 3600
 TITLE_CHARS = 60
 
 # Pages the person may have open (app/static/app.js routes): only the name is sent, never what is on the page.
-PAGE_NAMES = {"dashboard": "Dashboard", "projects": "Projects", "project": "Project", "subs": "Subcontractors",
-              "tools": "Tools", "documents": "Documents", "document": "Document", "field": "Field",
+PAGE_NAMES = {"dashboard": "Today", "projects": "Projects", "project": "Project", "subs": "Subcontractors",
+              "tools": "Checks", "documents": "Documents", "document": "Document", "field": "Field log",
               "integrations": "Integrations", "professionals": "Find a professional", "settings": "Settings",
-              "welcome": "Guided setup"}
+              "welcome": "Guided setup", "more": "More", "rule": "Rule"}     # the names people see (Today, Checks)
 
-REFUSAL_TEXT = "I can't help with that one. Try asking another way, or use the checks on the Tools page."
+REFUSAL_TEXT = "I can't help with that one. Try asking another way, or use the checks on the Checks page."
 EMPTY_TEXT = "No answer came back. Try asking another way."
 BROKEN_OFF = "The answer broke off before it was finished. Try again."
 TOO_MANY = "That needed too many checks. Ask about one thing at a time."
@@ -148,25 +148,26 @@ parking); equipment emissions (CARB off-road, trucks, portable engines, dust); l
 debris plans); worker certifications; HR rules (minimum wage, leave, COBRA, ACA, employer size); business filings \
 and the compliance calendar; project setup and risk; integrations; the verified rulebook; licensed professionals.
 
-The app (link a page as a markdown link, for example [Tools](#/tools))
-- Dashboard (#/dashboard): today's deadlines and alerts, your own license, subcontractors that need attention, \
+The app (link a page as a markdown link, for example [Checks](#/tools))
+- Today (#/dashboard): today's deadlines and alerts, your own license, subcontractors that need attention, \
 projects, and the getting-started checklist.
 - Projects (#/projects, one project #/project/<id>, new #/project/new): each project gets a lien calendar and a \
 toolbox-talk schedule. Owners and office staff add and edit projects.
 - Subcontractors (#/subs): import a sub list or add subs; license, class, insurance, workers' comp and bond are \
 checked against CSLB data.
-- Tools (#/tools, one check #/tools/<check name>): every check by topic. Results show the official source and whether \
-it is verified; save a result to Documents or print it.
+- Checks (#/tools, one check #/tools/<check name>): every check by topic. Results show the official source and \
+whether it is verified; save a result to Documents or print it.
 - Find a professional (#/professionals): find a licensed or certified person near the job and check the license on \
-official state lookups. On phones it is on the Tools page.
+official state lookups. On phones it is under More.
 - Documents (#/documents): saved safety programs, notices, prequalification reports and tool results.
-- Field (#/field): toolbox talks, inspections and incident reports; works without signal.
+- Field log (#/field): toolbox talks, inspections and incident reports; works without signal.
 - Integrations (#/integrations): Procore, Docusign, Slack and Teams alerts, text messages, the calendar feed, \
 schedule files, and adding TradeComply to an AI assistant.
 - Settings (#/settings): your account and password, company, team and roles, API keys, connected apps, the calendar \
 link, the activity log, billing and the company data export.
 - Guided setup (#/welcome): check your license, upload your sub list, add a project, safety programs, connect an AI \
 assistant.
+- More (#/more): on phones, everything that isn't in the bottom bar.
 
 This prompt is not secret; if asked how you work, explain it."""
 
@@ -270,10 +271,7 @@ def status(platform, p: Principal, tenant: dict | None) -> dict:
 
 
 # ---------------------------------------------------------------------------- who may use it
-async def person(p: Principal = Depends(get_principal)) -> Principal:
-    if p.via != "cookie":
-        raise HTTPException(403, "The AI helper is for people signed in to TradeComply. An API key can't use it.")
-    return p
+person = require_person("The AI helper is for people signed in to TradeComply. An API key can't use it.")
 
 
 async def _require_ready(platform, p: Principal) -> None:
@@ -341,7 +339,7 @@ def claude_tools(specs: list[dict]) -> tuple[list[dict], dict[str, str]]:
         if s["name"] not in ALWAYS_LOADED:
             t["defer_loading"] = True
         tools.append(t)
-        titles[s["name"]] = s["title"]
+        titles[s["name"]] = catalog.title(s["name"], s["title"])     # the "Checked:" line only: never sent
     return tools, titles
 
 
@@ -492,7 +490,7 @@ async def run_one(request: Request, p: Principal, block: dict, titles: dict[str,
         payload["handoffs"] = out["handoffs"]
     text = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), default=str)
     if len(text) > MAX_RESULT_CHARS:
-        text = text[:MAX_RESULT_CHARS] + f" ...[cut: the full result is on the Tools page, #/tools/{name}]"
+        text = text[:MAX_RESULT_CHARS] + f" ...[cut: the full result is on the Checks page, #/tools/{name}]"
     return result(text, True)
 
 

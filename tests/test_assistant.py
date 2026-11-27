@@ -103,7 +103,7 @@ def test_request_follows_the_claude_api_docs(app, owner, fake):
     # the messages end with the person's turn: today's date and the page name first, then what they typed
     assert body["messages"][-1]["role"] == "user"
     first, typed = body["messages"][-1]["content"]
-    assert first["text"].startswith("[Today is ") and first["text"].endswith(" in California. Open page: Tools.]")
+    assert first["text"].startswith("[Today is ") and first["text"].endswith(" in California. Open page: Checks.]")
     assert typed == {"type": "text", "text": "Hello"}
     tools = body["tools"]
     assert tools[0] == {"type": "tool_search_tool_bm25_20251119", "name": "tool_search_tool_bm25"}
@@ -131,6 +131,22 @@ def test_system_and_tools_are_the_same_bytes_for_everyone(app, owner, fake):
     dumps = {(json.dumps(b["system"], sort_keys=True), json.dumps(b["tools"], sort_keys=True)) for b in fake.bodies}
     assert len(dumps) == 1
     assert fake.bodies[1]["messages"][-1]["content"][0]["text"].endswith("Open page: none.]")   # unknown page
+
+
+def test_checked_line_titles_come_from_the_catalog_but_the_tool_list_does_not(app):
+    import asyncio
+
+    from app import api, catalog
+    specs = asyncio.run(api.tool_specs(app.state.platform))
+    tools, titles = assistant.claude_tools(specs)
+    assert titles["adu_rules"] == "ADU rules" and titles["select_lien_waiver"] == catalog.TOOLS["select_lien_waiver"][
+        "title"]
+    sent = json.dumps(tools)
+    assert not [t for t in tools if "title" in t]                    # no tool sent to Anthropic carries a title
+    assert "Choose a lien waiver" not in sent and "x-label" not in sent
+    by_name = {t["name"]: t for t in tools[1:]}
+    spec = next(s for s in specs if s["name"] == "adu_rules")
+    assert by_name["adu_rules"]["input_schema"] == spec["input_schema"]
 
 
 def test_client_is_built_from_the_operator_key_only(app, monkeypatch):
@@ -270,7 +286,7 @@ def test_long_results_are_cut_with_a_note(owner, fake, monkeypatch):
     fake.add(ask_tool("calculate_lien_deadline", LIEN), reply_text("Done."))
     assert ask(owner, new_chat(owner)).status_code == 200
     content = fake.bodies[1]["messages"][2]["content"][0]["content"]
-    assert len(content) < 400 and content.endswith("[cut: the full result is on the Tools page, "
+    assert len(content) < 400 and content.endswith("[cut: the full result is on the Checks page, "
                                                    "#/tools/calculate_lien_deadline]")
 
 

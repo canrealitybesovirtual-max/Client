@@ -69,7 +69,8 @@ def verify_license(license_number: str, state: str = "CA") -> LicenseResult:
     rec, source = licenses.find(license_number)
     notes = []
     if source == "demo fixtures":
-        notes.append("Demo data, not a live CSLB record. Load CSLB data (python -m tradecomply.cslb --download).")
+        notes.append("Demo data, not a live CSLB record. This server has no CSLB license data loaded (see the README "
+                     "section on CSLB data).")
     if not rec and source == "CSLB master file":
         notes.append("Not in CSLB's current master file, which leaves out cancelled, revoked and long-expired "
                      "licenses. Treat as not licensed until confirmed on the CSLB site.")
