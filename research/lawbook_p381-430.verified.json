@@ -2674,7 +2674,7 @@
     {
       "id": "service-repair-cgl-wc-notices",
       "title": "Service and repair: CGL and workers' comp notices",
-      "plain_english": "Service and repair contracts need the same 'Commercial General Liability Insurance (CGL)' and 'Workers' Compensation Insurance' notices as home improvement contracts, choosing the true statement; they may be attachments if the contract says so.",
+      "plain_english": "Service and repair contracts need a notice headed 'Commercial General Liability Insurance (CGL)' and one headed 'Workers' Compensation Insurance', each followed by whichever listed statement is both relevant and correct. The statements are close to the home improvement contract notices but not word for word the same, so use the service and repair wording in B&P 7159.10(d)(7)-(8). Either notice may be an attachment if the contract says it is attached.",
       "category": "required_notice",
       "parameters": {
         "cgl_heading": "Commercial General Liability Insurance (CGL)",
@@ -2714,7 +2714,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 415-416 (B&P 7159.10(d)(7)-(8))",
-        "correction": "Note said the option wording is exactly the same as 7159(e)(1)-(2). It is not quite: 7159.10(d)(7)(B) says \"You may call the (insurance company)\" and 7159.10(d)(8) uses \"both relevant and correct\". Added the exact 7159.10 option texts and selection rules to parameters and fixed the note.",
+        "correction": "Note said the option wording is exactly the same as 7159(e)(1)-(2). It is not quite: 7159.10(d)(7)(B) says \"You may call the (insurance company)\" and 7159.10(d)(8) uses \"both relevant and correct\". Added the exact 7159.10 option texts and selection rules to parameters and fixed the note. plain_english reworded on 2026-11-27: it no longer says the notices are the same as the home improvement ones.",
         "note": "Blank 'effective' filled from the history note (Amended effective January 1, 2021)."
       }
     },
@@ -3659,7 +3659,7 @@
     {
       "id": "solar-energy-system-disclosure-document",
       "title": "Solar Energy System Disclosure Document on the front page, bold 16-point",
-      "plain_english": "A solar energy system company must give the consumer CSLB's 'solar energy system disclosure document' before completing a sale, financing or lease. It must be printed on the front or cover page of every solar contract in bold 16-point type and show total cost and payments (including financing), how to complain, and the cancellation rights under 7159. The contract and disclosure must be in the same language as the sales presentation or marketing material.",
+      "plain_english": "A solar energy system company must give the consumer CSLB's 'solar energy system disclosure document' before completing a sale, financing or lease. It must be printed on the front or cover page of every solar contract in bold 16-point type and show total cost and payments (including financing), how to complain, and the cancellation rights under 7159. The contract and disclosure must be in the same language as the sales presentation or marketing material. This does not apply to a solar energy system installed as a standard feature on new construction (7169(h)).",
       "category": "required_document",
       "parameters": {
         "timing": "prior to completion of a sale, financing or lease of a solar energy system",
@@ -3686,7 +3686,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 430-432 (B&P 7169(a)-(h) and history note)",
-        "correction": "Rule left out the 7169(h) exclusion (page 432, just past this chunk): the section does not apply to a solar energy system installed as a standard feature on new construction. Added it to parameters and citation. \"effective\" now gives the section history (added eff. 1/1/2018, amended eff. 1/1/2020 and 1/1/2022) and keeps the July 1, 2018 availability date. Disclosure requirements (a)-(f) themselves are correct.",
+        "correction": "Rule left out the 7169(h) exclusion (page 432, just past this chunk): the section does not apply to a solar energy system installed as a standard feature on new construction. Added it to parameters and citation. \"effective\" now gives the section history (added eff. 1/1/2018, amended eff. 1/1/2020 and 1/1/2022) and keeps the July 1, 2018 availability date. Disclosure requirements (a)-(f) themselves are correct. plain_english reworded on 2026-11-27 to add the 7169(h) new-construction exclusion.",
         "note": ""
       }
     }

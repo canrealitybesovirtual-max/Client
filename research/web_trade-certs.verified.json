@@ -443,7 +443,7 @@
     {
       "id": "cert-elec-fee-application-and-exam-175",
       "title": "Certification application and exam fee: $175 ($75 + $100)",
-      "plain_english": "Applying for electrician certification costs $75 plus $100 for the exam, $175 total, and it is not refundable. Each retake costs another $100.",
+      "plain_english": "Applying for electrician certification costs $75 plus $100 for the exam, $175 total. The fees are not refunded once your application is accepted, and missing your test date forfeits them. If DIR finds the application deficient or short on proof of experience, it returns the application and refunds all fees. Each retake costs another $100.",
       "category": "money_amount",
       "parameters": {
         "application_fee_usd": 75,
@@ -465,7 +465,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "8 CCR 292.0(a)-(b) https://www.dir.ca.gov/t8/292_0.html (re-fetched 2026-11-25); 8 CCR 291.2(e) https://www.dir.ca.gov/t8/291_2.html (re-fetched 2026-11-25); DIR ECU FAQ https://www.dir.ca.gov/dlse/ecu/ECU_FAQ.htm (revised October 22, 2026, re-fetched 2026-11-25) (cost Q, missed-test Q); DIR ECU fees page https://www.dir.ca.gov/DLSE/ECU/ElectricalTrade_Fees.html (revised January 24, 2019, re-fetched 2026-11-25)",
-        "correction": "The $75 application fee, $100 exam fee, $175 total, $100 retake fee and payee are confirmed. The unqualified \"refundable\": false conflicts with 8 CCR 291.2(e): when an application is deficient or lacks enough proof of experience, DAS returns the application and refunds all fees. The FAQ's 'NOT REFUNDABLE' covers other cases, and missing the test date forfeits the fees. Replaced refundable with refundable_once_accepted = false, refund_if_application_deficient = true and missed_exam_forfeits_fees = true. Added 291.2(e) to the citation."
+        "correction": "The $75 application fee, $100 exam fee, $175 total, $100 retake fee and payee are confirmed. The unqualified \"refundable\": false conflicts with 8 CCR 291.2(e): when an application is deficient or lacks enough proof of experience, DAS returns the application and refunds all fees. The FAQ's 'NOT REFUNDABLE' covers other cases, and missing the test date forfeits the fees. Replaced refundable with refundable_once_accepted = false, refund_if_application_deficient = true and missed_exam_forfeits_fees = true. Added 291.2(e) to the citation. Rewording 2026-11-27: plain_english reworded to match this correction (8 CCR 291.2(e) at https://www.dir.ca.gov/t8/291_2.html and the ECU FAQ re-read on 2026-11-27); no value changed."
       }
     },
     {
@@ -1670,7 +1670,7 @@
     {
       "id": "cert-rrp-cleaning-verification-procedure",
       "title": "RRP cleaning: clean 2 feet beyond the work area; verify with cloths in sections under 40 sq ft",
-      "plain_english": "After interior work, clean all surfaces in and within 2 feet of the work area (HEPA vacuum, wet wipe, mop). Then the certified renovator checks each window sill and wipes floors and countertops with wet cleaning cloths, in sections under 40 square feet each, comparing each cloth to the EPA verification card. If a section fails twice, wait 1 hour (or until dry) and wipe with a dry cloth. Remove warning signs only after verification passes.",
+      "plain_english": "After interior work, clean all surfaces in and within 2 feet of the work area (HEPA vacuum, wet wipe, mop). Then the certified renovator checks each window sill and wipes floors and countertops with wet cleaning cloths, in sections under 40 square feet each, comparing each cloth to the EPA verification card. If a section fails twice, wait 1 hour or until the surface is completely dry, whichever is longer, then wipe it with a dry cleaning cloth. After exterior work, the certified renovator checks by visual inspection instead. Remove warning signs only after verification passes.",
       "category": "process_step",
       "parameters": {
         "clean_beyond_work_area_ft": 2,
@@ -1694,7 +1694,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "40 CFR 745.85(a)(5)(ii), (b)(1)(ii)(A)-(B), (b)(1)(iii), (b)(2) via eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?section=745.85 (issue date 2026-11-20; Title 40 up to date as of 2026-11-23; re-fetched 2026-11-25; the www.ecfr.gov/current/ pages in source_location are refused by the network proxy, the API returns the same regulatory text)",
-        "correction": "The 2-foot cleaning band, sections under 40 sq ft, certified renovator, verification card and sign removal are confirmed. wait_after_second_failure_hours: 1 dropped the qualifier in 745.85(b)(1)(ii)(A)(3) and (B)(2): wait '1 hour or until the surface has dried completely, whichever is longer', then wipe with a dry cloth. Replaced it with wait_after_failed_reclean (full rule), wait_min_hours and after_wait, and added the exterior visual-only rule."
+        "correction": "The 2-foot cleaning band, sections under 40 sq ft, certified renovator, verification card and sign removal are confirmed. wait_after_second_failure_hours: 1 dropped the qualifier in 745.85(b)(1)(ii)(A)(3) and (B)(2): wait '1 hour or until the surface has dried completely, whichever is longer', then wipe with a dry cloth. Replaced it with wait_after_failed_reclean (full rule), wait_min_hours and after_wait, and added the exterior visual-only rule. Rewording 2026-11-27: plain_english reworded to match this correction (40 CFR 745.85(b) re-read in the eCFR versioner API, title 40 issue 2026-11-20 on 2026-11-27); no value changed."
       }
     },
     {
@@ -1764,7 +1764,7 @@
     {
       "id": "cert-rrp-emergency-renovation-exemption",
       "title": "Emergency renovations: limited RRP exemption, but cleaning and verification still required",
-      "plain_english": "Unplanned emergency work (for example a sudden equipment failure that threatens safety or property) is exempt from the pamphlet rule, and from signs, containment, waste handling and certification only as far as needed to handle the emergency. Cleaning, cleaning verification by a certified renovator, and the records describing the emergency are still required.",
+      "plain_english": "Unplanned emergency work (for example a sudden equipment failure that threatens safety or property) is exempt from the pamphlet rule, and from warning signs, containment, waste handling, training and certification only as far as needed to handle the emergency. Interim controls done because a resident child has an elevated blood lead level also count as emergency work, but they are exempt only from the pamphlet rule. Cleaning, cleaning verification by a certified renovator, and the records describing the emergency are still required.",
       "category": "process_step",
       "parameters": {
         "definition": "renovation activities that were not planned but result from a sudden, unexpected event (such as non-routine failures of equipment) that, if not immediately attended to, presents a safety or public health hazard, or threatens equipment and/or property with significant damage",
@@ -1799,7 +1799,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "40 CFR 745.82(b) via eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-20/title-40.xml?section=745.82 (issue date 2026-11-20; Title 40 up to date as of 2026-11-23; re-fetched 2026-11-25; the www.ecfr.gov/current/ pages in source_location are refused by the network proxy, the API returns the same regulatory text); 40 CFR 745.86(b)(6) (fetched from the same eCFR API, same issue date)",
-        "correction": "The cleaning, cleaning verification and recordkeeping duties are confirmed. 745.82(b) gives interim controls done because a resident child has an elevated blood lead level only the pamphlet (745.84) exemption. The warning sign, containment, waste handling, training and certification exemptions apply only to emergency renovations other than interim controls, and only to the extent necessary to respond to the emergency. The rule's parameters implied that interim controls got the full list and limited 'to the extent necessary' to training and certification. Restructured the parameters to match and added the regulatory definition of emergency renovation and the 745.86(b)(6) duty to document the emergency."
+        "correction": "The cleaning, cleaning verification and recordkeeping duties are confirmed. 745.82(b) gives interim controls done because a resident child has an elevated blood lead level only the pamphlet (745.84) exemption. The warning sign, containment, waste handling, training and certification exemptions apply only to emergency renovations other than interim controls, and only to the extent necessary to respond to the emergency. The rule's parameters implied that interim controls got the full list and limited 'to the extent necessary' to training and certification. Restructured the parameters to match and added the regulatory definition of emergency renovation and the 745.86(b)(6) duty to document the emergency. Rewording 2026-11-27: plain_english reworded to match this correction (40 CFR 745.82(b) re-read in the eCFR versioner API, title 40 issue 2026-11-20 on 2026-11-27); no value changed."
       }
     },
     {
@@ -1949,7 +1949,7 @@
     {
       "id": "cert-crane-certification-exam-components",
       "title": "Crane operator certificate requires physical exam, drug test, written and hands-on exams",
-      "plain_english": "An accredited certifying entity may certify a crane operator only after the operator passes a physical exam (ASME B30.5 criteria or DOT 49 CFR 391.41-391.49), a substance abuse test by a recognized lab, a written exam (controls, emergency response, load charts and calculations, power line procedures, ground conditions, Group 13 rules), and a hands-on exam. The certificate must state the equipment type.",
+      "plain_english": "An accredited certifying entity may certify a crane operator only after the operator passes a physical exam (ASME B30.5 criteria or DOT 49 CFR 391.41-391.49), a substance abuse test by a recognized lab, a written exam (controls, emergency response, load charts and calculations, power line procedures, ground conditions, Group 13 rules), and a hands-on exam. The certificate must state the equipment type. The employer must provide the certification at no cost to the employee. Certificates are valid for at most 5 years, and operators must re-certify every 5 years; an operator with at least 1,000 hours of documented experience on that crane type in the last certification period who passes the physical, substance abuse and written exams does not have to retake the hands-on exam.",
       "category": "license_classification",
       "parameters": {
         "required_components": [
@@ -1980,7 +1980,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (re-fetched 2026-11-25; new section filed and operative 7-26-2022) subsections (c)(1), (d)(1)(A)-(B), (d)(2)(A), (d)(3), (g)(1)-(4)",
-        "correction": "2026-11-25 second pass: added option1_certificate_max_validity_years 5 ((d)(1)), recertify_every_years 5 and recertify_hands_on_waiver_hours 1000 ((d)(3)), and employer_provides_at_no_cost_to_employee ((c)(1)); citation widened."
+        "correction": "2026-11-25 second pass: added option1_certificate_max_validity_years 5 ((d)(1)), recertify_every_years 5 and recertify_hands_on_waiver_hours 1000 ((d)(3)), and employer_provides_at_no_cost_to_employee ((c)(1)); citation widened. Rewording 2026-11-27: plain_english reworded to match this correction (8 CCR 5006.2(c)(1), (d)(1), (d)(3) at https://www.dir.ca.gov/title8/5006_2.html re-read on 2026-11-27); no value changed."
       }
     },
     {
@@ -2010,7 +2010,7 @@
     {
       "id": "cert-crane-operator-in-training-supervision",
       "title": "Crane operator-in-training: continuous monitoring by a certified trainer with no other duties",
-      "plain_english": "An uncertified operator may run a crane only as an operator-in-training after formal and practical instruction, continuously monitored on site by a trainer who is the employer's employee or agent, holds a valid certificate for that crane type, stays in the immediate area within sight and communication, and has no other duties while observing.",
+      "plain_english": "An uncertified operator may run a crane only as an operator-in-training after formal and practical instruction, continuously monitored on site by a trainer who is the employer's employee or agent, holds a valid certificate for that crane type, stays in the immediate area within sight and communication, and has no other duties while observing. Until certified, a trainee may not operate where any part of the crane, load line or load could get within 20 feet of a power line up to 350 kV (50 feet over 350 kV) at the crane's maximum working radius, hoist personnel, take part in multiple-crane lifts, or work over a shaft, cofferdam or in a tank farm; multiple-lift rigging is allowed only if the trainer decides the trainee's skills are enough.",
       "category": "process_step",
       "parameters": {
         "trainer_must_hold_valid_certificate_for_crane_type": true,
@@ -2041,7 +2041,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "8 CCR 5006.2 https://www.dir.ca.gov/title8/5006_2.html (re-fetched 2026-11-25; new section filed and operative 7-26-2022) subsections (b)(2), (b)(3)(A)-(E), (b)(4)(A)1.-3., (b)(4)(B), (b)(5)",
-        "correction": "2026-11-25 second pass: added trainee_prohibited_unless_certified, power_line_clearance_ft and the multiple-lift rigging allowance from 5006.2(b)(3)(A)-(E); citation widened to (b)(2)-(b)(4)."
+        "correction": "2026-11-25 second pass: added trainee_prohibited_unless_certified, power_line_clearance_ft and the multiple-lift rigging allowance from 5006.2(b)(3)(A)-(E); citation widened to (b)(2)-(b)(4). Rewording 2026-11-27: plain_english reworded to match this correction (8 CCR 5006.2(b)(3) at https://www.dir.ca.gov/title8/5006_2.html re-read on 2026-11-27); no value changed."
       }
     },
     {
@@ -2319,7 +2319,7 @@
     {
       "id": "cert-elev-fees-periodic-reinspection",
       "title": "Annual elevator reinspection fees by device type ($120 to $1,800 per unit)",
-      "plain_english": "Periodic reinspection fees per unit include: hydraulic elevators $225; cable elevators $225 (up to 3 stories), $350 (4-10), $450 (11-20), $550 (21+); escalators and moving walks $675; wheelchair and stairway lifts $125; construction personnel hoists $225; witnessing periodic tests $225.",
+      "plain_english": "Periodic reinspection fees per unit include: hydraulic elevators $225; cable elevators $225 (up to 3 stories), $350 (4-10), $450 (11-20), $550 (21+); escalators and moving walks $675; wheelchair and stairway lifts $125; construction personnel hoists $225; witnessing periodic tests $225. Other listed devices run from $120 (hand dumbwaiters) to $1,800 (automatic guided vehicles), most at $225. A permit processing and mailing fee of actual cost, up to $15, is also charged.",
       "category": "money_amount",
       "parameters": {
         "usd_per_unit": {
@@ -2363,7 +2363,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "8 CCR 344.30 https://www.dir.ca.gov/title8/344_30.html (re-fetched 2026-11-25) subsections (a)(1)-(27), (f), (g)",
-        "correction": "2026-11-25 second pass: usd_per_unit lacked 344.30(a)(4) material lifts with automatic transfer devices, (6) hand-powered man platforms, (16) screw type elevator, (19) elevator installed by variance, (20) automatic transfer devices and (23) special purpose personnel elevator (all $225); added them and the (g) permit processing and mailing fee (actual cost, at most $15)."
+        "correction": "2026-11-25 second pass: usd_per_unit lacked 344.30(a)(4) material lifts with automatic transfer devices, (6) hand-powered man platforms, (16) screw type elevator, (19) elevator installed by variance, (20) automatic transfer devices and (23) special purpose personnel elevator (all $225); added them and the (g) permit processing and mailing fee (actual cost, at most $15). Rewording 2026-11-27: plain_english reworded to match this correction (8 CCR 344.30(a), (g) at https://www.dir.ca.gov/title8/344_30.html re-read on 2026-11-27); no value changed."
       }
     },
     {
@@ -2482,7 +2482,7 @@
     {
       "id": "cert-elev-cccm-renewal-8-hours-ce",
       "title": "CCCM renewal every 2 years: $140 and 8 hours of continuing education in the prior year",
-      "plain_english": "Conveyance mechanic certification is renewed every two years for $140. The renewal must include proof of at least 8 hours of approved continuing education taken within the year before renewal, work history for the past two years, and the current CQCC employer's signed verification.",
+      "plain_english": "Conveyance mechanic certification is renewed every two years for $140. The renewal must include proof of at least 8 hours of approved continuing education taken within the year before renewal, work history for the past two years, and the current CQCC employer's signed verification. Mechanics working on special purpose personnel elevators on cranes that use a rack and pinion system in marine terminals are exempt from the continuing education requirement.",
       "category": "deadline",
       "parameters": {
         "renewal_interval_years": 2,
@@ -2506,7 +2506,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "DOSH CCCM Renewal https://www.dir.ca.gov/dosh/elevator/CCCM_Renewal.pdf (DIR DOSH 003 R Rev. 1/2025, re-fetched 2026-11-25) pp. 2-3; 8 CCR 344.30(h)(7) https://www.dir.ca.gov/title8/344_30.html ($140); DOSH Elevator Certification page https://www.dir.ca.gov/dosh/ElevatorCertification.html (re-fetched 2026-11-25) (renewal: employed by a CQCC, two years of work experience, CE certificate, $140)",
-        "correction": "The biennial renewal, $140 fee, 8 CE hours and attachments are confirmed. The form says CE 'shall occur within one year immediately preceding certificate renewal', not 365 days. Replaced ce_window_days_before_renewal: 365 with ce_window_years_before_renewal: 1, and added the marine-terminal rack-and-pinion CE exemption stated on the form."
+        "correction": "The biennial renewal, $140 fee, 8 CE hours and attachments are confirmed. The form says CE 'shall occur within one year immediately preceding certificate renewal', not 365 days. Replaced ce_window_days_before_renewal: 365 with ce_window_years_before_renewal: 1, and added the marine-terminal rack-and-pinion CE exemption stated on the form. Rewording 2026-11-27: plain_english reworded to match this correction (DOSH CCCM Renewal form https://www.dir.ca.gov/dosh/elevator/CCCM_Renewal.pdf re-read on 2026-11-27); no value changed."
       }
     },
     {

@@ -1215,7 +1215,7 @@
     {
       "id": "ada-cbc-11a-1109a-8-6-van-1-in-8",
       "title": "11A van-accessible parking: one in every eight accessible spaces (minimum one), 17 ft wide",
-      "plain_english": "For covered multifamily parking, one in every eight accessible spaces (at least one) must be van accessible: 17 feet wide total (12-foot space with 5-foot aisle, or 9-foot space with 8-foot aisle), aisle on the passenger side, 18 feet long.",
+      "plain_english": "For covered multifamily parking, one in every eight accessible spaces (at least one) must be van accessible: 17 feet wide total (12-foot space with 5-foot aisle, or 9-foot space with 8-foot aisle), aisle on the passenger side, 18 feet long. The text does not say how to count a leftover group of fewer than eight; counting it as a full group (rounding up) is the cautious reading.",
       "category": "threshold",
       "parameters": {
         "van_ratio": "one in every eight accessible spaces (fraction rule not stated)",
@@ -1247,7 +1247,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "LADBS CL-BC-2026-027 Residential Accessibility (eff. 01/01/2026, rev. 08/21/2026) https://dbs.lacity.gov/sites/default/files/efs/forms_and_publications/publications/checklists/building-code/2026/CL-BC-2026-027-Acc_Residential.pdf (re-fetched 2026-11-25) PDF p.5, Section B item 24(a)-(e) (1109A.8.6); CBC Title 24 Part 2 itself not readable from this session (codes.iccsafe.org, dgs.ca.gov unreachable), so confirmation is against the enforcing agency's 2026 restatement and the section number it cites",
-        "correction": "The 1-in-8 ratio, minimum one, 17 ft width, 12+5 / 9+8 options, passenger-side aisle and 18 ft length are confirmed. The formula 'van_spaces = max(1, ceil(accessible_spaces / 8))' was not supported: the 11A text says 'One in every eight accessible spaces, but not less than one' and, unlike 11B-208.2.4 ('one in every six or fraction of six'), does not say how a partial group of eight is counted. Corrected parameters: van_ratio 'one in every eight accessible spaces (fraction rule not stated)'; formula_literal_minimum 'max(1, floor(accessible_spaces / 8))'; formula_conservative 'max(1, ceil(accessible_spaces / 8))'; fraction_rounding_stated false."
+        "correction": "The 1-in-8 ratio, minimum one, 17 ft width, 12+5 / 9+8 options, passenger-side aisle and 18 ft length are confirmed. The formula 'van_spaces = max(1, ceil(accessible_spaces / 8))' was not supported: the 11A text says 'One in every eight accessible spaces, but not less than one' and, unlike 11B-208.2.4 ('one in every six or fraction of six'), does not say how a partial group of eight is counted. Corrected parameters: van_ratio 'one in every eight accessible spaces (fraction rule not stated)'; formula_literal_minimum 'max(1, floor(accessible_spaces / 8))'; formula_conservative 'max(1, ceil(accessible_spaces / 8))'; fraction_rounding_stated false. plain_english updated on 2026-11-27 to say the text does not state how a partial group of eight is counted and that rounding up is the conservative reading."
       }
     },
     {

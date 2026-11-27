@@ -1442,7 +1442,7 @@
         "obligated_party": "board (to initiate rulemaking), not licensee directly",
         "board_obligation": "initiate the process of adopting regulations"
       },
-      "applies_to": "All CSLB licensees",
+      "applies_to": "DCA boards, including CSLB. B&P 138 directs the boards; it puts no duty directly on licensees.",
       "citation": "B&P 138",
       "source_location": "2026 CSLB Law Book, PDF page 147",
       "verbatim_quote": "Every board in the department, as defined in Section 22, shall initiate the process of adopting regulations on or before June 30, 1999, to require its licensees, as defined in Section 23.8, to provide notice to their clients or customers that the practitioner is licensed by this state.",
@@ -1452,7 +1452,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 147 (B&P 138)",
-        "correction": "The title said \"Licensees must tell customers they are state-licensed\", and the plain English said boards \"had to adopt rules\". B&P 138 only requires each board to \"initiate the process of adopting regulations\" by 6/30/1999, and exempts boards with an existing statutory or regulatory notice requirement. It creates no direct licensee duty. Title and plain_english were rescoped, and obligated_party and board_obligation parameters were added. The quote is accurate."
+        "correction": "The title said \"Licensees must tell customers they are state-licensed\", and the plain English said boards \"had to adopt rules\". B&P 138 only requires each board to \"initiate the process of adopting regulations\" by 6/30/1999, and exempts boards with an existing statutory or regulatory notice requirement. It creates no direct licensee duty. Title and plain_english were rescoped, and obligated_party and board_obligation parameters were added. The quote is accurate. Rewording 2026-11-27: applies_to reworded to match this correction; no value changed."
       }
     },
     {

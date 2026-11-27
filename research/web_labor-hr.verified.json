@@ -104,7 +104,7 @@
     },
     {
       "id": "learner-wage-85-percent-160-hours",
-      "title": "Learner rate: 85% of minimum wage for first 160 hours",
+      "title": "Learner rate: 85% of minimum wage for first 160 hours (not for Wage Order 16 field workers)",
       "plain_english": "Under the IWC wage orders that have a learner clause (for example Order 4, which covers office staff), a new worker with no similar experience may be paid 85% of the minimum wage, rounded to the nearest nickel, for their first 160 hours only. Wage Order 16, which covers on-site construction workers, has no learner rate, so field employees must get the full minimum wage from day one.",
       "category": "money_amount",
       "parameters": {
@@ -125,7 +125,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "DLSE Minimum Wage FAQ https://www.dir.ca.gov/dlse/faq_minimumwage.htm (Q4); IWC Order 4-2001 https://www.dir.ca.gov/IWC/IWCArticle4.pdf §4(A) \"LEARNERS\" clause; IWC Order 16-2001 PDF https://www.dir.ca.gov/IWC/IWCArticle16.pdf (IWC Form 1114 Rev. 11/2025, re-fetched 2026-11-25) p.5 §4 (no learner clause); MW-2026 https://www.dir.ca.gov/iwc/MW-2026.pdf (no learner clause)",
-        "correction": "The learner subminimum is in the industry wage orders that contain a learner clause (e.g., IWC Order 4 §4(A)), not in MW-2026. IWC Order 16-2001, which covers on-site construction, drilling, logging and mining, has no learner clause in §4. A construction tool must not apply the 85% rate to WO16 field employees. Corrected the citation, source_location, applies_to and plain_english, and added not_available_under_wage_order_16. The 85%, 160-hour and nearest-nickel figures and the $14.35 derivation are confirmed."
+        "correction": "The learner subminimum is in the industry wage orders that contain a learner clause (e.g., IWC Order 4 §4(A)), not in MW-2026. IWC Order 16-2001, which covers on-site construction, drilling, logging and mining, has no learner clause in §4. A construction tool must not apply the 85% rate to WO16 field employees. Corrected the citation, source_location, applies_to and plain_english, and added not_available_under_wage_order_16. The 85%, 160-hour and nearest-nickel figures and the $14.35 derivation are confirmed. Rewording 2026-11-27: title reworded to match this correction; no value changed."
       }
     },
     {
@@ -1163,7 +1163,7 @@
     {
       "id": "paid-sick-leave-penalties",
       "title": "Paid sick leave violation penalties",
-      "plain_english": "Withholding sick pay can cost the greater of three times the sick pay withheld or $250 (capped at $4,000), plus administrative penalties of $50 per day per affected employee up to $4,000 for other violations.",
+      "plain_english": "Unlawfully withholding sick pay can cost the greater of three times the sick pay withheld or $250. If a violation causes other harm, such as firing or other retaliation, the employee can also get $50 for each day or part of a day the violation continues. Separately, if the employer does not comply promptly and the Labor Commissioner must take further enforcement action, the employer owes the State $50 per day for each affected employee. Unpaid amounts carry 10% interest, and willfully failing to post the sick leave poster costs $100. The $4,000 caps reported for these amounts are not confirmed.",
       "category": "penalty",
       "parameters": {
         "withheld_sick_pay_penalty": "greater of 3 x value of sick days withheld or $250",
@@ -1187,7 +1187,7 @@
       "verification": {
         "status": "unverifiable",
         "checked_against": "Primary text not seen: leginfo.legislature.ca.gov does not resolve from this session (outside allowed network) and the shared WebSearch budget was exhausted; no re-fetched DIR/CSLB page reproduces this section (Labor Code 248.5). Cross-checked against DLSE Enforcement Policies and Interpretations Manual https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf §30.7-30.8 (Dec 2017), an official DLSE summary, not the statute.",
-        "correction": "Status stays unverifiable. The DLSE manual describes the $50/day amount differently from the rule. The $50 per day (or part of a day) is employee damages when a violation causes other harm, such as discharge or retaliation. Separately, a $50 per day, per employee penalty goes to the State when the employer does not comply promptly and the Labor Commissioner must take further enforcement action. The rule merged these into one \"administrative_penalty\". The manual also gives 10% interest and a $100 penalty for willful posting violations. Its aggregate caps are garbled (\"$8,000, $4000 ... and $4,000\"), so the $4,000 caps remain unconfirmed. Parameters restructured with per-source labels."
+        "correction": "Status stays unverifiable. The DLSE manual describes the $50/day amount differently from the rule. The $50 per day (or part of a day) is employee damages when a violation causes other harm, such as discharge or retaliation. Separately, a $50 per day, per employee penalty goes to the State when the employer does not comply promptly and the Labor Commissioner must take further enforcement action. The rule merged these into one \"administrative_penalty\". The manual also gives 10% interest and a $100 penalty for willful posting violations. Its aggregate caps are garbled (\"$8,000, $4000 ... and $4,000\"), so the $4,000 caps remain unconfirmed. Parameters restructured with per-source labels. Rewording 2026-11-27: plain_english reworded to match this correction; no value changed."
       }
     },
     {
@@ -1317,8 +1317,8 @@
     },
     {
       "id": "personnel-file-inspection-30-days",
-      "title": "Personnel file: inspection/copy within 30 days of written request; keep 3 years",
-      "plain_english": "Keep each employee's personnel records at least 3 years and let a current or former employee inspect or get a copy within 30 calendar days of a written request (copy cost only). Failure: $750 penalty.",
+      "title": "Personnel file: inspection/copy within 30 days of written request; keep 3 years after employment ends",
+      "plain_english": "Keep each employee's personnel records for at least 3 years after their employment ends. When a current or former employee asks in writing, let them inspect the records or give them a copy within 30 calendar days (charge no more than the actual copying cost). You need to honor only one request a year from a former employee. Failure: $750 penalty.",
       "category": "deadline",
       "parameters": {
         "inspection_deadline_calendar_days": 30,
@@ -1347,7 +1347,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "DLSE Personnel Files FAQ https://www.dir.ca.gov/dlse/FAQ_RightToInspectPersonnelFiles.htm",
-        "correction": "The retention period runs from termination. Personnel records must be kept \"not less than three years after termination of employment\", which the rule's unqualified \"retention_years: 3\" left ambiguous. Replaced it with retention_years_after_termination = 3 and added the one-request-per-year limit for former employees. The 30-day inspection and copy deadlines, written request, $750 penalty, cost-of-reproduction charge, exclusions and CBA exception are confirmed."
+        "correction": "The retention period runs from termination. Personnel records must be kept \"not less than three years after termination of employment\", which the rule's unqualified \"retention_years: 3\" left ambiguous. Replaced it with retention_years_after_termination = 3 and added the one-request-per-year limit for former employees. The 30-day inspection and copy deadlines, written request, $750 penalty, cost-of-reproduction charge, exclusions and CBA exception are confirmed. Rewording 2026-11-27: title and plain_english reworded to match this correction; no value changed."
       }
     },
     {
@@ -1726,8 +1726,8 @@
     },
     {
       "id": "new-hire-report-de34-20-days",
-      "title": "Report new hires and rehires to EDD (DE 34) within 20 days",
-      "plain_english": "Report every new or rehired employee who works in California to EDD's New Employee Registry within 20 calendar days of their first day of work for pay.",
+      "title": "Report new hires, and rehires after a 60-day separation, to EDD (DE 34) within 20 days",
+      "plain_english": "Report each new employee who works in California to EDD's New Employee Registry within 20 days of hiring. Report a rehire only if they had been separated from your company for at least 60 days in a row. Employers that report electronically submit two transmissions a month, 12 to 16 days apart. Unless there is good cause, EDD may charge $24 for each hire not reported on time, or $490 if the employer and employee conspired not to report it or to file a false or incomplete report.",
       "category": "deadline",
       "parameters": {
         "deadline_calendar_days_after_start_of_work": 20,
@@ -1770,7 +1770,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2021 CSLB Law Book https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2021.pdf (re-fetched; appendix statute text) PDF p.1160-1161 (Unemployment Insurance Code §1088.5 statute text, 2021 reproduction); EDD page in source_location still blocked (proxy 403)",
-        "correction": "The statute (UI Code 1088.5) confirms the 20-day deadline but narrows the rehire rule. A rehire must be reported only if the employee had been separated from that employer for at least 60 consecutive days; the rule said all rehires. The rule also marked the penalty as unverified. The statute sets $24 per failure, or $490 if the failure comes from employer-employee conspiracy or a false or incomplete report, unless there is good cause. Electronic and magnetic filers must submit two monthly transmissions 12-16 days apart. Replaced the EDD search-excerpt quote with statute text and updated the source fields. The EDD wording \"20 calendar days of start-of-work date\" was not seen; the statute says \"within 20 days of hiring\"."
+        "correction": "The statute (UI Code 1088.5) confirms the 20-day deadline but narrows the rehire rule. A rehire must be reported only if the employee had been separated from that employer for at least 60 consecutive days; the rule said all rehires. The rule also marked the penalty as unverified. The statute sets $24 per failure, or $490 if the failure comes from employer-employee conspiracy or a false or incomplete report, unless there is good cause. Electronic and magnetic filers must submit two monthly transmissions 12-16 days apart. Replaced the EDD search-excerpt quote with statute text and updated the source fields. The EDD wording \"20 calendar days of start-of-work date\" was not seen; the statute says \"within 20 days of hiring\". Rewording 2026-11-27: title and plain_english reworded to match this correction; no value changed."
       }
     },
     {
@@ -2972,7 +2972,7 @@
     {
       "id": "direct-contractor-liability-sub-wages-218-7",
       "title": "Direct contractor liable for subcontractors' unpaid wages (private works)",
-      "plain_english": "On private construction contracts entered on or after January 1, 2018, the direct (general) contractor is jointly liable for unpaid wages and benefit contributions owed by subcontractors at any tier, and can demand payroll records from subs.",
+      "plain_english": "On private construction contracts entered on or after January 1, 2018, the direct (general) contractor is jointly liable for unpaid wages, fringe or other benefit payments or contributions, and interest owed by subcontractors at any tier, but not for penalties or liquidated damages. The Labor Commissioner must file its action within 1 year of the earliest of: recording a notice of completion, recording a notice of cessation, or actual completion of the work. It does not cover work done by employees of the state, a city, a county, a special district or another political subdivision. The direct contractor can demand payroll records from subs.",
       "category": "penalty",
       "parameters": {
         "contracts_entered_on_or_after": "2018-01-01",
@@ -3000,7 +3000,7 @@
       "verification": {
         "status": "unverifiable",
         "checked_against": "Primary text not seen: leginfo.legislature.ca.gov does not resolve from this session (outside allowed network) and the shared WebSearch budget was exhausted; no re-fetched DIR/CSLB page reproduces this section (Labor Code 218.7/218.8). Cross-checked against DLSE Enforcement Policies and Interpretations Manual https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf §25.3-25.3.2 (Aug 2019) and §28.5.1, which are official DLSE summaries, not the statute.",
-        "correction": "Status stays unverifiable. The DLSE manual confirms the scope (private works, subcontractor at any tier, unpaid wages, fringe/benefit contributions and interest, no penalties or liquidated damages) and adds a missing limit: a Labor Commissioner action must be filed within one year of the earliest of recording a notice of completion, recording a notice of cessation, or actual completion. The section does not apply to work by public-entity employees. The 30-day pre-suit notice and the withholding right are still unconfirmed."
+        "correction": "Status stays unverifiable. The DLSE manual confirms the scope (private works, subcontractor at any tier, unpaid wages, fringe/benefit contributions and interest, no penalties or liquidated damages) and adds a missing limit: a Labor Commissioner action must be filed within one year of the earliest of recording a notice of completion, recording a notice of cessation, or actual completion. The section does not apply to work by public-entity employees. The 30-day pre-suit notice and the withholding right are still unconfirmed. Rewording 2026-11-27: plain_english reworded to match this correction; no value changed."
       }
     },
     {
@@ -3073,7 +3073,7 @@
     {
       "id": "llc-worker-protection-bond-100000",
       "title": "LLC licensees need a $100,000 bond for unpaid wages (plus $25,000 license bond)",
-      "plain_english": "A contractor licensed as an LLC must carry a $100,000 surety bond for workers harmed by the LLC's failure to pay wages, interest or fringe benefits, in addition to the $25,000 contractor bond.",
+      "plain_english": "A contractor licensed as an LLC must have a $100,000 surety bond on file, in addition to the $25,000 contractor bond, for employees harmed by the LLC's failure to pay wages, interest on wages or fringe benefits. The bond is required to issue, reissue, reinstate, reactivate or renew the license and for its continued valid use, so keep it in force the whole time the license is active. It is not required while the license is inactive. If the LLC is party to a collective bargaining agreement, the bond also covers welfare fund, pension fund and apprentice program contributions.",
       "category": "money_amount",
       "parameters": {
         "llc_wage_bond_usd": 100000,
@@ -3103,7 +3103,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/2026_CSLB_Law_Book.pdf, re-extracted) PDF p.42 (summary) and PDF p.296 (B&P 7071.6.5 statute text)",
-        "correction": "The $100,000 LLC bond and $25,000 license bond are confirmed. The statute also makes the bond a condition of continued valid use of the LLC license, so it must be kept in force continuously, not only at issuance or renewal. It does not apply while the license is inactive, and for an LLC that is party to a CBA it also covers welfare, pension and apprentice fund contributions. Updated required_for and added those parameters."
+        "correction": "The $100,000 LLC bond and $25,000 license bond are confirmed. The statute also makes the bond a condition of continued valid use of the LLC license, so it must be kept in force continuously, not only at issuance or renewal. It does not apply while the license is inactive, and for an LLC that is party to a CBA it also covers welfare, pension and apprentice fund contributions. Updated required_for and added those parameters. Rewording 2026-11-27: plain_english reworded to match this correction; no value changed."
       }
     },
     {

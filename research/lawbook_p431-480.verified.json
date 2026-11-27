@@ -737,8 +737,8 @@
     },
     {
       "id": "noncompliant-arbitration-clause-unenforceable",
-      "title": "Noncompliant residential arbitration clause binds only the contractor",
-      "plain_english": "An arbitration clause in a contract for work on 1-4 unit residential property that doesn't meet the title, notice and formatting rules may not be enforceable against anyone except the licensee (the contractor can still be held to it). CSLB can still investigate and discipline.",
+      "title": "Noncompliant residential arbitration clause may not be enforceable against anyone but the contractor",
+      "plain_english": "An arbitration clause in a contract for work on 1-4 unit residential property that doesn't meet the title, notice and formatting rules may not be enforceable against anyone except the licensee. The statute implies, but does not say outright, that the contractor can still be held to it. CSLB can still investigate and discipline.",
       "category": "penalty",
       "parameters": {
         "trigger": "arbitration provision fails B&P 7191 requirements",
@@ -756,7 +756,7 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 440 (B&P 7191(c)-(d))",
-        "correction": "No error. The statute says the clause \"may not be enforceable against any person other than the licensee\"; still_enforceable_against = licensee is the implied reading, not express text."
+        "correction": "No error. The statute says the clause \"may not be enforceable against any person other than the licensee\"; still_enforceable_against = licensee is the implied reading, not express text. title and plain_english reworded on 2026-11-27 so the implied reading is not stated as express text."
       }
     },
     {
@@ -1367,7 +1367,7 @@
     {
       "id": "cslb-initial-license-fees",
       "title": "CSLB initial license and HIS registration fees",
-      "plain_english": "Initial license fee: $200 for an individual owner (active or inactive); $350 for a partnership, corporation, LLC or joint venture. Home improvement salesperson registration: $200.",
+      "plain_english": "Initial license fee: $200 for an individual owner (active or inactive); $350 for a partnership, corporation, LLC or joint venture. Home improvement salesperson registration: $200. A U.S. Armed Forces veteran (including the National Guard or Reserve) who was not dishonorably discharged pays half (B&P 7137(a)(3)(D)).",
       "category": "money_amount",
       "parameters": {
         "individual_owner_active_or_inactive_usd": 200,
@@ -1392,13 +1392,13 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 452 (16 CCR 811(c)); PDF page 375 (B&P 7137(a)(3))",
-        "correction": "No error in the amounts. Added: B&P 7137(a)(3)(D) requires a 50% reduction of these initial license/registration fees for an applicant who is a U.S. Armed Forces veteran (incl. National Guard/Reserve) not dishonorably discharged; 811(c) does not repeat this."
+        "correction": "No error in the amounts. Added: B&P 7137(a)(3)(D) requires a 50% reduction of these initial license/registration fees for an applicant who is a U.S. Armed Forces veteran (incl. National Guard/Reserve) not dishonorably discharged; 811(c) does not repeat this. plain_english updated on 2026-11-27 to add the veteran reduction."
       }
     },
     {
       "id": "cslb-renewal-fees",
       "title": "CSLB license and HIS renewal fees",
-      "plain_english": "Renewal fees: individual owner active $450, inactive $300; partnership/corporation/LLC/joint venture active $700, inactive $500; home improvement salesperson registration renewal $200.",
+      "plain_english": "Renewal fees: individual owner active $450, inactive $300; partnership/corporation/LLC/joint venture active $700, inactive $500; home improvement salesperson registration renewal $200. Renewing after the license expires adds a delinquency fee of 50% of the renewal fee (B&P 7137(a)(5)), and C-10 contractors pay an extra $20 with an active renewal (B&P 7137(a)(6)(A)).",
       "category": "money_amount",
       "parameters": {
         "individual_active_usd": 450,
@@ -1426,7 +1426,7 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 452 (16 CCR 811(d)); PDF pages 375-376 (B&P 7137(a)(4)-(6))",
-        "correction": "No error in the amounts. Added from B&P 7137: delinquency fee = 50% of the renewal fee when renewed after expiration (7137(a)(5)); C-10 licensees pay an extra $20 with an active renewal (7137(a)(6)(A))."
+        "correction": "No error in the amounts. Added from B&P 7137: delinquency fee = 50% of the renewal fee when renewed after expiration (7137(a)(5)); C-10 licensees pay an extra $20 with an active renewal (7137(a)(6)(A)). plain_english updated on 2026-11-27 to add the delinquency fee and the C-10 $20 fee."
       }
     },
     {
@@ -3292,7 +3292,7 @@
     {
       "id": "c22-exam-waiver-for-asbestos-certified",
       "title": "C-22 trade exam waiver for long-time asbestos certification holders",
-      "plain_english": "The Registrar may waive the C-22 trade exam for a licensee holding the asbestos certification who shows at least 4 years of journey-level C-22 experience within the last 10 years, having passed the written asbestos certification exam and held the certification active and in good standing for the whole 4-year period.",
+      "plain_english": "The Registrar may waive the C-22 trade exam for a licensee holding the asbestos certification who shows at least 4 years of journey-level C-22 experience within the last 10 years, having passed the written asbestos certification exam and held the certification active and in good standing for the whole 4-year period. The waiver is granted under B&P 7065.3, so that section's conditions may also apply (for example, the qualifier listed on an active license for 5 of the last 7 years, and a closely related classification).",
       "category": "threshold",
       "parameters": {
         "min_years_journey_level_experience": 4,
@@ -3312,7 +3312,7 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 474-475 (16 CCR 833(d)); PDF page 283 (B&P 7065.3)",
-        "correction": "No error. Added note: the waiver is granted \"pursuant to Section 7065.3\", so the statute's own conditions (e.g. qualifier listed on an active license 5 of the last 7 years, closely related classification) may also apply."
+        "correction": "No error. Added note: the waiver is granted \"pursuant to Section 7065.3\", so the statute's own conditions (e.g. qualifier listed on an active license 5 of the last 7 years, closely related classification) may also apply. plain_english updated on 2026-11-27 to say the B&P 7065.3 conditions may also apply."
       }
     },
     {
@@ -3361,7 +3361,7 @@
     {
       "id": "license-renewal-postmark-by-expiration",
       "title": "Renewal must be postmarked or delivered by the expiration date",
-      "plain_english": "CSLB mails a renewal form before expiration. The renewal application and fee must be postmarked or hand-delivered to CSLB headquarters on or before the license expiration date, or the renewal is delinquent. If CSLB returns an incomplete renewal, the corrected one must also be postmarked/delivered by the expiration date or the license expires. An expired license cannot be renewed until any delinquency fee is paid.",
+      "plain_english": "CSLB mails a renewal form before expiration. The renewal application and fee must be postmarked or hand-delivered to CSLB headquarters on or before the license expiration date, or the renewal is delinquent. If CSLB returns an incomplete renewal, the corrected one must also be postmarked/delivered by the expiration date or the license expires. An expired license cannot be renewed until any delinquency fee (50% of the renewal fee, B&P 7137(a)(5)) is paid.",
       "category": "deadline",
       "parameters": {
         "deadline": "on or before license expiration date",
@@ -3385,7 +3385,7 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 476 (16 CCR 853(a)-(d)); PDF page 376 (B&P 7137(a)(5))",
-        "correction": "No error. Added: the delinquency fee is 50% of the renewal fee (B&P 7137(a)(5))."
+        "correction": "No error. Added: the delinquency fee is 50% of the renewal fee (B&P 7137(a)(5)). plain_english updated on 2026-11-27 to give the delinquency fee amount."
       }
     },
     {

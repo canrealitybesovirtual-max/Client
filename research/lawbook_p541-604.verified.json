@@ -5,7 +5,7 @@
     {
       "id": "civil-penalty-ranges-table",
       "title": "CSLB citation civil penalty ranges by section violated (full table)",
-      "plain_english": "When CSLB issues a citation for a Contractors State License Law violation, the civil penalty for each section violated must fall within the minimum and maximum set in this table. A tool can look up the exposure range for any cited B&P section.",
+      "plain_english": "When CSLB issues a citation for a Contractors State License Law violation, the civil penalty for each section violated must fall within the range printed in the 16 CCR 884(a) table. For citations issued on or after July 1, 2026, a higher minimum set by statute controls over the printed one: at least $500 for a licensee citation (B&P 7099.2(b)(1)); $1,500 to $30,000 for B&P 7110, 7114 and 7118; $1,500 to $15,000 for an unlicensed citation (B&P 7028.7(c)); at least $10,000 (sole owner) or $20,000 (entity) per violation for employing workers without workers' comp (B&P 7125.4); and fixed amounts for B&P 7030.1 (B&P 7030.1(c)). Six printed rows have cut-off section numbers (7071.1, 7099.1 and 7159.1, each twice) and could not be verified.",
       "category": "penalty",
       "parameters": {
         "currency": "USD",
@@ -540,7 +540,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 540-541 (884(a) table); B&P 7099.2 (PDF pp.340-341), 7028.7 (PDF pp.248-250), 7125.4 (PDF p.370), 7030.1 (PDF pp.257-258)",
-        "correction": "All 60 printed rows (section, min, max) match the book exactly (machine-compared). But the printed minimums are out of date for citations issued on or after 7-1-2026: B&P 7099.2(b)(1) now requires $500-$8,000 ($1,500-$30,000 for 7110/7114/7118) and B&P 7028.7(c) requires $1,500-$15,000 for unlicensed citations. B&P 7125.4 also sets $10,000/$20,000 minimums for uninsured employment, and B&P 7030.1(c) fixes that section's penalty amounts. Added statutory_overrides and a per-row effective_min_usd_from_2026_07_01. Fixed three subject labels (7083.1 says 'expired, suspended or cancelled', not 'not active'; 7118.4 and 7154 described wrongly). The six truncated rows (7071.1, 7099.1, 7159.1 printed twice each) are marked unverifiable."
+        "correction": "All 60 printed rows (section, min, max) match the book exactly (machine-compared). But the printed minimums are out of date for citations issued on or after 7-1-2026: B&P 7099.2(b)(1) now requires $500-$8,000 ($1,500-$30,000 for 7110/7114/7118) and B&P 7028.7(c) requires $1,500-$15,000 for unlicensed citations. B&P 7125.4 also sets $10,000/$20,000 minimums for uninsured employment, and B&P 7030.1(c) fixes that section's penalty amounts. Added statutory_overrides and a per-row effective_min_usd_from_2026_07_01. Fixed three subject labels (7083.1 says 'expired, suspended or cancelled', not 'not active'; 7118.4 and 7154 described wrongly). The six truncated rows (7071.1, 7099.1, 7159.1 printed twice each) are marked unverifiable. plain_english reworded on 2026-11-27 to state the statutory minimums from July 1, 2026 and the six unverified rows."
       }
     },
     {
@@ -691,7 +691,7 @@
     {
       "id": "citation-service-method",
       "title": "How CSLB serves a citation",
-      "plain_english": "CSLB serves citations by the method in Government Code 11505(c) and also sends a copy by regular mail. The contest deadline runs from service, not receipt: 15 days after service under B&P 7099.8(a).",
+      "plain_english": "CSLB serves citations by the method in Government Code 11505(c) and also sends a copy by regular mail. A citation of an unlicensed person under B&P 7028.7 may be served by certified mail at the person's last known business or residence address (B&P 7028.8). The contest deadline runs from service, not receipt: 15 days after service under B&P 7099.8(a).",
       "category": "process_step",
       "parameters": {
         "service_method": "per Government Code 11505(c)",
@@ -709,7 +709,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 543 (16 CCR 886); B&P 7099.3-7099.4, 7099.8 (PDF pp.341-342), 7028.8 (PDF p.250)",
-        "correction": "The 886 quote is accurate. Checked because it states the appeal trigger. Fixed the claim that the receipt date starts a 15-working-day clock: the statutes count from service, and B&P 7099.8(a) gives 15 days. Added the B&P 7028.8 service rule for unlicensed citations."
+        "correction": "The 886 quote is accurate. Checked because it states the appeal trigger. Fixed the claim that the receipt date starts a 15-working-day clock: the statutes count from service, and B&P 7099.8(a) gives 15 days. Added the B&P 7028.8 service rule for unlicensed citations. plain_english reworded on 2026-11-27 to add the 7028.8 service rule."
       }
     },
     {
@@ -797,7 +797,7 @@
     {
       "id": "civpen-7027-1-unlicensed-advertising",
       "title": "Penalty: advertising by unlicensed person (B&P 7027.1)",
-      "plain_english": "An unlicensed person cited for advertising construction services in violation of B&P 7027.1 faces a civil penalty of $500 to $1,000. (The 16 CCR 884(a) table prints $100 to $1,000, but since July 1, 2026 the statute sets a $500 minimum.)",
+      "plain_english": "An unlicensed person cited for advertising construction services in violation of B&P 7027.1 faces a civil penalty of $500 to $1,000. (The 16 CCR 884(a) table prints $100 to $1,000, but since July 1, 2026 the statute sets a $500 minimum.) If CSLB cites the advertiser under B&P 7028.7 instead, that section's $1,500 minimum is higher than the table's $1,000 maximum, a conflict the book leaves unresolved.",
       "category": "penalty",
       "parameters": {
         "section": "B&P 7027.1",
@@ -827,7 +827,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 540 (884(a) table row); B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341",
-        "correction": "Range $100-$1,000 matches 16 CCR 884(a) as printed (PDF page 540), but B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341 requires at least $500. Set min_usd to 500 for citations issued on or after 2026-07-01 and kept the printed value in min_usd_16ccr884_as_printed. If cited under B&P 7028.7, the $1,500 statutory minimum exceeds the $1,000 printed maximum (conflict flagged)."
+        "correction": "Range $100-$1,000 matches 16 CCR 884(a) as printed (PDF page 540), but B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341 requires at least $500. Set min_usd to 500 for citations issued on or after 2026-07-01 and kept the printed value in min_usd_16ccr884_as_printed. If cited under B&P 7028.7, the $1,500 statutory minimum exceeds the $1,000 printed maximum (conflict flagged). plain_english reworded on 2026-11-27 to flag the 7028.7 conflict."
       }
     },
     {
@@ -1365,7 +1365,7 @@
     },
     {
       "id": "civpen-7083-1-address-change-inactive-license",
-      "title": "Penalty: address change notice for non-active license (B&P 7083.1)",
+      "title": "Penalty: address change notice for an expired, suspended or cancelled license (B&P 7083.1)",
       "plain_english": "Failing to notify CSLB of an address change as required by B&P 7083.1 (licensee whose license is expired, suspended or cancelled: notify within 90 days and keep an address of record for 5 years after expiration or cancellation) carries a civil penalty of $500 to $1,000. (The 16 CCR 884(a) table prints $100 to $1,000, but since July 1, 2026 the statute sets a $500 minimum.)",
       "category": "penalty",
       "parameters": {
@@ -1379,7 +1379,7 @@
         "statutory_basis": "B&P 7099 citation (licensee/applicant); floor from B&P 7099.2(b)(1)",
         "min_usd_before_2026_07_01": 100
       },
-      "applies_to": "Licensees with inactive, expired or suspended licenses (per heading)",
+      "applies_to": "Licensees whose license is expired or suspended (and renewable) or cancelled",
       "citation": "16 CCR 884(a) (B&P 7083.1)",
       "source_location": "2026 CSLB Law Book, PDF page 540",
       "verbatim_quote": "(a) Civil penalties against persons who have been cited for violation of the Contractors State License Law shall be assessed in accordance with the following ranges of penalties. ... 7083.1 100 1,000",
@@ -1389,7 +1389,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 540 (884(a) table row); B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341",
-        "correction": "Range $100-$1,000 matches 16 CCR 884(a) as printed (PDF page 540), but B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341 requires at least $500. Set min_usd to 500 for citations issued on or after 2026-07-01 and kept the printed value in min_usd_16ccr884_as_printed. Subject corrected: B&P 7083.1 (PDF p.323) covers expired, suspended or cancelled licenses (not 'inactive'), with a 90-day notice and a 5-year address-of-record duty."
+        "correction": "Range $100-$1,000 matches 16 CCR 884(a) as printed (PDF page 540), but B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341 requires at least $500. Set min_usd to 500 for citations issued on or after 2026-07-01 and kept the printed value in min_usd_16ccr884_as_printed. Subject corrected: B&P 7083.1 (PDF p.323) covers expired, suspended or cancelled licenses (not 'inactive'), with a 90-day notice and a 5-year address-of-record duty. title and applies_to reworded on 2026-11-27: they said non-active/inactive."
       }
     },
     {
@@ -1945,7 +1945,7 @@
     },
     {
       "id": "civpen-7118-4-asbestos-inspection-report",
-      "title": "Penalty: asbestos-related inspection with knowledge of report (B&P 7118.4)",
+      "title": "Penalty: asbestos inspection without disclosing ties to the corrective-work company (B&P 7118.4)",
       "plain_english": "A contractor who inspects for asbestos knowing that the report is required for a loan secured by the property or for a public-entity permit must disclose, orally and in writing, any common ownership or financial relationship with a company that does the corrective work (B&P 7118.4). A violation carries the highest minimum in the table: $3,000 to $8,000.",
       "category": "penalty",
       "parameters": {
@@ -1963,7 +1963,7 @@
           "source": "B&P 7118.4(d), PDF p.356"
         }
       },
-      "applies_to": "Contractors on projects involving asbestos",
+      "applies_to": "Contractors who inspect for asbestos knowing the report is required for a loan secured by the property or for a public-entity permit",
       "citation": "16 CCR 884(a) (B&P 7118.4)",
       "source_location": "2026 CSLB Law Book, PDF page 541",
       "verbatim_quote": "(a) Civil penalties against persons who have been cited for violation of the Contractors State License Law shall be assessed in accordance with the following ranges of penalties. ... 7118.4 3,000 8,000",
@@ -1973,7 +1973,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 541 (884(a) table row); B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341",
-        "correction": "Range confirmed. Fixed the description: B&P 7118.4 (PDF p.356) is a duty to disclose ownership or financial ties to the corrective-work company when inspecting for a loan- or permit-required report. The cited heading was the 871 guideline heading, not the B&P one."
+        "correction": "Range confirmed. Fixed the description: B&P 7118.4 (PDF p.356) is a duty to disclose ownership or financial ties to the corrective-work company when inspecting for a loan- or permit-required report. The cited heading was the 871 guideline heading, not the B&P one. title and applies_to reworded on 2026-11-27 to match the fixed description."
       }
     },
     {
@@ -2188,7 +2188,7 @@
     },
     {
       "id": "civpen-7154-nonregistered-salesperson",
-      "title": "Penalty: using a nonregistered home improvement salesperson (B&P 7154)",
+      "title": "Penalty: nonregistered home improvement salesperson or missing salesperson notices (B&P 7154)",
       "plain_english": "Employing an unregistered home improvement salesperson, or failing to notify CSLB on its form before a registered salesperson starts work or within 90 days after one leaves (B&P 7154), carries a civil penalty of $500 to $1,000. (The 16 CCR 884(a) table prints $100 to $1,000, but since July 1, 2026 the statute sets a $500 minimum.)",
       "category": "penalty",
       "parameters": {
@@ -2212,7 +2212,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 541 (884(a) table row); B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341",
-        "correction": "Range $100-$1,000 matches 16 CCR 884(a) as printed (PDF page 541), but B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341 requires at least $500. Set min_usd to 500 for citations issued on or after 2026-07-01 and kept the printed value in min_usd_16ccr884_as_printed. B&P 7154 (PDF p.393) also covers failing to report a registered salesperson's employment (before starting) or departure (within 90 days); description widened."
+        "correction": "Range $100-$1,000 matches 16 CCR 884(a) as printed (PDF page 541), but B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341 requires at least $500. Set min_usd to 500 for citations issued on or after 2026-07-01 and kept the printed value in min_usd_16ccr884_as_printed. B&P 7154 (PDF p.393) also covers failing to report a registered salesperson's employment (before starting) or departure (within 90 days); description widened. title reworded on 2026-11-27 to cover the widened description."
       }
     },
     {
@@ -2264,7 +2264,7 @@
           "source": "B&P 7158(a), PDF p.396"
         }
       },
-      "applies_to": "Home improvement contractors",
+      "applies_to": "Anyone who accepts or uses a completion certificate on any work of improvement, not only home improvement",
       "citation": "16 CCR 884(a) (B&P 7158)",
       "source_location": "2026 CSLB Law Book, PDF page 541",
       "verbatim_quote": "(a) Civil penalties against persons who have been cited for violation of the Contractors State License Law shall be assessed in accordance with the following ranges of penalties. ... 7158 500 8,000",
@@ -2274,7 +2274,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 541 (884(a) table row); B&P 7099.2(b)(1) [operative 7-1-2026], PDF pages 340-341",
-        "correction": "Range confirmed. Fixed the description: B&P 7158 (PDF p.396) covers any work of improvement, and the use is assigning or negotiating payment rights or getting credit or a loan on them, not 'home improvement work financed by a third party' (that came from general knowledge)."
+        "correction": "Range confirmed. Fixed the description: B&P 7158 (PDF p.396) covers any work of improvement, and the use is assigning or negotiating payment rights or getting credit or a loan on them, not 'home improvement work financed by a third party' (that came from general knowledge). applies_to reworded on 2026-11-27: it said home improvement contractors only."
       }
     },
     {

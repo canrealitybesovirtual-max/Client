@@ -1497,7 +1497,7 @@
     {
       "id": "lien-foreclosure-90-days-after-recording",
       "title": "File lien foreclosure within 90 days of recording the lien; record lis pendens",
-      "plain_english": "Within 90 days after recording your Claim of Lien, file a lawsuit to foreclose it and record a lis pendens at the same time. If you served a stop notice, file suit on it then too. Otherwise the lien is lost.",
+      "plain_english": "Within 90 days after recording your Claim of Lien, file a lawsuit to foreclose it and record a lis pendens at the same time. If you served a stop notice, file suit on it then too.",
       "category": "deadline",
       "parameters": {
         "deadline_days": 90,
@@ -1517,7 +1517,7 @@
       "verification": {
         "status": "unverifiable",
         "checked_against": "2026 CSLB Law Book (sources/lawbook.txt): PDF p.76-77",
-        "correction": "Quote matches PDF p.76-77. The Civil Code lien-foreclosure deadline is not reproduced in the law book (the 2026 edition removed non-B&P code sections, PDF p.10); primary text not visible. The phrase \"Otherwise the lien is lost\" in plain_english is the extractor's inference. The book does not state the consequence."
+        "correction": "Quote matches PDF p.76-77. The Civil Code lien-foreclosure deadline is not reproduced in the law book (the 2026 edition removed non-B&P code sections, PDF p.10); primary text not visible. The phrase \"Otherwise the lien is lost\" in plain_english is the extractor's inference. The book does not state the consequence. Rewording 2026-11-27: removed \"Otherwise the lien is lost.\" from plain_english, because this check found the book does not state that consequence; no value changed."
       }
     },
     {

@@ -2901,7 +2901,7 @@
   },
   {
    "id": "small-claims-limit-12500",
-   "title": "Small claims: money judgments up to $12,500 (no lien foreclosure)",
+   "title": "Small claims: up to $12,500 for individuals and sole proprietors, $6,250 for entities (no lien foreclosure)",
    "plain_english": "A contractor owed money can sue in small claims court for up to $12,500 if it is a natural person or sole proprietor; a corporation, partnership, LLC or other entity is limited to $6,250. A mechanics lien cannot be foreclosed there, neither side may use a lawyer, a losing defendant can appeal within 30 days, and no more than two claims over $2,500 may be filed statewide per calendar year.",
    "category": "threshold",
    "parameters": {
@@ -2924,7 +2924,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt; official CSLB publication, B&P/16 CCR text reproduced verbatim), PDF p.71 (narrative; quote matches); WebSearch excerpts restricted to courts.ca.gov (superior court self-help pages) (host not fetchable from this session; full page not read): https://sf.courts.ca.gov/self-help/small-claims; https://contracosta.courts.ca.gov/divisions/small-claims/small-claims-faqs; https://www.marin.courts.ca.gov/divisions/small-claims; https://sanbernardino.courts.ca.gov/self-help/self-help-small-claims/small-claims-general-information; CSLB 2022 Law Book appendix https://www.cslb.ca.gov/Resources/GuidesAndPublications/LawReferenceBook2022.pdf (re-fetched 2026-11-25, HTTP 200; official reprint of statute text as of 2022-01-01), PDF pp.778-780 (CCP 116.220-116.221 structure, pre-2024 amounts)",
-    "correction": "The $12,500 limit applies only to natural persons, including a sole proprietor. Corporations, partnerships, LLCs and other entities are capped at $6,250 (CCP 116.220(a)(1); the 2022 reprint read $5,000/$10,000, since raised). The plain_english \"a contractor ... can sue for up to $12,500\" was wrong for entity contractors. Also added: no more than two claims over $2,500 per calendar year statewide. The CCP text itself was not read on leginfo."
+    "correction": "The $12,500 limit applies only to natural persons, including a sole proprietor. Corporations, partnerships, LLCs and other entities are capped at $6,250 (CCP 116.220(a)(1); the 2022 reprint read $5,000/$10,000, since raised). The plain_english \"a contractor ... can sue for up to $12,500\" was wrong for entity contractors. Also added: no more than two claims over $2,500 per calendar year statewide. The CCP text itself was not read on leginfo. Rewording 2026-11-27: title reworded to match this correction; no value changed."
    }
   },
   {

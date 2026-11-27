@@ -296,8 +296,11 @@ def fuzzed(n=200):
 def test_fixed_copy_and_no_forbidden_phrase(owner):
     never = [n.lower() for t in professionals.registry()["types"] for n in t.get("never_say", [])]
     answers = all_answers(owner) + [(q, ask(owner, q)) for q in fuzzed()]
+    with open(core.RULEBOOK_PATH, encoding="utf-8") as f:
+        built_on = json.load(f)["built_on"]       # the date of the rulebook on disk, not a pinned date
+    assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", built_on)
     for q, a in answers:
-        assert a["disclaimer"] == core.DISCLAIMER and a["rules_built_on"] == "2026-11-26"
+        assert a["disclaimer"] == core.DISCLAIMER and a["rules_built_on"] == built_on
         assert a["lead"] == "" or any(rx.match(a["lead"]) for rx in FIXED), a["lead"]
         for b in a["blocks"]:
             if b["type"] == "note":

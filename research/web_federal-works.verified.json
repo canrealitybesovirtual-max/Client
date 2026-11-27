@@ -911,7 +911,7 @@
   {
    "id": "fed-dba-fringe-cash-or-plan",
    "title": "Meet the fringe rate by plan contributions, cash, or a mix (DOL example: $21.93 + $6.27 = $28.60)",
-   "plain_english": "You meet the wage determination by paying at least the basic hourly rate and making bona fide fringe contributions totaling at least the fringe rate, or by paying the fringe amount in cash on top of the basic rate, or any mix. DOL's own example: basic $21.93 plus fringe $6.27; paying $28.60 an hour all in cash also complies.",
+   "plain_english": "You meet the wage determination by paying at least the basic hourly rate and making bona fide fringe contributions totaling at least the fringe rate, or by paying the fringe amount in cash on top of the basic rate, or by any mix of cash and fringe contributions that adds up to at least the basic rate plus the fringe rate; the cash part has no separate floor of its own. DOL's own example: basic $21.93 plus fringe $6.27; paying $28.60 an hour all in cash, or partly in cash and partly in fringe contributions totaling $28.60, also complies. For federal overtime, the rate used may not be below the wage determination's basic hourly rate (29 CFR 5.32(a)).",
    "category": "money_amount",
    "parameters": {
     "compliance_test": "cash_wage + creditable_fringe_per_hour >= basic_hourly_rate + fringe_rate (29 CFR 5.31(a), (b)(3): cash, bona fide fringe payments, or any combination totaling the wage determination amount)",
@@ -937,7 +937,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "eCFR 29 CFR 5.31, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: 29 CFR 5.30; 29 CFR 5.31(a)-(b); 29 CFR 5.32(a); DLSE Public Works Manual 4.2.2.2. verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section. DOL example $21.93 + $6.27 = $28.60 confirmed in 5.31(b)(1)-(3).",
-    "correction": "The DOL example of $21.93 + $6.27 = $28.60 and the three payment methods (29 CFR 5.31(b)(1)-(3)) are confirmed. The derived compliance_test also required cash_wage >= basic_hourly_rate. 5.31(a) and (b)(3) allow the obligation to be met 'by a combination thereof' that totals the wage determination amount, with no separate cash floor, and the rule's own notes said fringe credits can shift against the total. The test was corrected to the total-only test of 5.31(b)(3). The three regulation examples and the 5.32 overtime-base floor were added as separate parameters, and the notes were updated."
+    "correction": "The DOL example of $21.93 + $6.27 = $28.60 and the three payment methods (29 CFR 5.31(b)(1)-(3)) are confirmed. The derived compliance_test also required cash_wage >= basic_hourly_rate. 5.31(a) and (b)(3) allow the obligation to be met 'by a combination thereof' that totals the wage determination amount, with no separate cash floor, and the rule's own notes said fringe credits can shift against the total. The test was corrected to the total-only test of 5.31(b)(3). The three regulation examples and the 5.32 overtime-base floor were added as separate parameters, and the notes were updated. Rewording 2026-11-27: plain_english reworded to match this correction (29 CFR 5.31 and 5.32(a) re-read in the eCFR versioner API, title 29 as of 2026-11-23 on 2026-11-27); no value changed."
    }
   },
   {
@@ -3353,7 +3353,7 @@
   },
   {
    "id": "fed-byrd-anti-lobbying-certification",
-   "title": "Bids over $100,000 on federal work: sign the anti-lobbying certification and disclose lobbying, tier to tier",
+   "title": "Bids over $100,000 on grant-funded work (over $200,000 on direct federal contracts): sign the anti-lobbying certification and disclose lobbying, tier to tier",
    "plain_english": "Contractors bidding on a federally funded award over $100,000 under a federal grant must certify that they have not used and will not use federal appropriated funds to lobby for any federal contract or grant, and must disclose lobbying paid with other funds. Each tier certifies to the tier above. On direct federal contracts, the FAR puts the certification and the limitation clause only in solicitations and contracts expected to exceed $200,000 ($150,000 before Oct. 1, 2025).",
    "category": "required_document",
    "parameters": {
@@ -3379,7 +3379,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "eCFR 2 CFR part 200; eCFR 2 CFR part 200 Appendix II, re-fetched 2026-11-25 (eCFR versioner API, text current as of 2026-11-23). Also read: FAR 3.808 (current and 2025-09-30 point-in-time copy); FAR 52.203-11 (SEP 2024); FAR 52.203-12 (JUN 2020). verbatim_quote string-matched exactly (whitespace-normalized) in the re-fetched text of the cited section",
-    "correction": "The $100,000 threshold, tier-to-tier certification and disclosure are confirmed in Appendix II(I) for grant-funded contracts. applies_to also named 'direct federal contractors' with the same $100,000 figure. FAR 3.808 puts 52.203-11 and 52.203-12 only in solicitations and contracts 'expected to exceed $200,000', and the eCFR copy of 2025-09-30 shows $150,000 before the 90 FR 41876 adjustment. The FAR threshold and prior value were added, applies_to and plain_english now separate the two regimes, and the citation and source_location were extended."
+    "correction": "The $100,000 threshold, tier-to-tier certification and disclosure are confirmed in Appendix II(I) for grant-funded contracts. applies_to also named 'direct federal contractors' with the same $100,000 figure. FAR 3.808 puts 52.203-11 and 52.203-12 only in solicitations and contracts 'expected to exceed $200,000', and the eCFR copy of 2025-09-30 shows $150,000 before the 90 FR 41876 adjustment. The FAR threshold and prior value were added, applies_to and plain_english now separate the two regimes, and the citation and source_location were extended. Rewording 2026-11-27: title reworded to match this correction; no value changed."
    }
   },
   {

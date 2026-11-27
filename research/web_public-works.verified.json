@@ -2548,8 +2548,8 @@
   },
   {
    "id": "apprenticeship-penalty-1777-7",
-   "title": "Apprenticeship violations: up to $100/day ($300/day for repeats) plus possible debarment",
-   "plain_english": "A contractor that knowingly violates the apprenticeship requirements (DAS 140, ratio, training funds) faces a civil penalty of up to $100 per full calendar day of noncompliance, and the Labor Commissioner may reduce it if disproportionate. A knowing second or subsequent violation within 3 years carries up to $300 per day when the noncompliance results in apprenticeship training not being provided. Debarment is also possible under LC 1777.1(d).",
+   "title": "Apprenticeship violations: up to $100/day; up to $300/day for a knowing repeat within 3 years that denies training; possible debarment",
+   "plain_english": "A contractor that knowingly violates the apprenticeship requirements (DAS 140, ratio, training funds) faces a civil penalty of up to $100 per full calendar day of noncompliance, and the Labor Commissioner may reduce it if disproportionate. A knowing second or subsequent violation within 3 years carries up to $300 per day when the noncompliance results in apprenticeship training not being provided. For a first-time violation, the Labor Commissioner may instead, with an apprenticeship program's agreement, order the contractor to provide apprentice employment equal to the work hours apprentices would have had during the noncompliance. Debarment is also possible under LC 1777.1(d).",
    "category": "penalty",
    "parameters": {
     "max_per_day_usd": 100,
@@ -2572,7 +2572,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "DIR 'California Prevailing Wage Laws' (rev. Feb. 1, 2025) https://www.dir.ca.gov/public-works/CaliforniaPrevailingWageLaws.pdf PDF p.186 (LC 1777.7(a)-(b)); DLSE Public Works Manual (Oct 2023) https://www.dir.ca.gov/dlse/PWManualCombined.pdf §3.3; leginfo SB 909 (2025-26) bill status/text pages https://leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202520260SB909, seen only as WebSearch excerpts restricted to leginfo.legislature.ca.gov",
-    "correction": "The $300 tier was overstated. LC 1777.7(a)(1) applies the up-to-$300 per day maximum only to a knowing second or subsequent violation within 3 years where the noncompliance results in apprenticeship training not being provided. The rule said 'two or more violations within 3 years'. Also added: the penalty may be reduced if disproportionate, and (a)(2) allows a first-time alternative of ordering equivalent apprentice employment. The quote was replaced with the statute text. $100 per full calendar day is confirmed. FLAG: SB 909 (Ch. 660, Stats. 2026, chaptered 9/27/2026) amends LC 1725.5, 1771.3, 1775, 1776 and 1777.7 and PCC 2603, per its chaptered title as shown in leginfo search excerpts. The chaptered text and its operative date were not read. The amount here is current law as of 2026-11-25. Re-check it against Ch. 660 before 2027."
+    "correction": "The $300 tier was overstated. LC 1777.7(a)(1) applies the up-to-$300 per day maximum only to a knowing second or subsequent violation within 3 years where the noncompliance results in apprenticeship training not being provided. The rule said 'two or more violations within 3 years'. Also added: the penalty may be reduced if disproportionate, and (a)(2) allows a first-time alternative of ordering equivalent apprentice employment. The quote was replaced with the statute text. $100 per full calendar day is confirmed. FLAG: SB 909 (Ch. 660, Stats. 2026, chaptered 9/27/2026) amends LC 1725.5, 1771.3, 1775, 1776 and 1777.7 and PCC 2603, per its chaptered title as shown in leginfo search excerpts. The chaptered text and its operative date were not read. The amount here is current law as of 2026-11-25. Re-check it against Ch. 660 before 2027. Rewording 2026-11-27: title and plain_english reworded to match this correction; no value changed."
    }
   },
   {

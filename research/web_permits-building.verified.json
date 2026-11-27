@@ -130,7 +130,7 @@
   {
    "id": "permit-required-exemptions-thresholds",
    "title": "Common work exempt from a building permit",
-   "plain_english": "A building permit is required to construct, alter, repair, move, demolish or change occupancy of a building, but the code exempts minor work such as a one-story detached shed or playhouse up to 120 sq ft, fences up to 7 ft, and retaining walls up to 4 ft (measured bottom of footing to top of wall, not supporting a surcharge). Exempt work still has to meet code, and electrical/plumbing/mechanical work may still need its own permit.",
+   "plain_english": "A building permit is required to construct, alter, repair, move, demolish or change occupancy of a building, but the code exempts minor work such as a one-story detached shed or playhouse up to 120 sq ft, fences up to 7 ft (swimming pool barriers are not exempt), and retaining walls up to 4 ft measured from the bottom of the footing to the top of the wall, unless the wall supports a surcharge or impounds Class I, II or IIIA liquids. Exempt work still has to meet code, and electrical/plumbing/mechanical work may still need its own permit.",
    "category": "threshold",
    "parameters": {
     "detached_accessory_structure_max_sqft": 120,
@@ -158,7 +158,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "WebSearch excerpt restricted to codes.iccsafe.org (official Title 24 publisher; host DNS-blocked for direct fetch): 2025 California Building Code, Title 24 Part 2, [A] 105.2 Work exempt from permit (https://codes.iccsafe.org/s/CABC2025P1/chapter-1-administration/CABC2025P1-Ch01-SubCh02-Sec105.2)",
-    "correction": "120 sq ft one-story shed, 7 ft fence and 4 ft retaining wall figures confirmed for the 2025 CBC, but the exemption conditions were incomplete: the fence exemption excludes swimming pool barriers, and the retaining-wall exemption is void if the wall supports a surcharge OR impounds Class I, II or IIIA liquids. Parameters updated. CRC R105.2 2025 text not checked."
+    "correction": "120 sq ft one-story shed, 7 ft fence and 4 ft retaining wall figures confirmed for the 2025 CBC, but the exemption conditions were incomplete: the fence exemption excludes swimming pool barriers, and the retaining-wall exemption is void if the wall supports a surcharge OR impounds Class I, II or IIIA liquids. Parameters updated. CRC R105.2 2025 text not checked. Rewording 2026-11-27: plain_english reworded to match this correction; no value changed."
    }
   },
   {
@@ -628,8 +628,8 @@
   },
   {
    "id": "final-inspection-10-business-days-ab1308",
-   "title": "Final inspection within 10 business days for small housing (AB 1308)",
-   "plain_english": "For qualifying new residential construction (buildings not exceeding 10 total units, including additions creating new units), the local building department must perform the final inspection within 10 business days after the builder gives notice the work is complete. Missing the deadline is a Housing Accountability Act violation, and the builder may use a qualified third-party inspector.",
+   "title": "Building department must inspect within 10 business days of a completion notice (AB 1308)",
+   "plain_english": "For a project covered by H&S 17970.3 (AB 1308), the city or county building department must inspect the permitted work within 10 business days after it receives notice that the permitted work is complete. The statute says an inspection of the permitted work, not specifically the final inspection. Missing the deadline is a Housing Accountability Act violation. Summaries say the law covers only buildings of up to 10 units and lets the builder use a qualified third-party inspector; neither point was confirmed in the statute text.",
    "category": "deadline",
    "parameters": {
     "deadline_business_days": 10,
@@ -641,7 +641,7 @@
     ],
     "not_applicable_to": "remodels (per CALBO)"
    },
-   "applies_to": "Builders of new homes, ADU/duplex/small multifamily projects up to 10 units",
+   "applies_to": "Builders of housing projects covered by H&S 17970.3 (the 10-unit limit given in summaries is not confirmed)",
    "citation": "Health & Safety Code 17970.3 (AB 1308, Stats. 2025 ch. 509)",
    "source_location": "https://www.leginfo.legislature.ca.gov/faces/billNavClient.xhtml?bill_id=202520260AB1308 (chaptered text, via WebSearch excerpt); https://www.bwslaw.com/insights/new-2026-laws-impacting-building-permits-for-new-housing/",
    "verbatim_quote": "Within 10 business days of receiving a notice of the completion of the permitted work authorized by a building permit issued for a project subject to this section, the building department of every city or county shall conduct an inspection of the permitted work.",
@@ -651,7 +651,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "WebSearch excerpts restricted to leginfo.legislature.ca.gov (direct fetch returns HTTP 403): AB-1308 (2025-26) chaptered bill text, Stats. 2025 ch. 509 (adds H&S 17970.3, amends Gov Code 65589.5)",
-    "correction": "Deadline confirmed: within 10 business days of receiving notice of completion of permitted work, the building department shall inspect; failure is a disapproval/violation under the Housing Accountability Act. The verbatim_quote was a law-firm paraphrase and was replaced with the statute text. NOT confirmed: the 10-unit scope limit and the third-party-inspector remedy (not in the excerpts); the statute says \"an inspection of the permitted work\", not only a final inspection."
+    "correction": "Deadline confirmed: within 10 business days of receiving notice of completion of permitted work, the building department shall inspect; failure is a disapproval/violation under the Housing Accountability Act. The verbatim_quote was a law-firm paraphrase and was replaced with the statute text. NOT confirmed: the 10-unit scope limit and the third-party-inspector remedy (not in the excerpts); the statute says \"an inspection of the permitted work\", not only a final inspection. Rewording 2026-11-27: title, plain_english and applies_to reworded to match this correction; no value changed."
    }
   },
   {
@@ -669,7 +669,7 @@
     "sunset": "2036-01-01",
     "scope": "residential projects (unit/height limits per summaries - not confirmed)"
    },
-   "applies_to": "Residential permit applicants (small projects)",
+   "applies_to": "Residential permit applicants (any unit or height limits are not confirmed)",
    "citation": "Health & Safety Code 17960.3 (added), 17951, 17960.1 (AB 253, Stats. 2025 ch. 487)",
    "source_location": "https://www.bwslaw.com/insights/new-2026-laws-impacting-building-permits-for-new-housing/ ; https://legiscan.com/CA/text/AB253/2025 (search excerpts)",
    "verbatim_quote": "",
@@ -679,7 +679,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "WebSearch excerpts restricted to leginfo.legislature.ca.gov (direct fetch returns HTTP 403): AB-253 (2025-26) bill text, status and Today's Law As Amended (Stats. 2025 ch. 487, approved 2025-10-10, urgency)",
-    "correction": "Citation was generic: AB 253 adds H&S 17960.3 and amends 17951 and 17960.1. Trigger is broader and the 30-day figure is mixed: the applicant may use a private professional provider if the agency's estimated compliance timeframe exceeds 30 business days or if no determination is made within 30 days of the application being deemed complete. After receiving the provider's report the agency has 10 business days to issue the permit or give written notice of noncompliance; if it does neither, the plans are deemed compliant. Provider = licensed engineer or architect with a current residential plans examiner certification (e.g., ICC). Operative until January 1, 2036. Unit/height scope not confirmed."
+    "correction": "Citation was generic: AB 253 adds H&S 17960.3 and amends 17951 and 17960.1. Trigger is broader and the 30-day figure is mixed: the applicant may use a private professional provider if the agency's estimated compliance timeframe exceeds 30 business days or if no determination is made within 30 days of the application being deemed complete. After receiving the provider's report the agency has 10 business days to issue the permit or give written notice of noncompliance; if it does neither, the plans are deemed compliant. Provider = licensed engineer or architect with a current residential plans examiner certification (e.g., ICC). Operative until January 1, 2036. Unit/height scope not confirmed. Rewording 2026-11-27: applies_to reworded to match this correction; no value changed."
    }
   },
   {
@@ -1009,7 +1009,7 @@
   },
   {
    "id": "adu-is-home-improvement-contract",
-   "title": "ADU construction is a home improvement contract ($1,000 down max)",
+   "title": "ADU construction is a home improvement contract (down payment max $1,000 or 10%, whichever is less)",
    "plain_english": "Building an ADU is a home improvement project under the Contractors State License Law: a written home improvement contract is required, the down payment cannot exceed $1,000 or 10 percent of the contract amount, whichever is less, and progress payments must not get ahead of work completed or materials delivered. The buyer may cancel within 3 business days (5 business days if 65 or older; 7 business days for contracts to repair or restore homes damaged in a declared disaster).",
    "category": "required_contract_clause",
    "parameters": {
@@ -1041,7 +1041,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "https://www.cslb.ca.gov/Resources/GuidesAndPublications/2025/FastFacts_ADU.pdf (re-fetched 2026-11-25); 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt) PDF p.410 (B&P 7159.5(a)(3) downpayment), PDF pp.404-407 (B&P 7159 Three-Day / Five-Day senior / Seven-Day Right to Cancel notices), PDF p.387 (B&P 7150 senior citizen = 65+)",
-    "correction": "CSLB Fast Facts quote confirmed, but the statute caps the down payment at $1,000 OR 10% of the contract amount, whichever is less (B&P 7159.5(a)(3)), not a flat $1,000; cancellation periods are business days (3, or 5 for a buyer 65+), and the 7-business-day period applies only to contracts to repair/restore residential premises damaged by a declared state or local emergency, not to all work \"in disaster zones\". Parameters, plain_english and citation updated."
+    "correction": "CSLB Fast Facts quote confirmed, but the statute caps the down payment at $1,000 OR 10% of the contract amount, whichever is less (B&P 7159.5(a)(3)), not a flat $1,000; cancellation periods are business days (3, or 5 for a buyer 65+), and the 7-business-day period applies only to contracts to repair/restore residential premises damaged by a declared state or local emergency, not to all work \"in disaster zones\". Parameters, plain_english and citation updated. Rewording 2026-11-27: title reworded to match this correction; no value changed."
    }
   },
   {
@@ -1216,7 +1216,7 @@
   {
    "id": "adu-height-and-setbacks",
    "title": "ADU height and setbacks cities must allow",
-   "plain_english": "Cities must allow detached ADUs at least 16 ft tall, 18 ft within a half mile of a major transit stop or high-quality transit corridor or on a lot with a multistory multifamily building, and attached ADUs up to 25 ft (or the primary dwelling's height limit if lower). They cannot require side or rear setbacks over 4 ft for new-construction ADUs; conversions of existing structures need no additional setback.",
+   "plain_english": "Cities must allow detached ADUs at least 16 ft tall, 18 ft within one-half mile walking distance of a major transit stop or high-quality transit corridor or on a lot with a multistory multifamily building, and attached ADUs up to 25 ft (or the primary dwelling's height limit if lower). They cannot require side or rear setbacks over 4 ft for new-construction ADUs; conversions of existing structures need no additional setback.",
    "category": "threshold",
    "parameters": {
     "min_allowed_height_ft": 16,
@@ -1236,7 +1236,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "WebSearch excerpts restricted to leginfo.legislature.ca.gov (direct fetch returns HTTP 403): Gov Code 66321 (codes_displaySection GOV 66321) and SB-543 (2025) bill text height list",
-    "correction": "16 ft minimum and 4 ft side/rear setback confirmed. The \"unverified\" higher heights are now confirmed and filled in: 18 ft for a detached ADU within one-half mile walking distance of a major transit stop or high-quality transit corridor; 18 ft for a detached ADU on a lot with an existing or proposed multifamily, multistory dwelling; 25 ft or the primary-dwelling height limit, whichever is lower, for an attached ADU. (Any added roof-pitch allowance was not seen.)"
+    "correction": "16 ft minimum and 4 ft side/rear setback confirmed. The \"unverified\" higher heights are now confirmed and filled in: 18 ft for a detached ADU within one-half mile walking distance of a major transit stop or high-quality transit corridor; 18 ft for a detached ADU on a lot with an existing or proposed multifamily, multistory dwelling; 25 ft or the primary-dwelling height limit, whichever is lower, for an attached ADU. (Any added roof-pitch allowance was not seen.). Rewording 2026-11-27: plain_english reworded to match this correction; no value changed."
    }
   },
   {
@@ -2605,7 +2605,7 @@
   },
   {
    "id": "native-american-remains-felony",
-   "title": "Removing Native American remains or grave goods is a felony",
+   "title": "Obtaining or possessing remains or artifacts taken from Native American graves, or removing remains to sell or dissect, or with malice, is a felony",
    "plain_english": "Knowingly or willfully obtaining or possessing Native American remains or artifacts taken from a Native American grave or cairn (after 1984), or removing remains from a grave with intent to sell or dissect or with malice, is a felony punishable under Penal Code 1170(h). Stop work and follow the coroner/NAHC procedure on any discovery.",
    "category": "penalty",
    "parameters": {
@@ -2626,7 +2626,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt) PDF p.89 (CSLB summary); WebSearch excerpts restricted to leginfo.legislature.ca.gov (direct fetch returns HTTP 403): Pub. Res. Code 5097.99 as amended by AB 109 (Stats. 2011, criminal justice realignment) bill text; nahc.ca.gov State Laws and Codes page (search listing)",
-    "correction": "Not \"imprisonment in state prison\": since AB 109 (2011) the felony in PRC 5097.99(b)-(c) is punishable by imprisonment pursuant to Penal Code 1170(h) (realignment; generally county jail). Also the statute is narrower than the Law Book summary: (b) covers knowingly or willfully obtaining or possessing Native American artifacts or human remains taken from a Native American grave or cairn after January 1, 1984 (except as allowed by law or a 5097.94/5097.98 agreement); (c) covers removing remains from a grave or cairn with intent to sell or dissect, or with malice or wantonness. Parameters, plain_english and quote updated."
+    "correction": "Not \"imprisonment in state prison\": since AB 109 (2011) the felony in PRC 5097.99(b)-(c) is punishable by imprisonment pursuant to Penal Code 1170(h) (realignment; generally county jail). Also the statute is narrower than the Law Book summary: (b) covers knowingly or willfully obtaining or possessing Native American artifacts or human remains taken from a Native American grave or cairn after January 1, 1984 (except as allowed by law or a 5097.94/5097.98 agreement); (c) covers removing remains from a grave or cairn with intent to sell or dissect, or with malice or wantonness. Parameters, plain_english and quote updated. Rewording 2026-11-27: title reworded to match this correction; no value changed."
    }
   },
   {

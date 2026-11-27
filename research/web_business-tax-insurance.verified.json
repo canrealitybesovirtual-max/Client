@@ -35,7 +35,7 @@
     },
     {
       "id": "contractor-bond-7500-nonpriority-cap",
-      "title": "Bond: $7,500 cap for claimants other than homeowners/employees",
+      "title": "Bond: $7,500 cap for all claimants except home-improvement homeowners",
       "plain_english": "Of the $25,000 contractor's bond, the surety's total liability to everyone EXCEPT homeowners who contracted for home improvement on their own residence (B&P 7071.5(a)) is capped at $7,500. The remaining $17,500 is reserved exclusively for those home-improvement homeowners, who may recover up to the full bond. Single-family-home owners, fraud victims, unpaid employees and fringe-benefit trusts share the $7,500.",
       "category": "threshold",
       "parameters": {
@@ -61,7 +61,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.294 (B&P 7071.5(a)-(e)); 2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.295 (B&P 7071.6(b)); WebSearch restricted to leginfo/cslb.ca.gov (2026-11-25) summary of BPC 7071.6 agrees the reserve is for the 7071.5(a) beneficiaries",
-        "correction": "7071.6(b) reserves the excess over $7,500 only for beneficiaries in SUBDIVISION (a) of 7071.5, which is just homeowners contracting for home improvement on their own residence. 7071.5(b)-(e) are separate subdivisions (single-family-dwelling owners, willful-violation/fraud victims, unpaid employees, fringe-benefit payees), and they share the $7,500 cap. The extract read the reference as 7071.5(a)-(e) and listed all five groups as priority. Fixed priority_beneficiaries_section, plain_english and notes."
+        "correction": "7071.6(b) reserves the excess over $7,500 only for beneficiaries in SUBDIVISION (a) of 7071.5, which is just homeowners contracting for home improvement on their own residence. 7071.5(b)-(e) are separate subdivisions (single-family-dwelling owners, willful-violation/fraud victims, unpaid employees, fringe-benefit payees), and they share the $7,500 cap. The extract read the reference as 7071.5(a)-(e) and listed all five groups as priority. Fixed priority_beneficiaries_section, plain_english and notes. Rewording 2026-11-27: title reworded to match this correction; no value changed."
       }
     },
     {
@@ -418,7 +418,7 @@
     {
       "id": "bond-alternative-cashiers-check-only",
       "title": "Bond alternative: cashier's check only; held 3 years",
-      "plain_english": "Instead of a surety bond you may deposit a cashier's or bank-certified check for the full bond amount payable to CSLB. CDs, passbooks and similar deposits are no longer accepted. The deposit is held at least 3 years after the license period it covers ends, and longer if a claim is pending.",
+      "plain_english": "Instead of a surety bond you may deposit a cashier's or bank-certified check for the full bond amount payable to CSLB. CDs, passbooks and similar deposits are no longer accepted. The deposit cannot be released until 3 years after the license period it covers ends, or 3 years after the license is inactivated, expires, or is canceled or revoked, whichever comes first, and it is held longer if a claim is pending.",
       "category": "money_amount",
       "parameters": {
         "accepted_alternatives": [
@@ -451,12 +451,12 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.292-293 (B&P 7071.4(a),(f)); https://www.cslb.ca.gov/Contractors/Maintain_License/Bond_Information/Bond_Alternatives.aspx (re-fetched 2026-11-25)",
-        "correction": "Release timing is 3 years after expiration of the covered license period or 3 years after inactivation/expiration/cancellation/revocation, whichever occurs FIRST, so it can be earlier than \"3 years after the license period ends\"."
+        "correction": "Release timing is 3 years after expiration of the covered license period or 3 years after inactivation/expiration/cancellation/revocation, whichever occurs FIRST, so it can be earlier than \"3 years after the license period ends\". Rewording 2026-11-27: plain_english reworded to match this correction (CSLB Bond Alternatives page re-read on 2026-11-27); no value changed."
       }
     },
     {
       "id": "bond-wage-claim-cap-4000",
-      "title": "Bond: wage/fringe claims capped at $4,000 total",
+      "title": "Bond: each wage/fringe claim capped at $4,000",
       "plain_english": "A surety's liability on any one claim for wages and fringe benefits against a license bond (other than a disciplinary bond) is capped at $4,000. If the bond cannot pay all claims in full, claimants share it pro rata. On the $25,000 contractor bond, wage claimants are also inside the $7,500 non-priority pool (B&P 7071.6(b)).",
       "category": "threshold",
       "parameters": {
@@ -475,7 +475,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.300-301 (B&P 7071.11(a))",
-        "correction": "The statute caps the surety's aggregate liability \"on a claim\" for wages and fringe benefits at $4,000. That is a per-claim cap (wages plus fringe combined), not a $4,000 ceiling on total wage payouts from the bond. Compare 7071.6(b), which uses \"on claims\" for its aggregate $7,500 cap. Rewrote plain_english and added cap_scope. Wage claimants also fall inside the $7,500 non-priority pool of the $25,000 contractor bond."
+        "correction": "The statute caps the surety's aggregate liability \"on a claim\" for wages and fringe benefits at $4,000. That is a per-claim cap (wages plus fringe combined), not a $4,000 ceiling on total wage payouts from the bond. Compare 7071.6(b), which uses \"on claims\" for its aggregate $7,500 cap. Rewrote plain_english and added cap_scope. Wage claimants also fall inside the $7,500 non-priority pool of the $25,000 contractor bond. Rewording 2026-11-27: title reworded to match this correction; no value changed."
       }
     },
     {
@@ -744,7 +744,7 @@
     {
       "id": "service-repair-contract-insurance-notices",
       "title": "Service & repair contracts ($750 or less): CGL and WC notices",
-      "plain_english": "Service and repair contracts (buyer-initiated jobs of $750 or less) must also carry the CGL notice (same 4 options) and the workers' comp notice (same 2 options).",
+      "plain_english": "Service and repair contracts (jobs of $750 or less that the buyer asked for, where you sell nothing beyond what is reasonably needed to fix that problem and take no payment until the work is done) must also carry the CGL notice (4 options) and the workers' comp notice (2 options). Use the wording in B&P 7159.10(d)(7)-(8), which differs slightly from the home improvement notices.",
       "category": "required_contract_clause",
       "parameters": {
         "contract_amount_max_usd": 750,
@@ -765,7 +765,7 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.414-416 (B&P 7159.10(a)(1), (d)(3), (d)(7)-(8))",
-        "correction": "Wording note: 7159.10(d)(7)(B) reads \"You may call the (insurance company) at ___\", a trivial variant of 7159(e)(1)(B); generate service/repair notices from 7159.10 text. The (a)(1) definition also requires no upselling and no payment until the work is completed."
+        "correction": "Wording note: 7159.10(d)(7)(B) reads \"You may call the (insurance company) at ___\", a trivial variant of 7159(e)(1)(B); generate service/repair notices from 7159.10 text. The (a)(1) definition also requires no upselling and no payment until the work is completed. Rewording 2026-11-27: plain_english reworded to match this correction (B&P 7159.10(a)(1) re-read in sources/lawbook.txt on 2026-11-27); no value changed."
       }
     },
     {
@@ -1246,7 +1246,7 @@
     {
       "id": "entity-change-cancellation-notices-90-days",
       "title": "Entity events (death, dissolution, merger, partner exit): notify within 90 days",
-      "plain_english": "Individual licenses cancel on the owner's death (family may request a continuance within 90 days). Partnership licenses cancel when a general partner dies or leaves; corporation licenses cancel on dissolution, merger or surrender. In each case CSLB must be told in writing within 90 days; continuance requests also within 90 days.",
+      "plain_english": "Individual licenses cancel on the owner's death (family may request a continuance within 90 days). Partnership licenses cancel when a general partner dies or leaves. Corporation and LLC licenses cancel on dissolution, merger or surrender of the right to do business in California. In each case CSLB must be told in writing within 90 days; continuance requests also within 90 days. If a corporation or LLC never tells CSLB, the license is canceled 60 days after the board discovers it. To dispute a cancellation date, a petition showing good cause must reach CSLB within 90 days of its cancellation notice.",
       "category": "deadline",
       "parameters": {
         "notify_days": 90,
@@ -1273,7 +1273,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.316-319 (B&P 7076(a)-(j))",
-        "correction": "The extract never read the LLC subdivision and only assumed it. It was read now: 7076(i) cancels an LLC license on dissolution, merger or surrender, with written notice due within 90 days. If the corporation or LLC never notifies CSLB, the license is canceled 60 days after the board discovers it (7076(h)-(i)). A cancellation-date dispute petition is due within 90 days of the board's notice (7076(j)). Added these to the parameters and replaced the \"verify\" note. The citation now reads (a)-(j)."
+        "correction": "The extract never read the LLC subdivision and only assumed it. It was read now: 7076(i) cancels an LLC license on dissolution, merger or surrender, with written notice due within 90 days. If the corporation or LLC never notifies CSLB, the license is canceled 60 days after the board discovers it (7076(h)-(i)). A cancellation-date dispute petition is due within 90 days of the board's notice (7076(j)). Added these to the parameters and replaced the \"verify\" note. The citation now reads (a)-(j). Rewording 2026-11-27: plain_english reworded to match this correction (B&P 7076(h)-(j) re-read in sources/lawbook.txt on 2026-11-27); no value changed."
       }
     },
     {
@@ -1541,7 +1541,7 @@
     {
       "id": "report-multifamily-structural-judgment-1m",
       "title": "Report $1M+ multifamily load-bearing defect judgments/settlements within 90 days",
-      "plain_english": "Within 90 days of knowing of it, report to CSLB any final judgment, signed settlement or arbitration award of $1,000,000 or more (filed on or after 1/1/2019) in a 'complex case' over construction defects in load-bearing parts of a multifamily rental building.",
+      "plain_english": "Within 90 days of knowing of it, report to CSLB any final judgment, signed settlement or arbitration award of $1,000,000 or more (filed on or after 1/1/2019) in a 'complex case' over construction defects in load-bearing parts of a multifamily rental building. This does not apply to residential construction covered by Civil Code Title 7 (section 895 and following, the SB 800 Right to Repair Act). If several contractors are defendants, each one apportioned liability must report, except one assigned less than $15,000. The signed report gives your license number and the facts, plus the case details if a court was involved. Not reporting is grounds for discipline, but not a crime.",
       "category": "deadline",
       "parameters": {
         "days": 90,
@@ -1572,7 +1572,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.309-311 (B&P 7071.20(a)-(g))",
-        "correction": "The extract never read the later subdivisions. Added: (b) the section does not apply to residential construction subject to Civil Code Title 7 (sec. 895 et seq., the SB 800 Right to Repair Act); (c) when several contractors are defendants, all apportioned liability must report, except one assigned less than $15,000; (f) late or missing reports are grounds for discipline but carry no criminal penalty; (d) required report contents."
+        "correction": "The extract never read the later subdivisions. Added: (b) the section does not apply to residential construction subject to Civil Code Title 7 (sec. 895 et seq., the SB 800 Right to Repair Act); (c) when several contractors are defendants, all apportioned liability must report, except one assigned less than $15,000; (f) late or missing reports are grounds for discipline but carry no criminal penalty; (d) required report contents. Rewording 2026-11-27: plain_english reworded to match this correction (B&P 7071.20(b)-(f) re-read in sources/lawbook.txt on 2026-11-27); no value changed."
       }
     },
     {
@@ -2093,7 +2093,7 @@
     {
       "id": "ccr-884-citation-penalty-ranges",
       "title": "CSLB citation civil penalty ranges and per-citation caps",
-      "plain_english": "When CSLB cites a licensee, each violated section has a set penalty range (e.g., 7030.5 license number $100-$1,000; 7111 records $100-$1,000; 7118 $500-$30,000; 7125.4 $200-$30,000; 7159 $100-$1,000). Multiple violations on one project are capped at $8,000 per citation, except $15,000 (7028.7) and $30,000 (7110, 7114, 7118, 7125.4). Appeal within 15 working days.",
+      "plain_english": "When CSLB cites a licensee, each violated section has a set penalty range (e.g., 7030.5 license number $100-$1,000; 7111 records $100-$1,000; 7118 $500-$30,000; 7125.4 $200-$30,000; 7159 $100-$1,000). Multiple violations on one project are capped at $8,000 per citation, except $15,000 (7028.7) and $30,000 (7110, 7114, 7118, 7125.4). Appeal within 15 working days. For 7028.7 (unlicensed contracting) citations, the statute's $1,500 minimum (operative July 1, 2026) controls over the $200 low end printed in the table.",
       "category": "penalty",
       "parameters": {
         "ranges_usd": {
@@ -2269,7 +2269,7 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.540-542 (16 CCR 884(a)-(c), 885); every range in parameters re-matched to the printed table",
-        "correction": "The 7028.7 entry ($200 minimum) is the regulation as printed; B&P 7028.7(c) as operative 7/1/2026 sets a $1,500 statutory minimum that controls (already flagged in notes)."
+        "correction": "The 7028.7 entry ($200 minimum) is the regulation as printed; B&P 7028.7(c) as operative 7/1/2026 sets a $1,500 statutory minimum that controls (already flagged in notes). Rewording 2026-11-27: plain_english reworded to match this correction (B&P 7028.7(c) re-read in sources/lawbook.txt on 2026-11-27); no value changed."
       }
     },
     {
@@ -2764,7 +2764,7 @@
     {
       "id": "statewide-sales-tax-base-rate",
       "title": "California statewide base sales/use tax rate 7.25% plus district taxes",
-      "plain_english": "The statewide base sales and use tax rate is 7.25%; local district taxes of 0.10% to 2.00% each are added on top depending on location, so job-site/delivery location determines the total rate.",
+      "plain_english": "The statewide base sales and use tax rate is 7.25%; local district taxes (generally 0.10% or more each) are added on top depending on location, so job-site/delivery location determines the total rate. The combined district rate in a county is usually capped at 2.00%, but some laws allow more.",
       "category": "money_amount",
       "parameters": {
         "statewide_base_rate_percent": 7.25,
@@ -2782,7 +2782,7 @@
       "verification": {
         "status": "unverifiable",
         "checked_against": "WebSearch restricted to cdtfa.ca.gov (2026-11-25): Know Your Rate / Pub 105 summaries give 7.25% base and district rates generally 0.10%-2.00%, with the combined district rate in a county capped at 2% unless a statute authorizes more. cdtfa.ca.gov is not reachable from this session.",
-        "correction": "Not a correction, but district_tax_each_max_percent (2.0) is really the usual combined county cap, and some statutes authorize more."
+        "correction": "Not a correction, but district_tax_each_max_percent (2.0) is really the usual combined county cap, and some statutes authorize more. Rewording 2026-11-27: plain_english reworded to match this correction; no value changed."
       }
     },
     {
@@ -2914,7 +2914,7 @@
     },
     {
       "id": "lawbook-edd-registration-100-per-quarter",
-      "title": "Register with EDD once you pay employees over $100 in a quarter",
+      "title": "Register with EDD once you pay over $100 in total wages in a quarter",
       "plain_english": "A contractor that pays more than $100 in total wages in a calendar quarter must register with EDD, get a state employer account number, and pay state payroll and UI taxes on its employees' wages. The trigger is the employer's total quarterly wages, not each employee's earnings. Also get a federal EIN and pay federal withholding and Social Security taxes on schedule.",
       "category": "threshold",
       "parameters": {
@@ -2935,7 +2935,7 @@
       "verification": {
         "status": "corrected",
         "checked_against": "2026 CSLB Law Book (/home/user/Client/sources/lawbook.txt, re-read 2026-11-25) PDF p.41; WebSearch restricted to edd.ca.gov (2026-11-25), Step 1 Register as an Employer / DE 44 summaries",
-        "correction": "The law book text \"employees who earn over $100 in a calendar quarter\" was carried into plain_english as a per-employee test. The EDD trigger is employer-level: an employer that pays more than $100 in total wages in a calendar quarter must register and report, and once subject, all wages are covered (up to the applicable wage bases). Clarified plain_english and added threshold_basis. The $100 figure is unchanged."
+        "correction": "The law book text \"employees who earn over $100 in a calendar quarter\" was carried into plain_english as a per-employee test. The EDD trigger is employer-level: an employer that pays more than $100 in total wages in a calendar quarter must register and report, and once subject, all wages are covered (up to the applicable wage bases). Clarified plain_english and added threshold_basis. The $100 figure is unchanged. Rewording 2026-11-27: title reworded to match this correction; no value changed."
       }
     },
     {
@@ -3207,7 +3207,7 @@
     {
       "id": "federal-deposit-schedule-monthly-semiweekly",
       "title": "Federal payroll tax deposits: monthly vs semiweekly ($50,000 lookback)",
-      "plain_english": "If total employment taxes in the lookback period (12 months ending the prior June 30) were $50,000 or less, deposit monthly by the 15th of the next month; above $50,000, deposit semiweekly (Wed-Fri paydays by next Wednesday; Sat-Tue paydays by next Friday). Deposits must be by electronic funds transfer.",
+      "plain_english": "If total employment taxes in the lookback period (12 months ending the prior June 30) were $50,000 or less, deposit monthly by the 15th of the next month; above $50,000, deposit semiweekly (Wed-Fri paydays by next Wednesday; Sat-Tue paydays by next Friday). Deposits must be by electronic funds transfer. A new employer counts as having no employment taxes for any part of the lookback period before it started or acquired the business, so it starts as a monthly depositor.",
       "category": "deadline",
       "parameters": {
         "lookback_threshold_usd": 50000,
@@ -3230,7 +3230,7 @@
       "verification": {
         "status": "confirmed",
         "checked_against": "eCFR API, Title 26 issue of 2026-11-18 (re-fetched 2026-11-25): 26 CFR 31.6302-1(b)(2)-(4), (c)(1)-(2), (f)(1)",
-        "correction": "New employers are treated as having zero liability for any lookback period before they started the business (31.6302-1(b)(4)), so they start as monthly depositors."
+        "correction": "New employers are treated as having zero liability for any lookback period before they started the business (31.6302-1(b)(4)), so they start as monthly depositors. Rewording 2026-11-27: plain_english reworded to match this correction (26 CFR 31.6302-1(b)(4) re-read in the eCFR versioner API, title 26 issue 2026-11-18 on 2026-11-27); no value changed."
       }
     },
     {

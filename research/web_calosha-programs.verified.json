@@ -690,7 +690,7 @@
   {
    "id": "indoor-heat-scope-82f",
    "title": "Indoor heat standard applies at 82F; full controls at 87F",
-   "plain_english": "The indoor heat rule applies to indoor work areas at or above 82F while employees are present. The full assessment and control requirements apply if the temperature or heat index reaches 87F, or 82F where workers wear heat-restrictive clothing or work near high radiant heat.",
+   "plain_english": "The indoor heat rule applies to indoor work areas at or above 82F while employees are present. The full assessment and control requirements apply if the temperature or heat index reaches 87F, or 82F where workers wear heat-restrictive clothing or work near high radiant heat. It does not apply to brief exposures of 82F or more but below 95F that last less than 15 minutes in any 60-minute period. That exception does not cover vehicles without working air conditioning, or shipping or intermodal containers during loading, unloading or related work.",
    "category": "threshold",
    "parameters": {
     "scope_temperature_f_gte": 82,
@@ -721,7 +721,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "https://www.dir.ca.gov/title8/3396.html",
-    "correction": "The incidental-exposure exception in 3396(a)(1)(C) covers temperatures at or above 82F and below 95F for LESS THAN 15 minutes in any 60-minute period. The old parameter \"max_minutes_per_60\": 15 and the range [82, 95] did not say which ends are inclusive and read as allowing up to 15 minutes. It is now restated as temperature_f_gte 82 / temperature_f_lt 95 / exposure_minutes_lt 15 per 60-minute period, with the vehicle and container carve-outs. All other values were confirmed."
+    "correction": "The incidental-exposure exception in 3396(a)(1)(C) covers temperatures at or above 82F and below 95F for LESS THAN 15 minutes in any 60-minute period. The old parameter \"max_minutes_per_60\": 15 and the range [82, 95] did not say which ends are inclusive and read as allowing up to 15 minutes. It is now restated as temperature_f_gte 82 / temperature_f_lt 95 / exposure_minutes_lt 15 per 60-minute period, with the vehicle and container carve-outs. All other values were confirmed. plain_english updated on 2026-11-27 to state the incidental-exposure exception (82F or more and below 95F, less than 15 minutes in any 60-minute period) and its vehicle and container carve-outs."
    }
   },
   {
@@ -2263,7 +2263,7 @@
   {
    "id": "lead-medical-removal",
    "title": "Lead medical removal at blood lead 30 ug/dl",
-   "plain_english": "Remove an employee from lead exposure when their last blood lead test is 30 ug/dl or higher, or (from Jan 1, 2026) the last two blood lead tests are 20 ug/dl or higher, or the 6-month average is 20 ug/dl or higher (unless the last test is below 15). Return after two tests at least 30 days apart below 15 ug/dl.",
+   "plain_english": "Remove an employee from lead exposure when their last blood lead test is 30 ug/dl or higher. From Jan 1, 2026, also remove them when the last two blood lead tests are 20 ug/dl or higher, or when the average of all blood lead tests in the last 6 months is 20 ug/dl or higher (unless the last test is below 15). Return after two tests at least 30 days apart below 15 ug/dl.",
    "category": "threshold",
    "parameters": {
     "remove_if_last_bll_ug_dl_gte": 30,
@@ -2286,7 +2286,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "https://www.dir.ca.gov/title8/1532_1.html",
-    "correction": "The \"effective\" field said only the 6-month-average trigger takes effect 2026-01-01. 1532.1(k)(1)(A)2 and 3 make BOTH the last-two-tests >= 20 ug/dl trigger and the 6-month-average >= 20 ug/dl trigger effective January 1, 2026. The field is corrected. The parameters and plain_english were already right. mrp_benefits_max_months: 18 was added from (k)(2)(A)."
+    "correction": "The \"effective\" field said only the 6-month-average trigger takes effect 2026-01-01. 1532.1(k)(1)(A)2 and 3 make BOTH the last-two-tests >= 20 ug/dl trigger and the 6-month-average >= 20 ug/dl trigger effective January 1, 2026. The field is corrected. The parameters and plain_english were already right. mrp_benefits_max_months: 18 was added from (k)(2)(A). plain_english updated on 2026-11-27 to make clear that both 20 ug/dl triggers (last two tests and 6-month average) start January 1, 2026."
    }
   },
   {
@@ -3178,7 +3178,7 @@
   },
   {
    "id": "wvpp-workers-comp-notice-one-working-day",
-   "title": "Workplace violence injury: workers' comp notice within one working day",
+   "title": "Workplace crime victim: workers' comp notice within one working day",
    "plain_english": "If an employee is the victim of a crime at the workplace (which covers many workplace violence incidents), give them written notice that they may be eligible for workers' compensation, including for psychiatric injuries. Deliver it personally or by first-class mail within one working day of the crime, or of the date the employer reasonably should have known of it. Also log the incident, investigate, report serious injuries within 8 hours, and record it on the Form 300 if recordable.",
    "category": "deadline",
    "parameters": {
@@ -3212,7 +3212,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "Labor Code 3553 on leginfo.legislature.ca.gov (direct fetch returns HTTP 403; text read through WebSearch excerpts restricted to leginfo.legislature.ca.gov, 2026-11-25); https://www.dir.ca.gov/dwc/faqs.html (DWC employer FAQ, fetched 2026-11-25); https://www.dir.ca.gov/dosh/Workplace-Violence/General-Industry.html",
-    "correction": "The 1-working-day deadline is confirmed. The trigger was too loose. Labor Code 3553 applies when an employee is the victim of a crime at the place of employment, not to every workplace violence incident, and the employee need not be injured. The notice must be written, covers workers' comp eligibility including psychiatric injuries, and goes out personally or by first-class mail within one working day of the crime or of the date the employer reasonably should have known of it. The DWC FAQ agrees: 'If the employee is the victim of a crime that happened at work, you must give notice of workers' compensation eligibility within one working day of the crime.' Added parameters: trigger, notice_form, delivery_methods and clock_starts_from. plain_english was reworded. The verbatim_quote (DIR General-Industry page) is unchanged. The statute text was seen only as leginfo search excerpts, not as the full page."
+    "correction": "The 1-working-day deadline is confirmed. The trigger was too loose. Labor Code 3553 applies when an employee is the victim of a crime at the place of employment, not to every workplace violence incident, and the employee need not be injured. The notice must be written, covers workers' comp eligibility including psychiatric injuries, and goes out personally or by first-class mail within one working day of the crime or of the date the employer reasonably should have known of it. The DWC FAQ agrees: 'If the employee is the victim of a crime that happened at work, you must give notice of workers' compensation eligibility within one working day of the crime.' Added parameters: trigger, notice_form, delivery_methods and clock_starts_from. plain_english was reworded. The verbatim_quote (DIR General-Industry page) is unchanged. The statute text was seen only as leginfo search excerpts, not as the full page. title updated on 2026-11-27 to name the trigger (an employee who is the victim of a crime at work) instead of a workplace violence injury."
    }
   },
   {
@@ -3396,7 +3396,7 @@
   },
   {
    "id": "willful-violation-death-criminal",
-   "title": "Criminal liability: willful violation causing death or prolonged impairment",
+   "title": "Criminal liability: willful violation causing death or permanent or prolonged impairment",
    "plain_english": "Employers, and employees who have direction, management, control or custody of the employment or of other employees, who willfully violate an occupational safety or health standard that causes an employee's death or permanent or prolonged bodily impairment can be prosecuted by the local district attorney. On conviction the penalty is a fine of up to $250,000, imprisonment of up to 3 years, or both. For a corporation or LLC the fine can be up to $1.5 million.",
    "category": "penalty",
    "parameters": {
@@ -3426,7 +3426,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "https://www.dir.ca.gov/dosh/dosh_publications/osha_userguide.pdf (The Guide to Cal/OSHA, Aug 2023, p.13, 'Criminal Penalties', fetched 2026-11-25); Labor Code 6425 on leginfo.legislature.ca.gov (direct fetch returns HTTP 403; text read through WebSearch excerpts restricted to leginfo.legislature.ca.gov, 2026-11-25); https://www.dir.ca.gov/dosh/legal-unit.html; 2026 CSLB Law Book PDF p.49",
-    "correction": "The harm element was incomplete. LC 6425 covers a willful violation causing death or PERMANENT or prolonged impairment of the body of an employee. The DIR Guide and the leginfo excerpts both say this. The Law Book paraphrase (and the old elements list) said only 'prolonged impairment'. Fixed elements and plain_english. The penalty amounts were missing. Added from DIR's Guide: a fine up to $250,000, imprisonment up to 3 years, or both; for a corporation or LLC a fine up to $1.5 million; enforced by the local DA. The quote is unchanged because it is verbatim to its Law Book source. FLAG, not applied: leginfo search excerpts report AB 2321 (2025-26) as Chapter 936, approved 2026-09-30. It amends 6425 to add serious injury, illness or exposure as a triggering harm. The final status and text were not seen, and the excerpts conflicted."
+    "correction": "The harm element was incomplete. LC 6425 covers a willful violation causing death or PERMANENT or prolonged impairment of the body of an employee. The DIR Guide and the leginfo excerpts both say this. The Law Book paraphrase (and the old elements list) said only 'prolonged impairment'. Fixed elements and plain_english. The penalty amounts were missing. Added from DIR's Guide: a fine up to $250,000, imprisonment up to 3 years, or both; for a corporation or LLC a fine up to $1.5 million; enforced by the local DA. The quote is unchanged because it is verbatim to its Law Book source. FLAG, not applied: leginfo search excerpts report AB 2321 (2025-26) as Chapter 936, approved 2026-09-30. It amends 6425 to add serious injury, illness or exposure as a triggering harm. The final status and text were not seen, and the excerpts conflicted. title updated on 2026-11-27 to add 'permanent'."
    }
   }
  ],

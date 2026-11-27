@@ -708,7 +708,7 @@
   {
    "id": "hr-crime-victim-absence-self-certification",
    "title": "Victim absences: a signed statement from the worker is enough proof",
-   "plain_english": "If a crime victim misses work without notice, you cannot act against them if they give proof within a reasonable time afterward. A signed written statement from the worker counts as proof.",
+   "plain_english": "If a crime victim misses work without notice, you cannot act against them if they give proof within a reasonable time afterward. A signed written statement from the worker counts as proof. This is the Labor Code 230 and 230.1 rule, which covers violations through December 31, 2024. Since January 1, 2025 crime-victim protections are under the Fair Employment and Housing Act (Gov. Code 12945.8), handled by the Civil Rights Department; its current proof rule was not checked.",
    "category": "required_document",
    "parameters": {
     "unscheduled_absence_protected_if": "certification provided within a reasonable time after the absence",
@@ -732,7 +732,7 @@
    "verification": {
     "status": "unverifiable",
     "checked_against": "DLSE Enforcement Policies and Interpretations Manual https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf §17.1.4, Labor Code 230(d) (p. 17-3, December 2020); DLSE 'Laws that Prohibit Retaliation and Discrimination' https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm (dated June 2026) (230(c), 230(e), 230(f), 230.1: violations through 2024-12-31; then FEHA Gov. Code 12945.8); Gov. Code 12945.8 not read",
-    "correction": "The quote and the certification list match the manual (Labor Code 230(d)(2) and 230.1(b)(2) as amended by AB 2992). DIR's June 2026 list says those Labor Code victim protections cover only violations through 2024-12-31 and are now in FEHA, Gov. Code 12945.8, which could not be read, so the current certification rule is unverified. Added the cutover date and governing-law parameters. Citation, applies_to and notes updated. read_from_primary_text set to false."
+    "correction": "The quote and the certification list match the manual (Labor Code 230(d)(2) and 230.1(b)(2) as amended by AB 2992). DIR's June 2026 list says those Labor Code victim protections cover only violations through 2024-12-31 and are now in FEHA, Gov. Code 12945.8, which could not be read, so the current certification rule is unverified. Added the cutover date and governing-law parameters. Citation, applies_to and notes updated. read_from_primary_text set to false. Rewording 2026-11-27: plain_english reworded to match this correction (DLSE list https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm re-read on 2026-11-27); no value changed."
    }
   },
   {
@@ -832,7 +832,7 @@
   },
   {
    "id": "hr-emergency-responder-training-50-employees-14-days",
-   "title": "Employers with 50+ employees: up to 14 days a year for firefighter or reserve officer training",
+   "title": "Employers with 50+ employees: up to 14 days a year for fire, law enforcement or emergency rescue training",
    "plain_english": "If you have 50 or more employees, volunteer firefighters, reserve peace officers and emergency rescue workers may take up to 14 days a year for fire, law enforcement or emergency rescue training.",
    "category": "threshold",
    "parameters": {
@@ -856,7 +856,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "DLSE Enforcement Policies and Interpretations Manual https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf §17.1.4, Labor Code 230.4 (p. 17-4, December 2020); DLSE 'Laws that Prohibit Retaliation and Discrimination' https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm (dated June 2026) (230.4: 50 or more employees, 'up to 14 days off per calendar year to engage in fire, law enforcement, or emergency rescue training')",
-    "correction": "purpose widened from 'fire or law enforcement training' to 'fire, law enforcement, or emergency rescue training' per DIR's June 2026 list. plain_english and source_location updated. The 50-employee and 14-day figures are confirmed by both sources."
+    "correction": "purpose widened from 'fire or law enforcement training' to 'fire, law enforcement, or emergency rescue training' per DIR's June 2026 list. plain_english and source_location updated. The 50-employee and 14-day figures are confirmed by both sources. Rewording 2026-11-27: title reworded to match this correction (DLSE list https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm re-read on 2026-11-27); no value changed."
    }
   },
   {
@@ -1400,7 +1400,7 @@
   {
    "id": "hr-whistleblower-1102-5-civil-penalty-10000",
    "title": "Whistleblower retaliation: civil penalty up to $10,000 per violation plus attorney's fees",
-   "plain_english": "Retaliating against a worker who reports, or refuses to take part in, a suspected violation of law can cost up to $10,000 per violation, plus the worker's attorney's fees.",
+   "plain_english": "Retaliating against a worker who reports, or refuses to take part in, a suspected violation of law can cost a civil penalty of up to $10,000 per employee for each violation, paid to each employee who suffered it, plus the worker's attorney's fees.",
    "category": "penalty",
    "parameters": {
     "civil_penalty_max_usd_per_violation": 10000,
@@ -1423,7 +1423,7 @@
    "verification": {
     "status": "confirmed",
     "checked_against": "DLSE Enforcement Policies and Interpretations Manual https://www.dir.ca.gov/dlse/DLSEManual/dlse_enfcmanual.pdf §17.1.4, Labor Code 1102.5 (p. 17-10, December 2017); DLSE 'Laws that Prohibit Retaliation and Discrimination' https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm (dated June 2026) (1102.5: 'a penalty of up to $10,000 per employee for each violation to be awarded to each employee who suffered the violation')",
-    "correction": "No parameter, citation or scope change. DIR's June 2026 list confirms the $10,000 maximum and adds that it is awarded to each employee who suffered the violation. The attorney's-fee point rests on the December 2017 manual page."
+    "correction": "No parameter, citation or scope change. DIR's June 2026 list confirms the $10,000 maximum and adds that it is awarded to each employee who suffered the violation. The attorney's-fee point rests on the December 2017 manual page. Rewording 2026-11-27: plain_english reworded to match this correction (DLSE list https://www.dir.ca.gov/dlse/HowToFileLinkCodeSections.htm re-read on 2026-11-27); no value changed."
    }
   },
   {
@@ -2428,7 +2428,7 @@
   {
    "id": "hr-cobra-election-period-60-days",
    "title": "COBRA election window: at least 60 days",
-   "plain_english": "A former employee or family member gets at least 60 days to elect COBRA, counted from the later of the date coverage would end or the date the election notice is provided.",
+   "plain_english": "A former employee or family member gets at least 60 days to elect COBRA, counted from the later of the date coverage would end or the date the election notice is provided. For a divorce, legal separation or a child no longer counting as a dependent, the employee or a family member must tell the plan administrator within 60 days after the later of the event or the date coverage would end; if the plan is not told in time, it does not have to offer COBRA.",
    "category": "deadline",
    "parameters": {
     "min_election_days": 60,
@@ -2450,13 +2450,13 @@
    "verification": {
     "status": "corrected",
     "checked_against": "26 CFR 54.4980B-6 Q&A-1(a), eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-26.xml?section=54.4980B-6 (version current as of 2026-11-23); eCFR versioner API version 2026-11-24 (re-read 2026-11-25)",
-    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added the beneficiary's 60-day notice duty for divorce, legal separation and loss of dependent status (Q&A-2(a)), which the tool had reported as not in the rulebook. The 60-day election rule is unchanged."
+    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added the beneficiary's 60-day notice duty for divorce, legal separation and loss of dependent status (Q&A-2(a)), which the tool had reported as not in the rulebook. The 60-day election rule is unchanged. Rewording 2026-11-27: plain_english reworded to match this correction (26 CFR 54.4980B-6 Q&A-2 re-read in the eCFR versioner API, title 26 issue 2026-11-18 on 2026-11-27); no value changed."
    }
   },
   {
    "id": "hr-cobra-maximum-coverage-18-29-36-months",
    "title": "COBRA lasts 18 months after termination or hours cut (29 with disability, 36 for other events)",
-   "plain_english": "COBRA after a termination or reduction in hours lasts up to 18 months, or 29 months with a disability extension. A second qualifying event, such as death or divorce, during that time can extend it to 36 months.",
+   "plain_english": "COBRA after a termination or reduction in hours lasts up to 18 months, or 29 months with a disability extension. The extension applies only if Social Security finds the worker or a covered family member disabled at some time in the first 60 days of COBRA coverage, and the plan administrator is told within 60 days after that finding and before the 18 months end. A second qualifying event, such as death or divorce, during that time can extend it to 36 months. The months count from the qualifying event, or from the loss of coverage only if the plan says so.",
    "category": "deadline",
    "parameters": {
     "termination_or_hours_reduction_months": 18,
@@ -2480,13 +2480,13 @@
    "verification": {
     "status": "corrected",
     "checked_against": "26 CFR 54.4980B-7 Q&A-4(a)-(c), Q&A-6(b), eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-26.xml?section=54.4980B-7 (version current as of 2026-11-23)",
-    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added disability_extension_requires (Q&A-5(b)-(d)) and loss_of_coverage_measurement_requires_plan_terms (Q&A-4(b)). The 18/29/36-month values are unchanged."
+    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added disability_extension_requires (Q&A-5(b)-(d)) and loss_of_coverage_measurement_requires_plan_terms (Q&A-4(b)). The 18/29/36-month values are unchanged. Rewording 2026-11-27: plain_english reworded to match this correction (26 CFR 54.4980B-7 Q&A-4 and Q&A-5 re-read in the eCFR versioner API, title 26 issue 2026-11-18 on 2026-11-27); no value changed."
    }
   },
   {
    "id": "hr-cobra-premium-102-percent",
    "title": "COBRA premium may not exceed 102% of the plan cost (150% during a disability extension)",
-   "plain_english": "You may charge COBRA participants up to 102% of the plan's cost, or up to 150% during months 19 to 29 of a disability extension.",
+   "plain_english": "You may charge COBRA participants up to 102% of the plan's cost, or up to 150% during months 19 to 29 of a disability extension, but only for coverage that includes the disabled person.",
    "category": "money_amount",
    "parameters": {
     "max_percent_of_applicable_premium": 102,
@@ -2503,7 +2503,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "26 CFR 54.4980B-8 Q&A-1(a)-(b), eCFR versioner API https://www.ecfr.gov/api/versioner/v1/full/2026-11-23/title-26.xml?section=54.4980B-8 (version current as of 2026-11-23)",
-    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added disability_150_percent_only_if from Q&A-1(b); 102% and 150% are unchanged."
+    "correction": "Adversarial review 2026-11-25 (sources re-fetched that day): added disability_150_percent_only_if from Q&A-1(b); 102% and 150% are unchanged. Rewording 2026-11-27: plain_english reworded to match this correction (26 CFR 54.4980B-8 Q&A-1(b) re-read in the eCFR versioner API, title 26 issue 2026-11-18 on 2026-11-27); no value changed."
    }
   },
   {

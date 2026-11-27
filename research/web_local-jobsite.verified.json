@@ -574,7 +574,7 @@
   },
   {
    "id": "local-sd-refuse-vehicle-hours-residential",
-   "title": "San Diego: no bin pickups or compacting trucks in residential areas 7 p.m.-6 a.m. without a permit",
+   "title": "San Diego: no refuse compacting, processing or collection vehicles in residential areas 7 p.m.-6 a.m. without a permit",
    "plain_english": "In residential areas of San Diego, refuse compacting, processing or collection vehicles may not operate between 7 p.m. and 6 a.m., and parking-lot sweepers between 7 p.m. and 7 a.m., unless a permit has been applied for and granted by the Noise Abatement Administrator. (Whether a roll-off box swap counts as a 'collection vehicle' is not stated in the code.)",
    "category": "prohibition",
    "parameters": {
@@ -601,7 +601,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "City of San Diego, Mission Bay Park Master Plan Fiesta Island Amendment Draft PEIR Appendix 5.7-1 (Dec. 2018) https://www.sandiego.gov/sites/default/files/appendix_5.7-1_-_noise_0.pdf (re-fetched 2026-11-25), PDF page 47 (SDMC 59.5.0406, amended 6-9-2010 by O-19960 N.S., effective 7-9-2010)",
-    "correction": "The quote, the hours (refuse vehicles 7 p.m.-6 a.m., sweepers 7 p.m.-7 a.m.), the residential-area scope and the permit are confirmed. plain_english said the ban includes 'roll-off and bin service'. The code names only 'a refuse compacting, processing, or collection vehicle', so the roll-off wording is an interpretation. plain_english now uses the code's terms, and the interpretation is flagged in parameters."
+    "correction": "The quote, the hours (refuse vehicles 7 p.m.-6 a.m., sweepers 7 p.m.-7 a.m.), the residential-area scope and the permit are confirmed. plain_english said the ban includes 'roll-off and bin service'. The code names only 'a refuse compacting, processing, or collection vehicle', so the roll-off wording is an interpretation. plain_english now uses the code's terms, and the interpretation is flagged in parameters. Rewording 2026-11-27: title reworded to match this correction; no value changed."
    }
   },
   {
@@ -835,7 +835,7 @@
   {
    "id": "local-sd-tcp-fees",
    "title": "San Diego Traffic Control Permit fees: $131.52/block initial, $87.68/block/week extension, $87.68 processing",
-   "plain_english": "San Diego charges a Traffic Control Initial fee of $131.52 per block (covers up to 3 weeks), an extension fee of $87.68 per block per week, and a one-time $87.68 processing fee on every request. Blocked parking meters cost extra ($20 per space per day; $300 to remove a meter post; $600 to remove a pay station).",
+   "plain_english": "San Diego charges a Traffic Control Initial fee of $131.52 per block (covers up to 3 weeks), an extension fee of $87.68 per block per week, and a flat $87.68 processing fee on each request (the initial request, each extension and each modification). Blocked parking meters cost extra ($20 per space per day; $300 to remove a meter post; $600 to remove a pay station).",
    "category": "money_amount",
    "parameters": {
     "city": "San Diego",
@@ -867,7 +867,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "Information Bulletin 177 (May 2026) web edition https://www.sandiego.gov/development-services/forms-bulletins/information-bulletin/177 (the dsdib177.pdf URL in source_location now redirects there; re-fetched 2026-11-25) section V ('Permit Fees', 'Requested Modifications', 'How to Estimate Traffic Control Fees'); section X (IB 502 inspection fees)",
-    "correction": "All dollar amounts, the 3-week initial period, the 6-week extension limit and the per-block basis are confirmed. The formula charged the $87.68 processing fee once per project. IB 177 says the processing fee 'will be applied to all traffic control permit requests, including Traffic Control Initial, Traffic Control Extension and Modification of a previously approved traffic control permit', so it is owed once per request. Corrected the formula and added processing_fee_charged_per."
+    "correction": "All dollar amounts, the 3-week initial period, the 6-week extension limit and the per-block basis are confirmed. The formula charged the $87.68 processing fee once per project. IB 177 says the processing fee 'will be applied to all traffic control permit requests, including Traffic Control Initial, Traffic Control Extension and Modification of a previously approved traffic control permit', so it is owed once per request. Corrected the formula and added processing_fee_charged_per. Rewording 2026-11-27: plain_english reworded to match this correction; no value changed."
    }
   },
   {
@@ -1873,7 +1873,7 @@
   {
    "id": "local-sd-cd-certified-facilities-for-refund",
    "title": "San Diego: use City Certified C&D Recycling Facilities to qualify for the deposit refund",
-   "plain_english": "Debris must go to City-certified recycling facilities (or be donated with receipts and photos) for it to count toward your San Diego deposit refund. The City publishes the certified facility directory.",
+   "plain_english": "Debris must go to City-certified recycling facilities (or be donated with receipts and photos) for it to count toward your San Diego deposit refund. Material taken to a landfill gets no diversion credit, and each receipt must show the project address and permit number. The City publishes the certified facility directory.",
    "category": "process_step",
    "parameters": {
     "city": "San Diego",
@@ -1899,13 +1899,13 @@
    "verification": {
     "status": "corrected",
     "checked_against": "ESD 'Application Process - Before the Project Starts' https://www.sandiego.gov/environmental-services/recycling/cd/cdapplication (re-fetched 2026-11-25); Certified C&D Recycling Facility Directory https://www.sandiego.gov/sites/default/files/certified-cd-recycling-facility-directory.pdf (re-fetched 2026-11-25; titled '2026 Certified Construction & Demolition (C&D) Recycling Facility Directory', 'Last Updated October 2026')",
-    "correction": "The quote and the requirement are confirmed. directory_edition said '2025'. The file at the URL is now the 2026 directory, last updated October 2026; only the link text on the ESD C&D page still reads '2025'. The directory adds that landfill disposal gets no diversion credit and that the project address and permit number must be on the receipt. Updated directory_edition and added those receipt rules."
+    "correction": "The quote and the requirement are confirmed. directory_edition said '2025'. The file at the URL is now the 2026 directory, last updated October 2026; only the link text on the ESD C&D page still reads '2025'. The directory adds that landfill disposal gets no diversion credit and that the project address and permit number must be on the receipt. Updated directory_edition and added those receipt rules. Rewording 2026-11-27: plain_english reworded to match this correction (receipt and landfill rules re-read in the 2026 directory, fetched 2026-11-27); no value changed."
    }
   },
   {
    "id": "local-sd-cd-franchised-hauler-recommended-self-haul-allowed",
-   "title": "San Diego C&D: franchised hauler recommended, not required; contractors may self-haul their own debris",
-   "plain_english": "For the San Diego C&D deposit program the City recommends (but does not require) using a City franchised hauler, and says you may haul your own project's waste. What matters for the refund is that loads go to certified facilities with receipts. The City's franchise hauler list is published online.",
+   "title": "San Diego C&D deposit program: franchised hauler recommended, not required; contractors may self-haul their own debris",
+   "plain_english": "For the San Diego C&D deposit program the City recommends (but does not require) using a City franchised hauler, and says you may haul your own project's waste. What matters for the refund is that loads go to certified facilities with receipts. The City's franchise hauler list is published online. Whether a hauler without a City franchise may haul other people's C&D debris for hire was not confirmed.",
    "category": "process_step",
    "parameters": {
     "city": "San Diego",
@@ -1949,7 +1949,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "ESD C&D Recycling page https://www.sandiego.gov/environmental-services/recycling/cd (re-fetched 2026-11-25) (step 3: 'Use Franchised Haulers (recommended to help ensure compliance)'); ESD C&D FAQ https://www.sandiego.gov/environmental-services/recycling/cd/cdfaq (re-fetched 2026-11-25) ('Can I haul the waste from my own project?'); ESD Franchise Hauler Directory (REV: 8/9/24) https://www.sandiego.gov/sites/default/files/esd-franchised-hauler-list.pdf (re-fetched 2026-11-25)",
-    "correction": "The quote, the recommendation, self-hauling your own project and the 21 directory names (REV 8/9/24) are confirmed. 'franchised_hauler_required_for_cd: false' went beyond the text. ESD calls franchised haulers 'recommended' for the deposit program and allows self-hauling your own project, but no source read says a non-franchised third party may haul C&D for hire. Narrowed that parameter to the deposit program and marked for-hire hauling as unverified."
+    "correction": "The quote, the recommendation, self-hauling your own project and the 21 directory names (REV 8/9/24) are confirmed. 'franchised_hauler_required_for_cd: false' went beyond the text. ESD calls franchised haulers 'recommended' for the deposit program and allows self-hauling your own project, but no source read says a non-franchised third party may haul C&D for hire. Narrowed that parameter to the deposit program and marked for-hire hauling as unverified. Rewording 2026-11-27: title and plain_english reworded to match this correction; no value changed."
    }
   },
   {
@@ -2162,7 +2162,7 @@
   },
   {
    "id": "local-la-hours-violation-misdemeanor",
-   "title": "Los Angeles: working outside permitted hours can be a misdemeanor ($1,000 fine and/or jail)",
+   "title": "Los Angeles: working outside permitted hours can be a misdemeanor (fine up to $1,000 and/or up to 6 months in jail)",
    "plain_english": "Breaking Los Angeles construction-hour rules (citywide or in hillside HCR districts) can be charged as a misdemeanor against the responsible party. LADBS states the penalty as a fine of $1,000 and/or imprisonment; the Code's penalty warning (as printed in a 2017 LADBS notice) sets the maximum at a $1,000 fine and/or six months in County Jail.",
    "category": "penalty",
    "parameters": {
@@ -2188,7 +2188,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "LADBS 'Permitted Construction and Demolition Hours' page https://dbs.lacity.gov/services/code-enforcement-complaints-and-compliance/report-violation/permitted-construction-and-demolition-hours (re-fetched 2026-11-25); LADBS 'Hillside Construction Regulations (HCR)' page https://dbs.lacity.gov/hillside-construction-regulations-hcr (re-fetched 2026-11-25); LADBS/BBSC notice 'New Hillside Construction Regulation “HCR” Supplemental Use District (SUD) Bel-Air/Beverly Crest Community Operating Hours and Construction Activity' (May 15, 2017; LADBS G-5) https://dbs.lacity.gov/sites/default/files/efs/pdf/publications/inspection-construction-hours.pdf (fetched 2026-11-25) ('PENALTY WARNING')",
-    "correction": "The misdemeanor charge against the responsible party and the $1,000 figure are confirmed on both current LADBS pages ('punishable by a fine of $1,000 and/or imprisonment'). LADBS's 2017 BBSC notice states the Code penalty in full: a fine of 'not more than $1,000.00' or County Jail for 'not more than six months', or both. $1,000 is therefore a maximum, not a fixed fine. Replaced fine_usd with fine_usd_max, added jail_months_max = 6 (from the 2017 notice) and reworded plain_english."
+    "correction": "The misdemeanor charge against the responsible party and the $1,000 figure are confirmed on both current LADBS pages ('punishable by a fine of $1,000 and/or imprisonment'). LADBS's 2017 BBSC notice states the Code penalty in full: a fine of 'not more than $1,000.00' or County Jail for 'not more than six months', or both. $1,000 is therefore a maximum, not a fixed fine. Replaced fine_usd with fine_usd_max, added jail_months_max = 6 (from the 2017 notice) and reworded plain_english. Rewording 2026-11-27: title reworded to match this correction; no value changed."
    }
   },
   {
@@ -2320,8 +2320,8 @@
   },
   {
    "id": "local-la-haul-route-filing-fee",
-   "title": "Los Angeles haul route filing fee: $529 for the first 1,000 cy + $100 per added 1,000 cy, plus 22% + $10",
-   "plain_english": "The Los Angeles import-export (haul route) review fee is $529 for the first 1,000 cubic yards plus $100 for each additional 1,000 cubic yards or part of 1,000, plus surcharges of 22% and $10.",
+   "title": "Los Angeles haul route filing fee (2018 form): $529 for the first 1,000 cy + $100 per added 1,000 cy, plus 22% + $10",
+   "plain_english": "LADBS's 2018 application form sets the Los Angeles import-export (haul route) review filing fee at $529 for the first 1,000 cubic yards plus $100 for each additional 1,000 cubic yards or part of 1,000, plus surcharges of 22% and $10. The form does not say what the 22% is charged on, and the fee was not confirmed as current for 2026, so check the amount with LADBS before relying on it.",
    "category": "money_amount",
    "parameters": {
     "city": "Los Angeles",
@@ -2345,7 +2345,7 @@
    "verification": {
     "status": "corrected",
     "checked_against": "LADBS Application for Review of Import-Export GGI-08 (Rev. 7/18, effective 5/17/2010) with PC-GRAD.App22 (Rev 07/02/2018) attachments https://dbs.lacity.gov/sites/default/files/efs/forms/pc14/application-for-review-of-technical-reports-and-import-export-routes-pc-grad-app21.pdf (re-fetched 2026-11-25) p.1 item 1",
-    "correction": "The $529.00 fee for the first 1,000 cy, the $100.00 for each added 1,000 cy or part of 1,000, and the '22% + $10.00' surcharges are confirmed as printed on the 2018 form. The form does not say whether the 22% applies to the base fee alone. The formula is the producer's reading, which was flagged only in notes. Added formula_is_inferred and fee_current_as_of_2026_verified = false, because no 2026 fee source was read."
+    "correction": "The $529.00 fee for the first 1,000 cy, the $100.00 for each added 1,000 cy or part of 1,000, and the '22% + $10.00' surcharges are confirmed as printed on the 2018 form. The form does not say whether the 22% applies to the base fee alone. The formula is the producer's reading, which was flagged only in notes. Added formula_is_inferred and fee_current_as_of_2026_verified = false, because no 2026 fee source was read. Rewording 2026-11-27: title and plain_english reworded to match this correction; no value changed."
    }
   },
   {

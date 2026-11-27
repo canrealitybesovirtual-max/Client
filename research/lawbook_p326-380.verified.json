@@ -5,7 +5,7 @@
   {
    "id": "arbitration-mandatory-referral-at-or-below-bond-amount",
    "title": "Small-dollar complaints must go to CSLB arbitration",
-   "plain_english": "If a complaint alleges a possible violation of the sections listed in B&P 7085(a)(1) and the contract price or the damages demanded is at or below the contractor bond amount required by B&P 7071.6, CSLB must refer the complaint to its arbitration program (mandatory arbitration).",
+   "plain_english": "If a complaint alleges a possible violation of the sections listed in B&P 7085(a)(1) (7107, 7109, 7110, 7113, 7119 or 7120) and the contract price or the damages demanded is at or below the contractor bond amount required by B&P 7071.6 ($25,000), CSLB must refer the complaint to its arbitration program (mandatory arbitration).",
    "category": "threshold",
    "parameters": {
     "trigger": "possible violation of the sections listed in B&P 7085(a)(1)",
@@ -34,7 +34,7 @@
    "verification": {
     "status": "confirmed",
     "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 324-325 (B&P 7085(a)-(b)); PDF page 295 (B&P 7071.6(a) bond amount)",
-    "correction": "No error. Added bond_amount_usd = 25000 from B&P 7071.6(a) (PDF page 295) and the 7085(a)(1) section list (PDF page 324) so the threshold can be computed; the original note said the amount was not on these pages."
+    "correction": "No error. Added bond_amount_usd = 25000 from B&P 7071.6(a) (PDF page 295) and the 7085(a)(1) section list (PDF page 324) so the threshold can be computed; the original note said the amount was not on these pages. plain_english updated on 2026-11-27 to name the sections and the $25,000 bond amount."
    }
   },
   {
@@ -3632,7 +3632,7 @@
   {
    "id": "fees-application",
    "title": "CSLB application fees (statutory base and caps)",
-   "plain_english": "CSLB application fees are set by regulation within statutory limits: original license, single class $450 (up to $563); each extra class with an original application $150 (up to $188); adding a class to an existing license $230 (up to $288); replacing the qualifier $230 (up to $288); adding non-qualifier personnel $125 (up to $157); asbestos certification $125 (up to $157); hazardous substance removal certification $125 (up to $157). Exam fees are paid at actual cost to the testing organization.",
+   "plain_english": "CSLB application fees are set by regulation within statutory limits: original license, single class $450 (up to $563); each extra class with an original application $150 (up to $188); adding a class to an existing license $230 (up to $288); replacing the qualifier $230 (up to $288); adding non-qualifier personnel $125 (up to $157); asbestos certification $125 (up to $157); hazardous substance removal certification $125 (up to $157). The regulation (16 CCR 811(a)) currently charges the base amounts. Exam fees are paid at actual cost to the testing organization.",
    "category": "money_amount",
    "parameters": {
     "original_license_single_class": {
@@ -3682,13 +3682,13 @@
    "verification": {
     "status": "confirmed",
     "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 374-375 (B&P 7137(a)(1)-(2)); 16 CCR 811 (PDF pages 451-452)",
-    "correction": "No error. All seven application fee base/maximum pairs and the exam-fee rule match 7137(a)(1)-(2). Added a note that 16 CCR 811(a) (PDF page 451) currently charges the base amounts."
+    "correction": "No error. All seven application fee base/maximum pairs and the exam-fee rule match 7137(a)(1)-(2). Added a note that 16 CCR 811(a) (PDF page 451) currently charges the base amounts. plain_english updated on 2026-11-27 to say 16 CCR 811(a) currently charges the base amounts."
    }
   },
   {
    "id": "fees-initial-license-and-his-registration",
    "title": "CSLB initial license and HIS registration fees",
-   "plain_english": "Initial license fee (active or inactive): individual owner $200 (up to $250); partnership, corporation, LLC or joint venture $350 (up to $438). Home improvement salesperson registration $200 (up to $250).",
+   "plain_english": "Initial license fee (active or inactive): individual owner $200 (up to $250); partnership, corporation, LLC or joint venture $350 (up to $438). Home improvement salesperson registration $200 (up to $250). The regulation (16 CCR 811(c)) currently charges the base amounts.",
    "category": "money_amount",
    "parameters": {
     "initial_license_individual": {
@@ -3720,7 +3720,7 @@
    "verification": {
     "status": "confirmed",
     "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF page 375 (B&P 7137(a)(3)(A)-(C)); 16 CCR 811 (PDF pages 451-452)",
-    "correction": "No error. All three base/maximum pairs match 7137(a)(3)(A)-(C). Added a note that 16 CCR 811(c) (PDF page 451) currently charges the base amounts."
+    "correction": "No error. All three base/maximum pairs match 7137(a)(3)(A)-(C). Added a note that 16 CCR 811(c) (PDF page 451) currently charges the base amounts. plain_english updated on 2026-11-27 to say 16 CCR 811(c) currently charges the base amounts."
    }
   },
   {
@@ -3754,7 +3754,7 @@
   {
    "id": "fees-renewal",
    "title": "CSLB license and HIS renewal fees",
-   "plain_english": "Renewal fees: individual owner active $450 (up to $563), inactive $300 (up to $375); partnership, corporation, LLC or joint venture active $700 (up to $875), inactive $500 (up to $625); HIS registration $200 (up to $250).",
+   "plain_english": "Renewal fees: individual owner active $450 (up to $563), inactive $300 (up to $375); partnership, corporation, LLC or joint venture active $700 (up to $875), inactive $500 (up to $625); HIS registration $200 (up to $250). The regulation (16 CCR 811(d)) currently charges the base amounts.",
    "category": "money_amount",
    "parameters": {
     "renewal_individual_active": {
@@ -3788,7 +3788,7 @@
    "verification": {
     "status": "confirmed",
     "checked_against": "2026 CSLB Law Book (sources/lawbook.txt), PDF pages 375-376 (B&P 7137(a)(4)); 16 CCR 811 (PDF pages 451-452)",
-    "correction": "No error. All five renewal base/maximum pairs match 7137(a)(4)(A)-(E). Added a note that 16 CCR 811(d) (PDF pages 451-452) currently charges the base amounts."
+    "correction": "No error. All five renewal base/maximum pairs match 7137(a)(4)(A)-(E). Added a note that 16 CCR 811(d) (PDF pages 451-452) currently charges the base amounts. plain_english updated on 2026-11-27 to say 16 CCR 811(d) currently charges the base amounts."
    }
   },
   {
