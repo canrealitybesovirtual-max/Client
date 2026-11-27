@@ -1,0 +1,2113 @@
+{
+ "version": 1,
+ "about": "Construction vocabulary for TradeComply search and Quick help: what contractors type (forms) and the words the rulebook uses for the same thing (expand), the checks a group belongs to (tools) and the rules it should surface first (anchors). Spelling, never law: a wrong synonym sends people to the wrong rule, so every anchor id and tool is checked by tests/test_search_engine.py. A form given as {\"form\", \"weight\"} is a generic word that only nudges (weight 0.3 instead of 0.6). An expansion of several words matches only rules that contain all of them. No expansion is a bare number.",
+ "built_from": "ux2/proto/vocab.py (73 groups, 2026-11-27) with the data_map 4.4 clean-ups, plus setup checklist, toolbox talk due and integrations",
+ "synonym_weight": 0.6,
+ "generic_weight": 0.3,
+ "groups": [
+  {
+   "concept": "roofing (C-39)",
+   "forms": [
+    "re-roof",
+    "reroof",
+    "re roof",
+    "tear-off",
+    "tear off",
+    "roof replacement",
+    "new roof",
+    "shingles",
+    "roofer",
+    "comp shingle",
+    "tile roof",
+    "torch down"
+   ],
+   "expand": [
+    "roofing",
+    "roof",
+    "c39"
+   ],
+   "tools": [
+    "classification_for_scope",
+    "permit_required",
+    "energy_compliance_triggers"
+   ],
+   "anchors": [
+    "class-c39-roofing-scope",
+    "residential-roofing-fall-6-ft",
+    "workers-comp-exemption-until-2028"
+   ]
+  },
+  {
+   "concept": "electrical (C-10)",
+   "forms": [
+    "electrician",
+    "wiring",
+    "panel upgrade",
+    "service upgrade",
+    "outlets",
+    "ev charger",
+    "rewire",
+    "subpanel"
+   ],
+   "expand": [
+    "electrical",
+    "c10"
+   ],
+   "tools": [
+    "classification_for_scope",
+    "certifications_required"
+   ],
+   "anchors": [
+    "class-c10-electrical-scope",
+    "cert-elec-c10-workers-must-be-certified"
+   ]
+  },
+  {
+   "concept": "plumbing (C-36)",
+   "forms": [
+    "plumber",
+    "repipe",
+    "re-pipe",
+    "water heater",
+    "tankless",
+    "sewer lateral",
+    "gas line"
+   ],
+   "expand": [
+    "plumbing",
+    "c36"
+   ],
+   "tools": [
+    "classification_for_scope",
+    "permit_required"
+   ],
+   "anchors": [
+    "class-c36-plumbing-scope"
+   ]
+  },
+  {
+   "concept": "HVAC (C-20)",
+   "forms": [
+    "hvac",
+    "ac unit",
+    "a/c",
+    "furnace",
+    "heat pump",
+    "mini split",
+    "ductwork",
+    "changeout",
+    "change-out"
+   ],
+   "expand": [
+    "c20",
+    "hvac",
+    "air conditioning",
+    "heating"
+   ],
+   "tools": [
+    "classification_for_scope",
+    "energy_compliance_triggers"
+   ],
+   "anchors": [
+    "class-c20-hvac-scope",
+    "energy-hvac-changeout-hers"
+   ]
+  },
+  {
+   "concept": "solar / battery (C-46)",
+   "forms": [
+    "solar",
+    "pv",
+    "photovoltaic",
+    "powerwall",
+    "battery storage",
+    "bess"
+   ],
+   "expand": [
+    "solar",
+    "c46",
+    "battery",
+    "kwh"
+   ],
+   "tools": [
+    "classification_for_scope"
+   ],
+   "anchors": [
+    "class-c46-solar-battery-80kwh-limit",
+    "solar-work-within-class-a-b-c61"
+   ]
+  },
+  {
+   "concept": "general building (B) / remodel (B-2)",
+   "forms": [
+    "gc",
+    "general contractor",
+    "b license",
+    "b contractor",
+    "class b",
+    "b general",
+    "remodel",
+    "kitchen remodel",
+    "bathroom remodel",
+    "two trades",
+    "b-2"
+   ],
+   "expand": [
+    "general building",
+    "b2",
+    "residential remodeling",
+    "two-trade"
+   ],
+   "tools": [
+    "classification_for_scope"
+   ],
+   "anchors": [
+    "general-building-two-trade-rule",
+    "b2-residential-remodeling-scope",
+    "b2-three-trade-minimum"
+   ]
+  },
+  {
+   "concept": "general engineering (A)",
+   "forms": [
+    {
+     "form": "a license",
+     "weight": 0.3
+    },
+    "civil work",
+    "sitework",
+    "site work",
+    "grading contractor",
+    "underground"
+   ],
+   "expand": [
+    "general engineering",
+    "fixed works"
+   ],
+   "tools": [
+    "classification_for_scope"
+   ],
+   "anchors": [
+    "general-engineering-contractor-def"
+   ]
+  },
+  {
+   "concept": "unlicensed / handyman $1,000 rule",
+   "forms": [
+    "handyman",
+    "no license",
+    "unlicensed",
+    "under 1000",
+    "under $1,000",
+    "side job",
+    "cash job"
+   ],
+   "expand": [
+    "unlicensed",
+    "minor work"
+   ],
+   "tools": [
+    "unlicensed_contracting_exposure"
+   ],
+   "anchors": [
+    "minor-work-exemption-1000",
+    "unlicensed-citation-max-15000",
+    "minor-work-no-splitting"
+   ]
+  },
+  {
+   "concept": "home improvement salesperson (HIS)",
+   "forms": [
+    "salesperson",
+    "sales rep",
+    "his registration",
+    "door to door",
+    "canvasser"
+   ],
+   "expand": [
+    "his",
+    "home improvement salesperson"
+   ],
+   "tools": [
+    "validate_home_improvement_contract"
+   ],
+   "anchors": [
+    "his-registration-required"
+   ]
+  },
+  {
+   "concept": "license bond",
+   "forms": [
+    "contractor bond",
+    "license bond",
+    "bonded"
+   ],
+   "expand": [
+    "contractor bond",
+    "license bond"
+   ],
+   "tools": [
+    "company_license_obligations"
+   ],
+   "anchors": [
+    "contractor-license-bond-25000",
+    "llc-wage-bond-100000"
+   ]
+  },
+  {
+   "concept": "qualifier (RMO/RME)",
+   "forms": [
+    "qualifier",
+    "rmo",
+    "rme",
+    "qualifying individual",
+    "qualifier left",
+    "disassociate"
+   ],
+   "expand": [
+    "qualifier",
+    "responsible managing",
+    "qualifying individual"
+   ],
+   "tools": [
+    "company_license_obligations"
+   ],
+   "anchors": [
+    "qualifying-individual-bond-25000"
+   ]
+  },
+  {
+   "concept": "workers' comp",
+   "forms": [
+    {
+     "form": "comp",
+     "weight": 0.3
+    },
+    "work comp",
+    "workers comp",
+    "wc",
+    "comp exemption"
+   ],
+   "expand": [
+    "workerscomp"
+   ],
+   "tools": [
+    "check_subcontractor_compliance",
+    "company_license_obligations"
+   ],
+   "anchors": [
+    "workers-comp-exemption-until-2028",
+    "wc-required-with-any-employee"
+   ]
+  },
+  {
+   "concept": "insurance certificate (COI)",
+   "forms": [
+    "coi",
+    "certificate of insurance",
+    "insurance cert",
+    "liability insurance",
+    "gl insurance",
+    "cgl"
+   ],
+   "expand": [
+    "certificate of insurance",
+    "liability insurance",
+    "insurance certificate"
+   ],
+   "tools": [
+    "check_subcontractor_compliance",
+    "bulk_check_subcontractors"
+   ],
+   "anchors": [
+    "cgl-disclosure-home-improvement"
+   ]
+  },
+  {
+   "concept": "W-9 / 1099 / backup withholding",
+   "forms": [
+    "w-9",
+    "w9",
+    "1099",
+    "1099-nec",
+    {
+     "form": "tin",
+     "weight": 0.3
+    },
+    "backup withholding"
+   ],
+   "expand": [
+    "w9",
+    "backup withholding",
+    "taxpayer identification"
+   ],
+   "tools": [
+    "compliance_calendar"
+   ],
+   "anchors": [
+    "backup-withholding-24-percent",
+    "edd-de542-independent-contractor-report"
+   ]
+  },
+  {
+   "concept": "independent contractor vs employee",
+   "forms": [
+    "1099 worker",
+    "independent contractor",
+    "abc test",
+    "misclassification",
+    "employee or contractor"
+   ],
+   "expand": [
+    "independent contractor",
+    "abc test"
+   ],
+   "tools": [],
+   "anchors": [
+    "abc-test-independent-contractor",
+    "lc-2750-5-license-required-for-ic-status"
+   ]
+  },
+  {
+   "concept": "preliminary notice (20-day)",
+   "forms": [
+    "prelim",
+    "prelims",
+    "20 day notice",
+    "twenty day",
+    "pre lien",
+    "pre-lien",
+    "preliminary",
+    "20-day notice"
+   ],
+   "expand": [
+    "preliminary notice"
+   ],
+   "tools": [
+    "calculate_lien_deadline"
+   ],
+   "anchors": [
+    "prelim-notice-20-day-deadline",
+    "preliminary-20-day-notice",
+    "prelim-notice-who-is-exempt"
+   ]
+  },
+  {
+   "concept": "mechanics lien",
+   "forms": [
+    "lien",
+    "file a lien",
+    "record a lien",
+    "mechanics lien",
+    "lien deadline",
+    "claim of lien"
+   ],
+   "expand": [
+    "mechanics lien",
+    "lien",
+    "claim of lien",
+    "record"
+   ],
+   "tools": [
+    "calculate_lien_deadline"
+   ],
+   "anchors": [
+    "lien-deadline-subcontractor-supplier",
+    "lien-deadline-direct-contractor",
+    "lien-90-days-no-noc-or-cessation",
+    "lien-foreclosure-90-days-after-recording"
+   ]
+  },
+  {
+   "concept": "notice of completion / cessation",
+   "forms": [
+    "noc",
+    "notice of completion",
+    "notice of cessation",
+    "job finished",
+    {
+     "form": "completion",
+     "weight": 0.3
+    }
+   ],
+   "expand": [
+    "notice of completion",
+    "cessation",
+    "noc"
+   ],
+   "tools": [
+    "calculate_lien_deadline",
+    "stop_payment_notice_deadline"
+   ],
+   "anchors": [
+    "noc-recording-15-days",
+    "noc-copy-to-claimants-10-days"
+   ]
+  },
+  {
+   "concept": "stop payment notice",
+   "forms": [
+    "stop notice",
+    "spn",
+    "stop payment",
+    "bonded stop notice"
+   ],
+   "expand": [
+    "stop payment notice",
+    "stop notice"
+   ],
+   "tools": [
+    "stop_payment_notice_deadline"
+   ],
+   "anchors": [
+    "stop-notice-required-contents",
+    "bonded-stop-notice-125-percent"
+   ]
+  },
+  {
+   "concept": "lien waiver / release",
+   "forms": [
+    "lien waiver",
+    "lien release",
+    "conditional release",
+    "unconditional release",
+    "waiver"
+   ],
+   "expand": [
+    "waiver",
+    "release",
+    "conditional",
+    "unconditional"
+   ],
+   "tools": [
+    "select_lien_waiver"
+   ],
+   "anchors": [
+    "no-illegal-lien-waivers",
+    "waiver-covers-executed-change-orders"
+   ]
+  },
+  {
+   "concept": "retention",
+   "forms": [
+    "retainage",
+    "retention",
+    "holdback",
+    "10 percent retention"
+   ],
+   "expand": [
+    "retention",
+    "percent"
+   ],
+   "tools": [
+    "retention_cap_check",
+    "prompt_payment_check"
+   ],
+   "anchors": [
+    "private-retention-5pct-cap",
+    "public-retention-5pct-cap",
+    "private-retention-release-45-days"
+   ]
+  },
+  {
+   "concept": "prompt payment",
+   "forms": [
+    "paid late",
+    "pay the sub",
+    "pay subs",
+    "pay my sub",
+    "late payment",
+    "owes me",
+    "still owes",
+    "prompt pay",
+    "gc hasn't paid",
+    "owner hasn't paid"
+   ],
+   "expand": [
+    "progress payment",
+    "prompt payment",
+    "7 days",
+    "subcontractor"
+   ],
+   "tools": [
+    "prompt_payment_check"
+   ],
+   "anchors": [
+    "bp-7108-5-pay-subs-7-days",
+    "pay-subs-within-7-days-of-progress-payment"
+   ]
+  },
+  {
+   "concept": "payment / performance bond",
+   "forms": [
+    "payment bond",
+    "performance bond",
+    "bond claim"
+   ],
+   "expand": [
+    "payment bond",
+    "performance bond"
+   ],
+   "tools": [
+    "stop_payment_notice_deadline"
+   ],
+   "anchors": [
+    "def-payment-bond",
+    "project-bond-types"
+   ]
+  },
+  {
+   "concept": "home improvement contract",
+   "forms": [
+    "hic",
+    "homeowner contract",
+    "residential contract",
+    "contract with homeowner",
+    "home improvement"
+   ],
+   "expand": [
+    "home improvement contract",
+    "hic",
+    "buyer"
+   ],
+   "tools": [
+    "validate_home_improvement_contract",
+    "generate_home_improvement_contract"
+   ],
+   "anchors": [
+    "hic-required-contract-contents"
+   ]
+  },
+  {
+   "concept": "down payment cap",
+   "forms": [
+    {
+     "form": "deposit",
+     "weight": 0.3
+    },
+    "down payment",
+    "downpayment",
+    "upfront",
+    "up front",
+    "advance payment"
+   ],
+   "expand": [
+    "down payment",
+    "downpayment",
+    "10 percent"
+   ],
+   "tools": [
+    "validate_home_improvement_contract"
+   ],
+   "anchors": [
+    "hic-down-payment-cap",
+    "hic-no-payment-ahead-of-work"
+   ]
+  },
+  {
+   "concept": "right to cancel",
+   "forms": [
+    "cancel",
+    "cancellation",
+    {
+     "form": "3 day",
+     "weight": 0.3
+    },
+    "three day",
+    {
+     "form": "5 day",
+     "weight": 0.3
+    },
+    "senior",
+    "over 65",
+    "65 or older",
+    "rescind"
+   ],
+   "expand": [
+    "cancel",
+    "right to cancel",
+    "business days",
+    "senior"
+   ],
+   "tools": [
+    "home_improvement_cancellation_deadline"
+   ],
+   "anchors": [
+    "three-day-right-to-cancel-notice",
+    "senior-five-day-right-to-cancel",
+    "hic-cancel-by-email"
+   ]
+  },
+  {
+   "concept": "change order",
+   "forms": [
+    "change order",
+    "extra work",
+    "extras",
+    "add on",
+    "add-on"
+   ],
+   "expand": [
+    "change order",
+    "extra work"
+   ],
+   "tools": [
+    "check_change_order"
+   ],
+   "anchors": [
+    "change-order-enforceability",
+    "hic-change-order-written-signed-before-work"
+   ]
+  },
+  {
+   "concept": "arbitration clause",
+   "forms": [
+    "arbitration",
+    "arbitrate",
+    "mediation"
+   ],
+   "expand": [
+    "arbitration"
+   ],
+   "tools": [
+    "validate_home_improvement_contract"
+   ],
+   "anchors": [
+    "private-arbitration-requires-bp7191-notice"
+   ]
+  },
+  {
+   "concept": "prevailing wage / public works",
+   "forms": [
+    "prevailing wage",
+    "pw job",
+    "public works",
+    "public job",
+    "city job",
+    "school job",
+    "county job",
+    "public project"
+   ],
+   "expand": [
+    "prevailing wage",
+    "public works",
+    "awarding body"
+   ],
+   "tools": [
+    "public_works_readiness"
+   ],
+   "anchors": [
+    "pw-prevailing-wage-threshold-1000",
+    "dir-registration-required-to-bid-or-work"
+   ]
+  },
+  {
+   "concept": "DIR registration",
+   "forms": [
+    "dir registration",
+    "dir number",
+    "pwcr",
+    "register with dir",
+    "dir #"
+   ],
+   "expand": [
+    "dir",
+    "public works contractor registration"
+   ],
+   "tools": [
+    "public_works_readiness"
+   ],
+   "anchors": [
+    "dir-registration-required-to-bid-or-work",
+    "dir-registration-fiscal-year-renewal"
+   ]
+  },
+  {
+   "concept": "certified payroll (CPR / eCPR)",
+   "forms": [
+    "certified payroll",
+    "cpr",
+    "ecpr",
+    "payroll report",
+    "wh-347",
+    "wh347"
+   ],
+   "expand": [
+    "certified payroll",
+    "ecpr",
+    "cpr"
+   ],
+   "tools": [
+    "public_works_readiness",
+    "prevailing_wage_penalties"
+   ],
+   "anchors": [
+    "ecpr-monthly-submission",
+    "cpr-request-10-days"
+   ]
+  },
+  {
+   "concept": "apprentices (DAS 140/142)",
+   "forms": [
+    "apprentice",
+    "apprentices",
+    "das 140",
+    "das 142",
+    "apprentice ratio"
+   ],
+   "expand": [
+    "apprentice",
+    "das140",
+    "das142",
+    "ratio"
+   ],
+   "tools": [
+    "apprentice_hours_required",
+    "public_works_readiness"
+   ],
+   "anchors": [
+    "apprentice-ratio-1-to-5",
+    "apprenticeship-threshold-30000"
+   ]
+  },
+  {
+   "concept": "Davis-Bacon (federal)",
+   "forms": [
+    "davis bacon",
+    "davis-bacon",
+    "dba",
+    "federal wage",
+    "wage determination",
+    "federal job",
+    "federal money"
+   ],
+   "expand": [
+    "davis-bacon",
+    "wage determination",
+    "federal"
+   ],
+   "tools": [
+    "federal_project_requirements",
+    "davis_bacon_vs_ca_prevailing"
+   ],
+   "anchors": [
+    "fed-dba-operation-of-law"
+   ]
+  },
+  {
+   "concept": "Buy America / BABA",
+   "forms": [
+    "buy america",
+    "buy american",
+    "baba",
+    "domestic content",
+    "made in usa"
+   ],
+   "expand": [
+    "buy america",
+    "domestic",
+    "baba"
+   ],
+   "tools": [
+    "buy_america_check"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "trench / excavation",
+   "forms": [
+    "trench",
+    "trenching",
+    "ditch",
+    "digging",
+    "dig",
+    "excavation",
+    {
+     "form": "hole",
+     "weight": 0.3
+    },
+    "shoring",
+    "cave-in",
+    "cave in"
+   ],
+   "expand": [
+    "excavation",
+    "trench",
+    "protective system",
+    "5 ft"
+   ],
+   "tools": [
+    "check_cal_osha_permits",
+    "lookup_safety_standard"
+   ],
+   "anchors": [
+    "permit-trench-excavation-5ft",
+    "excavation-protective-system-5-ft",
+    "excavation-daily-competent-person-inspection"
+   ]
+  },
+  {
+   "concept": "call 811 / DigAlert",
+   "forms": [
+    "811",
+    "digalert",
+    "dig alert",
+    "usa north",
+    "call before you dig",
+    "utility locate",
+    "mark out",
+    "locates"
+   ],
+   "expand": [
+    "regional notification center",
+    "usa",
+    "ticket"
+   ],
+   "tools": [
+    "project_setup_checklist"
+   ],
+   "anchors": [
+    "usa-811-notice-2-working-days",
+    "usa-ticket-valid-28-days"
+   ]
+  },
+  {
+   "concept": "fall protection",
+   "forms": [
+    "fall protection",
+    "harness",
+    "tie off",
+    "tie-off",
+    "guardrail",
+    "roof edge",
+    "leading edge",
+    "skylight"
+   ],
+   "expand": [
+    "fall protection",
+    "7.5 ft",
+    "6 ft"
+   ],
+   "tools": [
+    "lookup_safety_standard"
+   ],
+   "anchors": [
+    "fall-protection-7-5-ft",
+    "residential-roofing-fall-6-ft"
+   ]
+  },
+  {
+   "concept": "scaffold",
+   "forms": [
+    "scaffold",
+    "scaffolding",
+    "falsework",
+    "shoring tower"
+   ],
+   "expand": [
+    "scaffold",
+    "falsework",
+    "36 ft"
+   ],
+   "tools": [
+    "check_cal_osha_permits",
+    "lookup_safety_standard"
+   ],
+   "anchors": [
+    "permit-scaffold-falsework-36ft",
+    "scaffold-qualified-person-erection"
+   ]
+  },
+  {
+   "concept": "crane",
+   "forms": [
+    "crane",
+    "boom truck",
+    "crane operator",
+    "nccco",
+    "crane pick",
+    "rigging"
+   ],
+   "expand": [
+    "crane",
+    "operator certification",
+    "certifier"
+   ],
+   "tools": [
+    "certifications_required",
+    "overhead_line_clearance"
+   ],
+   "anchors": [
+    "crane-operator-certification-5-years",
+    "crane-annual-certification"
+   ]
+  },
+  {
+   "concept": "power lines",
+   "forms": [
+    "power line",
+    "powerline",
+    "overhead lines",
+    "high voltage",
+    "energized lines"
+   ],
+   "expand": [
+    "overhead",
+    "high voltage",
+    "clearance"
+   ],
+   "tools": [
+    "overhead_line_clearance"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "heat illness",
+   "forms": [
+    {
+     "form": "heat",
+     "weight": 0.3
+    },
+    "hot weather",
+    "heat stress",
+    "shade",
+    "drinking water",
+    "heat plan",
+    "high heat",
+    "95 degrees"
+   ],
+   "expand": [
+    "heat illness",
+    "shade",
+    "80f",
+    "95f",
+    "water"
+   ],
+   "tools": [
+    "generate_safety_programs"
+   ],
+   "anchors": [
+    "heat-shade-above-80f",
+    "heat-high-heat-procedures-95f",
+    "heat-water-one-quart-per-hour"
+   ]
+  },
+  {
+   "concept": "wildfire smoke",
+   "forms": [
+    "smoke",
+    "smoky",
+    "aqi",
+    "air quality",
+    "n95",
+    "wildfire"
+   ],
+   "expand": [
+    "wildfire smoke",
+    "aqi",
+    "pm2.5",
+    "respirator"
+   ],
+   "tools": [
+    "wildfire_smoke_requirements"
+   ],
+   "anchors": [
+    "osha2-smoke-scope-aqi-151",
+    "osha2-smoke-mandatory-respirators-over-500"
+   ]
+  },
+  {
+   "concept": "valley fever",
+   "forms": [
+    "valley fever",
+    "cocci",
+    "coccidioidomycosis",
+    "dust in kern"
+   ],
+   "expand": [
+    "valley fever"
+   ],
+   "tools": [
+    "valley_fever_requirements"
+   ],
+   "anchors": [
+    "osha2-valley-fever-training-endemic-counties"
+   ]
+  },
+  {
+   "concept": "silica",
+   "forms": [
+    "silica",
+    "concrete cutting",
+    "saw cutting",
+    "core drilling",
+    "grinding",
+    "tuckpointing",
+    {
+     "form": "dust",
+     "weight": 0.3
+    }
+   ],
+   "expand": [
+    "silica",
+    "table 1",
+    "exposure control plan"
+   ],
+   "tools": [
+    "lookup_safety_standard",
+    "generate_safety_programs"
+   ],
+   "anchors": [
+    "silica-table1-or-pel-50",
+    "silica-written-exposure-control-plan"
+   ]
+  },
+  {
+   "concept": "asbestos",
+   "forms": [
+    "asbestos",
+    "acm",
+    "popcorn ceiling",
+    "transite",
+    "vat",
+    "9x9 tile",
+    "abatement",
+    "asbestos survey"
+   ],
+   "expand": [
+    "asbestos",
+    "100 sqft",
+    "registration",
+    "c22",
+    "neshap"
+   ],
+   "tools": [
+    "check_cal_osha_permits",
+    "classification_for_scope"
+   ],
+   "anchors": [
+    "asbestos-dosh-registration-100sqft",
+    "asbestos-100-sqft-c22-or-certification",
+    "neshap-racm-thresholds"
+   ]
+  },
+  {
+   "concept": "lead paint (RRP / lead-related construction)",
+   "forms": [
+    "lead paint",
+    "lead-based paint",
+    "lead based paint",
+    {
+     "form": "lead",
+     "weight": 0.3
+    },
+    "rrp",
+    "lead safe",
+    "pre-1978",
+    "pre 1978",
+    "built before 1978",
+    "old paint"
+   ],
+   "expand": [
+    "lead",
+    "rrp",
+    "lead-related construction",
+    "renovation"
+   ],
+   "tools": [
+    "certifications_required",
+    "check_cal_osha_permits"
+   ],
+   "anchors": [
+    "rrp-applicability-pre-1978",
+    "rrp-minor-repair-6-20-sqft",
+    "cert-lead-related-construction-definition",
+    "lead-pre-job-notification-24h"
+   ]
+  },
+  {
+   "concept": "demolition",
+   "forms": [
+    {
+     "form": "demo",
+     "weight": 0.3
+    },
+    "demolition",
+    "tear down",
+    "teardown",
+    {
+     "form": "gut",
+     "weight": 0.3
+    },
+    "wrecking"
+   ],
+   "expand": [
+    "demolition",
+    "demolish"
+   ],
+   "tools": [
+    "check_cal_osha_permits",
+    "permit_required"
+   ],
+   "anchors": [
+    "demolition-permit-requires-air-district-notice"
+   ]
+  },
+  {
+   "concept": "confined space",
+   "forms": [
+    "confined space",
+    "manhole",
+    {
+     "form": "vault",
+     "weight": 0.3
+    },
+    "crawl space",
+    "crawlspace",
+    "tank entry"
+   ],
+   "expand": [
+    "confined space",
+    "permit-required"
+   ],
+   "tools": [
+    "confined_space_classification"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "jobsite toilets / sanitation",
+   "forms": [
+    "porta potty",
+    "porta-potty",
+    "porta john",
+    "portable toilet",
+    "honey bucket",
+    "restroom",
+    "bathroom on site",
+    "toilets"
+   ],
+   "expand": [
+    "toilet",
+    "sanitation"
+   ],
+   "tools": [
+    "generate_safety_programs"
+   ],
+   "anchors": [
+    "toilets-1-per-20"
+   ]
+  },
+  {
+   "concept": "IIPP (injury and illness prevention program)",
+   "forms": [
+    "iipp",
+    "safety program",
+    "safety plan"
+   ],
+   "expand": [
+    "iipp",
+    "injury and illness prevention",
+    "toolbox",
+    "tailgate"
+   ],
+   "tools": [
+    "generate_safety_programs"
+   ],
+   "anchors": [
+    "iipp-written-program-required",
+    "toolbox-tailgate-meetings-10-working-days"
+   ]
+  },
+  {
+   "concept": "injury reporting / Log 300",
+   "forms": [
+    "injury",
+    "accident",
+    "someone got hurt",
+    "hospital",
+    "report injury",
+    "osha 300",
+    "log 300",
+    "300 log",
+    "first aid",
+    {
+     "form": "er",
+     "weight": 0.3
+    },
+    "emergency room",
+    "ambulance",
+    "stitches"
+   ],
+   "expand": [
+    "serious injury",
+    "8 hours",
+    "log 300"
+   ],
+   "tools": [
+    "injury_reporting_deadlines"
+   ],
+   "anchors": [
+    "serious-injury-report-8-hours",
+    "log300-record-within-7-days"
+   ]
+  },
+  {
+   "concept": "Cal/OSHA permits",
+   "forms": [
+    "osha permit",
+    "cal osha permit",
+    "annual permit",
+    "project permit",
+    "dosh permit"
+   ],
+   "expand": [
+    "calosha permit"
+   ],
+   "tools": [
+    "check_cal_osha_permits"
+   ],
+   "anchors": [
+    "permit-trench-excavation-5ft",
+    "permit-scaffold-falsework-36ft",
+    "permit-tower-crane"
+   ]
+  },
+  {
+   "concept": "building permit needed?",
+   "forms": [
+    "need a permit",
+    "permit required",
+    "without a permit",
+    "pull a permit",
+    {
+     "form": "permit for",
+     "weight": 0.3
+    },
+    "exempt from permit",
+    "shed",
+    "fence",
+    "retaining wall",
+    "deck"
+   ],
+   "expand": [
+    "building permit",
+    "exempt"
+   ],
+   "tools": [
+    "permit_required"
+   ],
+   "anchors": [
+    "permit-required-exemptions-thresholds",
+    "web_permits-building:unpermitted-work-presumed-willful"
+   ]
+  },
+  {
+   "concept": "owner-builder",
+   "forms": [
+    "owner builder",
+    "owner-builder",
+    "homeowner pulls permit",
+    "homeowner permit"
+   ],
+   "expand": [
+    "owner-builder"
+   ],
+   "tools": [
+    "permit_required"
+   ],
+   "anchors": [
+    "owner-builder-self-performed",
+    "owner-builder-sale-presumptions"
+   ]
+  },
+  {
+   "concept": "Title 24 energy / HERS",
+   "forms": [
+    "title 24",
+    "t24",
+    "energy code",
+    "hers",
+    "hers rater",
+    "cf1r",
+    "cf2r",
+    "cf3r",
+    "duct test"
+   ],
+   "expand": [
+    "energy",
+    "hers",
+    "cf1r",
+    "cf2r",
+    "cf3r",
+    "title24"
+   ],
+   "tools": [
+    "energy_compliance_triggers"
+   ],
+   "anchors": [
+    "energy-cf3r-hers-verification",
+    "energy-hvac-changeout-hers"
+   ]
+  },
+  {
+   "concept": "CALGreen / C&D waste",
+   "forms": [
+    "calgreen",
+    "cal green",
+    "recycling",
+    "construction waste",
+    "debris",
+    "c&d",
+    "diversion",
+    "dumpster"
+   ],
+   "expand": [
+    "calgreen",
+    "waste",
+    "65 percent",
+    "diversion",
+    "debris"
+   ],
+   "tools": [
+    "calgreen_and_stormwater",
+    "construction_debris_plan"
+   ],
+   "anchors": [
+    "calgreen-construction-waste-65-percent",
+    "local-sd-cd-diversion-65-percent"
+   ]
+  },
+  {
+   "concept": "stormwater / SWPPP",
+   "forms": [
+    "swppp",
+    "stormwater",
+    "storm water",
+    "erosion control",
+    "bmps",
+    "qsd",
+    "qsp",
+    "wdid",
+    "smarts"
+   ],
+   "expand": [
+    "stormwater",
+    "swppp",
+    "construction general permit",
+    "1 acre"
+   ],
+   "tools": [
+    "calgreen_and_stormwater"
+   ],
+   "anchors": [
+    "stormwater-small-construction-1-acre-definition",
+    "cgp-swppp-by-qsd"
+   ]
+  },
+  {
+   "concept": "ADU / JADU",
+   "forms": [
+    "adu",
+    "granny flat",
+    "granny unit",
+    "in-law unit",
+    "casita",
+    "backyard cottage",
+    "jadu",
+    "garage conversion",
+    "accessory dwelling"
+   ],
+   "expand": [
+    "adu",
+    "accessory dwelling unit",
+    "jadu"
+   ],
+   "tools": [
+    "adu_rules"
+   ],
+   "anchors": [
+    "adu-detached-max-1200-attached-50pct",
+    "adu-60-day-deemed-approved",
+    "adu-license-classification-b-or-c47"
+   ]
+  },
+  {
+   "concept": "accessibility / ADA",
+   "forms": [
+    "ada",
+    "accessibility",
+    "disabled access",
+    "wheelchair",
+    "path of travel",
+    "casp",
+    "11b",
+    "ramp",
+    "accessible parking"
+   ],
+   "expand": [
+    "accessibility",
+    "path of travel",
+    "11b",
+    "ada"
+   ],
+   "tools": [
+    "accessibility_triggers",
+    "path_of_travel_obligation",
+    "accessibility_field_check"
+   ],
+   "anchors": [
+    "ada-cbc-11b-202-4-path-of-travel-required",
+    "ada-cbc-11b-202-4-exc8-20-percent-cap"
+   ]
+  },
+  {
+   "concept": "construction hours / noise",
+   "forms": [
+    "work hours",
+    "start time",
+    "start work",
+    "noise",
+    "noise ordinance",
+    "quiet hours",
+    "sunday",
+    "saturday",
+    "early start",
+    "night work",
+    "holiday work"
+   ],
+   "expand": [
+    "construction hours",
+    "noise",
+    "holiday",
+    "sunday"
+   ],
+   "tools": [
+    "construction_hours"
+   ],
+   "anchors": [
+    "local-la-construction-hours",
+    "local-sd-construction-noise-night-sunday-holiday-ban"
+   ]
+  },
+  {
+   "concept": "street use / dumpster / traffic control",
+   "forms": [
+    "dumpster",
+    {
+     "form": "bin",
+     "weight": 0.3
+    },
+    "roll off",
+    "roll-off",
+    {
+     "form": "pod",
+     "weight": 0.3
+    },
+    "street closure",
+    "lane closure",
+    "sidewalk closure",
+    "traffic control plan",
+    "tcp",
+    "encroachment",
+    "right of way",
+    "row permit"
+   ],
+   "expand": [
+    "right-of-way",
+    "dumpster",
+    "traffic control"
+   ],
+   "tools": [
+    "local_jobsite_requirements",
+    "san_diego_right_of_way_fees"
+   ],
+   "anchors": [
+    "local-sd-dumpster-in-row-permit-and-fees"
+   ]
+  },
+  {
+   "concept": "off-road diesel fleet (CARB ORD)",
+   "forms": [
+    "off road",
+    "off-road",
+    "offroad",
+    {
+     "form": "doors",
+     "weight": 0.3
+    },
+    "carb",
+    "tier 4",
+    "tier 2",
+    "excavator fleet",
+    "diesel fleet",
+    "renewable diesel",
+    "r99"
+   ],
+   "expand": [
+    "off-road",
+    "fleet",
+    "tier"
+   ],
+   "tools": [
+    "offroad_fleet_obligations",
+    "offroad_contracting_requirements"
+   ],
+   "anchors": [
+    "air-ord-fleet-size-classes",
+    "air-ord-renewable-diesel-r99"
+   ]
+  },
+  {
+   "concept": "trucks (Truck and Bus, Clean Truck Check)",
+   "forms": [
+    "truck and bus",
+    "clean truck check",
+    "ctc",
+    "hd i/m",
+    "dump truck",
+    "gvwr",
+    "smog truck"
+   ],
+   "expand": [
+    "truck",
+    "clean truck check",
+    "gvwr"
+   ],
+   "tools": [
+    "truck_compliance"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "portable engines (PERP)",
+   "forms": [
+    "perp",
+    "generator",
+    "portable engine",
+    "light tower",
+    "air compressor"
+   ],
+   "expand": [
+    "perp",
+    "portable engine"
+   ],
+   "tools": [
+    "portable_engine_requirements"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "dust control (Rule 403 etc.)",
+   "forms": [
+    "dust control",
+    "rule 403",
+    "fugitive dust",
+    "dust plan",
+    "water truck",
+    "track out",
+    "trackout"
+   ],
+   "expand": [
+    "dust",
+    "track-out",
+    "fugitive"
+   ],
+   "tools": [
+    "dust_control_requirements"
+   ],
+   "anchors": [
+    "air-scaqmd403-no-visible-dust-offsite"
+   ]
+  },
+  {
+   "concept": "overtime / meal and rest breaks",
+   "forms": [
+    "overtime",
+    "double time",
+    "lunch break",
+    "meal break",
+    "rest break",
+    "breaks",
+    "10 hour days",
+    "4x10"
+   ],
+   "expand": [
+    "overtime",
+    "meal period",
+    "rest period"
+   ],
+   "tools": [
+    "check_payroll"
+   ],
+   "anchors": [
+    "daily-weekly-overtime-1-5x",
+    "first-meal-period-5-hours",
+    "rest-period-10-minutes-per-4-hours"
+   ]
+  },
+  {
+   "concept": "final paycheck",
+   "forms": [
+    "final check",
+    "final paycheck",
+    "last check",
+    "fired",
+    "laid off",
+    "layoff",
+    "quit",
+    "end of job"
+   ],
+   "expand": [
+    "final pay",
+    "discharge",
+    "quit",
+    "72 hours"
+   ],
+   "tools": [
+    "final_paycheck_deadline"
+   ],
+   "anchors": [
+    "final-pay-discharge-or-layoff-immediate",
+    "final-pay-quit-without-notice-72-hours"
+   ]
+  },
+  {
+   "concept": "paid sick leave",
+   "forms": [
+    "sick leave",
+    "sick days",
+    "sick time",
+    "pto"
+   ],
+   "expand": [
+    "paid sick leave",
+    "40 hours",
+    "5 days"
+   ],
+   "tools": [
+    "sick_leave_status"
+   ],
+   "anchors": [
+    "paid-sick-leave-40-hours-5-days"
+   ]
+  },
+  {
+   "concept": "minimum wage",
+   "forms": [
+    "minimum wage",
+    "min wage",
+    "lowest pay",
+    "pay rate"
+   ],
+   "expand": [
+    "minimum wage"
+   ],
+   "tools": [
+    "jobsite_minimum_wage"
+   ],
+   "anchors": [
+    "ca-minimum-wage-2026",
+    "hr-state-minimum-wage-2027",
+    "local-minimum-wage-overrides-state"
+   ]
+  },
+  {
+   "concept": "COBRA / health coverage",
+   "forms": [
+    "cobra",
+    "cal-cobra",
+    "health insurance after leaving"
+   ],
+   "expand": [
+    "cobra",
+    "qualifying event"
+   ],
+   "tools": [
+    "cobra_deadlines"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "leave (FMLA/CFRA, jury, school)",
+   "forms": [
+    "fmla",
+    "cfra",
+    "family leave",
+    "jury duty",
+    "time off",
+    "baby bonding",
+    "school activities"
+   ],
+   "expand": [
+    "leave"
+   ],
+   "tools": [
+    "leave_request_check"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "I-9 / new hire reporting",
+   "forms": [
+    "i-9",
+    "i9",
+    "new hire",
+    "de 34",
+    "de34",
+    "e-verify",
+    "everify"
+   ],
+   "expand": [
+    "i9",
+    "new hire",
+    "de34",
+    "e-verify"
+   ],
+   "tools": [
+    "compliance_calendar",
+    "federal_project_requirements"
+   ],
+   "anchors": [
+    "form-i9-completion-deadlines"
+   ]
+  },
+  {
+   "concept": "CMMC / CUI (DoD)",
+   "forms": [
+    "cmmc",
+    "cui",
+    "nist 800-171",
+    "sprs",
+    "dod contract",
+    "navfac",
+    "usace"
+   ],
+   "expand": [
+    "cmmc",
+    "cui",
+    "sprs"
+   ],
+   "tools": [
+    "cmmc_requirements"
+   ],
+   "anchors": [
+    "cmmc-affirmation-annual-sprs"
+   ]
+  },
+  {
+   "concept": "setup checklist",
+   "forms": [
+    "before we start",
+    "break ground",
+    "breaking ground",
+    "new job checklist",
+    "pre-construction",
+    "preconstruction",
+    "job setup",
+    "project setup"
+   ],
+   "expand": [
+    "project setup",
+    "checklist"
+   ],
+   "tools": [
+    "project_setup_checklist"
+   ],
+   "anchors": []
+  },
+  {
+   "concept": "toolbox talk due",
+   "forms": [
+    "toolbox talk",
+    "toolbox talks",
+    "toolbox meeting",
+    "tailgate meeting",
+    "tailgate",
+    "safety meeting"
+   ],
+   "expand": [
+    "toolbox",
+    "tailgate"
+   ],
+   "tools": [
+    "generate_safety_programs"
+   ],
+   "anchors": [
+    "toolbox-tailgate-meetings-10-working-days"
+   ]
+  },
+  {
+   "concept": "integrations",
+   "page": "integrations",
+   "forms": [
+    "salesforce",
+    "servicenow",
+    "deltek",
+    "costpoint",
+    "ivalua",
+    "workato",
+    "procore",
+    "jira",
+    "confluence",
+    "atlassian",
+    "kahua",
+    "planisware",
+    "microsoft project",
+    "ms project",
+    "primavera",
+    "p6",
+    "box mcp",
+    "docusign",
+    "google workspace",
+    "gmail",
+    "google drive",
+    "google cloud",
+    "splunk",
+    "okta",
+    "single sign-on",
+    "sso",
+    "entra",
+    "crowdstrike",
+    "prisma airs",
+    "arcade mcp",
+    "barndoor",
+    "mintmcp",
+    "mintive",
+    "slack",
+    "microsoft teams",
+    "webhook",
+    "webhooks",
+    "twilio",
+    "zoom",
+    "calendar feed",
+    "google calendar",
+    "outlook",
+    "aws",
+    "azure",
+    "secureframe",
+    "owasp",
+    "bulwark",
+    "fedramp"
+   ],
+   "expand": [
+    "integrations"
+   ],
+   "tools": [],
+   "anchors": []
+  }
+ ],
+ "roles": {
+  "sub": [
+   "subcontractor"
+  ],
+  "subs": [
+   "subcontractor"
+  ],
+  "subbie": [
+   "subcontractor"
+  ],
+  "gc": [
+   "direct contractor",
+   "general contractor",
+   "prime"
+  ],
+  "prime": [
+   "direct contractor",
+   "prime contractor"
+  ],
+  "supplier": [
+   "supplier",
+   "material supplier"
+  ],
+  "material yard": [
+   "supplier"
+  ],
+  "lumber yard": [
+   "supplier"
+  ],
+  "equipment rental": [
+   "equipment lessor"
+  ],
+  "rental company": [
+   "equipment lessor"
+  ],
+  "homeowner": [
+   "owner",
+   "buyer"
+  ],
+  "owner": [
+   "owner"
+  ],
+  "laborer": [
+   "laborer"
+  ],
+  "worker": [
+   "employee",
+   "laborer"
+  ],
+  "agency": [
+   "awarding body",
+   "public entity"
+  ],
+  "school district": [
+   "awarding body",
+   "public entity"
+  ],
+  "lawyer": [
+   "attorney"
+  ],
+  "attorney": [
+   "attorney"
+  ],
+  "engineer": [
+   "professional engineer"
+  ]
+ },
+ "stop": [
+  "a",
+  "about",
+  "all",
+  "also",
+  "an",
+  "and",
+  "any",
+  "are",
+  "as",
+  "at",
+  "be",
+  "by",
+  "can",
+  "cant",
+  "could",
+  "did",
+  "didnt",
+  "do",
+  "does",
+  "doesnt",
+  "dont",
+  "for",
+  "from",
+  "get",
+  "gets",
+  "got",
+  "has",
+  "hasnt",
+  "have",
+  "havent",
+  "he",
+  "her",
+  "his",
+  "how",
+  "i",
+  "if",
+  "im",
+  "in",
+  "into",
+  "is",
+  "isnt",
+  "it",
+  "its",
+  "ive",
+  "just",
+  "know",
+  "may",
+  "me",
+  "must",
+  "my",
+  "need",
+  "needed",
+  "needs",
+  "no",
+  "not",
+  "of",
+  "on",
+  "or",
+  "our",
+  "please",
+  "she",
+  "should",
+  "so",
+  "tell",
+  "than",
+  "that",
+  "the",
+  "their",
+  "them",
+  "then",
+  "there",
+  "they",
+  "this",
+  "to",
+  "too",
+  "us",
+  "very",
+  "want",
+  "was",
+  "we",
+  "were",
+  "what",
+  "whats",
+  "when",
+  "where",
+  "which",
+  "who",
+  "whom",
+  "why",
+  "will",
+  "with",
+  "wont",
+  "would",
+  "you",
+  "your"
+ ],
+ "protect": [
+  "acm",
+  "ada",
+  "adu",
+  "baba",
+  "bess",
+  "calgreen",
+  "calosha",
+  "casp",
+  "cfra",
+  "cobra",
+  "cpr",
+  "ctc",
+  "cui",
+  "doors",
+  "dsa",
+  "ecpr",
+  "ein",
+  "ewp",
+  "fci",
+  "fmla",
+  "gfci",
+  "hers",
+  "iipp",
+  "ior",
+  "itin",
+  "jadu",
+  "las",
+  "loto",
+  "mewp",
+  "naics",
+  "nccco",
+  "noc",
+  "ords",
+  "osha",
+  "perp",
+  "pwcr",
+  "qsd",
+  "qsp",
+  "rme",
+  "rmo",
+  "rrp",
+  "spn",
+  "sprs",
+  "ssn",
+  "swppp",
+  "tin",
+  "ucc"
+ ]
+}

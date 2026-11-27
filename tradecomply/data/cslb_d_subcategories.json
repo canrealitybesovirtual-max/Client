@@ -1,0 +1,390 @@
+{
+ "source": "https://www.cslb.ca.gov/About_Us/Library/Licensing_Classifications/C-61_Limited_Specialty/Default.aspx",
+ "fetched": "2026-11-27",
+ "items": [
+  {
+   "code": "D-01",
+   "page_code": "D-1",
+   "name": "Architectural Porcelain",
+   "note": "(Now under D-64)"
+  },
+  {
+   "code": "D-02",
+   "page_code": "D-2",
+   "name": "Asbestos Fabrication",
+   "note": "(Now under C-2)"
+  },
+  {
+   "code": "D-03",
+   "page_code": "D-3",
+   "name": "Awnings",
+   "note": ""
+  },
+  {
+   "code": "D-04",
+   "page_code": "D-4",
+   "name": "Central Vacuum Systems",
+   "note": ""
+  },
+  {
+   "code": "D-05",
+   "page_code": "D-5",
+   "name": "Communication Equipment",
+   "note": "(Converted to C-7)"
+  },
+  {
+   "code": "D-06",
+   "page_code": "D-6",
+   "name": "Concrete Related Services",
+   "note": ""
+  },
+  {
+   "code": "D-07",
+   "page_code": "D-7",
+   "name": "Conveyors-Cranes",
+   "note": "(Now under D-21)"
+  },
+  {
+   "code": "D-08",
+   "page_code": "D-8",
+   "name": "Doors and Door Services",
+   "note": "(Now under D-28)"
+  },
+  {
+   "code": "D-09",
+   "page_code": "D-9",
+   "name": "Drilling, Blasting and Oil Field Work",
+   "note": ""
+  },
+  {
+   "code": "D-10",
+   "page_code": "D-10",
+   "name": "Elevated Floors",
+   "note": ""
+  },
+  {
+   "code": "D-11",
+   "page_code": "D-11",
+   "name": "Fencing",
+   "note": "(Converted to C-13)"
+  },
+  {
+   "code": "D-12",
+   "page_code": "D-12",
+   "name": "Synthetic Products",
+   "note": ""
+  },
+  {
+   "code": "D-13",
+   "page_code": "D-13",
+   "name": "Fire Extinguisher Systems",
+   "note": "(Now under C-16)"
+  },
+  {
+   "code": "D-14",
+   "page_code": "D-14",
+   "name": "Floor Covering",
+   "note": "(Converted to C-15)"
+  },
+  {
+   "code": "D-15",
+   "page_code": "D-15",
+   "name": "Furnaces",
+   "note": "(Now under \"A\" or C-20)"
+  },
+  {
+   "code": "D-16",
+   "page_code": "D-16",
+   "name": "Hardware, Locks and Safes",
+   "note": ""
+  },
+  {
+   "code": "D-17",
+   "page_code": "D-17",
+   "name": "Industrial Insulation",
+   "note": "(Now under C-2)"
+  },
+  {
+   "code": "D-18",
+   "page_code": "D-18",
+   "name": "Prison and Jail Equipment (Under relevant class)",
+   "note": ""
+  },
+  {
+   "code": "D-19",
+   "page_code": "D-19",
+   "name": "Land Clearing",
+   "note": "(Now under C-12 or \"A\" if license is required)"
+  },
+  {
+   "code": "D-20",
+   "page_code": "D-20",
+   "name": "Lead Burning and Fabrication",
+   "note": "(Now under D-64)"
+  },
+  {
+   "code": "D-21",
+   "page_code": "D-21",
+   "name": "Machinery and Pumps",
+   "note": ""
+  },
+  {
+   "code": "D-22",
+   "page_code": "D-22",
+   "name": "Marble",
+   "note": "(Now under C-29)"
+  },
+  {
+   "code": "D-23",
+   "page_code": "D-23",
+   "name": "Medical Gas Systems",
+   "note": "(Now under C-36)"
+  },
+  {
+   "code": "D-25",
+   "page_code": "D-25",
+   "name": "Mirrors and Fixed Glass",
+   "note": "(Now under C-17)"
+  },
+  {
+   "code": "D-26",
+   "page_code": "D-26",
+   "name": "Mobile Home Installation and Repairs",
+   "note": "(Converted to C-47)"
+  },
+  {
+   "code": "D-27",
+   "page_code": "D-27",
+   "name": "Movable Partitions",
+   "note": "(Now under D-34)"
+  },
+  {
+   "code": "D-28",
+   "page_code": "D-28",
+   "name": "Doors, Gates and Activating Devices",
+   "note": ""
+  },
+  {
+   "code": "D-29",
+   "page_code": "D-29",
+   "name": "Paperhanging",
+   "note": ""
+  },
+  {
+   "code": "D-30",
+   "page_code": "D-30",
+   "name": "Pile Driving and Pressure Foundation Jacking",
+   "note": ""
+  },
+  {
+   "code": "D-31",
+   "page_code": "D-31",
+   "name": "Pole Installation and Maintenance",
+   "note": ""
+  },
+  {
+   "code": "D-32",
+   "page_code": "D-32",
+   "name": "Power Nailing and Fastening",
+   "note": "(Now under D-64)"
+  },
+  {
+   "code": "D-33",
+   "page_code": "D-33",
+   "name": "Precast Concrete Stairs",
+   "note": "(Now under C-29)"
+  },
+  {
+   "code": "D-34",
+   "page_code": "D-34",
+   "name": "Prefabricated Equipment",
+   "note": ""
+  },
+  {
+   "code": "D-35",
+   "page_code": "D-35",
+   "name": "Pool and Spa Maintenance",
+   "note": ""
+  },
+  {
+   "code": "D-36",
+   "page_code": "D-36",
+   "name": "Rigging and Rig Building",
+   "note": "(Now under \"A\")"
+  },
+  {
+   "code": "D-37",
+   "page_code": "D-37",
+   "name": "Safes and Vaults",
+   "note": "(Now under D-16)"
+  },
+  {
+   "code": "D-38",
+   "page_code": "D-38",
+   "name": "Sand and Water Blasting",
+   "note": ""
+  },
+  {
+   "code": "D-39",
+   "page_code": "D-39",
+   "name": "Scaffolding",
+   "note": ""
+  },
+  {
+   "code": "D-40",
+   "page_code": "D-40",
+   "name": "Service Station Equipment and Maintenance",
+   "note": ""
+  },
+  {
+   "code": "D-41",
+   "page_code": "D-41",
+   "name": "Siding and Decking",
+   "note": ""
+  },
+  {
+   "code": "D-42",
+   "page_code": "D-42",
+   "name": "Non-Electrical Sign Installation",
+   "note": ""
+  },
+  {
+   "code": "D-43",
+   "page_code": "D-43",
+   "name": "Soil Grouting",
+   "note": "(Now under C-32 , C-12 or \"A\")"
+  },
+  {
+   "code": "D-44",
+   "page_code": "D-44",
+   "name": "Sprinklers",
+   "note": "(Now under D-12)"
+  },
+  {
+   "code": "D-45",
+   "page_code": "D-45",
+   "name": "Staff and Stone",
+   "note": "(Now under C-29)"
+  },
+  {
+   "code": "D-46",
+   "page_code": "D-46",
+   "name": "Steeple Jack Work (under relevant class)",
+   "note": ""
+  },
+  {
+   "code": "D-47",
+   "page_code": "D-47",
+   "name": "Tennis Court Surfacing",
+   "note": "(Now under C-12 or \"A\")"
+  },
+  {
+   "code": "D-48",
+   "page_code": "D-48",
+   "name": "Theater and School Equipment",
+   "note": "(Now under D-34)"
+  },
+  {
+   "code": "D-49",
+   "page_code": "D-49",
+   "name": "Tree Service",
+   "note": "(Now under C-49)"
+  },
+  {
+   "code": "D-50",
+   "page_code": "D-50",
+   "name": "Suspended Ceilings",
+   "note": ""
+  },
+  {
+   "code": "D-51",
+   "page_code": "D-51",
+   "name": "Waterproofing and Weatherproofing (under relevant class)",
+   "note": ""
+  },
+  {
+   "code": "D-52",
+   "page_code": "D-52",
+   "name": "Window Coverings",
+   "note": ""
+  },
+  {
+   "code": "D-53",
+   "page_code": "D-53",
+   "name": "Wood Tanks",
+   "note": ""
+  },
+  {
+   "code": "D-54",
+   "page_code": "D-54",
+   "name": "Rockscaping",
+   "note": "(Now under C-15 or C-27)"
+  },
+  {
+   "code": "D-55",
+   "page_code": "D-55",
+   "name": "Blasting",
+   "note": "(Now under C-12 or \"A\")"
+  },
+  {
+   "code": "D-56",
+   "page_code": "D-56",
+   "name": "Trenching Only",
+   "note": ""
+  },
+  {
+   "code": "D-57",
+   "page_code": "D-57",
+   "name": "Propane Gas Plants",
+   "note": "(Now under \"A\")"
+  },
+  {
+   "code": "D-58",
+   "page_code": "D-58",
+   "name": "Residential Floating Docks",
+   "note": "(Now under \"A\")"
+  },
+  {
+   "code": "D-59",
+   "page_code": "D-59",
+   "name": "Hydroseed Spraying",
+   "note": ""
+  },
+  {
+   "code": "D-60",
+   "page_code": "D-60",
+   "name": "Striping",
+   "note": "(Now under C-32)"
+  },
+  {
+   "code": "D-61",
+   "page_code": "D-61",
+   "name": "Gold Leaf Gilding",
+   "note": "(Now under D-64)"
+  },
+  {
+   "code": "D-62",
+   "page_code": "D-62",
+   "name": "Air and Water Balancing",
+   "note": ""
+  },
+  {
+   "code": "D-63",
+   "page_code": "D-63",
+   "name": "Construction Clean-up",
+   "note": ""
+  },
+  {
+   "code": "D-64",
+   "page_code": "D-64",
+   "name": "Non-specialized",
+   "note": ""
+  },
+  {
+   "code": "D-65",
+   "page_code": "D-65",
+   "name": "Weatherization and Energy Conservation",
+   "note": ""
+  }
+ ]
+}

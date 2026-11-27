@@ -1,0 +1,234 @@
+{
+ "about": "Terms people meet in checks and rules, with the rule that explains each one. The expansion of an abbreviation is shown only when it appears word for word in the rulebook or professionals.json (tests/test_catalog.py). No rule text here: the popover reads the rule from GET /api/rules/{rule_id}.",
+ "checked_on": "2026-11-27",
+ "terms": [
+  {
+   "term": "Prelim",
+   "aliases": [
+    "20-day notice",
+    "preliminary notice",
+    "prelim notice",
+    "20 day notice"
+   ],
+   "expansion": "preliminary notice",
+   "rule_id": "prelim-notice-20-day-deadline"
+  },
+  {
+   "term": "NOC",
+   "aliases": [
+    "notice of completion"
+   ],
+   "expansion": "notice of completion",
+   "rule_id": "noc-recording-15-days"
+  },
+  {
+   "term": "Notice of cessation",
+   "aliases": [
+    "cessation"
+   ],
+   "expansion": "notice of cessation",
+   "rule_id": "lien-deadline-subcontractor-supplier"
+  },
+  {
+   "term": "Stop payment notice",
+   "aliases": [
+    "stop notice",
+    "SPN"
+   ],
+   "expansion": "stop payment notice",
+   "rule_id": "stop-notice-required-contents"
+  },
+  {
+   "term": "Retention",
+   "aliases": [
+    "retainage"
+   ],
+   "rule_id": "private-retention-5pct-cap"
+  },
+  {
+   "term": "Prevailing wage",
+   "aliases": [
+    "prevailing wages"
+   ],
+   "rule_id": "pw-prevailing-wage-threshold-1000"
+  },
+  {
+   "term": "DIR",
+   "aliases": [],
+   "expansion": "Department of Industrial Relations",
+   "rule_id": "dir-registration-required-to-bid-or-work"
+  },
+  {
+   "term": "eCPR",
+   "aliases": [
+    "electronic certified payroll"
+   ],
+   "expansion": "electronic certified payroll",
+   "rule_id": "ecpr-monthly-submission"
+  },
+  {
+   "term": "CSLB",
+   "aliases": [],
+   "expansion": "Contractors State License Board",
+   "rule_id": "contractor-license-bond-25000"
+  },
+  {
+   "term": "HIS",
+   "aliases": [
+    "home improvement salesperson"
+   ],
+   "expansion": "Home Improvement Salesperson",
+   "rule_id": "his-registration-required"
+  },
+  {
+   "term": "RMO",
+   "aliases": [
+    "qualifying individual"
+   ],
+   "expansion": "Responsible Managing Officer",
+   "rule_id": "qualifying-individual-bond-25000"
+  },
+  {
+   "term": "RME",
+   "aliases": [
+    "qualifying individual"
+   ],
+   "expansion": "Responsible Managing Employee",
+   "rule_id": "qualifying-individual-bond-25000"
+  },
+  {
+   "term": "Workers' comp exemption",
+   "aliases": [
+    "workers comp exemption",
+    "no employees exemption"
+   ],
+   "rule_id": "workers-comp-exemption-until-2028"
+  },
+  {
+   "term": "IIPP",
+   "aliases": [],
+   "expansion": "Injury and Illness Prevention Program",
+   "rule_id": "iipp-written-program-required"
+  },
+  {
+   "term": "Toolbox talk",
+   "aliases": [
+    "tailgate meeting",
+    "safety meeting"
+   ],
+   "rule_id": "toolbox-tailgate-meetings-10-working-days"
+  },
+  {
+   "term": "Trench permit",
+   "aliases": [
+    "excavation permit"
+   ],
+   "rule_id": "permit-trench-excavation-5ft"
+  },
+  {
+   "term": "Competent person",
+   "aliases": [],
+   "rule_id": "competent-person-definition"
+  },
+  {
+   "term": "Confined space",
+   "aliases": [],
+   "rule_id": "osha2-cs-confined-space-definition"
+  },
+  {
+   "term": "811",
+   "aliases": [
+    "call before you dig",
+    "USA North 811",
+    "DigAlert"
+   ],
+   "rule_id": "usa-811-notice-2-working-days"
+  },
+  {
+   "term": "CASp",
+   "aliases": [
+    "certified access specialist"
+   ],
+   "expansion": "Certified Access Specialist",
+   "rule_id": "ada-casp-definition-and-services"
+  },
+  {
+   "term": "HERS",
+   "aliases": [
+    "HERS rater",
+    "HERS verification"
+   ],
+   "rule_id": "energy-cf3r-hers-verification"
+  },
+  {
+   "term": "QSD",
+   "aliases": [],
+   "expansion": "Qualified SWPPP Developer",
+   "rule_id": "cgp-swppp-by-qsd"
+  },
+  {
+   "term": "QSP",
+   "aliases": [],
+   "expansion": "Qualified SWPPP Practitioner",
+   "rule_id": "cgp-swppp-by-qsd"
+  },
+  {
+   "term": "SWPPP",
+   "aliases": [
+    "stormwater pollution prevention plan"
+   ],
+   "expansion": "Stormwater Pollution Prevention Plan",
+   "rule_id": "stormwater-small-construction-1-acre-definition"
+  },
+  {
+   "term": "RRP / lead-safe",
+   "aliases": [
+    "RRP",
+    "lead-safe",
+    "lead safe"
+   ],
+   "expansion": "Renovation, Repair and Painting",
+   "rule_id": "rrp-applicability-pre-1978"
+  },
+  {
+   "term": "ADU",
+   "aliases": [
+    "accessory dwelling unit",
+    "granny flat"
+   ],
+   "expansion": "Accessory dwelling unit",
+   "rule_id": "adu-detached-max-1200-attached-50pct"
+  },
+  {
+   "term": "Right to cancel",
+   "aliases": [],
+   "rule_id": "three-day-right-to-cancel-notice"
+  },
+  {
+   "term": "Down payment cap",
+   "aliases": [
+    "down payment"
+   ],
+   "rule_id": "hic-down-payment-cap"
+  },
+  {
+   "term": "Minor work exemption",
+   "aliases": [
+    "handyman exemption"
+   ],
+   "rule_id": "minor-work-exemption-1000"
+  },
+  {
+   "term": "B-2",
+   "aliases": [
+    "residential remodeling"
+   ],
+   "rule_id": "b2-residential-remodeling-scope"
+  },
+  {
+   "term": "Two-trade rule",
+   "aliases": [],
+   "rule_id": "general-building-two-trade-rule"
+  }
+ ]
+}
